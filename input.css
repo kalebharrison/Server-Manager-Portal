@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "./tailwind.config.js";
 
 @layer base {
   :root, [data-theme="plex"] {
@@ -196,7 +195,8 @@
   }
 
   .modal-glass {
-    @apply glass-card-lg p-6 max-w-sm w-full;
+    @apply rounded-3xl border border-white/10 bg-card/75 backdrop-blur-2xl p-6 max-w-sm w-full;
+    box-shadow: 0 32px 100px -16px rgba(0, 0, 0, 0.65);
   }
 
   .animate-fade-in {
@@ -208,7 +208,8 @@
   }
 
   .settings-panel {
-    @apply glass-card p-5 sm:p-6 md:p-8 lg:p-10 w-full min-w-0;
+    @apply rounded-2xl border border-white/10 bg-card/70 backdrop-blur-xl p-5 sm:p-6 md:p-8 lg:p-10 w-full min-w-0;
+    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.45);
   }
   .settings-panel > label:not([class]),
   .settings-panel .mb-4 > label:first-child {
@@ -396,7 +397,8 @@
   }
 
   .modal-glass {
-    @apply glass-card-lg p-6 max-w-sm w-full;
+    @apply rounded-3xl border border-white/10 bg-card/75 backdrop-blur-2xl p-6 max-w-sm w-full;
+    box-shadow: 0 32px 100px -16px rgba(0, 0, 0, 0.65);
   }
 
   .animate-fade-in {
@@ -408,7 +410,8 @@
   }
 
   .settings-panel {
-    @apply glass-card p-5 sm:p-6 md:p-8 lg:p-10 w-full min-w-0;
+    @apply rounded-2xl border border-white/10 bg-card/70 backdrop-blur-xl p-5 sm:p-6 md:p-8 lg:p-10 w-full min-w-0;
+    box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.45);
   }
   .settings-panel > label:not([class]),
   .settings-panel .mb-4 > label:first-child {
