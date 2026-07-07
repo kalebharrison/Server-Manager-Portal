@@ -9639,7 +9639,7 @@ async function monitorConcurrentSessions() {
     } catch (e) { }
 }
 
-app.listen(PORT, BIND_HOST, async () => {
+const startPortalService = async () => {
     log(`--- Server Manager Portal Service starting on http://${BIND_HOST}:${PORT} ---`);
     log(`Runtime: CONFIG_DIR=${CONFIG_DIR}, FORCE_SECURE_COOKIES=${FORCE_SECURE_COOKIES}, BASE_PATH=${BASE_PATH || '/'}, appVersion=${appVersion}`);
     if (FORCE_SECURE_COOKIES) {
@@ -9702,4 +9702,17 @@ app.listen(PORT, BIND_HOST, async () => {
             await runAutoBackupCycle('scheduled');
         }
     }, 60 * 60 * 1000);
+};
+
+app.listen(PORT, BIND_HOST, async (error) => {
+    if (error) {
+        log(`Failed to bind server on ${BIND_HOST}:${PORT}: ${error.message}`);
+        process.exit(1);
+    }
+    try {
+        await startPortalService();
+    } catch (e) {
+        log(`Startup failed: ${e.message}`);
+        process.exit(1);
+    }
 });
