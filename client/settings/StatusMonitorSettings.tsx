@@ -1,10 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Copy, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../shared/api';
-import { appConfirm } from '../shared/confirm';
 import { CustomSelect } from '../shared/ui';
-import type { User, AuditEntry, DeletedUser } from '../shared/types';
-import { formatDateTime, formatEventName, hexToRgb, getDaysUntilExpiry, addMonths, addYears, formatDate } from '../shared/format';
 export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled: boolean; onPublicStatusEnabledChange: (enabled: boolean) => void; onChange: (cfg: any) => void; appConfirm: (msg: string, cb: () => void) => void; fetchConfig: () => void; addToast: (msg: string, type?: 'success' | 'error') => void }> = ({ config, publicStatusEnabled, onPublicStatusEnabledChange, onChange, appConfirm, fetchConfig, addToast }) => {
     const [localConfig, setLocalConfig] = useState<any>({ groups: [], services: [] });
 
