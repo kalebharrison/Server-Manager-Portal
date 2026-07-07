@@ -61,13 +61,11 @@ export const LivePlexStats: React.FC = () => {
 
     useEffect(() => {
         const fetchStats = async () => {
-            const endpoints = [portalUrl('/api/public/plex/stats'), portalUrl('/api/plex/stats')];
+            const endpoints = ['/api/public/plex/stats', '/api/plex/stats'];
 
             for (const endpoint of endpoints) {
                 try {
-                    const response = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
-                    if (!response.ok) continue;
-                    const res = await response.json();
+                    const res = await apiFetch(endpoint, { cacheTtlMs: 15000 });
                     if (res && typeof res.movies === 'number' && typeof res.shows === 'number' && typeof res.music === 'number') {
                         setStats(res);
                         return;
