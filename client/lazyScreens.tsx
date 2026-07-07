@@ -1,14 +1,6 @@
 import React from 'react';
 export { updateFavicon } from './shared/favicon';
 
-type ScreenModule = typeof import('./screens');
-
-const lazyScreen = <P,>(selector: (module: ScreenModule) => React.ComponentType<P>) =>
-    React.lazy(async () => {
-        const module = await import('./screens');
-        return { default: selector(module) };
-    });
-
 const lazyComponent = <P, TModule>(loader: () => Promise<TModule>, selector: (module: TModule) => React.ComponentType<P>) =>
     React.lazy(async () => {
         const module = await loader();
@@ -24,7 +16,7 @@ export const LogsDashboard = lazyComponent(() => import('./screens/LogsDashboard
 export const MediaStackDashboard = lazyComponent(() => import('./screens/MediaStackDashboard'), (module) => module.MediaStackDashboard);
 export const AnalyticsDashboard = lazyComponent(() => import('./screens/AnalyticsDashboard'), (module) => module.AnalyticsDashboard);
 export const AdminDashboard = lazyComponent(() => import('./screens/AdminDashboard'), (module) => module.AdminDashboard);
-export const UserDashboard = lazyScreen((module) => module.UserDashboard);
+export const UserDashboard = lazyComponent(() => import('./screens/UserDashboard'), (module) => module.UserDashboard);
 export const Navigation = lazyComponent(() => import('./screens/Navigation'), (module) => module.Navigation);
 
 export const SettingsDashboard = React.lazy(async () => {
