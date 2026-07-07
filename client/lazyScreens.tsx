@@ -20,7 +20,7 @@ export const PublicInviteClaim = lazyComponent(() => import('./screens/PublicInv
 export const StatusDashboard = lazyComponent(() => import('./screens/StatusDashboard'), (module) => module.StatusDashboard);
 export const LibraryDashboard = lazyScreen((module) => module.LibraryDashboard);
 export const MaintenanceDashboard = lazyComponent(() => import('./screens/MaintenanceDashboard'), (module) => module.MaintenanceDashboard);
-export const LogsDashboard = lazyScreen((module) => module.LogsDashboard);
+export const LogsDashboard = lazyComponent(() => import('./screens/LogsDashboard'), (module) => module.LogsDashboard);
 export const MediaStackDashboard = lazyScreen((module) => module.MediaStackDashboard);
 export const AnalyticsDashboard = lazyScreen((module) => module.AnalyticsDashboard);
 export const AdminDashboard = lazyScreen((module) => module.AdminDashboard);
