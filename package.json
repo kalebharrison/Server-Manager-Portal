@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build:css": "npx tailwindcss -i ./input.css -o ./static/tailwind.css",
-    "build:js": "esbuild index.tsx --bundle --outfile=static/bundle.js --jsx=automatic --format=esm",
+    "build:js": "rm -rf static/chunks && esbuild index.tsx --bundle --outdir=static --entry-names=bundle --chunk-names=chunks/[name]-[hash] --splitting --jsx=automatic --format=esm",
     "build:version": "node build-version.js",
     "build": "npm run build:css && npm run build:js && npm run build:version",
     "check": "npm run build",
