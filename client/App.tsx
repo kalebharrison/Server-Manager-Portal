@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { bindAppConfirm } from './shared/confirm';
-import { apiFetch } from './shared/api';
+import { apiFetch, clearApiCache } from './shared/api';
 import { portalUrl, stripBasePath } from './shared/basePath';
 import { ConfirmModal } from './shared/ui';
 import { Loader } from './shared/toast';
@@ -67,7 +67,7 @@ export const MainApp: React.FC = () => {
 
     const fetchPublicConfig = useCallback(async () => {
         try {
-            const data = await apiFetch('/api/config/public');
+            const data = await apiFetch('/api/config/public', { forceRefresh: true });
             window.__USE_24_HOUR_CLOCK__ = data.use24HourClock === true;
             if (typeof data.basePath === 'string') {
                 window.__BASE_PATH__ = data.basePath;
@@ -207,6 +207,7 @@ export const MainApp: React.FC = () => {
 
     const handleLogout = async () => {
         await apiFetch('/api/auth/logout', { method: 'POST' });
+        clearApiCache();
         setSessionInfo(null);
         setRoute('login');
     };
