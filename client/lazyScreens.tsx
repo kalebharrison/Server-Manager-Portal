@@ -18,7 +18,7 @@ const lazyComponent = <P, TModule>(loader: () => Promise<TModule>, selector: (mo
 export const Login = lazyComponent(() => import('./screens/Login'), (module) => module.Login);
 export const PublicInviteClaim = lazyComponent(() => import('./screens/PublicInviteClaim'), (module) => module.PublicInviteClaim);
 export const StatusDashboard = lazyComponent(() => import('./screens/StatusDashboard'), (module) => module.StatusDashboard);
-export const LibraryDashboard = lazyScreen((module) => module.LibraryDashboard);
+export const LibraryDashboard = lazyComponent(() => import('./screens/LibraryDashboard'), (module) => module.LibraryDashboard);
 export const MaintenanceDashboard = lazyComponent(() => import('./screens/MaintenanceDashboard'), (module) => module.MaintenanceDashboard);
 export const LogsDashboard = lazyComponent(() => import('./screens/LogsDashboard'), (module) => module.LogsDashboard);
 export const MediaStackDashboard = lazyComponent(() => import('./screens/MediaStackDashboard'), (module) => module.MediaStackDashboard);
