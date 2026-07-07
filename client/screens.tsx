@@ -3831,11 +3831,14 @@ const RebuildLibraryCacheButton: React.FC = () => {
                 const s: any = await apiFetch('/api/plex/stats/status');
                 if (s.lastGeneratedAt) setLastBuilt(s.lastGeneratedAt);
                 if (!s.isBuilding) {
-                    clearInterval(pollRef.current);
+                    if (pollRef.current) clearInterval(pollRef.current);
                     setStatus('done');
                     setTimeout(() => setStatus('idle'), 4000);
                 }
-            } catch { clearInterval(pollRef.current); setStatus('error'); }
+            } catch {
+                if (pollRef.current) clearInterval(pollRef.current);
+                setStatus('error');
+            }
         }, 3000);
     };
 

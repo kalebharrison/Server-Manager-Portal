@@ -790,7 +790,7 @@ export const SettingsDashboard: React.FC = () => {
         }
         setLoading(true);
         try {
-            const foundServers = await apiFetch('/api/plex/servers', {
+            const foundServers: PlexServer[] = await apiFetch('/api/plex/servers', {
                 method: 'POST',
                 body: JSON.stringify({ token, plexServerUrl: plexServerUrl || undefined }),
             });
