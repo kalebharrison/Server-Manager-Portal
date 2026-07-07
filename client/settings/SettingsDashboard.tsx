@@ -150,6 +150,7 @@ export const SettingsDashboard: React.FC = () => {
     const [hideStreamUsers, setHideStreamUsers] = useState<string>('false');
     const [showUsernamesInAnalytics, setShowUsernamesInAnalytics] = useState(false);
     const [useTrendingSlideshowOnLogin, setUseTrendingSlideshowOnLogin] = useState(false);
+    const [publicStatusEnabled, setPublicStatusEnabled] = useState(true);
     const [defaultLibraryIds, setDefaultLibraryIds] = useState<string[]>([]);
     const [libraries, setLibraries] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState(() => {
@@ -765,6 +766,7 @@ export const SettingsDashboard: React.FC = () => {
             setHideStreamUsers(initialSettings.hideStreamUsers === true ? 'anonymous' : (initialSettings.hideStreamUsers || 'false'));
             setShowUsernamesInAnalytics(!!initialSettings.showUsernamesInAnalytics);
             setUseTrendingSlideshowOnLogin(initialSettings.useTrendingSlideshowOnLogin !== false);
+            setPublicStatusEnabled(initialSettings.publicStatusEnabled !== false);
             if (initialSettings.defaultLibraryIds) setDefaultLibraryIds(initialSettings.defaultLibraryIds);
             if (initialSettings.use24HourClock !== undefined) setUse24HourClock(!!initialSettings.use24HourClock);
             if (initialSettings.showPosterQualityBadges !== undefined) setShowPosterQualityBadges(initialSettings.showPosterQualityBadges !== false);
@@ -898,6 +900,7 @@ export const SettingsDashboard: React.FC = () => {
             hideStreamUsers,
             showUsernamesInAnalytics,
             useTrendingSlideshowOnLogin,
+            publicStatusEnabled,
             defaultLibraryIds,
             use24HourClock,
             allowTemporaryAccess,
@@ -1593,6 +1596,8 @@ export const SettingsDashboard: React.FC = () => {
                             <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Status Monitor</h3>
                             <StatusMonitorSettings
                                 config={statusConfig}
+                                publicStatusEnabled={publicStatusEnabled}
+                                onPublicStatusEnabledChange={setPublicStatusEnabled}
                                 onChange={setStatusDraft}
                                 appConfirm={appConfirm}
                                 fetchConfig={fetchStatusConfig}

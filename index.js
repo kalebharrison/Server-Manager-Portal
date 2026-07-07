@@ -844,6 +844,16 @@ const requireAdmin = async (req, res, next) => {
     next();
 };
 
+const getSessionUser = (req) => {
+    const token = req.cookies.session;
+    if (!token) return null;
+    try {
+        return jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+        return null;
+    }
+};
+
 const syncUsers = async (config) => {
     log('Starting user sync from Plex...');
     let res;
@@ -2122,6 +2132,7 @@ app.get('/api/config', requireAdmin, async (req, res) => {
                 defaultLibraryIds: config.defaultLibraryIds || null,
                 use24HourClock: !!config.use24HourClock,
                 allowTemporaryAccess: !!config.allowTemporaryAccess,
+                publicStatusEnabled: config.publicStatusEnabled !== false,
                 showPosterQualityBadges: config.showPosterQualityBadges !== false,
                 autoBackupEnabled: !!config.autoBackupEnabled,
                 autoBackupIntervalDays: Number(config.autoBackupIntervalDays) > 0 ? Number(config.autoBackupIntervalDays) : 2,
@@ -2187,6 +2198,7 @@ app.get('/api/config', requireAdmin, async (req, res) => {
                 defaultLibraryIds: null,
                 use24HourClock: false,
                 allowTemporaryAccess: false,
+                publicStatusEnabled: true,
                 showPosterQualityBadges: true,
                 autoBackupEnabled: false,
                 autoBackupIntervalDays: 2,
@@ -2208,7 +2220,7 @@ app.post('/api/config', setupRateLimit, async (req, res) => {
         requestAppType, requestAppUrl, requestAppApiKey,
         inactiveCleanupEnabled, inactiveCleanupDays,
         primaryColor, customLogoUrl, brandingTheme, backgroundImageUrl, useScrollRevealAnimations, useCinematicLoading, useBrandedSkeleton, useTrendingSlideshow, trendingSlideshowInterval, tmdbApiKey, referralEnabled, referralTrialDays, referralRewardDays, announcement, navOrder, hideStreamUsers, defaultLibraryIds, use24HourClock, allowTemporaryAccess, showPosterQualityBadges,
-        autoBackupEnabled, autoBackupIntervalDays, autoBackupRetentionCount, maintenanceExperimentalEnabled, dashboardLayout,
+        publicStatusEnabled, autoBackupEnabled, autoBackupIntervalDays, autoBackupRetentionCount, maintenanceExperimentalEnabled, dashboardLayout,
         showUsernamesInAnalytics, useTrendingSlideshowOnLogin
     } = req.body;
 
@@ -2348,6 +2360,7 @@ app.post('/api/config', setupRateLimit, async (req, res) => {
         defaultLibraryIds: Array.isArray(defaultLibraryIds) ? defaultLibraryIds : null,
         use24HourClock: !!use24HourClock,
         allowTemporaryAccess: !!allowTemporaryAccess,
+        publicStatusEnabled: publicStatusEnabled !== false,
         showPosterQualityBadges: showPosterQualityBadges !== false,
         autoBackupEnabled: !!autoBackupEnabled,
         autoBackupIntervalDays: Math.max(1, parseInt(autoBackupIntervalDays, 10) || 2),
@@ -2440,6 +2453,7 @@ app.get('/api/config/public', async (req, res) => {
             appVersion: appVersion,
             use24HourClock: !!config.use24HourClock,
             allowTemporaryAccess: !!config.allowTemporaryAccess,
+            publicStatusEnabled: config.publicStatusEnabled !== false,
             showPosterQualityBadges: config.showPosterQualityBadges !== false,
             dashboardLayout: normalizeSectionLayout(config.dashboardLayout),
             basePath: BASE_PATH,
@@ -2462,6 +2476,7 @@ app.get('/api/config/public', async (req, res) => {
             appVersion: appVersion,
             use24HourClock: false,
             allowTemporaryAccess: false,
+            publicStatusEnabled: true,
             showPosterQualityBadges: true,
             dashboardLayout: DEFAULT_DASHBOARD_LAYOUT,
             basePath: BASE_PATH,
@@ -4726,7 +4741,11 @@ app.get('/api/public/plex/stats', publicReadRateLimit, async (req, res) => {
 });
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
-app.get('/api/status', publicReadRateLimit, (req, res) => {
+app.get('/api/status', publicReadRateLimit, async (req, res) => {
+    const config = await loadFile(CONFIG_PATH, {});
+    if (config.publicStatusEnabled === false && !getSessionUser(req)) {
+        return res.status(403).json({ error: 'Status monitor requires sign in.' });
+    }
     const publicServices = (statusConfig.services || []).map(service => ({
         id: service.id,
         name: service.name,

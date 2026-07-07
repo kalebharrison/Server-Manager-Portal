@@ -5,7 +5,7 @@ import { appConfirm } from '../shared/confirm';
 import { CustomSelect } from '../shared/ui';
 import type { User, AuditEntry, DeletedUser } from '../shared/types';
 import { formatDateTime, formatEventName, hexToRgb, getDaysUntilExpiry, addMonths, addYears, formatDate } from '../shared/format';
-export const StatusMonitorSettings: React.FC<{ config: any; onChange: (cfg: any) => void; appConfirm: (msg: string, cb: () => void) => void; fetchConfig: () => void; addToast: (msg: string, type?: 'success' | 'error') => void }> = ({ config, onChange, appConfirm, fetchConfig, addToast }) => {
+export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled: boolean; onPublicStatusEnabledChange: (enabled: boolean) => void; onChange: (cfg: any) => void; appConfirm: (msg: string, cb: () => void) => void; fetchConfig: () => void; addToast: (msg: string, type?: 'success' | 'error') => void }> = ({ config, publicStatusEnabled, onPublicStatusEnabledChange, onChange, appConfirm, fetchConfig, addToast }) => {
     const [localConfig, setLocalConfig] = useState<any>({ groups: [], services: [] });
 
     useEffect(() => {
@@ -97,6 +97,18 @@ export const StatusMonitorSettings: React.FC<{ config: any; onChange: (cfg: any)
 
     return (
         <div className="flex flex-col gap-8 w-full">
+            <div className="border-b border-border pb-6">
+                <h4 className="font-bold text-xl text-text mb-2">Public Access</h4>
+                <p className="text-sm text-muted mb-4">Allow visitors who are not signed in to view the status monitor page and status data.</p>
+                <button
+                    type="button"
+                    onClick={() => onPublicStatusEnabledChange(!publicStatusEnabled)}
+                    className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${publicStatusEnabled ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-white/10 text-muted hover:bg-white/20'}`}
+                >
+                    Public Status: {publicStatusEnabled ? 'Enabled' : 'Disabled'}
+                </button>
+            </div>
+
             <div>
                 <div className="flex justify-between items-center mb-4 border-b border-border pb-3">
                     <h4 className="font-bold text-xl text-text">Service Groups</h4>

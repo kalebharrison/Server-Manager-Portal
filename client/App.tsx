@@ -186,11 +186,11 @@ export const MainApp: React.FC = () => {
                 setCurrentRoute('user');
             }
         } catch {
-            if (path === '/status') setCurrentRoute('status');
+            if (path === '/status' && publicConfig?.publicStatusEnabled !== false) setCurrentRoute('status');
             else if (path === '/dashboard') setCurrentRoute('dashboard');
             else setCurrentRoute('login');
         }
-    }, []);
+    }, [publicConfig?.publicStatusEnabled]);
 
     useEffect(() => {
         // Initial session check
