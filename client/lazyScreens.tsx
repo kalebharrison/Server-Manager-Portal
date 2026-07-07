@@ -22,7 +22,7 @@ export const LibraryDashboard = lazyScreen((module) => module.LibraryDashboard);
 export const MaintenanceDashboard = lazyComponent(() => import('./screens/MaintenanceDashboard'), (module) => module.MaintenanceDashboard);
 export const LogsDashboard = lazyComponent(() => import('./screens/LogsDashboard'), (module) => module.LogsDashboard);
 export const MediaStackDashboard = lazyComponent(() => import('./screens/MediaStackDashboard'), (module) => module.MediaStackDashboard);
-export const AnalyticsDashboard = lazyScreen((module) => module.AnalyticsDashboard);
+export const AnalyticsDashboard = lazyComponent(() => import('./screens/AnalyticsDashboard'), (module) => module.AnalyticsDashboard);
 export const AdminDashboard = lazyScreen((module) => module.AdminDashboard);
 export const UserDashboard = lazyScreen((module) => module.UserDashboard);
 export const Navigation = lazyComponent(() => import('./screens/Navigation'), (module) => module.Navigation);
