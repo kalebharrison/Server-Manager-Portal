@@ -25,7 +25,7 @@ export const MediaStackDashboard = lazyScreen((module) => module.MediaStackDashb
 export const AnalyticsDashboard = lazyScreen((module) => module.AnalyticsDashboard);
 export const AdminDashboard = lazyScreen((module) => module.AdminDashboard);
 export const UserDashboard = lazyScreen((module) => module.UserDashboard);
-export const Navigation = lazyScreen((module) => module.Navigation);
+export const Navigation = lazyComponent(() => import('./screens/Navigation'), (module) => module.Navigation);
 
 export const SettingsDashboard = React.lazy(async () => {
     const module = await import('./settings/SettingsDashboard');
