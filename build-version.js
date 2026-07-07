@@ -22,6 +22,13 @@ const resolveBuildVersion = (pkgVersion) => {
 
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const pkgVersion = pkg.version;
+const hasExplicitSha = Boolean(process.env.GIT_SHA || process.env.GITHUB_SHA);
+
+if (!hasExplicitSha) {
+    console.log('Skipping version stamp; set GIT_SHA or GITHUB_SHA to stamp assets.');
+    process.exit(0);
+}
+
 const assetVersion = resolveBuildVersion(pkgVersion);
 
 const isTag = process.env.GITHUB_REF && process.env.GITHUB_REF.startsWith('refs/tags/');

@@ -504,7 +504,7 @@ Server-Manager-Portal/
 ├── unraid/
 │   └── server-manager-portal.xml  # Unraid Docker template
 ├── .env.example        # Environment variable template
-├── build-version.js    # Stamps version.txt and cache-bust query strings on build
+├── build-version.js    # Stamps version.txt and cache-bust query strings when GIT_SHA/GITHUB_SHA is set
 ├── package.json
 └── .env                # JWT_SECRET (not committed to git)
 ```
