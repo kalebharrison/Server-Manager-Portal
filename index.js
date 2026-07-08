@@ -1519,6 +1519,7 @@ app.post('/api/auth/plex/login', authRateLimit, async (req, res) => {
 });
 
 const jellyfinQuickConnectSessions = new Map();
+const MAX_JELLYFIN_QUICK_CONNECT_SESSIONS = 100;
 
 const pruneJellyfinQuickConnectSessions = () => {
     const now = Date.now();
@@ -1527,6 +1528,16 @@ const pruneJellyfinQuickConnectSessions = () => {
             jellyfinQuickConnectSessions.delete(id);
         }
     });
+};
+
+const storeJellyfinQuickConnectSession = (sessionId, session) => {
+    pruneJellyfinQuickConnectSessions();
+    while (jellyfinQuickConnectSessions.size >= MAX_JELLYFIN_QUICK_CONNECT_SESSIONS) {
+        const oldestKey = jellyfinQuickConnectSessions.keys().next().value;
+        if (!oldestKey) break;
+        jellyfinQuickConnectSessions.delete(oldestKey);
+    }
+    jellyfinQuickConnectSessions.set(sessionId, session);
 };
 
 const completeJellyfinPortalLogin = async (req, res, config, authData, source = 'password') => {
@@ -1644,7 +1655,7 @@ app.post('/api/auth/jellyfin/quick-connect/initiate', authRateLimit, async (req,
         }
 
         const sessionId = randomUUID();
-        jellyfinQuickConnectSessions.set(sessionId, {
+        storeJellyfinQuickConnectSession(sessionId, {
             secret,
             baseUrl,
             expiresAt: Date.now() + 5 * 60 * 1000,
