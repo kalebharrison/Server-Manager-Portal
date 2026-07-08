@@ -17,12 +17,12 @@ import { IntegrationTestButton } from '../shared/IntegrationTestButton';
 import { HomeLayoutSettings } from './HomeLayoutSettings';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { IntegrationHeading, hasIntegrationCredentials } from './integrationDisplay';
+import { SETTINGS_TAB_GROUPS, SETTINGS_TABS } from './settingsTabs';
 
 const JELLYFIN_BRAND_LOGO_URL = '/api/jellyfin/branding/icon';
 const JELLYFIN_BRAND_BACKGROUND_URL = '/api/jellyfin/branding/splash';
 
 export const SettingsDashboard: React.FC = () => {
-    const SETTINGS_TABS = ['plex', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'broadcast', 'stream-rules', 'logs'] as const;
     const [statusDraft, setStatusDraft] = useState<any>(null);
     const [isLoading, setLoading] = useState(true);
     const [configLoadError, setConfigLoadError] = useState<string | null>(null);
@@ -109,47 +109,9 @@ export const SettingsDashboard: React.FC = () => {
     const [highlightMaintenanceToggle, setHighlightMaintenanceToggle] = useState(false);
     const [settingsSearch, setSettingsSearch] = useState('');
 
-    const settingsTabGroups = [
-        {
-            title: 'Portal',
-            tabs: [
-                { id: 'branding', label: 'Portal UI', keywords: ['theme', 'logo', 'color', 'announcement', 'referral', 'quality', 'badges', 'poster', 'hdr', 'codec'] },
-                { id: 'contact', label: 'Contact Details', keywords: ['email', 'whatsapp', 'support'] },
-                { id: 'navigation', label: 'Navigation', keywords: ['menu', 'order', 'sidebar'] },
-                { id: 'home-layout', label: 'Home Layout', keywords: ['dashboard', 'widgets', 'sections', 'home', 'layout', 'reorder', 'hide'] }
-            ]
-        },
-        {
-            title: 'Media Stack',
-            tabs: [
-                { id: 'plex', label: 'Media Player', keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct', 'privacy', 'usernames', 'analytics'] },
-                { id: 'mediastack', label: 'Integrations', keywords: ['sonarr', 'radarr', 'tautulli', 'jellystat', 'seerr', 'jellyseerr'] },
-                { id: 'status', label: 'Status Monitor', keywords: ['uptime', 'health', 'services'] }
-            ]
-        },
-        {
-            title: 'Comms',
-            tabs: [
-                { id: 'smtp', label: 'SMTP Alerts', keywords: ['mail', 'smtp', 'test'] },
-                { id: 'newsletter', label: 'Newsletter', keywords: ['digest', 'send', 'frequency'] },
-                { id: 'broadcast', label: 'Broadcast Email', keywords: ['announcement', 'bulk', 'users'] },
-                { id: 'invites', label: 'Invites', keywords: ['invite', 'link', 'code'] }
-            ]
-        },
-        {
-            title: 'Automation',
-            tabs: [
-                { id: 'cleanup', label: 'Cleanup', keywords: ['inactive', 'revoke', 'expiry'] },
-                { id: 'stream-rules', label: 'Stream Rules', keywords: ['kill', 'transcode', 'rule'] },
-                { id: 'tasks', label: 'Background Tasks', keywords: ['jobs', 'scheduler', 'run now'] },
-                { id: 'system', label: 'System', keywords: ['backup', 'restore', 'diagnostics'] },
-                { id: 'logs', label: 'Logs & Audit', keywords: ['audit', 'emails', 'deleted users', 'history'] }
-            ]
-        }
-    ];
-    const settingsTabsFlat = settingsTabGroups.flatMap(group => group.tabs);
+    const settingsTabsFlat = SETTINGS_TAB_GROUPS.flatMap(group => group.tabs);
     const searchTerm = settingsSearch.trim().toLowerCase();
-    const visibleTabGroups = settingsTabGroups
+    const visibleTabGroups = SETTINGS_TAB_GROUPS
         .map(group => ({
             ...group,
             tabs: group.tabs.filter(tab => {
