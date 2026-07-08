@@ -248,6 +248,27 @@ if (BASE_PATH) {
 
 // --- In-Memory Cache for Plex Metadata ---
 const plexMetadataCache = new Map();
+const MAX_PLEX_METADATA_CACHE_ENTRIES = 500;
+
+const getCachedPlexMetadata = (key) => {
+    const value = plexMetadataCache.get(key);
+    if (value) {
+        plexMetadataCache.delete(key);
+        plexMetadataCache.set(key, value);
+    }
+    return value;
+};
+
+const setCachedPlexMetadata = (key, value) => {
+    if (!value) return;
+    if (plexMetadataCache.has(key)) plexMetadataCache.delete(key);
+    while (plexMetadataCache.size >= MAX_PLEX_METADATA_CACHE_ENTRIES) {
+        const oldestKey = plexMetadataCache.keys().next().value;
+        if (!oldestKey) break;
+        plexMetadataCache.delete(oldestKey);
+    }
+    plexMetadataCache.set(key, value);
+};
 
 import {
     CONFIG_DIR,
@@ -6313,12 +6334,12 @@ app.get('/api/plex/analytics/me', requireAuth, requireMember, async (req, res) =
             if (!s.art || i === 0) {
                 const metaPath = s.key.startsWith('/library/metadata/') ? s.key : `/library/metadata/${s.key}`;
 
-                let data = plexMetadataCache.get(metaPath);
+                let data = getCachedPlexMetadata(metaPath);
                 if (!data) {
                     const metaRes = await fetch(`${uri}${metaPath}?X-Plex-Token=${config.plexToken}`, { headers: { 'Accept': 'application/json' } }).then(r => r.json()).catch(() => null);
                     if (metaRes && metaRes.MediaContainer && metaRes.MediaContainer.Metadata && metaRes.MediaContainer.Metadata[0]) {
                         data = metaRes.MediaContainer.Metadata[0];
-                        plexMetadataCache.set(metaPath, data);
+                        setCachedPlexMetadata(metaPath, data);
                     }
                 }
 
@@ -6361,12 +6382,12 @@ app.get('/api/plex/analytics/me', requireAuth, requireMember, async (req, res) =
             if (!m.art || i === 0) {
                 const metaPath = m.key.startsWith('/library/metadata/') ? m.key : `/library/metadata/${m.key}`;
 
-                let data = plexMetadataCache.get(metaPath);
+                let data = getCachedPlexMetadata(metaPath);
                 if (!data) {
                     const metaRes = await fetch(`${uri}${metaPath}?X-Plex-Token=${config.plexToken}`, { headers: { 'Accept': 'application/json' } }).then(r => r.json()).catch(() => null);
                     if (metaRes && metaRes.MediaContainer && metaRes.MediaContainer.Metadata && metaRes.MediaContainer.Metadata[0]) {
                         data = metaRes.MediaContainer.Metadata[0];
-                        plexMetadataCache.set(metaPath, data);
+                        setCachedPlexMetadata(metaPath, data);
                     }
                 }
 
