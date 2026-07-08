@@ -6749,14 +6749,31 @@ app.post('/api/speedtest/upload', requireAuth, requireMember, speedtestRateLimit
 
 // --- Static File Serving ---
 const staticDir = path.join(process.cwd(), 'static');
-app.use('/static', express.static(staticDir));
+const setStaticAssetCacheHeaders = (res, filePath) => {
+    const normalized = filePath.split(path.sep).join('/');
+    if (normalized.includes('/chunks/')) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        return;
+    }
+    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+};
+app.use('/static', express.static(staticDir, {
+    etag: true,
+    lastModified: true,
+    setHeaders: setStaticAssetCacheHeaders,
+}));
 if (BASE_PATH) {
-    app.use(`${BASE_PATH}/static`, express.static(staticDir));
+    app.use(`${BASE_PATH}/static`, express.static(staticDir, {
+        etag: true,
+        lastModified: true,
+        setHeaders: setStaticAssetCacheHeaders,
+    }));
 }
 
 // Serve optional legacy stylesheet from the root directory
 app.get('/style.css', (req, res) => {
     const cssPath = path.join(process.cwd(), 'style.css');
+    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
     res.sendFile(cssPath, (err) => {
         if (err) res.type('text/css').send('/* style.css not found */');
     });
