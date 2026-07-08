@@ -111,6 +111,7 @@ app.use((req, res, next) => {
 
 // --- Security: Rate Limiting for Auth Endpoints ---
 const getClientIp = (req) => req.ip || req.socket.remoteAddress || 'unknown';
+const MAX_RATE_LIMIT_CLIENTS = 10000;
 const createRateLimiter = (windowMs, maxRequests) => {
     const store = new Map();
     // Prune stale IP entries every window to prevent unbounded memory growth under high unique-IP load
@@ -127,6 +128,10 @@ const createRateLimiter = (windowMs, maxRequests) => {
             record.resetAt = now + windowMs;
         }
         record.count++;
+        if (!store.has(ip) && store.size >= MAX_RATE_LIMIT_CLIENTS) {
+            const oldestIp = store.keys().next().value;
+            if (oldestIp) store.delete(oldestIp);
+        }
         store.set(ip, record);
         if (record.count > maxRequests) {
             return res.status(429).json({ error: 'Too many requests. Please try again later.' });
