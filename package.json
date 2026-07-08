@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build:css": "npx @tailwindcss/cli -i ./input.css -o ./static/tailwind.css",
-    "build:js": "rm -rf static/chunks && esbuild index.tsx --bundle --outdir=static --entry-names=bundle --chunk-names=chunks/[name]-[hash] --splitting --jsx=automatic --format=esm",
+    "build:js": "rm -rf static/chunks && esbuild index.tsx --bundle --outdir=static --entry-names=bundle --chunk-names=chunks/[name]-[hash] --splitting --jsx=automatic --format=esm --define:process.env.NODE_ENV=\\\"production\\\" --minify",
     "build:version": "node build-version.js",
     "build": "npm run build:css && npm run build:js && npm run build:version",
     "typecheck": "tsc -p tsconfig.json --noEmit",
