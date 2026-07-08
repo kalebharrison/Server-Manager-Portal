@@ -7,6 +7,7 @@ import { formatTime } from '../shared/format';
 import { CustomSelect, ScrollReveal } from '../shared/ui';
 import { DiscoverPageSkeleton, TrendingSectionsSkeleton } from '../shared/skeletons';
 import { activityStreamColumnCount, activityStreamGridClass, discoverPosterGridClass, usePortalWideContentLayout } from '../shared/portalLayout';
+import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { StreamDetailsModal } from './StreamDetailsModal';
 import {
     DISCOVER_DESKTOP_ITEM_LIMIT,
@@ -114,9 +115,8 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
 
     useEffect(() => {
         fetchData();
-        const liveInterval = setInterval(fetchDashboardOnly, 10000);
-        return () => clearInterval(liveInterval);
-    }, [fetchDashboardOnly, fetchData]);
+    }, [fetchData]);
+    useVisibleInterval(fetchDashboardOnly, 10000);
 
     if (dashboardLoading && !dashboardData) {
         return <DiscoverPageSkeleton recentLimit={recentLimit} wideLayout={isWidePortalLayout} />;
@@ -345,4 +345,3 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
         </div>
     );
 };
-
