@@ -29,12 +29,22 @@ jobs:
       - name: Build container
         run: docker build --build-arg GIT_SHA=${{ github.sha }} -t server-manager-portal:smoke .
 
+      - name: Check production dependencies
+        run: |
+          docker run --rm --entrypoint node server-manager-portal:smoke -e "\
+            require.resolve('express'); \
+            try { require.resolve('react'); process.exit(1); } \
+            catch { process.exit(0); }"
+
       - name: Start container
         run: |
+          mkdir -p /tmp/server-manager-portal-smoke/config /tmp/server-manager-portal-smoke/backup
           docker run -d --name server-manager-portal-smoke \
             -p 2121:2121 \
             -e JWT_SECRET=smoke-test-secret-smoke-test-secret-123456 \
             -e CONFIG_DIR=/app/config \
+            -v /tmp/server-manager-portal-smoke/config:/app/config \
+            -v /tmp/server-manager-portal-smoke/backup:/app/backup \
             server-manager-portal:smoke
 
       - name: Smoke test endpoints
@@ -57,4 +67,6 @@ jobs:
 
       - name: Stop container
         if: always()
-        run: docker rm -f server-manager-portal-smoke || true
+        run: |
+          docker rm -f server-manager-portal-smoke || true
+          rm -rf /tmp/server-manager-portal-smoke

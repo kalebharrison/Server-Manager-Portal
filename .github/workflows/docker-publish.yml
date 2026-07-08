@@ -28,7 +28,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/jl94x4/server-manager-portal
+          images: ghcr.io/${{ github.repository_owner }}/server-manager-portal
           tags: |
             type=raw,value=beta,enable=${{ github.ref == 'refs/heads/beta' }}
             type=sha,prefix=
