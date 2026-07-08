@@ -19,6 +19,7 @@ import { createLruCache, createTtlCache } from './lib/cache.js';
 import { escapeHtmlAttr, injectBasePathHtml } from './lib/html-shell.js';
 import { loadFile, saveFile } from './lib/json-file-store.js';
 import { createRateLimiter } from './lib/rate-limit.js';
+import { setStaticAssetCacheHeaders } from './lib/static-assets.js';
 
 let appVersion = 'v1.0.0';
 try {
@@ -6496,14 +6497,6 @@ app.post('/api/speedtest/upload', requireAuth, requireMember, speedtestRateLimit
 
 // --- Static File Serving ---
 const staticDir = path.join(process.cwd(), 'static');
-const setStaticAssetCacheHeaders = (res, filePath) => {
-    const normalized = filePath.split(path.sep).join('/');
-    if (normalized.includes('/chunks/')) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        return;
-    }
-    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
-};
 app.use('/static', express.static(staticDir, {
     etag: true,
     lastModified: true,
