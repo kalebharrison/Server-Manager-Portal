@@ -7,7 +7,7 @@ import { CustomSelect } from '../shared/ui';
 import { Loader, ToastContainer, pushToast, type ToastMessage } from '../shared/toast';
 import { SettingHint } from './SettingHint';
 import type { User, AuditEntry, DeletedUser, PlexServer } from '../shared/types';
-import { formatDateTime, formatEventName, hexToRgb, accentHoverRgb, getDaysUntilExpiry, addMonths, addYears, formatDate } from '../shared/format';
+import { hexToRgb, accentHoverRgb, getDaysUntilExpiry, addMonths, addYears, formatDate } from '../shared/format';
 
 import { StreamKillRulesPanel } from './StreamKillRulesPanel';
 import { InvitesSettings } from './InvitesSettings';
@@ -17,6 +17,7 @@ import { IntegrationTestButton } from '../shared/IntegrationTestButton';
 import { HomeLayoutSettings } from './HomeLayoutSettings';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { IntegrationHeading, hasIntegrationCredentials } from './integrationDisplay';
+import { formatAuditDateTime, formatAuditEventName, getAuditDiffRows, stringifyAuditValue } from './auditLogFormat';
 import { SettingsNavigation } from './SettingsNavigation';
 import { SETTINGS_TAB_GROUPS, isSettingsTabId, type SettingsTabId } from './settingsTabs';
 
@@ -462,72 +463,6 @@ export const SettingsDashboard: React.FC = () => {
                 setLoading(false);
             }
         });
-    };
-
-    const formatEventName = (event: string) => event
-        .split('_')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
-
-    const formatDateTime = (value?: string | null) => {
-        if (!value) return 'N/A';
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return 'N/A';
-        return date.toLocaleString();
-    };
-
-    const stringifyAuditValue = (value: any) => {
-        if (value === null || value === undefined) return '—';
-        if (typeof value === 'string') return value;
-        if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-        try {
-            return JSON.stringify(value);
-        } catch {
-            return String(value);
-        }
-    };
-
-    const getAuditDiffRows = (details: any) => {
-        if (!details || typeof details !== 'object') return [];
-        const rows: { field: string; before: string; after: string }[] = [];
-        const keys = Object.keys(details);
-        const used = new Set<string>();
-        const pairCandidate = (primaryKey: string, label: string, candidates: string[]) => {
-            if (used.has(primaryKey)) return;
-            for (const key of candidates) {
-                if (key in details) {
-                    rows.push({
-                        field: label,
-                        before: stringifyAuditValue(details[primaryKey]),
-                        after: stringifyAuditValue(details[key])
-                    });
-                    used.add(primaryKey);
-                    used.add(key);
-                    return;
-                }
-            }
-        };
-
-        if ('before' in details && 'after' in details) {
-            rows.push({ field: 'Value', before: stringifyAuditValue(details.before), after: stringifyAuditValue(details.after) });
-            used.add('before');
-            used.add('after');
-        }
-        if ('oldValue' in details && 'newValue' in details) {
-            rows.push({ field: 'Value', before: stringifyAuditValue(details.oldValue), after: stringifyAuditValue(details.newValue) });
-            used.add('oldValue');
-            used.add('newValue');
-        }
-
-        keys.forEach((key) => {
-            if (used.has(key)) return;
-            if (!key.startsWith('previous')) return;
-            const suffix = key.replace(/^previous/, '');
-            if (!suffix) return;
-            const lowerSuffix = suffix.charAt(0).toLowerCase() + suffix.slice(1);
-            pairCandidate(key, suffix, [lowerSuffix, `new${suffix}`, `current${suffix}`]);
-        });
-        return rows;
     };
 
     const systemHealth = useMemo(() => {
@@ -2060,8 +1995,8 @@ export const SettingsDashboard: React.FC = () => {
                                                 <details key={entry.id} className="py-3 border-b border-border/40 last:border-b-0">
                                                     <summary className="cursor-pointer list-none">
                                                         <div className="flex flex-wrap items-center justify-between gap-2">
-                                                            <p className="font-semibold text-text text-sm">{formatEventName(entry.event || 'event')}</p>
-                                                            <span className="text-[11px] text-muted">{formatDateTime(entry.timestamp)}</span>
+                                                            <p className="font-semibold text-text text-sm">{formatAuditEventName(entry.event || 'event')}</p>
+                                                            <span className="text-[11px] text-muted">{formatAuditDateTime(entry.timestamp)}</span>
                                                         </div>
                                                         <p className="text-xs text-muted mt-1">
                                                             Target: {entry.target?.username || entry.target?.email || 'System'}
@@ -2146,7 +2081,7 @@ export const SettingsDashboard: React.FC = () => {
                                                 <div className="min-w-0">
                                                     <p className="text-sm font-semibold text-text truncate">{deletedUser.username || 'Unknown user'}</p>
                                                     <p className="text-xs text-muted truncate">{deletedUser.email || deletedUser.plexId || deletedUser.id || 'No identifier'}</p>
-                                                    <p className="text-[11px] text-muted/80">Deleted {formatDateTime(deletedUser.deletedAt)} by {deletedUser.deletedBy || 'admin'}</p>
+                                                    <p className="text-[11px] text-muted/80">Deleted {formatAuditDateTime(deletedUser.deletedAt)} by {deletedUser.deletedBy || 'admin'}</p>
                                                 </div>
                                                 <button
                                                     className="px-3 py-1.5 bg-border text-text rounded text-xs font-semibold hover:bg-opacity-80"
@@ -2175,7 +2110,7 @@ export const SettingsDashboard: React.FC = () => {
                                             <div key={entry.id} className="py-3 border-b border-border/40 last:border-b-0">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <p className="text-sm font-semibold text-text line-clamp-1">{entry.details?.subject || 'System Email'}</p>
-                                                    <span className="text-[11px] text-muted whitespace-nowrap">{formatDateTime(entry.timestamp)}</span>
+                                                    <span className="text-[11px] text-muted whitespace-nowrap">{formatAuditDateTime(entry.timestamp)}</span>
                                                 </div>
                                                 <p className="text-xs text-muted mt-1">To: {entry.target?.username || entry.target?.email || 'Unknown user'}</p>
                                             </div>
