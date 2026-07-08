@@ -14,6 +14,8 @@ import compression from 'compression';
 import { execSync } from 'child_process';
 import fsSync from 'fs';
 import net from 'net';
+import { createBasePathHelpers, deriveBasePath } from './lib/base-path.js';
+import { escapeHtmlAttr, injectBasePathHtml } from './lib/html-shell.js';
 
 let appVersion = 'v1.0.0';
 try {
@@ -34,47 +36,10 @@ const ALLOW_PRIVATE_INTEGRATION_URLS = String(process.env.ALLOW_PRIVATE_INTEGRAT
 const FORCE_SECURE_COOKIES = String(process.env.FORCE_SECURE_COOKIES || '').toLowerCase() === 'true';
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || '';
 
-const normalizeBasePath = (raw = '') => {
-    const value = String(raw || '').trim();
-    if (!value || value === '/') return '';
-    const withLeading = value.startsWith('/') ? value : `/${value}`;
-    return withLeading.replace(/\/+$/, '');
-};
-
-const deriveBasePath = () => {
-    if (process.env.BASE_PATH != null && String(process.env.BASE_PATH).trim() !== '') {
-        return normalizeBasePath(process.env.BASE_PATH);
-    }
-    if (PUBLIC_BASE_URL) {
-        try {
-            return normalizeBasePath(new URL(PUBLIC_BASE_URL).pathname);
-        } catch (_) { /* fall through */ }
-    }
-    return '';
-};
-
-const BASE_PATH = deriveBasePath();
-
-const withBasePath = (route = '/') => {
-    const path = route.startsWith('/') ? route : `/${route}`;
-    return BASE_PATH ? `${BASE_PATH}${path}` : path;
-};
+const BASE_PATH = deriveBasePath({ envBasePath: process.env.BASE_PATH, publicBaseUrl: PUBLIC_BASE_URL });
+const { withBasePath, stripBasePathFromUrl } = createBasePathHelpers(BASE_PATH);
 
 const plexImageUrl = (mediaPath) => withBasePath(`/api/plex/image?path=${encodeURIComponent(mediaPath)}`);
-
-const stripBasePathFromUrl = (url = '/') => {
-    const [pathname, ...queryParts] = String(url).split('?');
-    const query = queryParts.length ? `?${queryParts.join('?')}` : '';
-    if (!BASE_PATH) return url;
-    if (pathname === BASE_PATH || pathname === `${BASE_PATH}/`) {
-        return `/${query}`;
-    }
-    if (pathname.startsWith(`${BASE_PATH}/`)) {
-        const rest = pathname.slice(BASE_PATH.length) || '/';
-        return `${rest}${query}`;
-    }
-    return url;
-};
 
 // Sentinel sent to the admin UI in place of stored secrets so raw credentials
 // never leave the server. When the UI posts this value back unchanged on save,
@@ -6668,13 +6633,6 @@ app.get('/style.css', (req, res) => {
     });
 });
 
-const escapeHtmlAttr = (value = '') => String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
 const getRequestBaseUrl = (req) => {
     if (PUBLIC_BASE_URL) {
         try {
@@ -6690,22 +6648,6 @@ const getRequestBaseUrl = (req) => {
     }
     const proto = req.secure ? 'https' : 'http';
     return `${proto}://${normalizedHost}${BASE_PATH}`;
-};
-
-const injectBasePathHtml = (html) => {
-    const baseHref = BASE_PATH ? `${BASE_PATH}/` : '/';
-    const baseTag = `<base href="${escapeHtmlAttr(baseHref)}">`;
-    const baseScript = `<script>window.__BASE_PATH__=${JSON.stringify(BASE_PATH)};</script>`;
-    let updated = html.includes('<base ')
-        ? html
-        : html.replace(/<head([^>]*)>/i, `<head$1>\n    ${baseTag}`);
-    updated = updated.replace('</head>', `    ${baseScript}\n</head>`);
-    if (BASE_PATH) {
-        updated = updated
-            .replace(/href="\/static\//g, `href="${BASE_PATH}/static/`)
-            .replace(/src="\/static\//g, `src="${BASE_PATH}/static/`);
-    }
-    return updated;
 };
 
 const buildSocialMetaTags = async (req) => {
@@ -6751,7 +6693,7 @@ app.get(/^\/(?!api\/|static\/).*$/, async (req, res) => {
         const socialMeta = await buildSocialMetaTags(req);
         const updatedHtml = injectBasePathHtml(html
             .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtmlAttr(socialMeta.title)}</title>`)
-            .replace('</head>', `    ${socialMeta.tags}\n</head>`));
+            .replace('</head>', `    ${socialMeta.tags}\n</head>`), BASE_PATH);
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -6761,7 +6703,7 @@ app.get(/^\/(?!api\/|static\/).*$/, async (req, res) => {
             const indexPath = path.join(process.cwd(), 'index.html');
             const html = await fs.readFile(indexPath, 'utf8');
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.send(injectBasePathHtml(html));
+            res.send(injectBasePathHtml(html, BASE_PATH));
         } catch {
             res.status(500).send('Failed to load application shell.');
         }
