@@ -1,6 +1,8 @@
 node_modules
 config
 backup
+static/bundle.js
+static/chunks
 .env
 .env.*
 .git
