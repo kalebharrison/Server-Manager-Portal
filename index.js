@@ -17,6 +17,7 @@ import net from 'net';
 import { createBasePathHelpers, deriveBasePath } from './lib/base-path.js';
 import { createLruCache, createTtlCache } from './lib/cache.js';
 import { escapeHtmlAttr, injectBasePathHtml } from './lib/html-shell.js';
+import { createRateLimiter } from './lib/rate-limit.js';
 
 let appVersion = 'v1.0.0';
 try {
@@ -75,42 +76,12 @@ app.use((req, res, next) => {
     next();
 });
 
-// --- Security: Rate Limiting for Auth Endpoints ---
-const getClientIp = (req) => req.ip || req.socket.remoteAddress || 'unknown';
-const MAX_RATE_LIMIT_CLIENTS = 10000;
-const createRateLimiter = (windowMs, maxRequests) => {
-    const store = new Map();
-    // Prune stale IP entries every window to prevent unbounded memory growth under high unique-IP load
-    setInterval(() => {
-        const now = Date.now();
-        store.forEach((record, ip) => { if (now > record.resetAt) store.delete(ip); });
-    }, windowMs).unref();
-    return (req, res, next) => {
-        const ip = getClientIp(req);
-        const now = Date.now();
-        const record = store.get(ip) || { count: 0, resetAt: now + windowMs };
-        if (now > record.resetAt) {
-            record.count = 0;
-            record.resetAt = now + windowMs;
-        }
-        record.count++;
-        if (!store.has(ip) && store.size >= MAX_RATE_LIMIT_CLIENTS) {
-            const oldestIp = store.keys().next().value;
-            if (oldestIp) store.delete(oldestIp);
-        }
-        store.set(ip, record);
-        if (record.count > maxRequests) {
-            return res.status(429).json({ error: 'Too many requests. Please try again later.' });
-        }
-        next();
-    };
-};
-const authRateLimit = createRateLimiter(15 * 60 * 1000, 10); // Reduced from 20 — tighter brute-force window
-const authCallbackRateLimit = createRateLimiter(15 * 60 * 1000, 40);
-const jellyfinQuickConnectPollRateLimit = createRateLimiter(5 * 60 * 1000, 140);
-const publicReadRateLimit = createRateLimiter(60 * 1000, 120);
-const speedtestRateLimit = createRateLimiter(60 * 1000, 12);
-const setupRateLimit = createRateLimiter(15 * 60 * 1000, 30);
+const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 });
+const authCallbackRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 40 });
+const jellyfinQuickConnectPollRateLimit = createRateLimiter({ windowMs: 5 * 60 * 1000, maxRequests: 140 });
+const publicReadRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 120 });
+const speedtestRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 12 });
+const setupRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 30 });
 
 const isLoopbackAddress = (ip = '') => {
     const normalizedIp = String(ip || '').replace('::ffff:', '').toLowerCase();
