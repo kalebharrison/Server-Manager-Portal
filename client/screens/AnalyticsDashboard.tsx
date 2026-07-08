@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, AlertCircle, BarChart3, Calendar, Clock, Film, Layers, LineChart as LucideLineChart, List, Monitor, MonitorSmartphone, Music, Play, PlaySquare, RefreshCw, Search, Settings, Star, TrendingUp, Trophy, Users, X } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
+import { Activity, BarChart3, Clock, Film, LineChart as LucideLineChart, Monitor, MonitorSmartphone, Music, Play, PlaySquare, Settings, Star, TrendingUp, Trophy, Users } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 
 import { apiFetch } from '../shared/api';
 import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
