@@ -15,6 +15,7 @@ import { execSync } from 'child_process';
 import fsSync from 'fs';
 import net from 'net';
 import { createBasePathHelpers, deriveBasePath } from './lib/base-path.js';
+import { createLruCache, createTtlCache } from './lib/cache.js';
 import { escapeHtmlAttr, injectBasePathHtml } from './lib/html-shell.js';
 
 let appVersion = 'v1.0.0';
@@ -216,29 +217,9 @@ if (BASE_PATH) {
     });
 }
 
-// --- In-Memory Cache for Plex Metadata ---
-const plexMetadataCache = new Map();
-const MAX_PLEX_METADATA_CACHE_ENTRIES = 500;
-
-const getCachedPlexMetadata = (key) => {
-    const value = plexMetadataCache.get(key);
-    if (value) {
-        plexMetadataCache.delete(key);
-        plexMetadataCache.set(key, value);
-    }
-    return value;
-};
-
-const setCachedPlexMetadata = (key, value) => {
-    if (!value) return;
-    if (plexMetadataCache.has(key)) plexMetadataCache.delete(key);
-    while (plexMetadataCache.size >= MAX_PLEX_METADATA_CACHE_ENTRIES) {
-        const oldestKey = plexMetadataCache.keys().next().value;
-        if (!oldestKey) break;
-        plexMetadataCache.delete(oldestKey);
-    }
-    plexMetadataCache.set(key, value);
-};
+const plexMetadataCache = createLruCache({ maxEntries: 500 });
+const getCachedPlexMetadata = (key) => plexMetadataCache.get(key);
+const setCachedPlexMetadata = (key, value) => plexMetadataCache.set(key, value);
 
 import {
     CONFIG_DIR,
@@ -352,8 +333,7 @@ const addDays = (date, days) => {
 
 const normalized = (value) => value ? value.toString().trim().toLowerCase() : '';
 
-// --- In-Memory Cache Utility ---
-const apiCache = new Map();
+const apiCache = createTtlCache({ maxEntries: 500 });
 
 /**
  * Wraps an expensive async fetcher function with a TTL cache.
@@ -362,20 +342,7 @@ const apiCache = new Map();
  * @param {Function} fetcher Async function returning data to cache
  */
 const withCache = async (key, ttlMs, fetcher) => {
-    const now = Date.now();
-    if (apiCache.has(key)) {
-        const entry = apiCache.get(key);
-        if (now < entry.expiresAt) {
-            return entry.data;
-        }
-        apiCache.delete(key);
-    }
-
-    const data = await fetcher();
-    if (data !== null && data !== undefined) {
-        apiCache.set(key, { data, expiresAt: now + ttlMs });
-    }
-    return data;
+    return apiCache.getOrSet(key, ttlMs, fetcher);
 };
 
 const isDeletedUser = (deletedUsers, user) => {
