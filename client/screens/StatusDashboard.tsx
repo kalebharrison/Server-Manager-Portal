@@ -3,6 +3,7 @@ import { Activity, AlertCircle } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
 import { Loader } from '../shared/toast';
+import { useVisibleInterval } from '../shared/useVisibleInterval';
 
 export const StatusDashboard: React.FC<{ onBack: () => void, isAdmin: boolean, isPublic?: boolean }> = ({ onBack, isAdmin, isPublic }) => {
     const [statusData, setStatusData] = useState<any>(null);
@@ -25,9 +26,8 @@ export const StatusDashboard: React.FC<{ onBack: () => void, isAdmin: boolean, i
 
     useEffect(() => {
         fetchStatus();
-        const interval = setInterval(fetchStatus, 15000);
-        return () => clearInterval(interval);
     }, [fetchStatus]);
+    useVisibleInterval(fetchStatus, 15000);
 
     if (isLoading || !statusData) {
         return (

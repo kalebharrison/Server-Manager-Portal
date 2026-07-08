@@ -4,6 +4,7 @@ import { Activity, Calendar, Check, ChevronLeft, ChevronRight, Clock, DownloadCl
 import { apiFetch } from '../shared/api';
 import { formatTime } from '../shared/format';
 import { Loader } from '../shared/toast';
+import { useVisibleInterval } from '../shared/useVisibleInterval';
 
 const clampMonthOffset = (offset: number) => Math.max(-24, Math.min(offset, 24));
 
@@ -37,9 +38,8 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
 
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 30000);
-        return () => clearInterval(interval);
     }, [fetchData]);
+    useVisibleInterval(fetchData, 30000);
 
     const formatRelativeAirDate = (date: Date) => {
         const now = new Date();

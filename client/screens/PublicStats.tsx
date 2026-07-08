@@ -1,25 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Activity, Film, Music, Sparkles, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
+import { useVisibleInterval } from '../shared/useVisibleInterval';
 
 export const PublicUptimeBanner: React.FC = () => {
     const [healthData, setHealthData] = useState<Record<string, any>>({});
     const [config, setConfig] = useState<any>({});
 
-    useEffect(() => {
-        const fetchStatus = async () => {
-            try {
-                const res = await apiFetch('/api/status');
-                setConfig(res.config);
-                setHealthData(res.healthData);
-            } catch (e) { }
-        };
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 15000);
-        return () => clearInterval(interval);
+    const fetchStatus = useCallback(async () => {
+        try {
+            const res = await apiFetch('/api/status');
+            setConfig(res.config);
+            setHealthData(res.healthData);
+        } catch (e) { }
     }, []);
+
+    useEffect(() => {
+        fetchStatus();
+    }, [fetchStatus]);
+    useVisibleInterval(fetchStatus, 15000);
 
     if (!config.services?.length) return null;
 
@@ -59,27 +60,26 @@ export const PublicUptimeBanner: React.FC = () => {
 export const LivePlexStats: React.FC = () => {
     const [stats, setStats] = useState<{ movies: number, shows: number, music: number, fourKPercent?: number } | null>(null);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            const endpoints = ['/api/public/plex/stats', '/api/plex/stats'];
+    const fetchStats = useCallback(async () => {
+        const endpoints = ['/api/public/plex/stats', '/api/plex/stats'];
 
-            for (const endpoint of endpoints) {
-                try {
-                    const res = await apiFetch(endpoint, { cacheTtlMs: 15000 });
-                    if (res && typeof res.movies === 'number' && typeof res.shows === 'number' && typeof res.music === 'number') {
-                        setStats(res);
-                        return;
-                    }
-                } catch (e) {
-                    // Try next endpoint
+        for (const endpoint of endpoints) {
+            try {
+                const res = await apiFetch(endpoint, { cacheTtlMs: 15000 });
+                if (res && typeof res.movies === 'number' && typeof res.shows === 'number' && typeof res.music === 'number') {
+                    setStats(res);
+                    return;
                 }
+            } catch (e) {
+                // Try next endpoint
             }
-        };
-
-        fetchStats();
-        const interval = setInterval(fetchStats, 30000);
-        return () => clearInterval(interval);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
+    useVisibleInterval(fetchStats, 30000);
 
     if (!stats) return (
         <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3">
