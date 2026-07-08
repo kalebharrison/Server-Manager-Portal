@@ -296,6 +296,7 @@ import {
     PLEX_STATS_CACHE_PATH,
     migrateConfigFiles,
 } from './lib/data-paths.js';
+import { BACKUP_SCHEMA_VERSION, createBackupService } from './lib/backup.js';
 const PLEX_API = 'https://plex.tv/api';
 
 // --- Status App Global State ---
@@ -4240,111 +4241,14 @@ app.get('/api/admin/diagnostics', requireAdmin, async (req, res) => {
     }
 });
 
-const BACKUP_SCHEMA_VERSION = 1;
-const BACKUP_DIR = path.join(process.cwd(), 'backup');
-const BACKUP_TARGETS = [
-    { key: 'config', path: CONFIG_PATH },
-    { key: 'users', path: USERS_PATH },
-    { key: 'invites', path: INVITES_PATH },
-    { key: 'deletedUsers', path: DELETED_USERS_PATH },
-    { key: 'auditLog', path: AUDIT_LOG_PATH },
-    { key: 'emailLog', path: EMAIL_LOG_PATH },
-    { key: 'statusConfig', path: STATUS_CONFIG_PATH },
-    { key: 'health', path: HEALTH_PATH },
-    { key: 'trendingCache', path: TRENDING_CACHE_PATH },
-    { key: 'analyticsCache', path: ANALYTICS_CACHE_PATH },
-    { key: 'killRules', path: KILL_RULES_PATH },
-    { key: 'plexStats', path: PLEX_STATS_CACHE_PATH },
-    { key: 'maintenanceRules', path: MAINTENANCE_RULES_PATH },
-    { key: 'maintenanceMediaIndex', path: MAINTENANCE_MEDIA_INDEX_PATH },
-    { key: 'maintenanceRuns', path: MAINTENANCE_RUNS_PATH },
-    { key: 'maintenanceRequestIndex', path: MAINTENANCE_REQUEST_INDEX_PATH },
-    { key: 'maintenancePreferences', path: MAINTENANCE_PREFS_PATH }
-];
-
-const readBackupPayload = async () => {
-    const payload = {};
-    for (const target of BACKUP_TARGETS) {
-        payload[target.key] = await loadFile(target.path, null);
-    }
-    try {
-        const logoPath = path.join(process.cwd(), 'static', 'logo.png');
-        const logoBuffer = await fs.readFile(logoPath);
-        payload.logoPngBase64 = logoBuffer.toString('base64');
-    } catch (e) {
-        payload.logoPngBase64 = null;
-    }
-    return payload;
-};
-
-const ensureBackupDir = async () => {
-    await fs.mkdir(BACKUP_DIR, { recursive: true });
-};
-
-const createBackupObject = async (createdBy = 'system', reason = 'manual') => ({
-    schemaVersion: BACKUP_SCHEMA_VERSION,
-    createdAt: new Date().toISOString(),
-    createdBy,
-    reason,
-    data: await readBackupPayload()
-});
-
-const getBackupFilename = (backup) => {
-    const stamp = (backup.createdAt || new Date().toISOString()).replace(/[:.]/g, '-');
-    return `portal-backup-${stamp}.json`;
-};
-
-const listBackupFiles = async () => {
-    await ensureBackupDir();
-    const entries = await fs.readdir(BACKUP_DIR).catch(() => []);
-    const jsonFiles = entries.filter(name => name.toLowerCase().endsWith('.json'));
-    const backups = await Promise.all(jsonFiles.map(async (filename) => {
-        const filePath = path.join(BACKUP_DIR, filename);
-        try {
-            const stat = await fs.stat(filePath);
-            return {
-                filename,
-                filePath,
-                size: stat.size,
-                createdAt: stat.mtime.toISOString()
-            };
-        } catch (e) {
-            return null;
-        }
-    }));
-    return backups.filter(Boolean).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-};
-
-const enforceBackupRetention = async (keepCount) => {
-    const backups = await listBackupFiles();
-    const toDelete = backups.slice(Math.max(0, keepCount));
-    for (const backup of toDelete) {
-        await fs.unlink(backup.filePath).catch(() => { });
-    }
-};
-
-const applyBackupPayload = async (backup) => {
-    if (!backup || backup.schemaVersion !== BACKUP_SCHEMA_VERSION || !backup.data) {
-        throw new Error('Unsupported backup schema.');
-    }
-    for (const target of BACKUP_TARGETS) {
-        if (backup.data[target.key] !== undefined) {
-            await saveFile(target.path, backup.data[target.key]);
-        }
-    }
-    if (backup.data.logoPngBase64 && typeof backup.data.logoPngBase64 === 'string') {
-        const logoPath = path.join(process.cwd(), 'static', 'logo.png');
-        await fs.writeFile(logoPath, Buffer.from(backup.data.logoPngBase64, 'base64'));
-    }
-};
-
-const writeBackupToFolder = async (backup) => {
-    await ensureBackupDir();
-    const filename = getBackupFilename(backup);
-    const filePath = path.join(BACKUP_DIR, filename);
-    await fs.writeFile(filePath, JSON.stringify(backup, null, 2), 'utf8');
-    return { filename, filePath };
-};
+const {
+    applyBackupPayload,
+    createBackupObject,
+    enforceBackupRetention,
+    listBackupFiles,
+    writeBackupToFolder,
+    backupDir: BACKUP_DIR,
+} = createBackupService({ loadFile, saveFile });
 
 app.get('/api/admin/backup', requireAdmin, async (req, res) => {
     try {
