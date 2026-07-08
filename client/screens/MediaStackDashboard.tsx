@@ -5,6 +5,8 @@ import { apiFetch } from '../shared/api';
 import { formatTime } from '../shared/format';
 import { Loader } from '../shared/toast';
 
+const clampMonthOffset = (offset: number) => Math.max(-24, Math.min(offset, 24));
+
 export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -406,13 +408,13 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
                             </h2>
 
                             <div className="flex bg-white/5 p-0.5 md:p-1 rounded-lg md:rounded-xl border border-white/10 w-fit flex-shrink-0 items-center gap-1 md:gap-2">
-                                <button onClick={() => { setAutoMonthNotice(''); setMonthOffset(m => m - 1); }} className="p-1 md:p-1.5 hover:bg-white/10 rounded-md md:rounded-lg text-muted hover:text-text transition-colors">
+                                <button onClick={() => { setAutoMonthNotice(''); setMonthOffset(m => clampMonthOffset(m - 1)); }} className="p-1 md:p-1.5 hover:bg-white/10 rounded-md md:rounded-lg text-muted hover:text-text transition-colors">
                                     <ChevronLeft className="w-3 h-3 md:w-4 md:h-4" />
                                 </button>
                                 <span className="text-[10px] md:text-xs font-bold px-1 w-16 md:w-28 text-center text-text uppercase tracking-wider">
                                     {new Date(new Date().setFullYear(new Date().getFullYear(), new Date().getMonth() + monthOffset, 1)).toLocaleDateString('default', { month: 'short', year: 'numeric' })}
                                 </span>
-                                <button onClick={() => { setAutoMonthNotice(''); setMonthOffset(m => m + 1); }} className="p-1 md:p-1.5 hover:bg-white/10 rounded-md md:rounded-lg text-muted hover:text-text transition-colors">
+                                <button onClick={() => { setAutoMonthNotice(''); setMonthOffset(m => clampMonthOffset(m + 1)); }} className="p-1 md:p-1.5 hover:bg-white/10 rounded-md md:rounded-lg text-muted hover:text-text transition-colors">
                                     <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
                                 </button>
                             </div>

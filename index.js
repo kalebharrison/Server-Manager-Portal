@@ -7334,7 +7334,8 @@ async function runMonitorCycle() {
 
 app.get('/api/media-stack/summary', requireAuth, requireMember, async (req, res) => {
     try {
-        const monthOffset = parseInt(req.query.monthOffset) || 0;
+        const rawMonthOffset = parseInt(req.query.monthOffset, 10) || 0;
+        const monthOffset = Math.max(-24, Math.min(rawMonthOffset, 24));
         const cacheKey = `media-stack-summary-offset-${monthOffset}`;
         const data = await withCache(cacheKey, 60000, async () => {
             const config = await loadFile(CONFIG_PATH, {});
