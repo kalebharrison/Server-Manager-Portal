@@ -1,6 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { X, Copy, Download, Share2 } from 'lucide-react';
-import html2canvas from 'html2canvas';
 import { WrapUpCardGrid, periodLabel } from './WrapUpCards';
 import { formatStreamingHour } from './format';
 import { getPublicOrigin } from './basePath';
@@ -87,6 +86,7 @@ export const ShareWrapUpModal: React.FC<ShareWrapUpModalProps> = ({
             await waitForExportImages(node);
             await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
+            const { default: html2canvas } = await import('html2canvas');
             const canvas = await html2canvas(node, {
                 useCORS: true,
                 allowTaint: true,
