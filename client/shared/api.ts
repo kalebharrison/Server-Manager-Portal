@@ -7,6 +7,7 @@ type ApiFetchOptions = RequestInit & {
 };
 
 const DEFAULT_GET_CACHE_TTL_MS = 5000;
+const MAX_API_CACHE_ENTRIES = 100;
 const apiCache = new Map<string, { expiresAt: number; value: any }>();
 const inFlightRequests = new Map<string, Promise<any>>();
 let cacheVersion = 0;
@@ -45,7 +46,12 @@ export const apiFetch = async (url: string, options: ApiFetchOptions = {}) => {
 
     if (isGet && cacheTtlMs > 0 && !forceRefresh) {
         const cached = apiCache.get(cacheKey);
-        if (cached && cached.expiresAt > now) return cached.value;
+        if (cached && cached.expiresAt > now) {
+            apiCache.delete(cacheKey);
+            apiCache.set(cacheKey, cached);
+            return cached.value;
+        }
+        if (cached) apiCache.delete(cacheKey);
         const pending = inFlightRequests.get(cacheKey);
         if (pending) return pending;
     }
@@ -68,6 +74,14 @@ export const apiFetch = async (url: string, options: ApiFetchOptions = {}) => {
         if (response.status === 204) return;
         const value = await response.json();
         if (isGet && cacheTtlMs > 0 && requestCacheVersion === cacheVersion) {
+            for (const [key, entry] of apiCache) {
+                if (entry.expiresAt <= Date.now()) apiCache.delete(key);
+            }
+            while (apiCache.size >= MAX_API_CACHE_ENTRIES) {
+                const oldestKey = apiCache.keys().next().value;
+                if (!oldestKey) break;
+                apiCache.delete(oldestKey);
+            }
             apiCache.set(cacheKey, { expiresAt: Date.now() + cacheTtlMs, value });
         }
         return value;
