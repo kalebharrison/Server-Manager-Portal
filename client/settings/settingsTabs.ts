@@ -13,6 +13,10 @@ export type SettingsTabGroup = {
     tabs: SettingsTab[];
 };
 
+export const isSettingsTabId = (value: string): value is SettingsTabId => (
+    (SETTINGS_TABS as readonly string[]).includes(value)
+);
+
 export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
     {
         title: 'Portal',

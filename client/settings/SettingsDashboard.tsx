@@ -17,7 +17,8 @@ import { IntegrationTestButton } from '../shared/IntegrationTestButton';
 import { HomeLayoutSettings } from './HomeLayoutSettings';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { IntegrationHeading, hasIntegrationCredentials } from './integrationDisplay';
-import { SETTINGS_TAB_GROUPS, SETTINGS_TABS } from './settingsTabs';
+import { SettingsNavigation } from './SettingsNavigation';
+import { SETTINGS_TAB_GROUPS, isSettingsTabId, type SettingsTabId } from './settingsTabs';
 
 const JELLYFIN_BRAND_LOGO_URL = '/api/jellyfin/branding/icon';
 const JELLYFIN_BRAND_BACKGROUND_URL = '/api/jellyfin/branding/splash';
@@ -104,8 +105,8 @@ export const SettingsDashboard: React.FC = () => {
     const [libraries, setLibraries] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState(() => {
         const hash = window.location.hash.replace('#', '');
-        return (SETTINGS_TABS as readonly string[]).includes(hash) ? hash : 'branding';
-    });
+        return isSettingsTabId(hash) ? hash : 'branding';
+    }) as [SettingsTabId, React.Dispatch<React.SetStateAction<SettingsTabId>>];
     const [highlightMaintenanceToggle, setHighlightMaintenanceToggle] = useState(false);
     const [settingsSearch, setSettingsSearch] = useState('');
 
@@ -132,7 +133,7 @@ export const SettingsDashboard: React.FC = () => {
     useEffect(() => {
         const syncTabFromHash = () => {
             const hash = window.location.hash.replace('#', '');
-            if ((SETTINGS_TABS as readonly string[]).includes(hash)) {
+            if (isSettingsTabId(hash)) {
                 setActiveTab(hash);
             } else if (!hash) {
                 setActiveTab('branding');
@@ -905,53 +906,14 @@ export const SettingsDashboard: React.FC = () => {
 
             <div className="w-full flex flex-col min-w-0">
                 <div className="w-full md:grid md:grid-cols-[18rem_minmax(0,1fr)] md:gap-8 xl:gap-10">
-                    {/* Mobile Dropdown Category Select */}
-                    <div className="block md:hidden mb-6">
-                        <label htmlFor="settings-tab-select" className="text-muted text-xs uppercase tracking-wider font-bold mb-2 block">Settings Category</label>
-                        <CustomSelect
-                            id="settings-tab-select"
-                            value={activeTab}
-                            onChange={val => setActiveTab(val)}
-                            options={settingsTabsFlat.map(tab => ({ label: tab.label, value: tab.id }))}
-                        />
-                    </div>
-
-                    {/* Desktop Sidebar Navigation — matches main app nav width (w-72) */}
-                    <aside className="hidden md:flex md:flex-col w-72 shrink-0 h-fit sticky top-20 glass-card nav-shell p-6 shadow-2xl">
-                        <label className="text-muted text-xs uppercase tracking-wider font-bold mb-2 block">Find Setting</label>
-                        <input
-                            type="text"
-                            placeholder="Search settings..."
-                            value={settingsSearch}
-                            onChange={(e) => setSettingsSearch(e.target.value)}
-                            className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-plex transition-colors mb-4"
-                        />
-                        {visibleTabGroups.length === 0 ? (
-                            <p className="text-xs text-muted px-2 py-3">No settings sections found.</p>
-                        ) : (
-                            <div className="space-y-4">
-                                {visibleTabGroups.map(group => (
-                                    <div key={group.title}>
-                                        <p className="text-[10px] uppercase tracking-wider font-bold text-plex px-3 mb-1.5">{group.title}</p>
-                                        <div className="space-y-1">
-                                            {group.tabs.map(tab => (
-                                                <button
-                                                    key={tab.id}
-                                                    onClick={() => setActiveTab(tab.id)}
-                                                    className={`w-full text-left px-3 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                                                        ? 'nav-item-active'
-                                                        : 'text-muted hover:text-text hover:bg-white/5'
-                                                        }`}
-                                                >
-                                                    {tab.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </aside>
+                    <SettingsNavigation
+                        activeTab={activeTab}
+                        settingsSearch={settingsSearch}
+                        settingsTabs={settingsTabsFlat}
+                        visibleTabGroups={visibleTabGroups}
+                        onSearchChange={setSettingsSearch}
+                        onTabChange={setActiveTab}
+                    />
 
                     <div className="overflow-y-auto flex-grow mb-4 custom-scrollbar md:pr-1 min-w-0 w-full">
                         <div className="settings-panel">
