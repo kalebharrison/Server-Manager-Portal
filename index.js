@@ -5,7 +5,6 @@ import fs from 'fs/promises';
 import path from 'path';
 import fetch from 'node-fetch';
 import { randomUUID, randomBytes } from 'crypto';
-import nodemailer from 'nodemailer';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import http from 'http';
@@ -15,6 +14,7 @@ import { execSync } from 'child_process';
 import fsSync from 'fs';
 import net from 'net';
 import { createBasePathHelpers, deriveBasePath } from './lib/base-path.js';
+import { createBroadcastService } from './lib/broadcast-service.js';
 import { createLruCache, createTtlCache } from './lib/cache.js';
 import { addDays, addMonths, addYears, getDaysUntilExpiry } from './lib/date-utils.js';
 import { createDeletedUserRegistry, getDeletedUserKey, isDeletedUser, normalized } from './lib/deleted-users.js';
@@ -263,6 +263,13 @@ const { sendEmail, checkAndSendNotifications, sendExpiryEmail, sendAdjustmentEma
     appendAuditLog,
     getDaysUntilExpiry,
     escapeHtmlAttr,
+    log,
+});
+const { startBroadcast, sendTestBroadcast } = createBroadcastService({
+    configPath: CONFIG_PATH,
+    usersPath: USERS_PATH,
+    loadFile,
+    sendEmail,
     log,
 });
 
@@ -809,25 +816,6 @@ const checkAndRevoke = async (config) => {
     }
 };
 
-// --- Security: Sanitise admin-authored HTML before broadcast email delivery ---
-// Strips dangerous scripting/injection vectors while preserving safe formatting tags.
-const sanitizeBroadcastHtml = (html) => {
-    if (!html || typeof html !== 'string') return '';
-    return html
-        .replace(/<script[\s\S]*?<\/script\s*>/gi, '')
-        .replace(/<iframe[\s\S]*?<\/iframe\s*>/gi, '')
-        .replace(/<object[\s\S]*?<\/object\s*>/gi, '')
-        .replace(/<embed[^>]*>/gi, '')
-        .replace(/<form[\s\S]*?<\/form\s*>/gi, '')
-        .replace(/<input[^>]*>/gi, '')
-        .replace(/<link[^>]*>/gi, '')
-        .replace(/<meta[^>]*>/gi, '')
-        .replace(/<base[^>]*>/gi, '')
-        .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '') // strip event handlers
-        .replace(/\shref\s*=\s*["']?\s*javascript\s*:[^"'\s>]*/gi, ' href="#"')  // block javascript: URIs in href
-        .replace(/\ssrc\s*=\s*["']?\s*javascript\s*:[^"'\s>]*/gi, '');  // block javascript: URIs in src
-};
-
 // --- API Routes ---
 
 app.post('/api/users/broadcast', requireAdmin, async (req, res) => {
@@ -835,73 +823,11 @@ app.post('/api/users/broadcast', requireAdmin, async (req, res) => {
     if (!subject || !body) return res.status(400).json({ error: 'Subject and body are required.' });
 
     try {
-        const users = await loadFile(USERS_PATH, []);
-        let targetUsers = [];
-        const now = new Date();
-
-        for (const user of users) {
-            let include = false;
-            if (recipientFilter === 'all') {
-                include = true;
-            } else if (recipientFilter === 'selected') {
-                include = selectedUserIds && selectedUserIds.includes(user.id);
-            } else if (recipientFilter === 'active') {
-                include = user.plexAccessStatus === 'active';
-            } else if (recipientFilter === 'trial') {
-                include = user.isTrial;
-            } else if (recipientFilter === 'expiring') {
-                if (user.expiryDate && new Date(user.expiryDate) > now) {
-                    const diffTime = Math.abs(new Date(user.expiryDate) - now);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    include = diffDays <= 7;
-                }
-            } else if (recipientFilter === 'expired') {
-                include = user.expiryDate && new Date(user.expiryDate) < now;
-            }
-
-            if (include && user.email) {
-                targetUsers.push(user);
-            }
-        }
-
-        if (targetUsers.length === 0) {
-            return res.status(400).json({ error: 'No users found matching the selected criteria (with valid emails).' });
-        }
-
-        res.json({ message: `Broadcast started for ${targetUsers.length} users.`, count: targetUsers.length });
-
-        (async () => {
-            const config = await loadFile(CONFIG_PATH, null);
-
-            // Create a single pooled connection to avoid rate limits
-            const bulkTransporter = nodemailer.createTransport({
-                pool: true,
-                host: config.smtpHost,
-                port: parseInt(config.smtpPort, 10) || 587,
-                secure: !!config.smtpSecure,
-                auth: {
-                    user: config.smtpUser,
-                    pass: config.smtpPass,
-                },
-                maxConnections: 1,
-                maxMessages: 100
-            });
-
-            for (const user of targetUsers) {
-                try {
-                    await sendEmail(config, user.email, subject, sanitizeBroadcastHtml(body), bulkTransporter);
-                    // Add a tiny throttle so it doesn't look like a burst attack
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                } catch (e) {
-                    log(`Broadcast failed to ${user.email}: ${e.message}`);
-                }
-            }
-            log(`Broadcast completed for ${targetUsers.length} users.`);
-            bulkTransporter.close(); // Clean up the connection pool
-        })();
+        const result = await startBroadcast({ subject, body, recipientFilter, selectedUserIds });
+        res.json({ message: `Broadcast started for ${result.count} users.`, count: result.count });
     } catch (error) {
         log(`Error sending broadcast: ${error.message}`);
-        res.status(500).json({ error: 'Failed to initiate broadcast' });
+        res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : 'Failed to initiate broadcast' });
     }
 });
 
@@ -910,22 +836,11 @@ app.post('/api/users/broadcast/test', requireAdmin, async (req, res) => {
     if (!subject || !body) return res.status(400).json({ error: 'Subject and body are required.' });
 
     try {
-        const config = await loadFile(CONFIG_PATH, null);
-        if (!config || !config.smtpHost || !config.smtpUser) {
-            return res.status(400).json({ error: 'SMTP settings are not configured.' });
-        }
-        const adminEmail = req.user.email;
-
-        if (!adminEmail) {
-            return res.status(400).json({ error: 'Admin email not found in session.' });
-        }
-
-        log(`Sending test broadcast email to ${adminEmail}...`);
-        await sendEmail(config, adminEmail, subject, body);
-        res.json({ message: `Test email sent successfully to ${adminEmail}` });
+        await sendTestBroadcast({ subject, body, adminEmail: req.user.email });
+        res.json({ message: `Test email sent successfully to ${req.user.email}` });
     } catch (error) {
         log(`Error sending test broadcast: ${error.message}`);
-        res.status(500).json({ error: `Failed to send test broadcast: ${error.message}` });
+        res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : `Failed to send test broadcast: ${error.message}` });
     }
 });
 
