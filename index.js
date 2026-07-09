@@ -4,7 +4,7 @@ import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import fetch from 'node-fetch';
-import { randomUUID, randomBytes } from 'crypto';
+import { randomUUID } from 'crypto';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import compression from 'compression';
@@ -29,6 +29,8 @@ import { registerAuthRoutes } from './lib/auth-routes.js';
 import { registerInviteRoutes } from './lib/invite-routes.js';
 import { registerAdminRoutes } from './lib/admin-routes.js';
 import { registerConfigRoutes } from './lib/config-routes.js';
+import { createAdminProfileService } from './lib/admin-profile-service.js';
+import { registerPublicStatusRoutes } from './lib/public-status-routes.js';
 import { createAnalyticsService } from './lib/analytics-service.js';
 import { createRateLimiter } from './lib/rate-limit.js';
 import { setStaticAssetCacheHeaders } from './lib/static-assets.js';
@@ -36,11 +38,7 @@ import { createAuditLogger } from './lib/audit-log.js';
 import { createStatusRuntime } from './lib/status-runtime.js';
 import { createStreamMonitor, validateKillRulesSchema } from './lib/stream-monitor.js';
 import { computeNextBackupRun, findRunnableTask, getTasksSnapshot, markTaskEnd, markTaskStart, systemJobs, tasksInfo } from './lib/task-state.js';
-import {
-    SPEED_TEST_BUFFER,
-    SPEED_TEST_CHUNK_SIZE,
-    createPublicStatusPayload,
-} from './lib/status-monitor.js';
+import { SPEED_TEST_BUFFER, SPEED_TEST_CHUNK_SIZE } from './lib/status-monitor.js';
 
 let appVersion = 'v1.0.0';
 try {
@@ -488,6 +486,14 @@ app.post('/api/users/broadcast/test', requireAdmin, async (req, res) => {
     }
 });
 
+const { getAdminProfile, invalidateAdminProfileCache } = createAdminProfileService({
+    fetch,
+    resolveIntegrationUrlForFetch,
+    jellyfinHeaders,
+    getPlexConnectionUri,
+    log,
+});
+
 registerAuthRoutes({
     app,
     authRateLimit,
@@ -526,16 +532,9 @@ registerAuthRoutes({
     getPlexConnectionUri,
     resolveLocalPlexAccountId,
     fetchPlexServerAccounts,
-    getAdminProfile: (config) => getAdminProfile(config),
+    getAdminProfile,
     log,
 });
-
-let cachedAdminProfile = null;
-let lastAdminProfileFetch = 0;
-const invalidateAdminProfileCache = () => {
-    cachedAdminProfile = null;
-    lastAdminProfileFetch = 0;
-};
 
 registerConfigRoutes({
     app,
@@ -712,7 +711,7 @@ registerInviteRoutes({
     syncJellyfinUsers,
     appendAuditLog,
     sendEmail,
-    getAdminProfile: (config) => getAdminProfile(config),
+    getAdminProfile,
     getClientId: () => CLIENT_ID,
     inviteUserToPlex,
     getAdminId,
@@ -782,137 +781,19 @@ registerAdminRoutes({
     log,
 });
 
-// --- Public & Status API Endpoints ---
-async function getAdminProfile(config) {
-    if (String(config?.mediaServerType || '').toLowerCase() === 'jellyfin') {
-        let serverName = 'Jellyfin Server';
-        try {
-            if (config?.jellyfinUrl && config?.jellyfinApiKey) {
-                const baseUrl = resolveIntegrationUrlForFetch(config.jellyfinUrl);
-                const infoRes = await fetch(`${baseUrl}/System/Info`, {
-                    headers: jellyfinHeaders(config.jellyfinApiKey),
-                });
-                if (infoRes.ok) {
-                    const info = await infoRes.json();
-                    serverName = info.ServerName || info.LocalAddress || serverName;
-                }
-            }
-        } catch (e) {
-            log(`Failed to fetch Jellyfin server info: ${e.message}`);
-        }
-        return { thumb: null, serverName };
-    }
-
-    if (!config || !config.plexToken) return { thumb: null, serverName: 'Server Portal' };
-
-    if (cachedAdminProfile && Date.now() - lastAdminProfileFetch < 3600000) {
-        return cachedAdminProfile;
-    }
-
-    try {
-        const userRes = await fetch('https://plex.tv/api/v2/user', { headers: { 'X-Plex-Token': config.plexToken, 'Accept': 'application/json' } }).then(r => r.json());
-
-        let serverName = 'Server Portal';
-        const uri = await getPlexConnectionUri(config);
-        if (uri) {
-            const serverRes = await fetch(`${uri}/?X-Plex-Token=${config.plexToken}`, { headers: { 'Accept': 'application/json' } }).then(r => r.json()).catch(() => null);
-            if (serverRes && serverRes.MediaContainer && serverRes.MediaContainer.friendlyName) {
-                serverName = serverRes.MediaContainer.friendlyName;
-            }
-        }
-
-        cachedAdminProfile = { thumb: userRes.thumb || null, serverName };
-        lastAdminProfileFetch = Date.now();
-        return cachedAdminProfile;
-    } catch (e) {
-        return { thumb: null, serverName: 'Server Portal' };
-    }
-}
-
-app.get('/api/public/info', publicReadRateLimit, async (req, res) => {
-    try {
-        const config = await loadFile(CONFIG_PATH, {});
-        const profile = await getAdminProfile(config);
-        const isConfigured = isPortalConfigured(config);
-        const contactWhatsApp = config.contactWhatsApp || '';
-        const contactEmail = config.contactEmail || '';
-        let requestUrl = config.requestUrl || 'https://yourdomain.com';
-        if ((requestUrl === 'https://yourdomain.com' || !requestUrl) && config.requestAppUrl) {
-            requestUrl = config.requestAppUrl;
-        }
-        res.json({ ...profile, isConfigured, mediaServerType: config.mediaServerType || 'plex', requestUrl, contactWhatsApp, contactEmail });
-    } catch (e) {
-        let requestUrl = 'https://yourdomain.com';
-        res.json({ thumb: null, serverName: 'Server Portal', isConfigured: false, mediaServerType: 'plex', requestUrl });
-    }
-});
-
-app.get('/api/public/plex/stats', publicReadRateLimit, async (req, res) => {
-    const cachedStats = plexStatsService.getCachedPlexStats();
-    if (cachedStats) {
-        return res.json(cachedStats);
-    }
-    const disk = await loadPlexStatsFromDisk();
-    if (disk) return res.json(disk);
-    return res.json({
-        movies: 0, shows: 0, music: 0,
-        moviesBytes: 0, showsBytes: 0, musicBytes: 0,
-        fourKPercent: 0,
-        isBuilding: true
-    });
-});
-
-app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
-app.get('/api/status', publicReadRateLimit, async (req, res) => {
-    const config = await loadFile(CONFIG_PATH, {});
-    if (config.publicStatusEnabled === false && !getSessionUser(req)) {
-        return res.status(403).json({ error: 'Status monitor requires sign in.' });
-    }
-    res.json(createPublicStatusPayload(statusRuntime.getStatusConfig(), statusRuntime.getHealthData()));
-});
-app.get('/api/status/config', requireAuth, requireAdmin, (req, res) => res.json(statusRuntime.getStatusConfig()));
-app.post('/api/status/config', requireAuth, requireAdmin, async (req, res) => {
-    try {
-        // Security: validate body schema before writing to disk
-        const { services, groups, announcement } = req.body;
-        if (!Array.isArray(services) || !Array.isArray(groups)) {
-            return res.status(400).json({ error: 'Invalid config structure: services and groups must be arrays.' });
-        }
-        const sanitizedServices = [];
-        for (const service of services) {
-            if (!service || typeof service !== 'object') continue;
-            let normalizedUrl = '';
-            if (service.url) {
-                try {
-                    normalizedUrl = normalizeExternalBaseUrl(service.url, { allowPrivate: true, allowHttp: true });
-                } catch (e) {
-                    return res.status(400).json({ error: `Invalid service URL for "${service.name || service.id || 'unknown'}": ${e.message}` });
-                }
-            }
-            sanitizedServices.push({
-                id: String(service.id || randomUUID()),
-                name: String(service.name || 'Service'),
-                url: normalizedUrl,
-                port: Number.isFinite(Number(service.port)) ? Number(service.port) : undefined,
-                type: String(service.type || 'web'),
-                groupId: String(service.groupId || 'core'),
-                description: String(service.description || '')
-            });
-        }
-        await statusRuntime.saveStatusConfig({ services: sanitizedServices, groups, announcement: announcement || null });
-        res.json({ success: true, message: 'Status configuration updated successfully.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update status configuration' });
-    }
-});
-
-app.post('/api/status/reset', requireAuth, requireAdmin, async (req, res) => {
-    try {
-        await statusRuntime.resetHealthData();
-        res.json({ success: true, message: 'Status statistics reset successfully.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to reset status statistics' });
-    }
+registerPublicStatusRoutes({
+    app,
+    publicReadRateLimit,
+    requireAuth,
+    requireAdmin,
+    configPath: CONFIG_PATH,
+    loadFile,
+    statusRuntime,
+    getSessionUser,
+    getAdminProfile,
+    isPortalConfigured,
+    getCachedPlexStats: () => plexStatsService.getCachedPlexStats(),
+    loadPlexStatsFromDisk,
 });
 
 // --- Plex Dashboard & Image Proxy ---
