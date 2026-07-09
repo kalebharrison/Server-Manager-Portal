@@ -11,7 +11,7 @@ import { hexToRgb, accentHoverRgb, getDaysUntilExpiry, addMonths, addYears, form
 
 import { StreamKillRulesPanel } from './StreamKillRulesPanel';
 import { InvitesSettings } from './InvitesSettings';
-import { BroadcastSettingsTab } from './BroadcastSettingsTab';
+import { BroadcastTab } from './BroadcastTab';
 import { BackgroundTasksTab } from './BackgroundTasksTab';
 import { CleanupSettingsTab } from './CleanupSettingsTab';
 import { ContactSettingsTab } from './ContactSettingsTab';
@@ -1156,12 +1156,7 @@ export const SettingsDashboard: React.FC = () => {
 
                     {activeTab === 'navigation' && <NavigationOrderTab navOrder={navOrder} onNavOrderChange={setNavOrder} />}
 
-                    {activeTab === 'broadcast' && (
-                        <div className="mb-8 animate-fade-in">
-                            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Broadcast Email</h3>
-                            <BroadcastSettingsTab users={users} selectedUserIds={[]} />
-                        </div>
-                    )}
+                    {activeTab === 'broadcast' && <BroadcastTab users={users} />}
 
                     {activeTab === 'status' && (
                         <StatusSettingsTab
