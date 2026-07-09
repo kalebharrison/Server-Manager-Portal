@@ -13,8 +13,8 @@ import fsSync from 'fs';
 import { createBasePathHelpers, deriveBasePath } from './lib/base-path.js';
 import { createBroadcastService } from './lib/broadcast-service.js';
 import { createLruCache, createTtlCache } from './lib/cache.js';
-import { addDays, addMonths, addYears, getDaysUntilExpiry } from './lib/date-utils.js';
-import { createDeletedUserRegistry, getDeletedUserKey, isDeletedUser, normalized } from './lib/deleted-users.js';
+import { addDays, getDaysUntilExpiry } from './lib/date-utils.js';
+import { createDeletedUserRegistry, isDeletedUser, normalized } from './lib/deleted-users.js';
 import { createEmailService } from './lib/email-service.js';
 import { createMediaUserService } from './lib/media-user-service.js';
 import { createMaintenanceService } from './lib/maintenance-service.js';
@@ -181,7 +181,7 @@ import {
     PLEX_STATS_CACHE_PATH,
     migrateConfigFiles,
 } from './lib/data-paths.js';
-import { BACKUP_SCHEMA_VERSION, createBackupService } from './lib/backup.js';
+import { createBackupService } from './lib/backup.js';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout } from './lib/dashboard-layout.js';
 const PLEX_API = 'https://plex.tv/api';
 
@@ -739,7 +739,6 @@ registerAdminRoutes({
     usersPath: USERS_PATH,
     deletedUsersPath: DELETED_USERS_PATH,
     auditLogPath: AUDIT_LOG_PATH,
-    emailLogPath: EMAIL_LOG_PATH,
     analyticsCachePath: ANALYTICS_CACHE_PATH,
     trendingCachePath: TRENDING_CACHE_PATH,
     plexStatsCachePath: PLEX_STATS_CACHE_PATH,
