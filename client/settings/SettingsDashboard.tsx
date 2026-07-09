@@ -1,19 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Check } from 'lucide-react';
 import { apiFetch } from '../shared/api';
-import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
+import { portalUrl } from '../shared/basePath';
 import { appConfirm } from '../shared/confirm';
-import { CustomSelect } from '../shared/ui';
 import { Loader, ToastContainer, pushToast, type ToastMessage } from '../shared/toast';
-import { SettingHint } from './SettingHint';
-import type { User, AuditEntry, DeletedUser, PlexServer } from '../shared/types';
-import { hexToRgb, accentHoverRgb, getDaysUntilExpiry, addMonths, addYears, formatDate } from '../shared/format';
-
+import type { User, PlexServer } from '../shared/types';
 import { StreamKillRulesPanel } from './StreamKillRulesPanel';
 import { InvitesSettings } from './InvitesSettings';
 import { BroadcastTab } from './BroadcastTab';
 import { BackgroundTasksTab } from './BackgroundTasksTab';
-import { BackupRestorePanel } from './BackupRestorePanel';
 import { CleanupSettingsTab } from './CleanupSettingsTab';
 import { ContactSettingsTab } from './ContactSettingsTab';
 import { LogsAuditTab } from './LogsAuditTab';
@@ -22,20 +16,16 @@ import { NavigationOrderTab } from './NavigationOrderTab';
 import { NewsletterSettingsTab } from './NewsletterSettingsTab';
 import { SmtpSettingsTab } from './SmtpSettingsTab';
 import { StatusSettingsTab } from './StatusSettingsTab';
-import { SystemDiagnosticsPanel } from './SystemDiagnosticsPanel';
-import { SystemHealthPanel } from './SystemHealthPanel';
-import { SystemAuditLogViewer } from './SystemAuditLogViewer';
-import { SystemJobQueuePanel } from './SystemJobQueuePanel';
-import { IntegrationTestButton } from '../shared/IntegrationTestButton';
 import { HomeLayoutSettings } from './HomeLayoutSettings';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
-import { IntegrationHeading, hasIntegrationCredentials } from './integrationDisplay';
+import { hasIntegrationCredentials } from './integrationDisplay';
 import { SettingsNavigation } from './SettingsNavigation';
 import { SETTINGS_TAB_GROUPS, isSettingsTabId, type SettingsTabId } from './settingsTabs';
 import { calculateSystemHealth } from './settingsSystemHealth';
+import { MediaServerSettingsTab } from './MediaServerSettingsTab';
+import { BrandingSettingsTab } from './BrandingSettingsTab';
+import { SystemSettingsTab } from './SystemSettingsTab';
 
-const JELLYFIN_BRAND_LOGO_URL = '/api/jellyfin/branding/icon';
-const JELLYFIN_BRAND_BACKGROUND_URL = '/api/jellyfin/branding/splash';
 
 export const SettingsDashboard: React.FC = () => {
     const [statusDraft, setStatusDraft] = useState<any>(null);
@@ -662,13 +652,6 @@ export const SettingsDashboard: React.FC = () => {
             dashboardLayout: normalizeSectionLayout(dashboardLayoutRef.current)
         });
     };
-    const applyJellyfinBranding = () => {
-        setCustomLogoUrl(JELLYFIN_BRAND_LOGO_URL);
-        setBackgroundImageUrl(JELLYFIN_BRAND_BACKGROUND_URL);
-        setLogoFile(null);
-        addToast('Jellyfin server icon and splash background applied. Save settings to publish.');
-    };
-
     const handleTestEmail = async () => {
         if (!smtpHost || !smtpUser || !smtpPass || !testRecipient) {
             addToast('Please fill out SMTP Host, User, Password, and Test Recipient.', 'error');
@@ -758,202 +741,39 @@ export const SettingsDashboard: React.FC = () => {
                         {activeTab === 'stream-rules' && <StreamKillRulesPanel addToast={addToast} registerSaveHandler={(handler) => { streamRulesSaveHandlerRef.current = handler; }} />}
     
                         {activeTab === 'plex' && (
-                            <div className="mb-8">
-                                <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Media Server Integration</h3>
-                                <div className="mb-4">
-                                    <label htmlFor="mediaServerType">Media Server Type</label>
-                                    <CustomSelect
-                                        id="mediaServerType"
-                                        value={mediaServerType}
-                                        onChange={(val) => setMediaServerType(val === 'jellyfin' ? 'jellyfin' : 'plex')}
-                                        options={[
-                                            { label: 'Plex', value: 'plex' },
-                                            { label: 'Jellyfin', value: 'jellyfin' }
-                                        ]}
-                                    />
-                                    <div className="mt-2">
-                                        <SettingHint>
-                                            Choose the media server used for portal authentication and server-specific integrations.
-                                        </SettingHint>
-                                    </div>
-                                </div>
-                                {mediaServerType === 'jellyfin' && (
-                                    <div className="mb-6 p-4 rounded-lg border border-border bg-background/40">
-                                        <h4 className="font-bold text-text mb-3">Jellyfin Connection</h4>
-                                        <div className="mb-4">
-                                            <label htmlFor="jellyfinUrl">Jellyfin URL</label>
-                                            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="jellyfinUrl" type="url" value={jellyfinUrl} onChange={(e) => setJellyfinUrl(e.target.value)} placeholder="http://192.168.1.6:8096" />
-                                        </div>
-                                        <div className="mb-4">
-                                            <label htmlFor="jellyfinApiKey">Jellyfin API Key</label>
-                                            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="jellyfinApiKey" type="password" value={jellyfinApiKey} onChange={(e) => setJellyfinApiKey(e.target.value)} placeholder="API key from Jellyfin dashboard" />
-                                        </div>
-                                        <IntegrationTestButton
-                                            type="jellyfin"
-                                            payload={{ jellyfinUrl, jellyfinApiKey }}
-                                            disabled={!hasIntegrationCredentials(jellyfinUrl, jellyfinApiKey, initialSettings.jellyfinUrl, initialSettings.jellyfinApiKey)}
-                                            onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
-                                        />
-                                    </div>
-                                )}
-                                {mediaServerType === 'plex' && (
-                                    <>
-                                <h4 className="text-lg font-bold text-text mb-4">Plex Connection</h4>
-                                <div className="mb-4">
-                                    <label htmlFor="plexToken">Plex Token</label>
-                                    <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="plexToken" type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Enter your X-Plex-Token" />
-                                    <div className="mt-2">
-                                        <SettingHint>
-                                            Needed to fetch users and manage access. <a href="https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/" target="_blank" rel="noopener noreferrer">How to find your token.</a>
-                                        </SettingHint>
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap items-start gap-3">
-                                    <button className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center gap-2" onClick={handleFetchServers} disabled={!token}>Fetch Servers</button>
-                                    <IntegrationTestButton
-                                        type="plex"
-                                        payload={{
-                                            token,
-                                            serverIdentifier: selectedServer || initialSettings.serverIdentifier,
-                                            plexServerUrl: plexServerUrl || undefined,
-                                        }}
-                                        disabled={!token || !(selectedServer || initialSettings.serverIdentifier)}
-                                        onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
-                                    />
-                                </div>
-                                {(selectedServer || initialSettings.serverIdentifier) && servers.length === 0 && (
-                                    <div className="mt-3">
-                                        <SettingHint>
-                                            Saved server: <strong>{selectedServer || initialSettings.serverIdentifier}</strong>
-                                        </SettingHint>
-                                    </div>
-                                )}
-                                {servers.length > 0 && (
-                                    <div className="mb-4" style={{ marginTop: '1rem' }}>
-                                        <label htmlFor="serverSelect">Select Server</label>
-                                        <CustomSelect
-                                            id="serverSelect"
-                                            value={selectedServer}
-                                            onChange={val => setSelectedServer(val)}
-                                            options={servers.map(s => ({ label: `${s.name} (${s.identifier})`, value: s.identifier }))}
-                                        />
-                                        {initialSettings.serverIdentifier && (
-                                            <div className="mt-2">
-                                                <SettingHint>
-                                                    Currently saved server ID: <strong>{initialSettings.serverIdentifier}</strong>
-                                                </SettingHint>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                <div className="mb-4" style={{ marginTop: '1rem' }}>
-                                    <label htmlFor="plexServerUrl">
-                                        Direct Plex URL{' '}
-                                        <span className="text-muted font-normal normal-case">(required in Docker)</span>
-                                    </label>
-                                    <input
-                                        className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
-                                        id="plexServerUrl"
-                                        type="url"
-                                        value={plexServerUrl}
-                                        onChange={(e) => setPlexServerUrl(e.target.value)}
-                                        placeholder="http://192.168.1.6:32400"
-                                    />
-                                    <div className="mt-2">
-                                        <SettingHint>
-                                            Your Plex server&apos;s LAN address. Use this when Plex.tv discovery fails from inside the container (e.g. <code className="text-xs">getaddrinfo EAI_AGAIN …plex.direct</code> errors).
-                                        </SettingHint>
-                                    </div>
-                                </div>
-                                <div className="mb-4" style={{ marginTop: '1rem' }}>
-                                    <label htmlFor="checkInterval">Check Interval (minutes)</label>
-                                    <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="checkInterval" type="number" value={checkInterval} onChange={e => setCheckInterval(Number(e.target.value))} min="1" />
-                                    <div className="mt-2">
-                                        <SettingHint>How often to check for expired users in the background.</SettingHint>
-                                    </div>
-                                </div>
-
-                                {libraries.length > 0 && (
-                                    <div className="mb-4 mt-4">
-                                        <label className="block mb-2 font-medium">Default Temporary Access/Automated Libraries</label>
-                                        <div className="mb-2">
-                                            <SettingHint>Libraries to share automatically when users request temporary access or link their account. Leave empty to share ALL libraries.</SettingHint>
-                                        </div>
-                                        <div className="flex flex-wrap gap-3">
-                                            {libraries.map(lib => {
-                                                const isSelected = defaultLibraryIds.includes(lib.id);
-                                                return (
-                                                    <label key={lib.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all border shadow-sm select-none ${isSelected ? 'bg-plex/10 border-plex text-plex font-bold' : 'bg-background border-border/50 text-muted hover:border-white/20 hover:text-text font-medium'}`}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) setDefaultLibraryIds([...defaultLibraryIds, lib.id]);
-                                                                else setDefaultLibraryIds(defaultLibraryIds.filter(id => id !== lib.id));
-                                                            }}
-                                                            className="hidden"
-                                                        />
-                                                        {isSelected && <Check className="w-3.5 h-3.5" />}
-                                                        <span className="text-sm">{lib.title}</span>
-                                                    </label>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                                    </>
-                                )}
-
-                                <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
-                                        <div>
-                                            <h4 className="font-bold text-text">Stream User Privacy</h4>
-                                            <p className="text-sm text-muted">Control how stream users are displayed to non-admins (e.g. on the public status page).</p>
-                                        </div>
-                                        <div className="w-56 ml-4 flex-shrink-0">
-                                            <CustomSelect
-                                                value={String(hideStreamUsers)}
-                                                onChange={(val) => setHideStreamUsers(val)}
-                                                options={[
-                                                    { label: 'Show Names', value: 'false' },
-                                                    { label: 'Show as Anonymous', value: 'anonymous' },
-                                                    { label: 'Hide Completely', value: 'hidden' }
-                                                ]}
-                                            />
-                                        </div>
-                                    </div>
-
-                                <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
-                                        <div>
-                                            <h4 className="font-bold text-text">Show Usernames in Analytics</h4>
-                                            <p className="text-sm text-muted">Allow non-admin users to see real usernames on the Analytics dashboard. If disabled, usernames are shown as Viewer 1, Viewer 2, etc.</p>
-                                        </div>
-                                        <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                className="sr-only peer"
-                                                checked={showUsernamesInAnalytics}
-                                                onChange={e => setShowUsernamesInAnalytics(e.target.checked)}
-                                            />
-                                            <div className="w-11 h-6 bg-background peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-plex"></div>
-                                        </label>
-                                    </div>
-
-                                <div className="mb-4" style={{ marginTop: '1rem' }}>
-                                    <label htmlFor="requestUrl">Request URL</label>
-                                    <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="requestUrl" type="text" value={requestUrl} onChange={e => setRequestUrl(e.target.value)} placeholder="https://yourdomain.com" />
-                                    <div className="mt-2">
-                                        <SettingHint>The URL users are redirected to when they click the Request Content button.</SettingHint>
-                                    </div>
-                                </div>
-                                <div className="mb-4" style={{ marginTop: '1rem' }}>
-                                    <label htmlFor="contactUrl">Contact URL / Email</label>
-                                    <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactUrl" type="text" value={contactUrl} onChange={e => setContactUrl(e.target.value)} placeholder="mailto:youremail@example.com OR https://wa.me/123456" />
-                                    <div className="mt-2">
-                                        <SettingHint>Used for the "Request Extension" button in expiry emails. Defaults to sending an email to the SMTP User.</SettingHint>
-                                    </div>
-                                </div>
-                            </div>
+                            <MediaServerSettingsTab
+                                initialSettings={initialSettings}
+                                mediaServerType={mediaServerType}
+                                token={token}
+                                plexServerUrl={plexServerUrl}
+                                jellyfinUrl={jellyfinUrl}
+                                jellyfinApiKey={jellyfinApiKey}
+                                servers={servers}
+                                selectedServer={selectedServer}
+                                checkInterval={checkInterval}
+                                libraries={libraries}
+                                defaultLibraryIds={defaultLibraryIds}
+                                hideStreamUsers={hideStreamUsers}
+                                showUsernamesInAnalytics={showUsernamesInAnalytics}
+                                requestUrl={requestUrl}
+                                contactUrl={contactUrl}
+                                onMediaServerTypeChange={setMediaServerType}
+                                onTokenChange={setToken}
+                                onPlexServerUrlChange={setPlexServerUrl}
+                                onJellyfinUrlChange={setJellyfinUrl}
+                                onJellyfinApiKeyChange={setJellyfinApiKey}
+                                onSelectedServerChange={setSelectedServer}
+                                onCheckIntervalChange={setCheckInterval}
+                                onDefaultLibraryIdsChange={setDefaultLibraryIds}
+                                onHideStreamUsersChange={setHideStreamUsers}
+                                onShowUsernamesInAnalyticsChange={setShowUsernamesInAnalytics}
+                                onRequestUrlChange={setRequestUrl}
+                                onContactUrlChange={setContactUrl}
+                                onFetchServers={handleFetchServers}
+                                addToast={addToast}
+                            />
                         )}
+
 
                     {activeTab === 'smtp' && (
                         <SmtpSettingsTab
@@ -1062,338 +882,85 @@ export const SettingsDashboard: React.FC = () => {
                     )}
 
                     {activeTab === 'branding' && (
-                        <div className="mb-8 animate-fade-in">
-                            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Branding & UI</h3>
-
-                            {mediaServerType === 'jellyfin' && (
-                                <div className="mb-4 rounded-lg border border-plex/30 bg-plex/10 p-4">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <span className="w-11 h-11 rounded-lg bg-background border border-plex/30 flex items-center justify-center overflow-hidden flex-shrink-0">
-                                                <img src={JELLYFIN_BRAND_LOGO_URL} alt="" className="w-8 h-8 object-contain" />
-                                            </span>
-                                            <div className="min-w-0">
-                                                <h4 className="font-bold text-text">Jellyfin branding</h4>
-                                                <p className="text-xs text-muted mt-1">Use the Jellyfin server icon and splash background across the portal.</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={applyJellyfinBranding}
-                                            className="px-4 py-2 bg-plex hover:bg-plex-hover text-background rounded-md font-bold transition-colors whitespace-nowrap"
-                                        >
-                                            Use Jellyfin icon & splash
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="mb-4">
-                                <label>Custom Logo</label>
-                                <div className="flex flex-col gap-2">
-                                    <input type="url" className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all" value={customLogoUrl} onChange={e => setCustomLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" />
-                                    <span className="text-center text-muted font-bold text-sm">OR</span>
-                                    <input type="file" accept="image/*" className="w-full p-2 rounded-lg border border-border bg-background text-muted text-sm outline-none focus:border-plex transition-all file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-white/10 file:text-text hover:file:bg-white/20 file:cursor-pointer cursor-pointer" onChange={e => setLogoFile(e.target.files?.[0] || null)} />
-                                </div>
-                                <div className="mt-2">
-                                    <SettingHint>Provide a URL or upload a file. (Max 5MB)</SettingHint>
-                                </div>
-                            </div>
-                            <div className="mb-8 relative z-[50]">
-                                <label>Portal Theme</label>
-                                <CustomSelect
-                                    value={brandingTheme}
-                                    onChange={setBrandingTheme}
-                                    options={[
-                                        { label: 'Plex Dark', value: 'plex' },
-                                        { label: 'Sleek Slate', value: 'slate' },
-                                        { label: 'Nordic Frost', value: 'nordic' },
-                                        { label: 'Jellyfin Purple', value: 'jellyfin' },
-                                        { label: 'Emerald Green', value: 'emerald' },
-                                        { label: 'Neon Midnight', value: 'midnight' },
-                                    ]}
-                                />
-                                <div className="mt-2">
-                                    <SettingHint>The default theme applied to new visitors and users. Users can still customize their local theme preference in the navigation menu.</SettingHint>
-                                </div>
-                            </div>
-
-                            <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
-                                <div>
-                                    <h4 className="font-bold text-text">Enable Scroll Reveal Animations</h4>
-                                    <SettingHint>Smoothly slide elements into place as you scroll down the dashboard.</SettingHint>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={useScrollRevealAnimations}
-                                        onChange={e => setUseScrollRevealAnimations(e.target.checked)}
-                                    />
-                                    <div className="w-11 h-6 bg-background peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-plex"></div>
-                                </label>
-                            </div>
-
-                            <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
-                                <div>
-                                    <h4 className="font-bold text-text">Enable Cinematic Loading Sequences</h4>
-                                    <SettingHint>Replaces the standard loading spinner with a beautiful SVG line-drawing animation.</SettingHint>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={useCinematicLoading}
-                                        onChange={e => setUseCinematicLoading(e.target.checked)}
-                                    />
-                                    <div className="w-11 h-6 bg-background peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-plex"></div>
-                                </label>
-                            </div>
-
-                            <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
-                                <div>
-                                    <h4 className="font-bold text-text">Enable Branded Skeleton Loading</h4>
-                                    <SettingHint>Use a branded, animated shimmer effect for skeleton loaders instead of the default pulse.</SettingHint>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={useBrandedSkeleton}
-                                        onChange={e => setUseBrandedSkeleton(e.target.checked)}
-                                    />
-                                    <div className="w-11 h-6 bg-background peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-plex"></div>
-                                </label>
-                            </div>
-
-                            <div className="py-4 border-b border-border/40 mb-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                                    <div>
-                                        <h4 className="font-bold text-text">Enable TMDB Trending Slideshow</h4>
-                                        <SettingHint>Replaces the static splash background with a fading slideshow of currently trending movies and shows from TMDB. Requires a TMDB API key in Integrations.</SettingHint>
-                                    </div>
-                                    <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only peer"
-                                            checked={useTrendingSlideshow}
-                                            onChange={e => setUseTrendingSlideshow(e.target.checked)}
-                                        />
-                                        <div className="w-11 h-6 bg-background peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-plex"></div>
-                                    </label>
-                                </div>
-                                <div className={`transition-all overflow-hidden ${useTrendingSlideshow ? 'max-h-[100px] opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
-                                    <label>Slideshow Interval (Seconds)</label>
-                                    <select
-                                        className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all mt-1"
-                                        value={trendingSlideshowInterval}
-                                        onChange={e => setTrendingSlideshowInterval(parseInt(e.target.value, 10))}
-                                    >
-                                        <option value={10}>10 Seconds</option>
-                                        <option value={20}>20 Seconds</option>
-                                        <option value={30}>30 Seconds</option>
-                                        <option value={40}>40 Seconds</option>
-                                        <option value={50}>50 Seconds</option>
-                                        <option value={60}>60 Seconds</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
-                                <div>
-                                    <h4 className="font-bold text-text">Enable Slideshow on Login Page</h4>
-                                    <SettingHint>Display the TMDB trending slideshow background on the login and landing pages.</SettingHint>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={useTrendingSlideshowOnLogin}
-                                        onChange={e => setUseTrendingSlideshowOnLogin(e.target.checked)}
-                                    />
-                                    <div className="w-11 h-6 bg-background peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-plex"></div>
-                                </label>
-                            </div>
-
-                            <div className={`mb-4 transition-opacity ${useTrendingSlideshow ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                                <label>Static Splash Background Image</label>
-                                <input
-                                    type="url"
-                                    className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all"
-                                    value={backgroundImageUrl}
-                                    onChange={e => setBackgroundImageUrl(e.target.value)}
-                                    placeholder="https://example.com/background.png"
-                                />
-                                <div className="mt-2">
-                                    <SettingHint>Shown as a subtle splash image on the login screen and portal background.</SettingHint>
-                                </div>
-                            </div>
-
-                            <div className="mb-6 rounded-lg border border-border overflow-hidden bg-background/70">
-                                <div
-                                    className="relative min-h-[220px] flex items-center justify-center p-6 bg-card"
-                                    style={backgroundImageUrl ? {
-                                        backgroundImage: `linear-gradient(rgba(10,15,20,0.42), rgba(10,15,20,0.56)), url("${resolvePortalAssetUrl(backgroundImageUrl).replace(/"/g, '%22')}")`,
-                                        backgroundRepeat: 'no-repeat',
-                                        backgroundPosition: 'center',
-                                        backgroundSize: 'cover',
-                                    } : undefined}
-                                >
-                                    <div className="text-center">
-                                        {customLogoUrl ? (
-                                            <img
-                                                src={resolvePortalAssetUrl(customLogoUrl)}
-                                                alt="Server icon preview"
-                                                className="max-w-28 max-h-24 object-contain mx-auto mb-4 drop-shadow-[0_0_24px_rgba(0,0,0,0.75)]"
-                                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                            />
-                                        ) : (
-                                            <div className="w-24 h-24 rounded-full border-2 border-plex/50 bg-background/80 mx-auto mb-4 p-3 shadow-[0_0_36px_rgba(0,164,220,0.28)]">
-                                                <span className="w-full h-full flex items-center justify-center text-3xl font-black text-plex">S</span>
-                                            </div>
-                                        )}
-                                        <p className="text-sm font-bold text-text">Portal splash preview</p>
-                                        <p className="text-xs text-muted mt-1">This is the server icon and background users will see.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                            <div className="mb-4">
-                                <label>Time Format</label>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <button type="button" onClick={() => setUse24HourClock(!use24HourClock)} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors flex-shrink-0 cursor-pointer ${use24HourClock ? 'bg-plex' : 'bg-border'}`}>
-                                        <span className={`inline-block w-4 h-4 transform bg-white rounded-full shadow-sm transition-transform ${use24HourClock ? 'translate-x-6' : 'translate-x-1'}`} />
-                                    </button>
-                                    <span className="text-sm font-medium cursor-pointer select-none hover:text-plex transition-colors" onClick={() => setUse24HourClock(!use24HourClock)}>Use 24-Hour Clock across the Portal</span>
-                                </div>
-                            </div>
-
-                            <div className="mb-4">
-                                <label>Poster Quality Badges</label>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <button type="button" onClick={() => setShowPosterQualityBadges(!showPosterQualityBadges)} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors flex-shrink-0 cursor-pointer ${showPosterQualityBadges ? 'bg-plex' : 'bg-border'}`}>
-                                        <span className={`inline-block w-4 h-4 transform bg-white rounded-full shadow-sm transition-transform ${showPosterQualityBadges ? 'translate-x-6' : 'translate-x-1'}`} />
-                                    </button>
-                                    <span className="text-sm font-medium cursor-pointer select-none hover:text-plex transition-colors" onClick={() => setShowPosterQualityBadges(!showPosterQualityBadges)}>Show quality badges on recently added and discover posters (4K, HDR, codec, Atmos)</span>
-                                </div>
-                                <SettingHint>Applies to Home and Discover poster cards for all users.</SettingHint>
-                            </div>
-
-                            <div className="mb-4">
-                                <label>Public Access</label>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <button type="button" onClick={() => setAllowTemporaryAccess(!allowTemporaryAccess)} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors flex-shrink-0 cursor-pointer ${allowTemporaryAccess ? 'bg-plex' : 'bg-border'}`}>
-                                        <span className={`inline-block w-4 h-4 transform bg-white rounded-full shadow-sm transition-transform ${allowTemporaryAccess ? 'translate-x-6' : 'translate-x-1'}`} />
-                                    </button>
-                                    <span className="text-sm font-medium cursor-pointer select-none hover:text-plex transition-colors" onClick={() => setAllowTemporaryAccess(!allowTemporaryAccess)}>Allow Temporary Access (Public Sign-ups)</span>
-                                </div>
-                            </div>
-
-                            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 mt-8">Announcements</h3>
-                            <div className="mb-4">
-                                <label>Portal Announcement Banner</label>
-                                <textarea className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all" value={announcement} onChange={e => setAnnouncement(e.target.value)} placeholder="E.g. Server maintenance scheduled for Friday..." rows={3}></textarea>
-                                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mt-2">
-                                    <SettingHint>If provided, this announcement will be prominently displayed to all users.</SettingHint>
-                                    <button
-                                        onClick={handlePushAnnouncement}
-                                        disabled={isPushingAnnouncement || !announcement}
-                                        className="bg-plex hover:bg-plex-hover disabled:opacity-50 text-background font-bold py-1.5 px-4 rounded-lg transition-colors text-sm whitespace-nowrap"
-                                    >
-                                        {isPushingAnnouncement ? 'Pushing...' : 'Save & Send Email Blast'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 mt-8">Referral System</h3>
-                            <div className="mb-6 flex items-center justify-between py-4 border-b border-border/40">
-                                <div>
-                                    <label className="font-bold block mb-1">Enable Referrals</label>
-                                    <span className="text-xs text-muted block">Allow users to generate a referral link</span>
-                                </div>
-                                <button onClick={() => setReferralEnabled(!referralEnabled)} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${referralEnabled ? 'bg-plex' : 'bg-border'}`}>
-                                    <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${referralEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                                </button>
-                            </div>
-                            <div className={`transition-all ${!referralEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <label>Referred User Temporary Access Days</label>
-                                        <input type="number" min="0" className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all" value={referralTrialDays} onChange={e => setReferralTrialDays(Number(e.target.value))} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <label>Referrer Reward Days</label>
-                                        <input type="number" min="0" className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all" value={referralRewardDays} onChange={e => setReferralRewardDays(Number(e.target.value))} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <BrandingSettingsTab
+                            mediaServerType={mediaServerType}
+                            customLogoUrl={customLogoUrl}
+                            brandingTheme={brandingTheme}
+                            backgroundImageUrl={backgroundImageUrl}
+                            useScrollRevealAnimations={useScrollRevealAnimations}
+                            useCinematicLoading={useCinematicLoading}
+                            useBrandedSkeleton={useBrandedSkeleton}
+                            useTrendingSlideshow={useTrendingSlideshow}
+                            trendingSlideshowInterval={trendingSlideshowInterval}
+                            useTrendingSlideshowOnLogin={useTrendingSlideshowOnLogin}
+                            use24HourClock={use24HourClock}
+                            showPosterQualityBadges={showPosterQualityBadges}
+                            allowTemporaryAccess={allowTemporaryAccess}
+                            announcement={announcement}
+                            isPushingAnnouncement={isPushingAnnouncement}
+                            referralEnabled={referralEnabled}
+                            referralTrialDays={referralTrialDays}
+                            referralRewardDays={referralRewardDays}
+                            onCustomLogoUrlChange={setCustomLogoUrl}
+                            onLogoFileChange={setLogoFile}
+                            onBrandingThemeChange={setBrandingTheme}
+                            onBackgroundImageUrlChange={setBackgroundImageUrl}
+                            onUseScrollRevealAnimationsChange={setUseScrollRevealAnimations}
+                            onUseCinematicLoadingChange={setUseCinematicLoading}
+                            onUseBrandedSkeletonChange={setUseBrandedSkeleton}
+                            onUseTrendingSlideshowChange={setUseTrendingSlideshow}
+                            onTrendingSlideshowIntervalChange={setTrendingSlideshowInterval}
+                            onUseTrendingSlideshowOnLoginChange={setUseTrendingSlideshowOnLogin}
+                            onUse24HourClockChange={setUse24HourClock}
+                            onShowPosterQualityBadgesChange={setShowPosterQualityBadges}
+                            onAllowTemporaryAccessChange={setAllowTemporaryAccess}
+                            onAnnouncementChange={setAnnouncement}
+                            onPushAnnouncement={handlePushAnnouncement}
+                            onReferralEnabledChange={setReferralEnabled}
+                            onReferralTrialDaysChange={setReferralTrialDays}
+                            onReferralRewardDaysChange={setReferralRewardDays}
+                            addToast={addToast}
+                        />
                     )}
+
 
                     {activeTab === 'invites' && <InvitesSettings addToast={addToast} />}
 
                     {activeTab === 'tasks' && <BackgroundTasksTab tasks={tasks} onRunTask={handleRunTask} />}
                     {activeTab === 'system' && (
-                        <div className="mb-8 animate-fade-in space-y-6">
-                            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">System</h3>
-                            <SystemHealthPanel systemHealth={systemHealth} />
-                            <section className={`space-y-3 mb-8 transition-all duration-300 ${highlightMaintenanceToggle ? 'ring-2 ring-plex/50 rounded-lg p-3 -m-3' : ''}`}>
-                                <h4 className="font-bold text-text">Cleaner Experimental Mode</h4>
-                                <div className="flex items-center justify-between gap-3 py-2">
-                                    <div>
-                                        <p className="font-semibold text-text">Enable Cleaner Module</p>
-                                        <p className="text-xs text-muted mt-1">Single global toggle for the main `Cleaner` navigation section. OFF by default.</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setMaintenanceExperimentalEnabled(!maintenanceExperimentalEnabled)}
-                                        className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${maintenanceExperimentalEnabled ? 'bg-plex' : 'bg-border'}`}
-                                    >
-                                        <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${maintenanceExperimentalEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                                    </button>
-                                </div>
-                                <p className={`text-xs mt-2 font-semibold ${maintenanceExperimentalEnabled ? 'text-green-300' : 'text-yellow-300'}`}>
-                                    Current status: {maintenanceExperimentalEnabled ? 'ON' : 'OFF'}
-                                </p>
-                                <p className="text-[11px] text-muted mt-1">After changing this toggle, click the main Save Settings button.</p>
-                            </section>
-                            <BackupRestorePanel
-                                autoBackupEnabled={autoBackupEnabled}
-                                autoBackupIntervalDays={autoBackupIntervalDays}
-                                autoBackupRetentionCount={autoBackupRetentionCount}
-                                backupRestoreText={backupRestoreText}
-                                backupFiles={backupFiles}
-                                isRestoringBackup={isRestoringBackup}
-                                onAutoBackupEnabledChange={setAutoBackupEnabled}
-                                onAutoBackupIntervalDaysChange={setAutoBackupIntervalDays}
-                                onAutoBackupRetentionCountChange={setAutoBackupRetentionCount}
-                                onBackupRestoreTextChange={setBackupRestoreText}
-                                onDownloadBackup={handleDownloadBackup}
-                                onCreateBackupFile={handleCreateBackupFile}
-                                onRestoreBackup={handleRestoreBackup}
-                                onRestoreFromFile={handleRestoreFromFile}
-                            />
-
-                            <SystemDiagnosticsPanel
-                                diagnostics={diagnostics}
-                                mediaServerType={mediaServerType}
-                                isLoadingDiagnostics={isLoadingDiagnostics}
-                                onRefresh={fetchDiagnostics}
-                            />
-
-                            <SystemJobQueuePanel tasks={tasks} />
-
-                            <SystemAuditLogViewer
-                                pagedAuditEntries={pagedAuditEntries}
-                                auditLogPage={auditLogPage}
-                                totalAuditLogPages={totalAuditLogPages}
-                                isLoadingAuditLog={isLoadingAuditLog}
-                                onRefresh={fetchAuditLog}
-                                onAuditLogPageChange={setAuditLogPage}
-                            />
-                        </div>
+                        <SystemSettingsTab
+                            systemHealth={systemHealth}
+                            highlightMaintenanceToggle={highlightMaintenanceToggle}
+                            maintenanceExperimentalEnabled={maintenanceExperimentalEnabled}
+                            autoBackupEnabled={autoBackupEnabled}
+                            autoBackupIntervalDays={autoBackupIntervalDays}
+                            autoBackupRetentionCount={autoBackupRetentionCount}
+                            backupRestoreText={backupRestoreText}
+                            backupFiles={backupFiles}
+                            isRestoringBackup={isRestoringBackup}
+                            diagnostics={diagnostics}
+                            mediaServerType={mediaServerType}
+                            isLoadingDiagnostics={isLoadingDiagnostics}
+                            tasks={tasks}
+                            pagedAuditEntries={pagedAuditEntries}
+                            auditLogPage={auditLogPage}
+                            totalAuditLogPages={totalAuditLogPages}
+                            isLoadingAuditLog={isLoadingAuditLog}
+                            onMaintenanceExperimentalEnabledChange={setMaintenanceExperimentalEnabled}
+                            onAutoBackupEnabledChange={setAutoBackupEnabled}
+                            onAutoBackupIntervalDaysChange={setAutoBackupIntervalDays}
+                            onAutoBackupRetentionCountChange={setAutoBackupRetentionCount}
+                            onBackupRestoreTextChange={setBackupRestoreText}
+                            onDownloadBackup={handleDownloadBackup}
+                            onCreateBackupFile={handleCreateBackupFile}
+                            onRestoreBackup={handleRestoreBackup}
+                            onRestoreFromFile={handleRestoreFromFile}
+                            onRefreshDiagnostics={fetchDiagnostics}
+                            onRefreshAuditLog={fetchAuditLog}
+                            onAuditLogPageChange={setAuditLogPage}
+                        />
                     )}
+
                     {activeTab === 'logs' && (
                         <LogsAuditTab
                             deletedUsersLog={deletedUsersLog}
