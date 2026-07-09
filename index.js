@@ -1,8 +1,6 @@
 
 
 import express from 'express';
-import fs from 'fs/promises';
-import path from 'path';
 import fetch from 'node-fetch';
 import { randomUUID } from 'crypto';
 import cookieParser from 'cookie-parser';
@@ -19,9 +17,9 @@ import { createEmailService } from './lib/email-service.js';
 import { createMediaUserService } from './lib/media-user-service.js';
 import { createMaintenanceService } from './lib/maintenance-service.js';
 import { createNewsletterService } from './lib/newsletter-service.js';
-import { escapeHtmlAttr, injectBasePathHtml } from './lib/html-shell.js';
+import { escapeHtmlAttr } from './lib/html-shell.js';
 import { loadFile, saveFile } from './lib/json-file-store.js';
-import { isBlockedHostName, isLoopbackAddress, normalizeExternalBaseUrl, resolveIntegrationUrlForFetch } from './lib/network-policy.js';
+import { isLoopbackAddress, normalizeExternalBaseUrl, resolveIntegrationUrlForFetch } from './lib/network-policy.js';
 import { enrichRecentItemsWithMediaTags } from './lib/plex-media-tags.js';
 import { createPlexStatsService } from './lib/plex-stats-service.js';
 import { createPlexConnectionService } from './lib/plex-connection-service.js';
@@ -35,9 +33,9 @@ import { registerPlexRoutes } from './lib/plex-routes.js';
 import { registerJellyfinRoutes } from './lib/jellyfin-routes.js';
 import { registerMaintenanceRoutes } from './lib/maintenance-routes.js';
 import { registerMediaStackRoutes } from './lib/media-stack-routes.js';
+import { registerStaticShellRoutes } from './lib/static-shell-routes.js';
 import { createAnalyticsService } from './lib/analytics-service.js';
 import { createRateLimiter } from './lib/rate-limit.js';
-import { setStaticAssetCacheHeaders } from './lib/static-assets.js';
 import { createAuditLogger } from './lib/audit-log.js';
 import { createStatusRuntime } from './lib/status-runtime.js';
 import { createStreamMonitor, validateKillRulesSchema } from './lib/stream-monitor.js';
@@ -890,107 +888,17 @@ app.get('/api/speedtest/download', requireAuth, requireMember, speedtestRateLimi
 });
 app.post('/api/speedtest/upload', requireAuth, requireMember, speedtestRateLimit, express.raw({ type: '*/*', limit: '10mb' }), (req, res) => res.sendStatus(200));
 
-// --- Static File Serving ---
-const staticDir = path.join(process.cwd(), 'static');
-app.use('/static', express.static(staticDir, {
-    etag: true,
-    lastModified: true,
-    setHeaders: setStaticAssetCacheHeaders,
-}));
-if (BASE_PATH) {
-    app.use(`${BASE_PATH}/static`, express.static(staticDir, {
-        etag: true,
-        lastModified: true,
-        setHeaders: setStaticAssetCacheHeaders,
-    }));
-}
-
-// Serve optional legacy stylesheet from the root directory
-app.get('/style.css', (req, res) => {
-    const cssPath = path.join(process.cwd(), 'style.css');
-    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
-    res.sendFile(cssPath, (err) => {
-        if (err) res.type('text/css').send('/* style.css not found */');
-    });
+registerStaticShellRoutes({
+    app,
+    basePath: BASE_PATH,
+    publicBaseUrl: PUBLIC_BASE_URL,
+    port: PORT,
+    configPath: CONFIG_PATH,
+    loadFile,
+    getAdminProfile,
+    stripBasePathFromUrl,
+    log,
 });
-
-const getRequestBaseUrl = (req) => {
-    if (PUBLIC_BASE_URL) {
-        try {
-            return new URL(PUBLIC_BASE_URL).toString().replace(/\/+$/, '');
-        } catch (e) {
-            log(`Invalid PUBLIC_BASE_URL configured: ${e.message}`);
-        }
-    }
-    const host = req.get('host') || `localhost:${PORT}`;
-    const normalizedHost = host.split(',')[0].trim();
-    if (isBlockedHostName(normalizedHost.split(':')[0])) {
-        return `${req.secure ? 'https' : 'http'}://localhost:${PORT}`;
-    }
-    const proto = req.secure ? 'https' : 'http';
-    return `${proto}://${normalizedHost}${BASE_PATH}`;
-};
-
-const buildSocialMetaTags = async (req) => {
-    const config = await loadFile(CONFIG_PATH, {});
-    const profile = await getAdminProfile(config);
-    const baseUrl = getRequestBaseUrl(req);
-    const pageUrl = `${baseUrl}${stripBasePathFromUrl(req.originalUrl || '/')}`;
-    const serverName = profile.serverName || 'Server Portal';
-    const serverId = config.serverIdentifier || 'unconfigured';
-    const description = `Live Plex portal for ${serverName} (${serverId}).`;
-    const title = `${serverName} Portal`;
-
-    let imageUrl = '';
-    const configuredImage = config.customLogoUrl || profile.thumb || '';
-    if (configuredImage) {
-        imageUrl = configuredImage.startsWith('http')
-            ? configuredImage
-            : `${baseUrl}/api/plex/image?path=${encodeURIComponent(configuredImage)}&width=1200&height=630`;
-    }
-
-    const tags = [
-        `<meta property="og:type" content="website" />`,
-        `<meta property="og:site_name" content="${escapeHtmlAttr(serverName)}" />`,
-        `<meta property="og:title" content="${escapeHtmlAttr(title)}" />`,
-        `<meta property="og:description" content="${escapeHtmlAttr(description)}" />`,
-        `<meta property="og:url" content="${escapeHtmlAttr(pageUrl)}" />`,
-        ...(imageUrl ? [`<meta property="og:image" content="${escapeHtmlAttr(imageUrl)}" />`] : []),
-        `<meta name="twitter:card" content="${imageUrl ? 'summary_large_image' : 'summary'}" />`,
-        `<meta name="twitter:title" content="${escapeHtmlAttr(title)}" />`,
-        `<meta name="twitter:description" content="${escapeHtmlAttr(description)}" />`,
-        ...(imageUrl ? [`<meta name="twitter:image" content="${escapeHtmlAttr(imageUrl)}" />`] : []),
-        `<meta name="description" content="${escapeHtmlAttr(description)}" />`
-    ].join('\n    ');
-
-    return { title, tags };
-};
-
-// Serve the main index.html for SPA routes (after base-path strip, paths are root-relative)
-app.get(/^\/(?!api\/|static\/).*$/, async (req, res) => {
-    try {
-        const indexPath = path.join(process.cwd(), 'index.html');
-        const html = await fs.readFile(indexPath, 'utf8');
-        const socialMeta = await buildSocialMetaTags(req);
-        const updatedHtml = injectBasePathHtml(html
-            .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtmlAttr(socialMeta.title)}</title>`)
-            .replace('</head>', `    ${socialMeta.tags}\n</head>`), BASE_PATH);
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.send(updatedHtml);
-    } catch (e) {
-        try {
-            const indexPath = path.join(process.cwd(), 'index.html');
-            const html = await fs.readFile(indexPath, 'utf8');
-            res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.send(injectBasePathHtml(html, BASE_PATH));
-        } catch {
-            res.status(500).send('Failed to load application shell.');
-        }
-    }
-});
-
 
 // --- API Routes ---Service ---
 let serviceIntervalId = null;
