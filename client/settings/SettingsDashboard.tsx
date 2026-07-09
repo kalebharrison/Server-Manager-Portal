@@ -11,7 +11,6 @@ import { hexToRgb, accentHoverRgb, getDaysUntilExpiry, addMonths, addYears, form
 
 import { StreamKillRulesPanel } from './StreamKillRulesPanel';
 import { InvitesSettings } from './InvitesSettings';
-import { StatusMonitorSettings } from './StatusMonitorSettings';
 import { BroadcastSettingsTab } from './BroadcastSettingsTab';
 import { BackgroundTasksTab } from './BackgroundTasksTab';
 import { CleanupSettingsTab } from './CleanupSettingsTab';
@@ -20,6 +19,7 @@ import { LogsAuditTab } from './LogsAuditTab';
 import { NavigationOrderTab } from './NavigationOrderTab';
 import { NewsletterSettingsTab } from './NewsletterSettingsTab';
 import { SmtpSettingsTab } from './SmtpSettingsTab';
+import { StatusSettingsTab } from './StatusSettingsTab';
 import { IntegrationTestButton } from '../shared/IntegrationTestButton';
 import { HomeLayoutSettings } from './HomeLayoutSettings';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
@@ -1164,18 +1164,15 @@ export const SettingsDashboard: React.FC = () => {
                     )}
 
                     {activeTab === 'status' && (
-                        <div className="mb-8 animate-fade-in">
-                            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Status Monitor</h3>
-                            <StatusMonitorSettings
-                                config={statusConfig}
-                                publicStatusEnabled={publicStatusEnabled}
-                                onPublicStatusEnabledChange={setPublicStatusEnabled}
-                                onChange={setStatusDraft}
-                                appConfirm={appConfirm}
-                                fetchConfig={fetchStatusConfig}
-                                addToast={addToast}
-                            />
-                        </div>
+                        <StatusSettingsTab
+                            statusConfig={statusConfig}
+                            publicStatusEnabled={publicStatusEnabled}
+                            onPublicStatusEnabledChange={setPublicStatusEnabled}
+                            onStatusDraftChange={setStatusDraft}
+                            appConfirm={appConfirm}
+                            fetchStatusConfig={fetchStatusConfig}
+                            addToast={addToast}
+                        />
                     )}
 
 
