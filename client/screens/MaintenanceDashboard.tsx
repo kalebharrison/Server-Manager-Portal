@@ -15,10 +15,26 @@ import {
     getSelectedCalendarGroup
 } from '../maintenance/maintenanceDashboardUtils';
 import { apiFetch } from '../shared/api';
-import { portalUrl } from '../shared/basePath';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
-import { CustomSelect } from '../shared/ui';
+import {
+    buildOverviewInsights,
+    filterCandidateItems,
+    getDefaultMaintenancePreferences,
+    getEmptyExclusionsSummary,
+    getEmptyOverviewInsights,
+    getInitialMaintenanceSection,
+    isMaintenanceDisabledError,
+    MAINTENANCE_SECTIONS,
+    normalizeExclusionsSummary,
+    type ExclusionsSummary,
+    type OverviewInsights
+} from './maintenance/dashboardModel';
+import { MaintenanceDisabledNotice } from './maintenance/MaintenanceDisabledNotice';
+import {
+    MaintenanceMobileSectionSelect,
+    MaintenanceSectionSidebar
+} from './maintenance/MaintenanceDashboardNavigation';
 
 export const MaintenanceDashboard: React.FC = () => {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -27,23 +43,8 @@ export const MaintenanceDashboard: React.FC = () => {
     const [runs, setRuns] = useState<any[]>([]);
     const [previewGroups, setPreviewGroups] = useState<any[]>([]);
     const [rules, setRules] = useState<any[]>([]);
-    const [overviewInsights, setOverviewInsights] = useState<{
-        totalMatches: number;
-        uniqueMatches: number;
-        estimatedReclaimGB: number;
-        libraries: Array<{ libraryTitle: string; count: number; reclaimGB: number }>;
-        rules: Array<{ ruleId: string; ruleName: string; totalMatches: number; reclaimGB: number }>;
-    }>({
-        totalMatches: 0,
-        uniqueMatches: 0,
-        estimatedReclaimGB: 0,
-        libraries: [],
-        rules: []
-    });
-    const [preferences, setPreferences] = useState<any>({
-        global: { dryRunByDefault: true, maxActionsPerRun: 25, requireConfirmForDestructive: true },
-        exclusions: { ratingKeys: [], titles: [], libraries: [] }
-    });
+    const [overviewInsights, setOverviewInsights] = useState<OverviewInsights>(() => getEmptyOverviewInsights());
+    const [preferences, setPreferences] = useState<any>(() => getDefaultMaintenancePreferences());
     const [candidateRuleId, setCandidateRuleId] = useState<string>('');
     const [candidateItems, setCandidateItems] = useState<any[]>([]);
     const [candidateSearch, setCandidateSearch] = useState('');
@@ -58,42 +59,16 @@ export const MaintenanceDashboard: React.FC = () => {
     const [libraryBrowseTotal, setLibraryBrowseTotal] = useState(0);
     const [libraryBrowseLoading, setLibraryBrowseLoading] = useState(false);
     const [selectedExcludeKeys, setSelectedExcludeKeys] = useState<string[]>([]);
-    const [exclusionsSummary, setExclusionsSummary] = useState<{ ratingKeys: any[]; titles: any[]; libraries: any[] }>({ ratingKeys: [], titles: [], libraries: [] });
+    const [exclusionsSummary, setExclusionsSummary] = useState<ExclusionsSummary>(() => getEmptyExclusionsSummary());
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
     const [storageSummary, setStorageSummary] = useState<any>(null);
     const [storageSummaryLoading, setStorageSummaryLoading] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [activeSection, setActiveSection] = useState(() => {
-        const hash = window.location.hash.replace('#', '');
-        if (hash.startsWith('maintenance-')) {
-            const section = hash.replace('maintenance-', '');
-            if (section === 'overlays') return 'overview';
-            return section;
-        }
-        return 'overview';
-    });
+    const [activeSection, setActiveSection] = useState(() => getInitialMaintenanceSection(window.location.hash));
 
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToasts(t => pushToast(t, message, type));
     }, []);
-    const isMaintenanceDisabledError = useCallback((error: any) => {
-        const msg = String(error?.message || '');
-        return msg.includes('Maintenance Experimental Mode is disabled');
-    }, []);
-
-    const sections = [
-        { id: 'overview', label: 'Overview' },
-        { id: 'exclusions', label: 'Exclusions' },
-        { id: 'rules', label: 'Rules' },
-        { id: 'collections', label: 'Collections' },
-        { id: 'candidates', label: 'Candidates' },
-        { id: 'calendar', label: 'Calendar' },
-        { id: 'storage', label: 'Storage Metrics' },
-        { id: 'library', label: 'Rule Library' },
-        { id: 'settings', label: 'Cleaner Settings' },
-        { id: 'runs', label: 'Logs' }
-    ];
-
     useEffect(() => {
         window.location.hash = `maintenance-${activeSection}`;
     }, [activeSection]);
@@ -127,43 +102,8 @@ export const MaintenanceDashboard: React.FC = () => {
             setRuns(Array.isArray(runsData) ? runsData : []);
             setPreviewGroups(Array.isArray(previewData?.previews) ? previewData.previews : []);
             setRules(Array.isArray(rulesData) ? rulesData : []);
-            setPreferences(prefData || {
-                global: { dryRunByDefault: true, maxActionsPerRun: 25, requireConfirmForDestructive: true },
-                exclusions: { ratingKeys: [], titles: [], libraries: [] }
-            });
-            const previewAll = Array.isArray(previewData?.previews) ? previewData.previews : [];
-            const uniqueItems = new Map<string, any>();
-            const libraryMap: Record<string, { libraryTitle: string; count: number; reclaimGB: number }> = {};
-            const ruleInsights = previewAll.map((preview: any) => {
-                const sample = Array.isArray(preview?.sample) ? preview.sample : [];
-                let ruleReclaim = 0;
-                sample.forEach((item: any) => {
-                    const ratingKey = String(item?.ratingKey || '');
-                    if (ratingKey && !uniqueItems.has(ratingKey)) uniqueItems.set(ratingKey, item);
-                    const size = Number(item?.sizeGB || 0);
-                    ruleReclaim += size;
-                    const libraryTitle = item?.libraryTitle || 'Unknown Library';
-                    if (!libraryMap[libraryTitle]) libraryMap[libraryTitle] = { libraryTitle, count: 0, reclaimGB: 0 };
-                    libraryMap[libraryTitle].count += 1;
-                    libraryMap[libraryTitle].reclaimGB += size;
-                });
-                return {
-                    ruleId: String(preview?.ruleId || ''),
-                    ruleName: preview?.ruleName || 'Unnamed Rule',
-                    totalMatches: Number(preview?.totalMatches || sample.length || 0),
-                    reclaimGB: ruleReclaim
-                };
-            });
-            const uniqueValues = Array.from(uniqueItems.values());
-            const estimatedReclaimGB = uniqueValues.reduce((sum: number, item: any) => sum + Number(item?.sizeGB || 0), 0);
-            const totalMatches = ruleInsights.reduce((sum: number, rule: any) => sum + Number(rule.totalMatches || 0), 0);
-            setOverviewInsights({
-                totalMatches,
-                uniqueMatches: uniqueValues.length,
-                estimatedReclaimGB,
-                libraries: Object.values(libraryMap).sort((a, b) => b.reclaimGB - a.reclaimGB),
-                rules: ruleInsights.sort((a: any, b: any) => b.reclaimGB - a.reclaimGB)
-            });
+            setPreferences(prefData || getDefaultMaintenancePreferences());
+            setOverviewInsights(buildOverviewInsights(previewData));
         } catch (e: any) {
             if (isMaintenanceDisabledError(e)) {
                 setMaintenanceFeatureEnabled(false);
@@ -173,7 +113,7 @@ export const MaintenanceDashboard: React.FC = () => {
         } finally {
             if (!silent) setLoading(false);
         }
-    }, [addToast, isMaintenanceDisabledError]);
+    }, [addToast]);
 
     useEffect(() => {
         loadOverview();
@@ -221,7 +161,7 @@ export const MaintenanceDashboard: React.FC = () => {
         } finally {
             setIsLoadingCandidates(false);
         }
-    }, [addToast, isMaintenanceDisabledError, maintenanceFeatureEnabled]);
+    }, [addToast, maintenanceFeatureEnabled]);
 
     useEffect(() => {
         if (maintenanceFeatureEnabled && (activeSection === 'candidates' || activeSection === 'storage' || activeSection === 'calendar')) {
@@ -243,11 +183,7 @@ export const MaintenanceDashboard: React.FC = () => {
         if (!maintenanceFeatureEnabled) return;
         try {
             const payload = await apiFetch('/api/maintenance/exclusions/summary');
-            setExclusionsSummary({
-                ratingKeys: Array.isArray(payload?.ratingKeys) ? payload.ratingKeys : [],
-                titles: Array.isArray(payload?.titles) ? payload.titles : [],
-                libraries: Array.isArray(payload?.libraries) ? payload.libraries : []
-            });
+            setExclusionsSummary(normalizeExclusionsSummary(payload));
         } catch (e: any) {
             if (isMaintenanceDisabledError(e)) {
                 setMaintenanceFeatureEnabled(false);
@@ -255,7 +191,7 @@ export const MaintenanceDashboard: React.FC = () => {
             }
             addToast(e.message || 'Failed to load exclusions summary.', 'error');
         }
-    }, [addToast, isMaintenanceDisabledError, maintenanceFeatureEnabled]);
+    }, [addToast, maintenanceFeatureEnabled]);
 
     const refreshExclusionsSummaryQuietly = useCallback(() => {
         loadExclusionsSummary().catch(() => { });
@@ -294,7 +230,7 @@ export const MaintenanceDashboard: React.FC = () => {
         } finally {
             setLibraryBrowseLoading(false);
         }
-    }, [addToast, isMaintenanceDisabledError, libraryBrowseId, libraryBrowseLimit, libraryBrowsePage, libraryBrowseSearch, maintenanceFeatureEnabled]);
+    }, [addToast, libraryBrowseId, libraryBrowseLimit, libraryBrowsePage, libraryBrowseSearch, maintenanceFeatureEnabled]);
 
     const loadStorageSummary = useCallback(async (ruleId?: string) => {
         if (!maintenanceFeatureEnabled) return;
@@ -312,7 +248,7 @@ export const MaintenanceDashboard: React.FC = () => {
         } finally {
             setStorageSummaryLoading(false);
         }
-    }, [addToast, isMaintenanceDisabledError, maintenanceFeatureEnabled]);
+    }, [addToast, maintenanceFeatureEnabled]);
 
     useEffect(() => {
         if (maintenanceFeatureEnabled && activeSection === 'exclusions') {
@@ -332,11 +268,7 @@ export const MaintenanceDashboard: React.FC = () => {
         }
     }, [activeSection, candidateRuleId, maintenanceFeatureEnabled, loadStorageSummary]);
 
-    const filteredCandidates = candidateItems.filter((item: any) => {
-        if (!candidateSearch.trim()) return true;
-        const q = candidateSearch.trim().toLowerCase();
-        return `${item.title || ''} ${item.libraryTitle || ''}`.toLowerCase().includes(q);
-    });
+    const filteredCandidates = filterCandidateItems(candidateItems, candidateSearch);
     const selectedCandidateRule = useMemo(
         () => rules.find((rule: any) => rule.id === candidateRuleId) || null,
         [rules, candidateRuleId]
@@ -363,46 +295,20 @@ export const MaintenanceDashboard: React.FC = () => {
                 <h1 className="page-title">Cleaner</h1>
             </header>
             <div className="w-full flex flex-col p-0 md:p-8 bg-transparent md:glass-card rounded-none md:rounded-2xl border-0 md:border shadow-none">
-                <div className="md:hidden mb-3">
-                    <label className="text-[10px] text-muted font-bold uppercase tracking-wider mb-1 block">Module Page</label>
-                    <CustomSelect
-                        value={activeSection}
-                        onChange={(value) => setActiveSection(value)}
-                        compact
-                        className="w-full"
-                        options={sections.map((section) => ({ label: section.label, value: section.id }))}
-                    />
-                </div>
+                <MaintenanceMobileSectionSelect
+                    activeSection={activeSection}
+                    sections={MAINTENANCE_SECTIONS}
+                    setActiveSection={setActiveSection}
+                />
                 <div className="md:grid md:grid-cols-[280px_minmax(0,1fr)] md:gap-6">
-                    <aside className="hidden md:block glass-card-sm p-3 h-fit sticky top-20">
-                        <p className="text-muted text-xs uppercase tracking-wider font-bold mb-2 px-2">Module Pages</p>
-                        <div className="space-y-1">
-                            {sections.map((section) => (
-                                <button
-                                    key={section.id}
-                                    type="button"
-                                    onClick={() => setActiveSection(section.id)}
-                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${activeSection === section.id ? 'bg-plex text-background' : 'text-muted hover:text-text hover:bg-white/5'}`}
-                                >
-                                    {section.label}
-                                </button>
-                            ))}
-                        </div>
-                    </aside>
+                    <MaintenanceSectionSidebar
+                        activeSection={activeSection}
+                        sections={MAINTENANCE_SECTIONS}
+                        setActiveSection={setActiveSection}
+                    />
                     <div className="overflow-y-auto flex-grow mb-4 custom-scrollbar space-y-4 md:pr-2">
                         {!maintenanceFeatureEnabled && (
-                            <div className="glass-card-sm border-yellow-500/30 p-5">
-                                <h3 className="text-xl font-bold text-plex mb-2">Cleaner Disabled</h3>
-                                <p className="text-sm text-muted mb-3">Experimental Cleaner Mode is currently OFF.</p>
-                                <p className="text-xs text-muted">Enable it in `Settings` → `System` under `Maintenance Experimental Mode`, then click Save Settings.</p>
-                                <button
-                                    type="button"
-                                    onClick={() => { window.location.href = portalUrl('/settings?focus=maintenance-toggle#system'); }}
-                                    className="mt-3 px-3 py-1.5 bg-plex text-background rounded-md text-xs font-semibold hover:bg-plex-hover transition-colors"
-                                >
-                                    Open Settings
-                                </button>
-                            </div>
+                            <MaintenanceDisabledNotice />
                         )}
                         {maintenanceFeatureEnabled && (
                             <>
