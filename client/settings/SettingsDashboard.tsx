@@ -644,6 +644,43 @@ export const SettingsDashboard: React.FC = () => {
         });
     };
 
+    const settingsTabPanelProps = {
+        activeTab, addToast, streamRulesSaveHandlerRef, initialSettings,
+        mediaServerType, token, plexServerUrl, jellyfinUrl, jellyfinApiKey, servers, selectedServer,
+        checkInterval, libraries, defaultLibraryIds, hideStreamUsers, showUsernamesInAnalytics, requestUrl, contactUrl,
+        setMediaServerType, setToken, setPlexServerUrl, setJellyfinUrl, setJellyfinApiKey, setSelectedServer,
+        setCheckInterval, setDefaultLibraryIds, setHideStreamUsers, setShowUsernamesInAnalytics, setRequestUrl,
+        setContactUrl, handleFetchServers,
+        smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, emailDaysBefore, testRecipient,
+        isTestingSmtp, setSmtpHost, setSmtpPort, setSmtpUser, setSmtpPass, setSmtpFrom, setSmtpSecure,
+        setEmailDaysBefore, setTestRecipient, handleTestEmail,
+        newsletterFrequency, newsletterDay, publicDomain, isTestingNewsletter, isSendingNewsletter,
+        setNewsletterFrequency, setNewsletterDay, setPublicDomain, handleTestNewsletter, handleSendNewsletterNow,
+        inactiveCleanupEnabled, inactiveCleanupDays, setInactiveCleanupEnabled, setInactiveCleanupDays,
+        sonarrUrl, sonarrApiKey, radarrUrl, radarrApiKey, tmdbApiKey, tautulliUrl, tautulliApiKey,
+        jellystatUrl, jellystatApiKey, requestAppType, requestAppUrl, requestAppApiKey,
+        setSonarrUrl, setSonarrApiKey, setRadarrUrl, setRadarrApiKey, setTmdbApiKey, setTautulliUrl,
+        setTautulliApiKey, setJellystatUrl, setJellystatApiKey, setRequestAppType, setRequestAppUrl, setRequestAppApiKey,
+        dashboardLayout, updateDashboardLayout, navOrder, setNavOrder, users,
+        statusConfig, publicStatusEnabled, setPublicStatusEnabled, setStatusDraft, fetchStatusConfig,
+        contactWhatsApp, contactEmail, setContactWhatsApp, setContactEmail,
+        customLogoUrl, brandingTheme, backgroundImageUrl, useScrollRevealAnimations, useCinematicLoading,
+        useBrandedSkeleton, useTrendingSlideshow, trendingSlideshowInterval, useTrendingSlideshowOnLogin,
+        use24HourClock, showPosterQualityBadges, allowTemporaryAccess, announcement, isPushingAnnouncement,
+        referralEnabled, referralTrialDays, referralRewardDays, setCustomLogoUrl, setLogoFile, setBrandingTheme,
+        setBackgroundImageUrl, setUseScrollRevealAnimations, setUseCinematicLoading, setUseBrandedSkeleton,
+        setUseTrendingSlideshow, setTrendingSlideshowInterval, setUseTrendingSlideshowOnLogin, setUse24HourClock,
+        setShowPosterQualityBadges, setAllowTemporaryAccess, setAnnouncement, handlePushAnnouncement,
+        setReferralEnabled, setReferralTrialDays, setReferralRewardDays,
+        tasks, handleRunTask, systemHealth, highlightMaintenanceToggle, maintenanceExperimentalEnabled,
+        autoBackupEnabled, autoBackupIntervalDays, autoBackupRetentionCount, backupRestoreText, backupFiles,
+        isRestoringBackup, diagnostics, isLoadingDiagnostics, pagedAuditEntries, auditLogPage, totalAuditLogPages,
+        isLoadingAuditLog, setMaintenanceExperimentalEnabled, setAutoBackupEnabled, setAutoBackupIntervalDays,
+        setAutoBackupRetentionCount, setBackupRestoreText, handleDownloadBackup, handleCreateBackupFile,
+        handleRestoreBackup, handleRestoreFromFile, fetchDiagnostics, fetchAuditLog, setAuditLogPage,
+        deletedUsersLog, pagedEmailEntries, emailLogPage, totalEmailLogPages, handleUnblockDeletedUser, setEmailLogPage,
+    };
+
     return (
         <div className="w-full flex flex-col box-border">
             <Loader isLoading={isLoading} />
@@ -673,179 +710,7 @@ export const SettingsDashboard: React.FC = () => {
 
                     <div className="overflow-y-auto flex-grow mb-4 custom-scrollbar md:pr-1 min-w-0 w-full">
                         <div className="settings-panel">
-                            <SettingsTabPanel
-                                activeTab={activeTab}
-                                addToast={addToast}
-                                streamRulesSaveHandlerRef={streamRulesSaveHandlerRef}
-                                initialSettings={initialSettings}
-                                mediaServerType={mediaServerType}
-                                token={token}
-                                plexServerUrl={plexServerUrl}
-                                jellyfinUrl={jellyfinUrl}
-                                jellyfinApiKey={jellyfinApiKey}
-                                servers={servers}
-                                selectedServer={selectedServer}
-                                checkInterval={checkInterval}
-                                libraries={libraries}
-                                defaultLibraryIds={defaultLibraryIds}
-                                hideStreamUsers={hideStreamUsers}
-                                showUsernamesInAnalytics={showUsernamesInAnalytics}
-                                requestUrl={requestUrl}
-                                contactUrl={contactUrl}
-                                setMediaServerType={setMediaServerType}
-                                setToken={setToken}
-                                setPlexServerUrl={setPlexServerUrl}
-                                setJellyfinUrl={setJellyfinUrl}
-                                setJellyfinApiKey={setJellyfinApiKey}
-                                setSelectedServer={setSelectedServer}
-                                setCheckInterval={setCheckInterval}
-                                setDefaultLibraryIds={setDefaultLibraryIds}
-                                setHideStreamUsers={setHideStreamUsers}
-                                setShowUsernamesInAnalytics={setShowUsernamesInAnalytics}
-                                setRequestUrl={setRequestUrl}
-                                setContactUrl={setContactUrl}
-                                handleFetchServers={handleFetchServers}
-                                smtpHost={smtpHost}
-                                smtpPort={smtpPort}
-                                smtpUser={smtpUser}
-                                smtpPass={smtpPass}
-                                smtpFrom={smtpFrom}
-                                smtpSecure={smtpSecure}
-                                emailDaysBefore={emailDaysBefore}
-                                testRecipient={testRecipient}
-                                isTestingSmtp={isTestingSmtp}
-                                setSmtpHost={setSmtpHost}
-                                setSmtpPort={setSmtpPort}
-                                setSmtpUser={setSmtpUser}
-                                setSmtpPass={setSmtpPass}
-                                setSmtpFrom={setSmtpFrom}
-                                setSmtpSecure={setSmtpSecure}
-                                setEmailDaysBefore={setEmailDaysBefore}
-                                setTestRecipient={setTestRecipient}
-                                handleTestEmail={handleTestEmail}
-                                newsletterFrequency={newsletterFrequency}
-                                newsletterDay={newsletterDay}
-                                publicDomain={publicDomain}
-                                isTestingNewsletter={isTestingNewsletter}
-                                isSendingNewsletter={isSendingNewsletter}
-                                setNewsletterFrequency={setNewsletterFrequency}
-                                setNewsletterDay={setNewsletterDay}
-                                setPublicDomain={setPublicDomain}
-                                handleTestNewsletter={handleTestNewsletter}
-                                handleSendNewsletterNow={handleSendNewsletterNow}
-                                inactiveCleanupEnabled={inactiveCleanupEnabled}
-                                inactiveCleanupDays={inactiveCleanupDays}
-                                setInactiveCleanupEnabled={setInactiveCleanupEnabled}
-                                setInactiveCleanupDays={setInactiveCleanupDays}
-                                sonarrUrl={sonarrUrl}
-                                sonarrApiKey={sonarrApiKey}
-                                radarrUrl={radarrUrl}
-                                radarrApiKey={radarrApiKey}
-                                tmdbApiKey={tmdbApiKey}
-                                tautulliUrl={tautulliUrl}
-                                tautulliApiKey={tautulliApiKey}
-                                jellystatUrl={jellystatUrl}
-                                jellystatApiKey={jellystatApiKey}
-                                requestAppType={requestAppType}
-                                requestAppUrl={requestAppUrl}
-                                requestAppApiKey={requestAppApiKey}
-                                setSonarrUrl={setSonarrUrl}
-                                setSonarrApiKey={setSonarrApiKey}
-                                setRadarrUrl={setRadarrUrl}
-                                setRadarrApiKey={setRadarrApiKey}
-                                setTmdbApiKey={setTmdbApiKey}
-                                setTautulliUrl={setTautulliUrl}
-                                setTautulliApiKey={setTautulliApiKey}
-                                setJellystatUrl={setJellystatUrl}
-                                setJellystatApiKey={setJellystatApiKey}
-                                setRequestAppType={setRequestAppType}
-                                setRequestAppUrl={setRequestAppUrl}
-                                setRequestAppApiKey={setRequestAppApiKey}
-                                dashboardLayout={dashboardLayout}
-                                updateDashboardLayout={updateDashboardLayout}
-                                navOrder={navOrder}
-                                setNavOrder={setNavOrder}
-                                users={users}
-                                statusConfig={statusConfig}
-                                publicStatusEnabled={publicStatusEnabled}
-                                setPublicStatusEnabled={setPublicStatusEnabled}
-                                setStatusDraft={setStatusDraft}
-                                fetchStatusConfig={fetchStatusConfig}
-                                contactWhatsApp={contactWhatsApp}
-                                contactEmail={contactEmail}
-                                setContactWhatsApp={setContactWhatsApp}
-                                setContactEmail={setContactEmail}
-                                customLogoUrl={customLogoUrl}
-                                brandingTheme={brandingTheme}
-                                backgroundImageUrl={backgroundImageUrl}
-                                useScrollRevealAnimations={useScrollRevealAnimations}
-                                useCinematicLoading={useCinematicLoading}
-                                useBrandedSkeleton={useBrandedSkeleton}
-                                useTrendingSlideshow={useTrendingSlideshow}
-                                trendingSlideshowInterval={trendingSlideshowInterval}
-                                useTrendingSlideshowOnLogin={useTrendingSlideshowOnLogin}
-                                use24HourClock={use24HourClock}
-                                showPosterQualityBadges={showPosterQualityBadges}
-                                allowTemporaryAccess={allowTemporaryAccess}
-                                announcement={announcement}
-                                isPushingAnnouncement={isPushingAnnouncement}
-                                referralEnabled={referralEnabled}
-                                referralTrialDays={referralTrialDays}
-                                referralRewardDays={referralRewardDays}
-                                setCustomLogoUrl={setCustomLogoUrl}
-                                setLogoFile={setLogoFile}
-                                setBrandingTheme={setBrandingTheme}
-                                setBackgroundImageUrl={setBackgroundImageUrl}
-                                setUseScrollRevealAnimations={setUseScrollRevealAnimations}
-                                setUseCinematicLoading={setUseCinematicLoading}
-                                setUseBrandedSkeleton={setUseBrandedSkeleton}
-                                setUseTrendingSlideshow={setUseTrendingSlideshow}
-                                setTrendingSlideshowInterval={setTrendingSlideshowInterval}
-                                setUseTrendingSlideshowOnLogin={setUseTrendingSlideshowOnLogin}
-                                setUse24HourClock={setUse24HourClock}
-                                setShowPosterQualityBadges={setShowPosterQualityBadges}
-                                setAllowTemporaryAccess={setAllowTemporaryAccess}
-                                setAnnouncement={setAnnouncement}
-                                handlePushAnnouncement={handlePushAnnouncement}
-                                setReferralEnabled={setReferralEnabled}
-                                setReferralTrialDays={setReferralTrialDays}
-                                setReferralRewardDays={setReferralRewardDays}
-                                tasks={tasks}
-                                handleRunTask={handleRunTask}
-                                systemHealth={systemHealth}
-                                highlightMaintenanceToggle={highlightMaintenanceToggle}
-                                maintenanceExperimentalEnabled={maintenanceExperimentalEnabled}
-                                autoBackupEnabled={autoBackupEnabled}
-                                autoBackupIntervalDays={autoBackupIntervalDays}
-                                autoBackupRetentionCount={autoBackupRetentionCount}
-                                backupRestoreText={backupRestoreText}
-                                backupFiles={backupFiles}
-                                isRestoringBackup={isRestoringBackup}
-                                diagnostics={diagnostics}
-                                isLoadingDiagnostics={isLoadingDiagnostics}
-                                pagedAuditEntries={pagedAuditEntries}
-                                auditLogPage={auditLogPage}
-                                totalAuditLogPages={totalAuditLogPages}
-                                isLoadingAuditLog={isLoadingAuditLog}
-                                setMaintenanceExperimentalEnabled={setMaintenanceExperimentalEnabled}
-                                setAutoBackupEnabled={setAutoBackupEnabled}
-                                setAutoBackupIntervalDays={setAutoBackupIntervalDays}
-                                setAutoBackupRetentionCount={setAutoBackupRetentionCount}
-                                setBackupRestoreText={setBackupRestoreText}
-                                handleDownloadBackup={handleDownloadBackup}
-                                handleCreateBackupFile={handleCreateBackupFile}
-                                handleRestoreBackup={handleRestoreBackup}
-                                handleRestoreFromFile={handleRestoreFromFile}
-                                fetchDiagnostics={fetchDiagnostics}
-                                fetchAuditLog={fetchAuditLog}
-                                setAuditLogPage={setAuditLogPage}
-                                deletedUsersLog={deletedUsersLog}
-                                pagedEmailEntries={pagedEmailEntries}
-                                emailLogPage={emailLogPage}
-                                totalEmailLogPages={totalEmailLogPages}
-                                handleUnblockDeletedUser={handleUnblockDeletedUser}
-                                setEmailLogPage={setEmailLogPage}
-                            />
+                            <SettingsTabPanel {...settingsTabPanelProps} />
                         </div>
                     </div>
                 </div>
