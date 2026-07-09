@@ -1,7 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Calendar, Check, Search, Settings, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
+import { MaintenanceCandidatesSection } from '../maintenance/MaintenanceCandidatesSection';
+import { MaintenanceOverviewSection } from '../maintenance/MaintenanceOverviewSection';
+import { MaintenanceRunLogsSection } from '../maintenance/MaintenanceRunLogsSection';
+import { MaintenanceStorageSection } from '../maintenance/MaintenanceStorageSection';
 import { LibraryMaintenancePanel } from '../maintenance/LibraryMaintenancePanel';
+import {
+    buildCalendarEligibility,
+    ELIGIBLE_NOW_KEY,
+    formatReclaimSizeFromGB,
+    getEligibilityTooltip,
+    getSelectedCalendarGroup
+} from '../maintenance/maintenanceDashboardUtils';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
@@ -335,107 +346,13 @@ export const MaintenanceDashboard: React.FC = () => {
         [preferences?.exclusions?.ratingKeys]
     );
 
-    const formatReclaimSizeFromGB = (sizeGB: number) => {
-        const safeGB = Math.max(0, Number(sizeGB || 0));
-        if (safeGB >= 1024) {
-            return `${Math.ceil(safeGB / 1024)} TB`;
-        }
-        if (safeGB >= 1) {
-            return `${Math.ceil(safeGB)} GB`;
-        }
-        return `${Math.ceil(safeGB * 1024)} MB`;
-    };
-
-    const getEligibilityTooltip = (item: any) => {
-        const daysUntilEligible = Math.max(0, Number(item?.daysUntilEligible || 0));
-        const watchDays = Number(item?.daysSinceLastWatch);
-        const addedDays = Number(item?.daysSinceAdded);
-        const base = daysUntilEligible > 0
-            ? `Not eligible yet. Rule grace has ${daysUntilEligible} day(s) remaining.`
-            : 'Eligible now for this rule.';
-        if (Number.isFinite(watchDays) && watchDays >= 0) {
-            return `${base} Last watched ${watchDays} day(s) ago.`;
-        }
-        if (Number.isFinite(addedDays) && addedDays >= 0) {
-            return `${base} Added ${addedDays} day(s) ago.`;
-        }
-        return base;
-    };
-
-    const ELIGIBLE_NOW_KEY = 'eligible-now';
     const calendarEligibility = useMemo(() => {
-        const graceDays = Math.max(0, Number(selectedCandidateRule?.graceDays || 0));
-        const createdAtMs = Date.parse(String(selectedCandidateRule?.createdAt || ''));
-        const hasRuleCreatedAt = Number.isFinite(createdAtMs);
-        const daysSinceRuleCreated = hasRuleCreatedAt
-            ? Math.max(0, Math.floor((Date.now() - createdAtMs) / (24 * 60 * 60 * 1000)))
-            : graceDays;
-        const daysUntilEligible = Math.max(0, graceDays - daysSinceRuleCreated);
-        const nowItems: any[] = [];
-        const byDay = new Map<string, any[]>();
-        filteredCandidates.forEach((item: any) => {
-            if (daysUntilEligible <= 0) {
-                nowItems.push({ ...item, daysUntilEligible: 0, eligibleDate: null });
-                return;
-            }
-            const etaDate = new Date(Date.now() + (daysUntilEligible * 24 * 60 * 60 * 1000));
-            const dateKey = etaDate.toISOString().split('T')[0];
-            const enriched = { ...item, daysUntilEligible, eligibleDate: dateKey };
-            if (!byDay.has(dateKey)) byDay.set(dateKey, []);
-            byDay.get(dateKey)?.push(enriched);
-        });
-        const laterByDay = Array.from(byDay.entries())
-            .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-            .map(([date, items]) => ({
-                date,
-                items,
-                count: items.length,
-                reclaimGB: items.reduce((sum: number, item: any) => sum + Number(item.sizeGB || 0), 0),
-                preview: items.slice(0, 4),
-                minDaysUntil: Math.min(...items.map((item: any) => Number(item.daysUntilEligible || 0)))
-            }));
-        return {
-            graceDays,
-            daysSinceRuleCreated,
-            daysUntilEligible,
-            eligibleNow: nowItems.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''))),
-            eligibleLaterByDay: laterByDay
-        };
+        return buildCalendarEligibility(filteredCandidates, selectedCandidateRule);
     }, [filteredCandidates, selectedCandidateRule?.createdAt, selectedCandidateRule?.graceDays]);
 
     const selectedCalendarGroup = useMemo(() => {
-        if (!selectedCalendarDate) return null;
-        if (selectedCalendarDate === ELIGIBLE_NOW_KEY) {
-            const items = calendarEligibility.eligibleNow;
-            return {
-                date: ELIGIBLE_NOW_KEY,
-                title: 'Eligible Now',
-                items,
-                count: items.length,
-                reclaimGB: items.reduce((sum: number, item: any) => sum + Number(item.sizeGB || 0), 0)
-            };
-        }
-        const day = calendarEligibility.eligibleLaterByDay.find((group) => group.date === selectedCalendarDate);
-        if (!day) return null;
-        return {
-            ...day,
-            title: new Date(`${day.date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-        };
+        return getSelectedCalendarGroup(selectedCalendarDate, calendarEligibility);
     }, [calendarEligibility, selectedCalendarDate]);
-
-    const renderScaffoldPage = (title: string, description: string, bullets: string[]) => (
-        <div className="glass-card-sm p-5">
-            <h3 className="text-xl font-bold text-plex mb-2">{title}</h3>
-            <p className="text-sm text-muted mb-4">{description}</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {bullets.map((item) => (
-                    <div key={item} className="bg-black/20 border border-border rounded-lg px-3 py-2 text-sm text-text">
-                        {item}
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
 
     return (
         <div className="w-full flex flex-col">
@@ -489,78 +406,12 @@ export const MaintenanceDashboard: React.FC = () => {
                         {maintenanceFeatureEnabled && (
                             <>
                                 {activeSection === 'overview' && (
-                                    <div className="space-y-4">
-                                        <div className="glass-card-sm p-5">
-                                            <h3 className="text-xl font-bold text-plex mb-2">Cleaner Control Center</h3>
-                                            <p className="text-sm text-muted mb-4">Dedicated module for library maintenance automation: rules, collections, candidates, execution timeline, calendar, storage, and governance.</p>
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted">Indexed Media</p>
-                                                    <p className="text-2xl font-bold text-text">{overview?.itemCount || 0}</p>
-                                                </div>
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted">Request Records</p>
-                                                    <p className="text-2xl font-bold text-text">{overview?.requestItemCount || 0}</p>
-                                                </div>
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted">Rules with Matches</p>
-                                                    <p className="text-2xl font-bold text-text">{previewGroups.filter((p: any) => (p.totalMatches || 0) > 0).length}</p>
-                                                </div>
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted">Total Runs</p>
-                                                    <p className="text-2xl font-bold text-text">{runs.length}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="glass-card-sm p-5 space-y-4">
-                                            <h4 className="font-bold text-text">Reclaim & Impact Overview</h4>
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted">Total Matched (Rules Combined)</p>
-                                                    <p className="text-2xl font-bold text-text">{overviewInsights.totalMatches}</p>
-                                                </div>
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted">Unique Candidate Titles</p>
-                                                    <p className="text-2xl font-bold text-text">{overviewInsights.uniqueMatches}</p>
-                                                </div>
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted">Estimated Reclaim</p>
-                                                    <p className="text-2xl font-bold text-text">{formatReclaimSizeFromGB(overviewInsights.estimatedReclaimGB)}</p>
-                                                </div>
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted">Top Impact Library</p>
-                                                    <p className="text-sm font-bold text-text line-clamp-2">{overviewInsights.libraries[0]?.libraryTitle || '—'}</p>
-                                                    <p className="text-xs text-muted mt-1">{overviewInsights.libraries[0] ? formatReclaimSizeFromGB(overviewInsights.libraries[0].reclaimGB) : 'No data'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted font-bold uppercase tracking-wider mb-2">Top Libraries by Reclaim</p>
-                                                    <div className="space-y-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-1">
-                                                        {overviewInsights.libraries.slice(0, 8).map((lib) => (
-                                                            <div key={`overview-lib-${lib.libraryTitle}`} className="flex items-center justify-between text-xs bg-background/30 border border-white/5 rounded px-2 py-1.5">
-                                                                <span className="text-text line-clamp-1">{lib.libraryTitle}</span>
-                                                                <span className="text-muted ml-2 whitespace-nowrap">{formatReclaimSizeFromGB(lib.reclaimGB)} · {lib.count}</span>
-                                                            </div>
-                                                        ))}
-                                                        {!overviewInsights.libraries.length && <p className="text-xs text-muted">No matching candidates yet.</p>}
-                                                    </div>
-                                                </div>
-                                                <div className="bg-background/30 rounded-lg p-3 border border-white/5">
-                                                    <p className="text-xs text-muted font-bold uppercase tracking-wider mb-2">Top Rules by Reclaim</p>
-                                                    <div className="space-y-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-1">
-                                                        {overviewInsights.rules.slice(0, 8).map((rule) => (
-                                                            <div key={`overview-rule-${rule.ruleId}`} className="flex items-center justify-between text-xs bg-background/30 border border-white/5 rounded px-2 py-1.5">
-                                                                <span className="text-text line-clamp-1">{rule.ruleName}</span>
-                                                                <span className="text-muted ml-2 whitespace-nowrap">{formatReclaimSizeFromGB(rule.reclaimGB)} · {rule.totalMatches}</span>
-                                                            </div>
-                                                        ))}
-                                                        {!overviewInsights.rules.length && <p className="text-xs text-muted">No rules with match data yet.</p>}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <MaintenanceOverviewSection
+                                        overview={overview}
+                                        overviewInsights={overviewInsights}
+                                        previewGroups={previewGroups}
+                                        runs={runs}
+                                    />
                                 )}
                                 {activeSection === 'rules' && <LibraryMaintenancePanel addToast={addToast} onRulesUpdated={() => loadOverview(true)} />}
                                 {activeSection === 'collections' && (
@@ -608,95 +459,18 @@ export const MaintenanceDashboard: React.FC = () => {
                                     </div>
                                 )}
                                 {activeSection === 'candidates' && (
-                                    <div className="glass-card-sm p-3 md:p-5 space-y-3">
-                                        <div className="flex flex-wrap items-center justify-between gap-3">
-                                            <h3 className="text-xl font-bold text-plex">Candidates</h3>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    className="p-2 rounded border border-border bg-card text-text text-sm"
-                                                    placeholder="Search titles..."
-                                                    value={candidateSearch}
-                                                    onChange={(e) => setCandidateSearch(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {rules.map((rule: any) => (
-                                                <button
-                                                    key={`candidate-rule-tab-${rule.id}`}
-                                                    type="button"
-                                                    onClick={() => setCandidateRuleId(rule.id)}
-                                                    className={`px-3 py-1.5 text-xs font-semibold rounded-md border transition-colors ${candidateRuleId === rule.id ? 'bg-plex text-background border-plex' : 'bg-background/30 text-text border-white/5 hover:border-plex/40'}`}
-                                                >
-                                                    {rule.name || 'Unnamed Rule'}
-                                                </button>
-                                            ))}
-                                            {!rules.length && <p className="text-sm text-muted">No saved rules found. Create a rule in `Rules` first.</p>}
-                                        </div>
-                                        {selectedCandidateRule && (
-                                            <p className="text-xs text-muted">
-                                                Showing candidates for <span className="text-text font-semibold">{selectedCandidateRule.name || 'Unnamed Rule'}</span> only.
-                                            </p>
-                                        )}
-                                        {isLoadingCandidates ? <p className="text-sm text-muted">Loading candidates...</p> : (
-                                            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-2 md:gap-3 max-h-[620px] overflow-y-auto custom-scrollbar pr-1">
-                                                {filteredCandidates.map((item: any) => (
-                                                    <div key={`candidate-${item._ruleId || candidateRuleId}-${item.ratingKey}`} className="bg-background/30 border border-white/5 rounded-lg overflow-hidden">
-                                                        <div className="aspect-[2/3] bg-black/40">
-                                                            {item.thumb ? (
-                                                                <img src={portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=220&height=330`)} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center text-xs text-muted">No Poster</div>
-                                                            )}
-                                                        </div>
-                                                        <div className="p-2">
-                                                            <p className="text-xs text-text line-clamp-2">{item.title}</p>
-                                                            <p className="text-[11px] text-muted mt-1">{item.libraryTitle || 'Unknown Library'}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                {!filteredCandidates.length && <p className="text-sm text-muted col-span-full">No matching candidates found for this ruleset.</p>}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <MaintenanceCandidatesSection
+                                        rules={rules}
+                                        candidateRuleId={candidateRuleId}
+                                        candidateSearch={candidateSearch}
+                                        filteredCandidates={filteredCandidates}
+                                        isLoadingCandidates={isLoadingCandidates}
+                                        selectedCandidateRule={selectedCandidateRule}
+                                        setCandidateRuleId={setCandidateRuleId}
+                                        setCandidateSearch={setCandidateSearch}
+                                    />
                                 )}
-                                {activeSection === 'runs' && (
-                                    <div className="glass-card-sm p-5 space-y-3">
-                                        <h3 className="text-xl font-bold text-plex">Logs</h3>
-                                        <div className="space-y-2 max-h-[620px] overflow-y-auto custom-scrollbar pr-1">
-                                            {runs.map((run: any) => (
-                                                <details key={`run-${run.id}`} className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                                    <summary className="cursor-pointer list-none">
-                                                        <div className="flex items-center justify-between gap-3">
-                                                            <div>
-                                                                <p className="text-sm font-semibold text-text">{run.ruleName}</p>
-                                                                <p className="text-xs text-muted">{new Date(run.startedAt).toLocaleString()} · {run.dryRun ? 'Dry-run' : 'Destructive'}</p>
-                                                            </div>
-                                                            <span className="text-[11px] px-2 py-1 rounded bg-border text-muted">{run.status}</span>
-                                                        </div>
-                                                    </summary>
-                                                    <div className="mt-3 text-xs text-muted">
-                                                        Matched {run.totals?.matched || 0} · Processed {run.totals?.processed || 0} · Deleted {run.totals?.deleted || 0} · Skipped {run.totals?.skipped || 0} · Failed {run.totals?.failed || 0}
-                                                    </div>
-                                                    {Array.isArray(run.preflight?.warnings) && run.preflight.warnings.length > 0 && (
-                                                        <div className="mt-2 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1">
-                                                            {run.preflight.warnings.join(' ')}
-                                                        </div>
-                                                    )}
-                                                    <div className="mt-2 max-h-52 overflow-y-auto custom-scrollbar pr-1 space-y-1">
-                                                        {(run.outcomes || []).slice(0, 120).map((outcome: any, idx: number) => (
-                                                            <div key={`outcome-${run.id}-${idx}`} className="text-xs bg-background/30 border border-white/5 rounded px-2 py-1">
-                                                                {(outcome.title || outcome.type || 'Item')} · {outcome.status || (outcome.success ? 'success' : 'info')}
-                                                                {outcome.reason ? ` · ${outcome.reason}` : ''}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </details>
-                                            ))}
-                                            {!runs.length && <p className="text-sm text-muted">No runs recorded yet.</p>}
-                                        </div>
-                                    </div>
-                                )}
+                                {activeSection === 'runs' && <MaintenanceRunLogsSection runs={runs} />}
                                 {activeSection === 'calendar' && (
                                     <div className="glass-card-sm p-5 space-y-3">
                                         <h3 className="text-xl font-bold text-plex">Calendar</h3>
@@ -832,88 +606,13 @@ export const MaintenanceDashboard: React.FC = () => {
                                     </div>
                                 )}
                                 {activeSection === 'storage' && (
-                                    <div className="glass-card-sm p-5 space-y-4">
-                                        <h3 className="text-xl font-bold text-plex">Storage Metrics</h3>
-                                        <p className="text-sm text-muted">Deep storage projection per library based on indexed size and current rule matches.</p>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                className="px-3 py-1.5 bg-border text-text rounded-md text-xs font-semibold hover:bg-opacity-80"
-                                                onClick={() => loadStorageSummary(candidateRuleId || undefined)}
-                                            >
-                                                {storageSummaryLoading ? 'Refreshing...' : 'Refresh Summary'}
-                                            </button>
-                                            {selectedCandidateRule && (
-                                                <p className="text-xs text-muted">Rule scope: <span className="text-text font-semibold">{selectedCandidateRule.name || 'Unnamed Rule'}</span></p>
-                                            )}
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                            <div className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                                <p className="text-xs text-muted">Library Size Before</p>
-                                                <p className="text-2xl font-bold text-text">{formatReclaimSizeFromGB(Number(storageSummary?.totals?.beforeGB || 0))}</p>
-                                            </div>
-                                            <div className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                                <p className="text-xs text-muted">Projected Reclaim</p>
-                                                <p className="text-2xl font-bold text-text">{formatReclaimSizeFromGB(Number(storageSummary?.totals?.reclaimGB || 0))}</p>
-                                            </div>
-                                            <div className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                                <p className="text-xs text-muted">Projected Size After</p>
-                                                <p className="text-2xl font-bold text-text">{formatReclaimSizeFromGB(Number(storageSummary?.totals?.afterGB || 0))}</p>
-                                            </div>
-                                            <div className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                                <p className="text-xs text-muted">Reclaim Percent</p>
-                                                <p className="text-2xl font-bold text-text">{Number(storageSummary?.totals?.reclaimPercent || 0).toFixed(1)}%</p>
-                                            </div>
-                                        </div>
-                                        <div className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                            <div className="grid grid-cols-[minmax(0,2fr)_1fr_1fr_1fr_1fr] gap-2 px-2 py-1 text-[11px] uppercase tracking-wider text-muted font-bold border-b border-border">
-                                                <span>Library</span>
-                                                <span className="text-right">Before</span>
-                                                <span className="text-right">Reclaim</span>
-                                                <span className="text-right">After</span>
-                                                <span className="text-right">Matched</span>
-                                            </div>
-                                            <div className="max-h-[420px] overflow-y-auto custom-scrollbar pr-1 space-y-1 mt-2">
-                                                {(storageSummary?.libraries || []).map((row: any) => (
-                                                    <div key={`storage-row-${row.libraryTitle}`} className="grid grid-cols-[minmax(0,2fr)_1fr_1fr_1fr_1fr] gap-2 px-2 py-2 text-sm bg-background/30 border border-white/5 rounded-lg items-center">
-                                                        <span className="text-text line-clamp-1">{row.libraryTitle}</span>
-                                                        <span className="text-muted text-right">{formatReclaimSizeFromGB(Number(row.totalSizeGB || 0))}</span>
-                                                        <span className="text-right text-plex font-semibold">{formatReclaimSizeFromGB(Number(row.reclaimGB || 0))}</span>
-                                                        <span className="text-muted text-right">{formatReclaimSizeFromGB(Number(row.afterSizeGB || 0))}</span>
-                                                        <span className="text-muted text-right">{row.matchedItems || 0}</span>
-                                                    </div>
-                                                ))}
-                                                {!storageSummaryLoading && !(storageSummary?.libraries || []).length && (
-                                                    <p className="text-sm text-muted px-2 py-2">No storage summary yet. Refresh or load candidates/rules first.</p>
-                                                )}
-                                                {storageSummaryLoading && <p className="text-sm text-muted px-2 py-2">Loading storage summary...</p>}
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                            <div className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                                <p className="text-xs text-muted">Total Indexed Items</p>
-                                                <p className="text-xl font-bold text-text">{Number(storageSummary?.totals?.items || 0)}</p>
-                                            </div>
-                                            <div className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                                <p className="text-xs text-muted">Matched Candidate Items</p>
-                                                <p className="text-xl font-bold text-text">{Number(storageSummary?.totals?.matchedItems || 0)}</p>
-                                            </div>
-                                            <div className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                                <p className="text-xs text-muted">Libraries Covered</p>
-                                                <p className="text-xl font-bold text-text">{Number(storageSummary?.totals?.libraries || 0)}</p>
-                                            </div>
-                                        </div>
-                                        {storageSummary?.rulesConsidered?.length > 0 && (
-                                            <div className="bg-background/30 border border-white/5 rounded-lg p-3">
-                                                <p className="text-xs text-muted font-bold uppercase tracking-wider mb-2">Rules Included</p>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {storageSummary.rulesConsidered.map((rule: any) => (
-                                                        <span key={`storage-rule-${rule.id}`} className="px-2 py-1 rounded bg-border text-xs text-text">{rule.name || 'Unnamed Rule'}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <MaintenanceStorageSection
+                                        candidateRuleId={candidateRuleId}
+                                        loadStorageSummary={loadStorageSummary}
+                                        selectedCandidateRule={selectedCandidateRule}
+                                        storageSummary={storageSummary}
+                                        storageSummaryLoading={storageSummaryLoading}
+                                    />
                                 )}
                                 {activeSection === 'library' && (
                                     <div className="glass-card-sm p-5 space-y-3">
