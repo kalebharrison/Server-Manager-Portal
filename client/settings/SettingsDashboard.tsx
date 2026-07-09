@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
-import { appConfirm } from '../shared/confirm';
 import { Loader, ToastContainer, pushToast, type ToastMessage } from '../shared/toast';
 import type { User, PlexServer } from '../shared/types';
-import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
+import { DEFAULT_DASHBOARD_LAYOUT, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { hasIntegrationCredentials } from './integrationDisplay';
 import { SettingsNavigation } from './SettingsNavigation';
-import { getDefaultSettingsNavOrder, ensureMaintenanceNavOrder } from './settingsNavOrder';
+import { getDefaultSettingsNavOrder } from './settingsNavOrder';
+import { hydrateSettingsFromConfig } from './settingsInitializers';
+import { buildSettingsSavePayload } from './settingsSavePayload';
+import { buildSettingsTabPanelProps } from './settingsTabPanelProps';
 import { SettingsTabPanel } from './SettingsTabPanel';
+import { usePlexServerDiscovery } from './usePlexServerDiscovery';
+import { useSettingsEmailActions } from './useSettingsEmailActions';
 import { useSettingsAdminPanel } from './useSettingsAdminPanel';
 import { useSettingsTabs } from './useSettingsTabs';
 
@@ -112,9 +116,6 @@ export const SettingsDashboard: React.FC = () => {
     const [smtpSecure, setSmtpSecure] = useState(false);
     const [emailDaysBefore, setEmailDaysBefore] = useState(7);
     const [testRecipient, setTestRecipient] = useState('');
-    const [isTestingSmtp, setIsTestingSmtp] = useState(false);
-    const [isTestingNewsletter, setIsTestingNewsletter] = useState(false);
-    const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
 
     // Newsletter States
     const [newsletterFrequency, setNewsletterFrequency] = useState('disabled');
@@ -211,6 +212,34 @@ export const SettingsDashboard: React.FC = () => {
         maintenanceExperimentalEnabled,
     });
 
+    const handleFetchServers = usePlexServerDiscovery({
+        token,
+        plexServerUrl,
+        selectedServer,
+        addToast,
+        setLoading,
+        setServers,
+        setSelectedServer,
+    });
+
+    const {
+        isTestingSmtp,
+        isTestingNewsletter,
+        isSendingNewsletter,
+        handleTestEmail,
+        handleTestNewsletter,
+        handleSendNewsletterNow,
+    } = useSettingsEmailActions({
+        addToast,
+        smtpHost,
+        smtpPort,
+        smtpUser,
+        smtpPass,
+        smtpFrom,
+        smtpSecure,
+        testRecipient,
+    });
+
     const handlePushAnnouncement = async () => {
         setIsPushingAnnouncement(true);
         try {
@@ -230,107 +259,74 @@ export const SettingsDashboard: React.FC = () => {
 
     useEffect(() => {
         if (isConfigLoaded) {
-            setToken(initialSettings.token || '');
-            setMediaServerType(initialSettings.mediaServerType === 'jellyfin' ? 'jellyfin' : 'plex');
-            setPlexServerUrl(initialSettings.plexServerUrl || '');
-            setJellyfinUrl(initialSettings.jellyfinUrl || '');
-            setJellyfinApiKey(initialSettings.jellyfinApiKey || '');
-            setSelectedServer(initialSettings.serverIdentifier || '');
-            setCheckInterval(initialSettings.checkIntervalMinutes || 60);
-            setSmtpHost(initialSettings.smtpHost || '');
-            setSmtpPort(initialSettings.smtpPort || 587);
-            setSmtpUser(initialSettings.smtpUser || '');
-            setSmtpPass(initialSettings.smtpPass || '');
-            setSmtpFrom(initialSettings.smtpFrom || '');
-            setSmtpSecure(!!initialSettings.smtpSecure);
-            setEmailDaysBefore(initialSettings.emailDaysBefore || 7);
-            setNewsletterFrequency(initialSettings.newsletterFrequency || 'disabled');
-            setNewsletterDay(initialSettings.newsletterDay || 0);
-            setInactiveCleanupEnabled(!!initialSettings.inactiveCleanupEnabled);
-            setInactiveCleanupDays(initialSettings.inactiveCleanupDays || 90);
-            setPublicDomain(initialSettings.publicDomain || 'https://portal.yourdomain.com');
-            setRequestUrl(initialSettings.requestUrl || 'https://yourdomain.com');
-            setContactUrl(initialSettings.contactUrl || '');
-            setContactWhatsApp(initialSettings.contactWhatsApp || '');
-            setContactEmail(initialSettings.contactEmail || '');
-            setSonarrUrl(initialSettings.sonarrUrl || '');
-            setSonarrApiKey(initialSettings.sonarrApiKey || '');
-            setRadarrUrl(initialSettings.radarrUrl || '');
-            setRadarrApiKey(initialSettings.radarrApiKey || '');
-            setTautulliUrl(initialSettings.tautulliUrl || '');
-            setTautulliApiKey(initialSettings.tautulliApiKey || '');
-            setJellystatUrl(initialSettings.jellystatUrl || '');
-            setJellystatApiKey(initialSettings.jellystatApiKey || '');
-            setRequestAppType(initialSettings.requestAppType === 'overseerr' ? 'seerr' : (initialSettings.requestAppType || 'none'));
-            setRequestAppUrl(initialSettings.requestAppUrl || '');
-            setRequestAppApiKey(initialSettings.requestAppApiKey || '');
-            const savedBrandingTheme = localStorage.getItem('portal-theme') || initialSettings.brandingTheme || 'plex';
-            setBrandingTheme(savedBrandingTheme);
-            setCustomLogoUrl(initialSettings.customLogoUrl || '');
-            setBackgroundImageUrl(initialSettings.backgroundImageUrl || '');
-            setUseScrollRevealAnimations(!!initialSettings.useScrollRevealAnimations);
-            setUseCinematicLoading(!!initialSettings.useCinematicLoading);
-            setUseBrandedSkeleton(initialSettings.useBrandedSkeleton !== false);
-            setUseTrendingSlideshow(!!initialSettings.useTrendingSlideshow);
-            setTrendingSlideshowInterval(initialSettings.trendingSlideshowInterval || 30);
-            setTmdbApiKey(initialSettings.tmdbApiKey || '');
-            setReferralEnabled(!!initialSettings.referralEnabled);
-            setReferralTrialDays(initialSettings.referralTrialDays || 3);
-            setReferralRewardDays(initialSettings.referralRewardDays || 7);
-            setAnnouncement(initialSettings.announcement || '');
-            if (initialSettings.navOrder) setNavOrder(ensureMaintenanceNavOrder(initialSettings.navOrder));
-            setHideStreamUsers(initialSettings.hideStreamUsers === true ? 'anonymous' : (initialSettings.hideStreamUsers || 'false'));
-            setShowUsernamesInAnalytics(!!initialSettings.showUsernamesInAnalytics);
-            setUseTrendingSlideshowOnLogin(initialSettings.useTrendingSlideshowOnLogin !== false);
-            setPublicStatusEnabled(initialSettings.publicStatusEnabled !== false);
-            if (initialSettings.defaultLibraryIds) setDefaultLibraryIds(initialSettings.defaultLibraryIds);
-            if (initialSettings.use24HourClock !== undefined) setUse24HourClock(!!initialSettings.use24HourClock);
-            if (initialSettings.showPosterQualityBadges !== undefined) setShowPosterQualityBadges(initialSettings.showPosterQualityBadges !== false);
-            if (initialSettings.allowTemporaryAccess !== undefined) setAllowTemporaryAccess(!!initialSettings.allowTemporaryAccess);
-            if (initialSettings.autoBackupEnabled !== undefined) setAutoBackupEnabled(!!initialSettings.autoBackupEnabled);
-            if (initialSettings.autoBackupIntervalDays !== undefined) setAutoBackupIntervalDays(Number(initialSettings.autoBackupIntervalDays) || 2);
-            if (initialSettings.autoBackupRetentionCount !== undefined) setAutoBackupRetentionCount(Number(initialSettings.autoBackupRetentionCount) || 10);
-            if (initialSettings.maintenanceExperimentalEnabled !== undefined) setMaintenanceExperimentalEnabled(!!initialSettings.maintenanceExperimentalEnabled);
-            const layout = normalizeSectionLayout(initialSettings.dashboardLayout);
-            dashboardLayoutRef.current = layout;
-            setDashboardLayout(layout);
-            setTestRecipient('');
-            setServers([]);
+            hydrateSettingsFromConfig(initialSettings, {
+                setToken,
+                setMediaServerType,
+                setPlexServerUrl,
+                setJellyfinUrl,
+                setJellyfinApiKey,
+                setSelectedServer,
+                setCheckInterval,
+                setSmtpHost,
+                setSmtpPort,
+                setSmtpUser,
+                setSmtpPass,
+                setSmtpFrom,
+                setSmtpSecure,
+                setEmailDaysBefore,
+                setNewsletterFrequency,
+                setNewsletterDay,
+                setInactiveCleanupEnabled,
+                setInactiveCleanupDays,
+                setPublicDomain,
+                setRequestUrl,
+                setContactUrl,
+                setContactWhatsApp,
+                setContactEmail,
+                setSonarrUrl,
+                setSonarrApiKey,
+                setRadarrUrl,
+                setRadarrApiKey,
+                setTautulliUrl,
+                setTautulliApiKey,
+                setJellystatUrl,
+                setJellystatApiKey,
+                setRequestAppType,
+                setRequestAppUrl,
+                setRequestAppApiKey,
+                setBrandingTheme,
+                setCustomLogoUrl,
+                setBackgroundImageUrl,
+                setUseScrollRevealAnimations,
+                setUseCinematicLoading,
+                setUseBrandedSkeleton,
+                setUseTrendingSlideshow,
+                setTrendingSlideshowInterval,
+                setTmdbApiKey,
+                setReferralEnabled,
+                setReferralTrialDays,
+                setReferralRewardDays,
+                setAnnouncement,
+                setNavOrder,
+                setHideStreamUsers,
+                setShowUsernamesInAnalytics,
+                setUseTrendingSlideshowOnLogin,
+                setPublicStatusEnabled,
+                setDefaultLibraryIds,
+                setUse24HourClock,
+                setShowPosterQualityBadges,
+                setAllowTemporaryAccess,
+                setAutoBackupEnabled,
+                setAutoBackupIntervalDays,
+                setAutoBackupRetentionCount,
+                setMaintenanceExperimentalEnabled,
+                setDashboardLayout,
+                setTestRecipient,
+                setServers,
+                dashboardLayoutRef,
+            });
         }
     }, [initialSettings, isConfigLoaded]);
-
-    const handleFetchServers = async () => {
-        if (!token) {
-            addToast('Please enter a Plex token.', 'error');
-            return;
-        }
-        setLoading(true);
-        try {
-            const foundServers: PlexServer[] = await apiFetch('/api/plex/servers', {
-                method: 'POST',
-                body: JSON.stringify({ token, plexServerUrl: plexServerUrl || undefined }),
-            });
-
-            setServers(foundServers);
-
-            if (foundServers.length > 0) {
-                addToast('Successfully fetched servers!', 'success');
-                const currentServerStillExists = foundServers.some(s => s.identifier === selectedServer);
-                if (!currentServerStillExists) {
-                    setSelectedServer(foundServers[0].identifier);
-                }
-            } else {
-                addToast('No owned servers found for this token. Make sure you are the owner of the server.', 'error');
-                setSelectedServer('');
-            }
-        } catch (error) {
-            addToast(error instanceof Error ? error.message : 'An unknown error occurred.', 'error');
-            setServers([]);
-            setSelectedServer('');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleSave = async () => {
         if (activeTab === 'stream-rules' && streamRulesSaveHandlerRef.current) {
@@ -363,14 +359,14 @@ export const SettingsDashboard: React.FC = () => {
             }
         }
 
-        await handleSaveConfig({
+        await handleSaveConfig(buildSettingsSavePayload({
             token,
             mediaServerType,
-            serverIdentifier: selectedServer,
-            plexServerUrl: plexServerUrl || '',
+            selectedServer,
+            plexServerUrl,
             jellyfinUrl,
             jellyfinApiKey,
-            checkIntervalMinutes: checkInterval,
+            checkInterval,
             smtpHost,
             smtpPort,
             smtpUser,
@@ -398,7 +394,6 @@ export const SettingsDashboard: React.FC = () => {
             requestAppType,
             requestAppUrl,
             requestAppApiKey,
-            primaryColor: '',
             customLogoUrl,
             brandingTheme,
             backgroundImageUrl,
@@ -412,7 +407,7 @@ export const SettingsDashboard: React.FC = () => {
             referralTrialDays,
             referralRewardDays,
             announcement,
-            navOrder: ensureMaintenanceNavOrder(navOrder),
+            navOrder,
             hideStreamUsers,
             showUsernamesInAnalytics,
             useTrendingSlideshowOnLogin,
@@ -425,67 +420,10 @@ export const SettingsDashboard: React.FC = () => {
             autoBackupIntervalDays,
             autoBackupRetentionCount,
             maintenanceExperimentalEnabled,
-            dashboardLayout: normalizeSectionLayout(dashboardLayoutRef.current)
-        });
+            dashboardLayout: dashboardLayoutRef.current,
+        }));
     };
-    const handleTestEmail = async () => {
-        if (!smtpHost || !smtpUser || !smtpPass || !testRecipient) {
-            addToast('Please fill out SMTP Host, User, Password, and Test Recipient.', 'error');
-            return;
-        }
-        setIsTestingSmtp(true);
-        try {
-            const result = await apiFetch('/api/config/test-email', {
-                method: 'POST',
-                body: JSON.stringify({
-                    smtpHost,
-                    smtpPort,
-                    smtpUser,
-                    smtpPass,
-                    smtpFrom,
-                    smtpSecure,
-                    testRecipient
-                })
-            });
-            addToast(result.message || 'Test email sent successfully!', 'success');
-        } catch (error) {
-            addToast(error instanceof Error ? error.message : 'SMTP test failed.', 'error');
-        } finally {
-            setIsTestingSmtp(false);
-        }
-    };
-
-    const handleTestNewsletter = async () => {
-        setIsTestingNewsletter(true);
-        try {
-            const result = await apiFetch('/api/newsletter/test', {
-                method: 'POST'
-            });
-            addToast(result.message || 'Newsletter sent successfully!', 'success');
-        } catch (error) {
-            addToast(error instanceof Error ? error.message : 'Newsletter test failed.', 'error');
-        } finally {
-            setIsTestingNewsletter(false);
-        }
-    };
-
-    const handleSendNewsletterNow = async () => {
-        appConfirm('Are you sure you want to send the newsletter to ALL configured users immediately? This cannot be undone.', async () => {
-            setIsSendingNewsletter(true);
-            try {
-                const result = await apiFetch('/api/newsletter/send-now', {
-                    method: 'POST'
-                });
-                addToast(result.message || 'Newsletter dispatch initiated!', 'success');
-            } catch (error) {
-                addToast(error instanceof Error ? error.message : 'Newsletter dispatch failed.', 'error');
-            } finally {
-                setIsSendingNewsletter(false);
-            }
-        });
-    };
-
-    const settingsTabPanelProps = {
+    const settingsTabPanelProps = buildSettingsTabPanelProps({
         activeTab, addToast, streamRulesSaveHandlerRef, initialSettings,
         mediaServerType, token, plexServerUrl, jellyfinUrl, jellyfinApiKey, servers, selectedServer,
         checkInterval, libraries, defaultLibraryIds, hideStreamUsers, showUsernamesInAnalytics, requestUrl, contactUrl,
@@ -520,7 +458,7 @@ export const SettingsDashboard: React.FC = () => {
         setAutoBackupRetentionCount, setBackupRestoreText, handleDownloadBackup, handleCreateBackupFile,
         handleRestoreBackup, handleRestoreFromFile, fetchDiagnostics, fetchAuditLog, setAuditLogPage,
         deletedUsersLog, pagedEmailEntries, emailLogPage, totalEmailLogPages, handleUnblockDeletedUser, setEmailLogPage,
-    };
+    });
 
     return (
         <div className="w-full flex flex-col box-border">
