@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Copy, ChevronUp, ChevronDown, Check } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { appConfirm } from '../shared/confirm';
@@ -17,6 +17,7 @@ import { BackgroundTasksTab } from './BackgroundTasksTab';
 import { CleanupSettingsTab } from './CleanupSettingsTab';
 import { ContactSettingsTab } from './ContactSettingsTab';
 import { LogsAuditTab } from './LogsAuditTab';
+import { NavigationOrderTab } from './NavigationOrderTab';
 import { IntegrationTestButton } from '../shared/IntegrationTestButton';
 import { HomeLayoutSettings } from './HomeLayoutSettings';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
@@ -1239,50 +1240,7 @@ export const SettingsDashboard: React.FC = () => {
                         <HomeLayoutSettings layout={dashboardLayout} onChange={updateDashboardLayout} />
                     )}
 
-                    {activeTab === 'navigation' && (
-                        <div className="mb-8 animate-fade-in">
-                            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Navigation Order</h3>
-                            <p className="text-muted text-sm mb-4">Drag and drop or use the arrows to reorder the navigation items on the sidebar.</p>
-                            <div className="flex flex-col gap-2 max-w-md">
-                                {navOrder.map((key, index) => {
-                                    const labels: Record<string, string> = {
-                                        'home': 'Home', 'discover': 'Discover', 'status': 'Status', 'logs': 'Logs (Admin Only)', 'analytics': 'Analytics', 'mediastack': 'Integrations', 'maintenance': 'Cleaner (Admin Only)', 'request': 'Request Content', 'settings': 'Settings (Admin Only)', 'logout': 'Logout'
-                                    };
-                                    return (
-                                        <div key={key} className="flex items-center justify-between py-3 border-b border-border/40">
-                                            <div className="flex items-center gap-3">
-                                                <div className="text-text font-medium">{labels[key] || key}</div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    disabled={index === 0}
-                                                    onClick={() => {
-                                                        const newOrder = [...navOrder];
-                                                        [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
-                                                        setNavOrder(newOrder);
-                                                    }}
-                                                    className={`p-1 rounded transition-colors ${index === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/10 text-muted hover:text-text'}`}
-                                                >
-                                                    <ChevronUp className="w-5 h-5" />
-                                                </button>
-                                                <button
-                                                    disabled={index === navOrder.length - 1}
-                                                    onClick={() => {
-                                                        const newOrder = [...navOrder];
-                                                        [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
-                                                        setNavOrder(newOrder);
-                                                    }}
-                                                    className={`p-1 rounded transition-colors ${index === navOrder.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/10 text-muted hover:text-text'}`}
-                                                >
-                                                    <ChevronDown className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
+                    {activeTab === 'navigation' && <NavigationOrderTab navOrder={navOrder} onNavOrderChange={setNavOrder} />}
 
                     {activeTab === 'broadcast' && (
                         <div className="mb-8 animate-fade-in">
