@@ -7,8 +7,6 @@ import fetch from 'node-fetch';
 import { randomUUID, randomBytes } from 'crypto';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
-import http from 'http';
-import https from 'https';
 import compression from 'compression';
 import { execSync } from 'child_process';
 import fsSync from 'fs';
@@ -27,11 +25,10 @@ import { enrichRecentItemsWithMediaTags, extractMediaDisplayTags } from './lib/p
 import { createRateLimiter } from './lib/rate-limit.js';
 import { setStaticAssetCacheHeaders } from './lib/static-assets.js';
 import { createAuditLogger } from './lib/audit-log.js';
+import { createStatusRuntime } from './lib/status-runtime.js';
 import {
     SPEED_TEST_BUFFER,
     SPEED_TEST_CHUNK_SIZE,
-    calculateUptime30Days,
-    createDefaultStatusConfig,
     createPublicStatusPayload,
 } from './lib/status-monitor.js';
 
@@ -178,11 +175,6 @@ import { BACKUP_SCHEMA_VERSION, createBackupService } from './lib/backup.js';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout } from './lib/dashboard-layout.js';
 const PLEX_API = 'https://plex.tv/api';
 
-// --- Status App Global State ---
-let statusConfig = createDefaultStatusConfig();
-
-let healthData = {};
-
 // --- Helper Functions ---
 const log = (message) => console.log(`[${new Date().toISOString()}] ${message}`);
 
@@ -200,6 +192,14 @@ const withCache = async (key, ttlMs, fetcher) => {
 
 const appendAuditLog = createAuditLogger({ auditLogPath: AUDIT_LOG_PATH, loadFile, saveFile, log });
 const { rememberDeletedUser } = createDeletedUserRegistry({ deletedUsersPath: DELETED_USERS_PATH, loadFile, saveFile });
+const statusRuntime = createStatusRuntime({
+    configPath: CONFIG_PATH,
+    statusConfigPath: STATUS_CONFIG_PATH,
+    healthPath: HEALTH_PATH,
+    loadFile,
+    saveFile,
+    normalizeExternalBaseUrl,
+});
 
 const { sendEmail, checkAndSendNotifications, sendExpiryEmail, sendAdjustmentEmail } = createEmailService({
     usersPath: USERS_PATH,
@@ -2300,7 +2300,7 @@ const { checkAndSendNewsletter, sendTestNewsletter, sendManualNewsletter } = cre
     saveFile,
     getPlexConnectionUri,
     getPlexStats: async () => cachedPlexStats || await loadPlexStatsFromDisk(),
-    getHealthData: () => healthData,
+    getHealthData: () => statusRuntime.getHealthData(),
     escapeHtmlAttr,
     log,
 });
@@ -3290,9 +3290,9 @@ app.get('/api/status', publicReadRateLimit, async (req, res) => {
     if (config.publicStatusEnabled === false && !getSessionUser(req)) {
         return res.status(403).json({ error: 'Status monitor requires sign in.' });
     }
-    res.json(createPublicStatusPayload(statusConfig, healthData));
+    res.json(createPublicStatusPayload(statusRuntime.getStatusConfig(), statusRuntime.getHealthData()));
 });
-app.get('/api/status/config', requireAuth, requireAdmin, (req, res) => res.json(statusConfig));
+app.get('/api/status/config', requireAuth, requireAdmin, (req, res) => res.json(statusRuntime.getStatusConfig()));
 app.post('/api/status/config', requireAuth, requireAdmin, async (req, res) => {
     try {
         // Security: validate body schema before writing to disk
@@ -3321,8 +3321,7 @@ app.post('/api/status/config', requireAuth, requireAdmin, async (req, res) => {
                 description: String(service.description || '')
             });
         }
-        statusConfig = { services: sanitizedServices, groups, announcement: announcement || null };
-        await saveFile(STATUS_CONFIG_PATH, statusConfig);
+        await statusRuntime.saveStatusConfig({ services: sanitizedServices, groups, announcement: announcement || null });
         res.json({ success: true, message: 'Status configuration updated successfully.' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update status configuration' });
@@ -3331,8 +3330,7 @@ app.post('/api/status/config', requireAuth, requireAdmin, async (req, res) => {
 
 app.post('/api/status/reset', requireAuth, requireAdmin, async (req, res) => {
     try {
-        healthData = {};
-        await saveHealthData();
+        await statusRuntime.resetHealthData();
         res.json({ success: true, message: 'Status statistics reset successfully.' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to reset status statistics' });
@@ -5522,151 +5520,6 @@ const startBackgroundService = async () => {
         }
     }, intervalMs);
 };
-
-// --- Status App Functions ---
-async function loadStatusState() {
-    try {
-        const configData = await fs.readFile(STATUS_CONFIG_PATH, 'utf-8');
-        statusConfig = JSON.parse(configData);
-    } catch (e) {
-        const appConfig = await loadFile(CONFIG_PATH, {});
-        statusConfig = createDefaultStatusConfig(appConfig);
-        await saveFile(STATUS_CONFIG_PATH, statusConfig);
-    }
-
-    if (!Array.isArray(statusConfig.services) || statusConfig.services.length === 0) {
-        const appConfig = await loadFile(CONFIG_PATH, {});
-        statusConfig = createDefaultStatusConfig(appConfig);
-        await saveFile(STATUS_CONFIG_PATH, statusConfig);
-    }
-
-    try {
-        const healthRaw = await fs.readFile(HEALTH_PATH, 'utf-8');
-        healthData = JSON.parse(healthRaw);
-    } catch (e) {
-        healthData = {};
-    }
-}
-
-async function saveHealthData() {
-    try {
-        await saveFile(HEALTH_PATH, healthData);
-    } catch (e) { }
-}
-
-function performSingleProbe(service) {
-    return new Promise((resolve) => {
-        const rawUrl = service.url;
-        if (!rawUrl) return resolve({ status: 'offline', latency: 0, httpCode: 0 });
-
-        let targetUrl = rawUrl;
-        try {
-            targetUrl = normalizeExternalBaseUrl(rawUrl, { allowPrivate: true, allowHttp: true });
-        } catch (e) {
-            return resolve({ status: 'offline', latency: 0, httpCode: 0 });
-        }
-        if (service.port) {
-            try {
-                const u = new URL(targetUrl);
-                u.port = service.port;
-                targetUrl = u.toString();
-            } catch (e) { }
-        }
-
-        let parsedUrl;
-        try {
-            parsedUrl = new URL(targetUrl);
-        } catch (e) {
-            return resolve({ status: 'offline', latency: 0, httpCode: 0 });
-        }
-
-        const lib = parsedUrl.protocol === 'https:' ? https : http;
-        const start = Date.now();
-
-        const request = lib.get(targetUrl, {
-            headers: { 'User-Agent': 'SubZero-Monitor/1.0', 'Cache-Control': 'no-cache', 'Connection': 'close' },
-            timeout: 8000,
-            rejectUnauthorized: true
-        }, (response) => {
-            response.resume();
-            const latency = Math.round(Date.now() - start);
-            const code = response.statusCode || 0;
-            let status = (code >= 200 && code < 400) || code === 401 || code === 403 ? 'online' : (code >= 500 ? 'degraded' : 'offline');
-            resolve({ status, latency, httpCode: code });
-        });
-
-        request.on('error', () => resolve({ status: 'offline', latency: 0, httpCode: 0 }));
-        request.on('timeout', () => { request.destroy(); resolve({ status: 'offline', latency: 0, httpCode: 408 }); });
-    });
-}
-
-async function runMonitorCycle() {
-    if (!statusConfig.services || statusConfig.services.length === 0) return;
-
-    const now = Date.now();
-    const todayStr = new Date(now).toISOString().split('T')[0];
-
-    if (!healthData._meta) {
-        healthData._meta = { lastCheck: now };
-    }
-
-    const gapMs = now - healthData._meta.lastCheck;
-    const cycleMs = 15000;
-
-    if (gapMs > 120000) {
-        const missedChecks = Math.floor(gapMs / cycleMs);
-
-        for (const service of statusConfig.services) {
-            if (!healthData[service.id]) {
-                healthData[service.id] = { serviceId: service.id, currentStatus: 'unknown', lastCheck: 0, dailyHistory: {}, uptimePercentage: 100 };
-            }
-            const record = healthData[service.id];
-            if (!record.dailyHistory) record.dailyHistory = {};
-            if (!record.dailyHistory[todayStr]) record.dailyHistory[todayStr] = { up: 0, down: 0, total: 0 };
-
-            record.dailyHistory[todayStr].down += missedChecks;
-            record.dailyHistory[todayStr].total += missedChecks;
-        }
-    }
-
-    for (const service of statusConfig.services) {
-        const result = await performSingleProbe(service);
-        if (!healthData[service.id]) {
-            healthData[service.id] = { serviceId: service.id, currentStatus: 'unknown', lastCheck: 0, dailyHistory: {}, uptimePercentage: 100 };
-        }
-        const record = healthData[service.id];
-        if (!record.dailyHistory) record.dailyHistory = {};
-        if (!record.dailyHistory[todayStr]) record.dailyHistory[todayStr] = { up: 0, down: 0, total: 0 };
-
-        record.currentStatus = result.status;
-        record.lastCheck = now;
-
-        if (result.status === 'online') {
-            record.dailyHistory[todayStr].up += 1;
-        } else {
-            record.dailyHistory[todayStr].down += 1;
-        }
-        record.dailyHistory[todayStr].total += 1;
-
-        const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
-        for (const dateStr of Object.keys(record.dailyHistory)) {
-            if (new Date(dateStr).getTime() < ninetyDaysAgo) {
-                delete record.dailyHistory[dateStr];
-            }
-        }
-
-        let totalUp = 0;
-        let totalChecks = 0;
-        for (const stat of Object.values(record.dailyHistory)) {
-            totalUp += stat.up;
-            totalChecks += stat.total;
-        }
-        record.uptimePercentage = totalChecks > 0 ? Math.round((totalUp / totalChecks) * 100) : 100;
-    }
-
-    healthData._meta.lastCheck = now;
-    saveHealthData();
-}
 
 app.get('/api/media-stack/summary', requireAuth, requireMember, async (req, res) => {
     try {
@@ -8013,9 +7866,9 @@ const startPortalService = async () => {
         CLIENT_ID = config.clientId;
     }
 
-    await loadStatusState();
-    runMonitorCycle();
-    setInterval(runMonitorCycle, 15000);
+    await statusRuntime.loadStatusState();
+    statusRuntime.runMonitorCycle();
+    setInterval(statusRuntime.runMonitorCycle, 15000);
     monitorConcurrentSessions();
     setInterval(monitorConcurrentSessions, 15000);
     startBackgroundService();
