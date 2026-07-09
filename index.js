@@ -36,13 +36,14 @@ import { registerMediaStackRoutes } from './lib/media-stack-routes.js';
 import { registerStaticShellRoutes } from './lib/static-shell-routes.js';
 import { createBackgroundService } from './lib/background-service.js';
 import { registerCommunicationRoutes } from './lib/communication-routes.js';
+import { registerSpeedtestRoutes } from './lib/speedtest-routes.js';
+import { registerKillRuleRoutes } from './lib/kill-rule-routes.js';
 import { createAnalyticsService } from './lib/analytics-service.js';
 import { createRateLimiter } from './lib/rate-limit.js';
 import { createAuditLogger } from './lib/audit-log.js';
 import { createStatusRuntime } from './lib/status-runtime.js';
-import { createStreamMonitor, validateKillRulesSchema } from './lib/stream-monitor.js';
+import { createStreamMonitor } from './lib/stream-monitor.js';
 import { computeNextBackupRun, findRunnableTask, getTasksSnapshot, markTaskEnd, markTaskStart, systemJobs, tasksInfo } from './lib/task-state.js';
-import { SPEED_TEST_BUFFER, SPEED_TEST_CHUNK_SIZE } from './lib/status-monitor.js';
 
 let appVersion = 'v1.0.0';
 try {
@@ -777,26 +778,12 @@ const {
     startAnalyticsStatsBackgroundTask,
 } = analyticsService;
 
-app.get('/api/speedtest/ping', requireAuth, requireMember, speedtestRateLimit, (req, res) => { res.set('Cache-Control', 'no-store'); res.send('pong'); });
-app.get('/api/speedtest/download', requireAuth, requireMember, speedtestRateLimit, (req, res) => {
-    const parsedBytes = parseInt(req.query.bytes, 10) || SPEED_TEST_CHUNK_SIZE;
-    const bytes = Math.max(1, Math.min(parsedBytes, 10 * 1024 * 1024));
-    res.set('Content-Type', 'application/octet-stream');
-    res.set('Content-Length', bytes);
-    res.set('Cache-Control', 'no-store');
-    let sent = 0;
-    const streamData = () => {
-        if (sent >= bytes) return res.end();
-        const remaining = bytes - sent;
-        const chunk = remaining >= SPEED_TEST_CHUNK_SIZE ? SPEED_TEST_BUFFER : SPEED_TEST_BUFFER.subarray(0, remaining);
-        const canContinue = res.write(chunk);
-        sent += chunk.length;
-        if (canContinue) setImmediate(streamData);
-        else res.once('drain', streamData);
-    };
-    streamData();
+registerSpeedtestRoutes({
+    app,
+    requireAuth,
+    requireMember,
+    speedtestRateLimit,
 });
-app.post('/api/speedtest/upload', requireAuth, requireMember, speedtestRateLimit, express.raw({ type: '*/*', limit: '10mb' }), (req, res) => res.sendStatus(200));
 
 registerStaticShellRoutes({
     app,
@@ -902,25 +889,12 @@ const { monitorConcurrentSessions } = createStreamMonitor({
     log,
 });
 
-// Rules API
-app.get('/api/kill-rules', requireAdmin, async (req, res) => {
-    try {
-        const rules = await loadFile(KILL_RULES_PATH, []);
-        res.json(rules);
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to load rules' });
-    }
-});
-
-app.post('/api/kill-rules', requireAdmin, async (req, res) => {
-    try {
-        const rules = req.body;
-        validateKillRulesSchema(rules);
-        await saveFile(KILL_RULES_PATH, rules);
-        res.json({ success: true });
-    } catch (e) {
-        res.status(e.message.startsWith('Rule') || e.message.startsWith('Each') || e.message.startsWith('Invalid') ? 400 : 500).json({ error: e.message || 'Failed to save rules' });
-    }
+registerKillRuleRoutes({
+    app,
+    requireAdmin,
+    killRulesPath: KILL_RULES_PATH,
+    loadFile,
+    saveFile,
 });
 
 const startPortalService = async () => {
