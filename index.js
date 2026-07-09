@@ -328,6 +328,7 @@ const {
     fetchPlexServerAccounts,
     resolveLocalPlexAccountId,
     getPlexConnectionUri,
+    invalidatePlexConnectionCaches,
 } = createPlexConnectionService({
     usersPath: USERS_PATH,
     secretMask: SECRET_MASK,
@@ -1339,14 +1340,10 @@ app.post('/api/config', setupRateLimit, async (req, res) => {
     await saveFile(CONFIG_PATH, config);
     await syncAdminPlexIdFromConfigToken(config, { persist: true });
     // Invalidate caches tied to the Plex token/server so changes take effect immediately.
-    cachedPlexConnectionUri = null;
-    lastPlexConnectionUriFetch = 0;
-    cachedPlexAccounts = null;
-    cachedPlexAccountsAt = 0;
+    invalidatePlexConnectionCaches();
     cachedAdminProfile = null;
     lastAdminProfileFetch = 0;
-    cachedArrCatalog = null;
-    cachedArrCatalogAt = 0;
+    invalidateArrCatalogCache();
     systemJobs.autoBackup.nextRun = config.autoBackupEnabled ? computeNextBackupRun(config) : null;
     log('Configuration saved successfully.');
     startBackgroundService(); // (Re)start service with new config
@@ -1614,8 +1611,7 @@ app.post('/api/config/test-integration', setupRateLimit, async (req, res) => {
             const plexToken = resolveTestCredential(token, stored.plexToken);
             const serverId = resolveTestCredential(serverIdentifier, stored.serverIdentifier);
             if (!plexToken || !serverId) return res.status(400).json({ error: 'Plex token and server identifier are required.' });
-            cachedPlexConnectionUri = null;
-            lastPlexConnectionUriFetch = 0;
+            invalidatePlexConnectionCaches();
             const directUrl = resolveTestCredential(plexServerUrl, stored.plexServerUrl);
             const testConfig = { ...stored, plexToken, serverIdentifier: serverId, ...(directUrl ? { plexServerUrl: directUrl } : {}) };
             const uri = await getPlexConnectionUri(testConfig);
@@ -3783,6 +3779,7 @@ const {
     buildMaintenancePreviewForRule,
     evaluateMaintenanceRule,
     getArrCatalog,
+    invalidateArrCatalogCache,
     validateMaintenanceDestructivePreflight,
     buildMaintenanceMediaIndex,
     executeMaintenanceRunBatch,
