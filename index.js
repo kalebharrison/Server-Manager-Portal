@@ -18,8 +18,16 @@ import { createBasePathHelpers, deriveBasePath } from './lib/base-path.js';
 import { createLruCache, createTtlCache } from './lib/cache.js';
 import { escapeHtmlAttr, injectBasePathHtml } from './lib/html-shell.js';
 import { loadFile, saveFile } from './lib/json-file-store.js';
+import { enrichRecentItemsWithMediaTags, extractMediaDisplayTags } from './lib/plex-media-tags.js';
 import { createRateLimiter } from './lib/rate-limit.js';
 import { setStaticAssetCacheHeaders } from './lib/static-assets.js';
+import {
+    SPEED_TEST_BUFFER,
+    SPEED_TEST_CHUNK_SIZE,
+    calculateUptime30Days,
+    createDefaultStatusConfig,
+    createPublicStatusPayload,
+} from './lib/status-monitor.js';
 
 let appVersion = 'v1.0.0';
 try {
@@ -220,54 +228,9 @@ import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout } from './lib/dashboar
 const PLEX_API = 'https://plex.tv/api';
 
 // --- Status App Global State ---
-let statusConfig = {
-    services: [],
-    groups: [
-        { id: 'core', name: 'Core Infrastructure', order: 0 },
-        { id: 'media', name: 'Media Stack', order: 1 },
-        { id: 'downloads', name: 'Download Clients', order: 2 },
-        { id: 'external', name: 'External Services', order: 3 },
-    ],
-    announcement: null
-};
+let statusConfig = createDefaultStatusConfig();
 
 let healthData = {};
-const SPEED_TEST_CHUNK_SIZE = 1024 * 1024;
-const SPEED_TEST_BUFFER = Buffer.alloc(SPEED_TEST_CHUNK_SIZE, 'x');
-
-const createDefaultStatusConfig = (config = {}) => {
-    const groups = [
-        { id: 'core', name: 'Core Infrastructure', order: 0 },
-        { id: 'media', name: 'Media Stack', order: 1 },
-        { id: 'downloads', name: 'Download Clients', order: 2 },
-        { id: 'external', name: 'External Services', order: 3 },
-    ];
-    const services = [];
-    const addService = (id, name, url, groupId, description = '') => {
-        if (!url) return;
-        services.push({ id, name, url, type: 'web', groupId, description });
-    };
-
-    const publicDomain = String(config.publicDomain || '').trim();
-    if (publicDomain) addService('portal', 'Server Portal', `${publicDomain.replace(/\/+$/, '')}/api/health`, 'core', 'Portal API health');
-
-    const mediaServerType = String(config.mediaServerType || 'plex').toLowerCase();
-    if (mediaServerType === 'jellyfin') {
-        addService('jellyfin', 'Jellyfin', config.jellyfinUrl, 'media', 'Jellyfin media server');
-        addService('jellystat', 'Jellystat', config.jellystatUrl, 'media', 'Jellyfin analytics');
-    } else {
-        addService('plex', 'Plex', config.plexServerUrl || config.publicDomain, 'media', 'Plex Media Server');
-        addService('tautulli', 'Tautulli', config.tautulliUrl, 'media', 'Plex analytics');
-    }
-
-    addService('sonarr', 'Sonarr', config.sonarrUrl, 'downloads', 'TV automation');
-    addService('radarr', 'Radarr', config.radarrUrl, 'downloads', 'Movie automation');
-    if (config.requestAppType && config.requestAppType !== 'none') {
-        addService(config.requestAppType, config.requestAppType === 'jellyseerr' ? 'Jellyseerr' : 'Seerr', config.requestAppUrl, 'external', 'Requests portal');
-    }
-
-    return { groups, services, announcement: null };
-};
 
 // --- Helper Functions ---
 const log = (message) => console.log(`[${new Date().toISOString()}] ${message}`);
@@ -3201,28 +3164,6 @@ app.get('/api/plex/stats/status', requireAdmin, async (req, res) => {
     });
 });
 
-const calculateUptime30Days = (healthDataObj) => {
-    if (!healthDataObj) return 100;
-
-    let totalUp = 0;
-    let totalChecks = 0;
-
-    for (const [key, service] of Object.entries(healthDataObj)) {
-        if (key === '_meta' || !service.dailyHistory) continue;
-
-        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-        for (const [dateStr, stat] of Object.entries(service.dailyHistory)) {
-            if (new Date(dateStr).getTime() >= thirtyDaysAgo) {
-                totalUp += stat.up || 0;
-                totalChecks += stat.total || 0;
-            }
-        }
-    }
-
-    if (totalChecks === 0) return 100;
-    return (totalUp / totalChecks) * 100;
-};
-
 const fetchImageBuffer = async (config, thumbPath) => {
     if (!thumbPath) return null;
     try {
@@ -4494,22 +4435,7 @@ app.get('/api/status', publicReadRateLimit, async (req, res) => {
     if (config.publicStatusEnabled === false && !getSessionUser(req)) {
         return res.status(403).json({ error: 'Status monitor requires sign in.' });
     }
-    const publicServices = (statusConfig.services || []).map(service => ({
-        id: service.id,
-        name: service.name,
-        groupId: service.groupId,
-        type: service.type || 'web',
-        description: service.description || ''
-    }));
-    const groups = (statusConfig.groups || []).map(group => ({ id: group.id, name: group.name, order: group.order }));
-    res.json({
-        config: {
-            services: publicServices,
-            groups,
-            announcement: statusConfig.announcement || null
-        },
-        healthData
-    });
+    res.json(createPublicStatusPayload(statusConfig, healthData));
 });
 app.get('/api/status/config', requireAuth, requireAdmin, (req, res) => res.json(statusConfig));
 app.post('/api/status/config', requireAuth, requireAdmin, async (req, res) => {
@@ -4587,98 +4513,6 @@ app.get('/api/plex/libraries', requireAdmin, async (req, res) => {
 });
 
 // Note: Duplicate route /api/plex/image handler removed. The primary handler is defined above.
-
-const normalizeVideoCodecLabel = (mediaInfo = {}, streams = []) => {
-    const videoStreams = streams.filter((s) => Number(s.streamType) === 1);
-    const parts = [
-        ...videoStreams.flatMap((s) => [s.codec, s.displayTitle, s.extendedTitle, s.format]),
-        mediaInfo.videoCodec,
-        mediaInfo.videoProfile
-    ];
-    const hay = parts.filter(Boolean).join(' ').toLowerCase();
-    if (!hay) return null;
-    // Stream codec is more reliable than Media.videoCodec (AV1 is sometimes misreported as hevc).
-    if (/\bav1\b|av01|dav1|\.av1\b/.test(hay)) return 'AV1';
-    if (/hevc|h265|x265|hev1|h\.265/.test(hay)) return 'HEVC';
-    if (/h264|x264|avc1|avc|h\.264/.test(hay)) return 'H.264';
-    if (/vp9|vp09/.test(hay)) return 'VP9';
-    if (/mpeg2|mpeg-2/.test(hay)) return 'MPEG-2';
-    if (/mpeg4|xvid|divx/.test(hay)) return 'MPEG-4';
-    const raw = String(mediaInfo.videoCodec || '').trim();
-    return raw ? raw.toUpperCase() : null;
-};
-
-const extractMediaDisplayTags = (metadata = {}) => {
-    const mediaInfo = metadata?.Media?.[0] || {};
-    const part = mediaInfo?.Part?.[0] || {};
-    const streams = Array.isArray(part.Stream) ? part.Stream : [];
-    const tags = [];
-
-    const resolution = String(mediaInfo.videoResolution || '').toLowerCase();
-    if (resolution.includes('4k') || resolution.includes('2160')) tags.push('4K');
-    else if (resolution.includes('1080')) tags.push('1080p');
-    else if (resolution.includes('720')) tags.push('720p');
-
-    const codecLabel = normalizeVideoCodecLabel(mediaInfo, streams);
-    if (codecLabel) tags.push(codecLabel);
-
-    const videoStreams = streams.filter((s) => Number(s.streamType) === 1);
-    const audioStreams = streams.filter((s) => Number(s.streamType) === 2);
-    const streamText = streams.map((s) => `${s.displayTitle || ''} ${s.extendedTitle || ''} ${s.colorTrc || ''} ${s.codec || ''}`).join(' ').toLowerCase();
-
-    if (/dolby vision|\bdv\b|dvhe|dvav/.test(streamText)) tags.push('DV');
-    else if (/hdr10\+|hdr10|hdr|hlg|smpte2084|bt2020/.test(streamText)) tags.push('HDR');
-
-    if (audioStreams.some((s) => /atmos/i.test(`${s.displayTitle || ''} ${s.extendedTitle || ''}`))) tags.push('Atmos');
-    else if (audioStreams.some((s) => /truehd|true-hd/i.test(`${s.codec || ''} ${s.displayTitle || ''}`))) tags.push('TrueHD');
-    else if (audioStreams.some((s) => /dts.?x|dtsx/i.test(`${s.displayTitle || ''} ${s.codec || ''}`))) tags.push('DTS-X');
-
-    return [...new Set(tags)];
-};
-
-const fetchPlexMetadataMap = async (uri, config, ratingKeys = []) => {
-    const unique = [...new Set(ratingKeys.map((k) => String(k || '')).filter(Boolean))];
-    const map = new Map();
-    if (!unique.length) return map;
-
-    const chunkSize = 25;
-    for (let i = 0; i < unique.length; i += chunkSize) {
-        const chunk = unique.slice(i, i + chunkSize);
-        const res = await fetch(`${uri}/library/metadata/${chunk.join(',')}?X-Plex-Token=${config.plexToken}`, {
-            headers: { Accept: 'application/json' }
-        }).then((r) => r.json()).catch(() => null);
-        const metas = res?.MediaContainer?.Metadata || [];
-        for (const meta of metas) {
-            map.set(String(meta.ratingKey), meta);
-        }
-    }
-    return map;
-};
-
-const enrichRecentItemsWithMediaTags = async (uri, config, items = []) => {
-    if (!items.length) return items;
-
-    const keysToFetch = [];
-    for (const item of items) {
-        if (item.ratingKey) keysToFetch.push(item.ratingKey);
-        if (item.sourceRatingKey && item.sourceRatingKey !== item.ratingKey) keysToFetch.push(item.sourceRatingKey);
-    }
-    const metaMap = await fetchPlexMetadataMap(uri, config, keysToFetch);
-
-    return items.map((item) => {
-        const primaryMeta = item.ratingKey ? metaMap.get(String(item.ratingKey)) : null;
-        const sourceMeta = item.sourceRatingKey && item.sourceRatingKey !== item.ratingKey
-            ? metaMap.get(String(item.sourceRatingKey))
-            : null;
-
-        const primaryTags = primaryMeta ? extractMediaDisplayTags(primaryMeta) : [...(item.tags || [])];
-        const sourceTags = sourceMeta ? extractMediaDisplayTags(sourceMeta) : [];
-        const tags = new Set([...primaryTags, ...sourceTags]);
-        if (tags.has('AV1')) tags.delete('HEVC');
-
-        return { ...item, tags: [...tags] };
-    });
-};
 
 app.get('/api/plex/dashboard', requireAuth, requireMember, async (req, res) => {
     try {
