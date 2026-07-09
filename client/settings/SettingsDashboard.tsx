@@ -13,6 +13,7 @@ import { StreamKillRulesPanel } from './StreamKillRulesPanel';
 import { InvitesSettings } from './InvitesSettings';
 import { BroadcastTab } from './BroadcastTab';
 import { BackgroundTasksTab } from './BackgroundTasksTab';
+import { BackupRestorePanel } from './BackupRestorePanel';
 import { CleanupSettingsTab } from './CleanupSettingsTab';
 import { ContactSettingsTab } from './ContactSettingsTab';
 import { LogsAuditTab } from './LogsAuditTab';
@@ -1383,72 +1384,22 @@ export const SettingsDashboard: React.FC = () => {
                                 </p>
                                 <p className="text-[11px] text-muted mt-1">After changing this toggle, click the main Save Settings button.</p>
                             </section>
-                            <section className="space-y-4 mb-8">
-                                <h4 className="font-bold text-text">Backup & Restore</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                    <div>
-                                        <label className="font-semibold text-sm block mb-2">Auto Backup Enabled</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setAutoBackupEnabled(!autoBackupEnabled)}
-                                            className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${autoBackupEnabled ? 'bg-plex' : 'bg-border'}`}
-                                        >
-                                            <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${autoBackupEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                                        </button>
-                                    </div>
-                                    <div>
-                                        <label className="font-semibold text-sm block mb-2">Interval (Days)</label>
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            className="w-full p-2 rounded border border-border bg-background text-text"
-                                            value={autoBackupIntervalDays}
-                                            onChange={(e) => setAutoBackupIntervalDays(Math.max(1, Number(e.target.value) || 1))}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="font-semibold text-sm block mb-2">Rolling Backups Kept</label>
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            className="w-full p-2 rounded border border-border bg-background text-text"
-                                            value={autoBackupRetentionCount}
-                                            onChange={(e) => setAutoBackupRetentionCount(Math.max(1, Number(e.target.value) || 1))}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap gap-3 mb-4">
-                                    <button className="px-4 py-2 bg-plex text-background rounded-md font-bold hover:bg-plex-hover transition-colors" onClick={handleDownloadBackup}>Download Backup</button>
-                                    <button className="px-4 py-2 bg-indigo-600 text-white rounded-md font-bold hover:bg-indigo-500 transition-colors" onClick={handleCreateBackupFile}>Create Backup File</button>
-                                    <button className="px-4 py-2 bg-red-600 text-white rounded-md font-bold hover:bg-red-500 transition-colors disabled:opacity-50" onClick={handleRestoreBackup} disabled={isRestoringBackup}>
-                                        {isRestoringBackup ? 'Restoring...' : 'Restore Backup'}
-                                    </button>
-                                </div>
-                                <textarea
-                                    className="w-full min-h-[140px] p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex"
-                                    placeholder="Paste backup JSON here before clicking Restore Backup..."
-                                    value={backupRestoreText}
-                                    onChange={(e) => setBackupRestoreText(e.target.value)}
-                                />
-                                <div className="mt-4">
-                                    <h5 className="font-semibold text-sm text-text mb-2">Auto Backup Files</h5>
-                                    <div className="flex flex-col gap-2 max-h-56 overflow-y-auto pr-1">
-                                        {backupFiles.length === 0 ? (
-                                            <p className="text-xs text-muted">No backup files found in backup folder.</p>
-                                        ) : backupFiles.map(file => (
-                                            <div key={file.filename} className="py-2 border-b border-border/40 flex items-center justify-between gap-2 last:border-b-0">
-                                                <div className="text-xs">
-                                                    <p className="font-semibold text-text">{file.filename}</p>
-                                                    <p className="text-muted">{file.createdAt ? new Date(file.createdAt).toLocaleString() : 'Unknown date'} · {(file.size / 1024).toFixed(1)} KB</p>
-                                                </div>
-                                                <button className="px-3 py-1.5 bg-red-600/80 text-white rounded text-xs font-bold hover:bg-red-500" onClick={() => handleRestoreFromFile(file.filename)}>
-                                                    Restore
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </section>
+                            <BackupRestorePanel
+                                autoBackupEnabled={autoBackupEnabled}
+                                autoBackupIntervalDays={autoBackupIntervalDays}
+                                autoBackupRetentionCount={autoBackupRetentionCount}
+                                backupRestoreText={backupRestoreText}
+                                backupFiles={backupFiles}
+                                isRestoringBackup={isRestoringBackup}
+                                onAutoBackupEnabledChange={setAutoBackupEnabled}
+                                onAutoBackupIntervalDaysChange={setAutoBackupIntervalDays}
+                                onAutoBackupRetentionCountChange={setAutoBackupRetentionCount}
+                                onBackupRestoreTextChange={setBackupRestoreText}
+                                onDownloadBackup={handleDownloadBackup}
+                                onCreateBackupFile={handleCreateBackupFile}
+                                onRestoreBackup={handleRestoreBackup}
+                                onRestoreFromFile={handleRestoreFromFile}
+                            />
 
                             <section className="space-y-4 mb-8">
                                 <div className="flex items-center justify-between">
