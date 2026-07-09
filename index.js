@@ -12,7 +12,6 @@ import https from 'https';
 import compression from 'compression';
 import { execSync } from 'child_process';
 import fsSync from 'fs';
-import net from 'net';
 import { createBasePathHelpers, deriveBasePath } from './lib/base-path.js';
 import { createBroadcastService } from './lib/broadcast-service.js';
 import { createLruCache, createTtlCache } from './lib/cache.js';
@@ -22,6 +21,7 @@ import { createEmailService } from './lib/email-service.js';
 import { createNewsletterService } from './lib/newsletter-service.js';
 import { escapeHtmlAttr, injectBasePathHtml } from './lib/html-shell.js';
 import { loadFile, saveFile } from './lib/json-file-store.js';
+import { isBlockedHostName, isLoopbackAddress, normalizeExternalBaseUrl, resolveIntegrationUrlForFetch } from './lib/network-policy.js';
 import { enrichRecentItemsWithMediaTags, extractMediaDisplayTags } from './lib/plex-media-tags.js';
 import { createRateLimiter } from './lib/rate-limit.js';
 import { setStaticAssetCacheHeaders } from './lib/static-assets.js';
@@ -98,11 +98,6 @@ const publicReadRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests
 const speedtestRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 12 });
 const setupRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 30 });
 
-const isLoopbackAddress = (ip = '') => {
-    const normalizedIp = String(ip || '').replace('::ffff:', '').toLowerCase();
-    return normalizedIp === '127.0.0.1' || normalizedIp === '::1' || normalizedIp === 'localhost';
-};
-
 const hasValidSetupToken = (req) => {
     if (!SETUP_TOKEN) return false;
     const provided = req.headers['x-setup-token'] || req.body?.setupToken || req.query?.setupToken;
@@ -115,59 +110,9 @@ const hasValidSetupToken = (req) => {
 const getSocketPeerIp = (req) => (req.socket && req.socket.remoteAddress) || 'unknown';
 const canRunInitialSetup = (req) => hasValidSetupToken(req) || isLoopbackAddress(getSocketPeerIp(req));
 
-const isPrivateIp = (host) => {
-    if (!net.isIP(host)) return false;
-    if (host === '127.0.0.1' || host === '::1') return true;
-    if (host.startsWith('10.') || host.startsWith('192.168.')) return true;
-    if (host.startsWith('169.254.')) return true;
-    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
-    if (/^fc|^fd/i.test(host.replace(':', ''))) return true;
-    return false;
-};
-
-const isBlockedHostName = (hostname = '') => {
-    const host = String(hostname || '').trim().toLowerCase();
-    if (!host) return true;
-    if (host === 'localhost' || host.endsWith('.localhost')) return true;
-    if (host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.lan')) return true;
-    if (isPrivateIp(host)) return true;
-    return false;
-};
-
-const normalizeExternalBaseUrl = (rawUrl, { allowPrivate = false, allowHttp = true } = {}) => {
-    if (!rawUrl) return '';
-    let parsed;
-    try {
-        parsed = new URL(String(rawUrl).trim());
-    } catch (e) {
-        throw new Error('Invalid URL format');
-    }
-    const isHttps = parsed.protocol === 'https:';
-    const isHttp = parsed.protocol === 'http:';
-    if (!isHttps && !(allowHttp && isHttp)) {
-        throw new Error('URL must use http or https');
-    }
-    if (!allowPrivate && isBlockedHostName(parsed.hostname)) {
-        throw new Error('Private or local network hosts are not allowed. Set ALLOW_PRIVATE_INTEGRATION_URLS=true in your environment to allow LAN/private URLs.');
-    }
-    parsed.hash = '';
-    parsed.search = '';
-    return parsed.toString().replace(/\/+$/, '');
-};
-
 const sanitizeIntegrationUrl = (rawUrl) => {
     if (!rawUrl) return '';
     return normalizeExternalBaseUrl(rawUrl, { allowPrivate: ALLOW_PRIVATE_INTEGRATION_URLS, allowHttp: true });
-};
-
-// For server-side calls to an already-configured integration (Tautulli, Sonarr,
-// Radarr, request apps), the host is trusted admin input and is typically a LAN
-// address. We still validate URL format/scheme but allow private/local hosts so
-// homelab setups work regardless of the ALLOW_PRIVATE_INTEGRATION_URLS setting,
-// which only governs validation of newly submitted URLs.
-const resolveIntegrationUrlForFetch = (rawUrl) => {
-    if (!rawUrl) return '';
-    return normalizeExternalBaseUrl(rawUrl, { allowPrivate: true, allowHttp: true });
 };
 
 // Only mark cookies Secure when explicitly enabled. Auto-detecting HTTPS breaks plain
