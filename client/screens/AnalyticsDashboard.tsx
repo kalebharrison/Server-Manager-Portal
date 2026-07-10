@@ -28,9 +28,7 @@ const LibraryDeltaBadge: React.FC<{ value?: number }> = ({ value }) => {
 };
 
 const AnalyticsPanelFallback: React.FC<{ className?: string }> = ({ className = '' }) => (
-    <div className={`glass-card-sm p-6 min-h-[320px] flex items-center justify-center ${className}`}>
-        <div className="border-4 border-border border-t-plex rounded-full w-10 h-10 animate-spin" />
-    </div>
+    <div className={`min-h-[320px] ${className}`} aria-hidden="true" />
 );
 
 export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }> = ({ isAdmin, sessionInfo }) => {

@@ -28,9 +28,7 @@ const StreamKillRulesPanel = lazyTab(() => import('./StreamKillRulesPanel').then
 const SystemSettingsTab = lazyTab(() => import('./SystemSettingsTab').then(module => ({ default: module.SystemSettingsTab })));
 
 const SettingsTabFallback: React.FC = () => (
-    <div className="glass-card-sm min-h-[240px] flex items-center justify-center">
-        <div className="border-4 border-border border-t-plex rounded-full w-10 h-10 animate-spin" />
-    </div>
+    <div className="min-h-[240px]" aria-hidden="true" />
 );
 
 export type SettingsTabPanelProps = {

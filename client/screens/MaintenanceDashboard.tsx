@@ -38,9 +38,7 @@ import {
 const LibraryMaintenancePanel = lazy(() => import('../maintenance/LibraryMaintenancePanel').then(module => ({ default: module.LibraryMaintenancePanel })));
 
 const MaintenancePanelFallback: React.FC = () => (
-    <div className="glass-card-sm min-h-[240px] flex items-center justify-center">
-        <div className="border-4 border-border border-t-plex rounded-full w-10 h-10 animate-spin" />
-    </div>
+    <div className="min-h-[240px]" aria-hidden="true" />
 );
 
 export const MaintenanceDashboard: React.FC = () => {
