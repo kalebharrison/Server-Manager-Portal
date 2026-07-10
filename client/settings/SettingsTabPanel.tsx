@@ -1,45 +1,57 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 
 import { appConfirm } from '../shared/confirm';
-import { BackgroundTasksTab } from './BackgroundTasksTab';
-import { BrandingSettingsTab } from './BrandingSettingsTab';
-import { BroadcastTab } from './BroadcastTab';
-import { CleanupSettingsTab } from './CleanupSettingsTab';
-import { ContactSettingsTab } from './ContactSettingsTab';
-import { HomeLayoutSettings } from './HomeLayoutSettings';
-import { InvitesSettings } from './InvitesSettings';
-import { LogsAuditTab } from './LogsAuditTab';
-import { MediaServerSettingsTab } from './MediaServerSettingsTab';
-import { MediaStackSettingsTab } from './MediaStackSettingsTab';
-import { NavigationOrderTab } from './NavigationOrderTab';
-import { NewsletterSettingsTab } from './NewsletterSettingsTab';
-import { SmtpSettingsTab } from './SmtpSettingsTab';
-import { StatusSettingsTab } from './StatusSettingsTab';
-import { StreamKillRulesPanel } from './StreamKillRulesPanel';
-import { SystemSettingsTab } from './SystemSettingsTab';
 import type { SettingsTabId } from './settingsTabs';
 
 type AddToast = (message: string, type?: 'success' | 'error') => void;
+type TabProps = Record<string, any>;
+
+const lazyTab = (loader: () => Promise<{ default: React.ComponentType<any> }>) => (
+    lazy(loader) as React.LazyExoticComponent<React.ComponentType<any>>
+);
+
+const BackgroundTasksTab = lazyTab(() => import('./BackgroundTasksTab').then(module => ({ default: module.BackgroundTasksTab })));
+const BrandingSettingsTab = lazyTab(() => import('./BrandingSettingsTab').then(module => ({ default: module.BrandingSettingsTab })));
+const BroadcastTab = lazyTab(() => import('./BroadcastTab').then(module => ({ default: module.BroadcastTab })));
+const CleanupSettingsTab = lazyTab(() => import('./CleanupSettingsTab').then(module => ({ default: module.CleanupSettingsTab })));
+const ContactSettingsTab = lazyTab(() => import('./ContactSettingsTab').then(module => ({ default: module.ContactSettingsTab })));
+const HomeLayoutSettings = lazyTab(() => import('./HomeLayoutSettings').then(module => ({ default: module.HomeLayoutSettings })));
+const InvitesSettings = lazyTab(() => import('./InvitesSettings').then(module => ({ default: module.InvitesSettings })));
+const LogsAuditTab = lazyTab(() => import('./LogsAuditTab').then(module => ({ default: module.LogsAuditTab })));
+const MediaServerSettingsTab = lazyTab(() => import('./MediaServerSettingsTab').then(module => ({ default: module.MediaServerSettingsTab })));
+const MediaStackSettingsTab = lazyTab(() => import('./MediaStackSettingsTab').then(module => ({ default: module.MediaStackSettingsTab })));
+const NavigationOrderTab = lazyTab(() => import('./NavigationOrderTab').then(module => ({ default: module.NavigationOrderTab })));
+const NewsletterSettingsTab = lazyTab(() => import('./NewsletterSettingsTab').then(module => ({ default: module.NewsletterSettingsTab })));
+const SmtpSettingsTab = lazyTab(() => import('./SmtpSettingsTab').then(module => ({ default: module.SmtpSettingsTab })));
+const StatusSettingsTab = lazyTab(() => import('./StatusSettingsTab').then(module => ({ default: module.StatusSettingsTab })));
+const StreamKillRulesPanel = lazyTab(() => import('./StreamKillRulesPanel').then(module => ({ default: module.StreamKillRulesPanel })));
+const SystemSettingsTab = lazyTab(() => import('./SystemSettingsTab').then(module => ({ default: module.SystemSettingsTab })));
+
+const SettingsTabFallback: React.FC = () => (
+    <div className="glass-card-sm min-h-[240px] flex items-center justify-center">
+        <div className="border-4 border-border border-t-plex rounded-full w-10 h-10 animate-spin" />
+    </div>
+);
 
 export type SettingsTabPanelProps = {
     activeTab: SettingsTabId;
     addToast: AddToast;
     streamRulesSaveHandlerRef: React.MutableRefObject<(() => Promise<boolean>) | null>;
-    mediaServer: React.ComponentProps<typeof MediaServerSettingsTab>;
-    smtp: React.ComponentProps<typeof SmtpSettingsTab>;
-    newsletter: React.ComponentProps<typeof NewsletterSettingsTab>;
-    cleanup: React.ComponentProps<typeof CleanupSettingsTab>;
-    mediaStack: React.ComponentProps<typeof MediaStackSettingsTab>;
-    homeLayout: React.ComponentProps<typeof HomeLayoutSettings>;
-    navigation: React.ComponentProps<typeof NavigationOrderTab>;
-    broadcast: React.ComponentProps<typeof BroadcastTab>;
-    status: Omit<React.ComponentProps<typeof StatusSettingsTab>, 'appConfirm' | 'addToast'>;
-    contact: React.ComponentProps<typeof ContactSettingsTab>;
-    branding: React.ComponentProps<typeof BrandingSettingsTab>;
-    invites: React.ComponentProps<typeof InvitesSettings>;
-    tasks: React.ComponentProps<typeof BackgroundTasksTab>;
-    system: React.ComponentProps<typeof SystemSettingsTab>;
-    logs: React.ComponentProps<typeof LogsAuditTab>;
+    mediaServer: TabProps;
+    smtp: TabProps;
+    newsletter: TabProps;
+    cleanup: TabProps;
+    mediaStack: TabProps;
+    homeLayout: TabProps;
+    navigation: TabProps;
+    broadcast: TabProps;
+    status: TabProps;
+    contact: TabProps;
+    branding: TabProps;
+    invites: TabProps;
+    tasks: TabProps;
+    system: TabProps;
+    logs: TabProps;
 };
 
 export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
@@ -62,11 +74,11 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
     system,
     logs,
 }) => (
-    <>
+    <Suspense fallback={<SettingsTabFallback />}>
         {activeTab === 'stream-rules' && (
             <StreamKillRulesPanel
                 addToast={addToast}
-                registerSaveHandler={(handler) => {
+                registerSaveHandler={(handler: (() => Promise<boolean>) | null) => {
                     streamRulesSaveHandlerRef.current = handler;
                 }}
             />
@@ -87,5 +99,5 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
         {activeTab === 'tasks' && <BackgroundTasksTab {...tasks} />}
         {activeTab === 'system' && <SystemSettingsTab {...system} />}
         {activeTab === 'logs' && <LogsAuditTab {...logs} />}
-    </>
+    </Suspense>
 );
