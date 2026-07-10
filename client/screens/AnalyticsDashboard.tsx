@@ -7,11 +7,12 @@ import { formatSizeCeil } from '../shared/format';
 import { CustomSelect } from '../shared/ui';
 import { Loader } from '../shared/toast';
 
-import { AnimatedLeaderboard, CountUp } from './analytics/AnimatedLeaderboard';
+import { CountUp } from './analytics/CountUp';
 
 const ServerInsightsWidget = lazy(() => import('./analytics/ServerInsightsWidget').then(module => ({ default: module.ServerInsightsWidget })));
 const TautulliGraphsTab = lazy(() => import('./analytics/TautulliGraphsTab').then(module => ({ default: module.TautulliGraphsTab })));
 const UserAnalyticsModal = lazy(() => import('./analytics/UserAnalyticsModal').then(module => ({ default: module.UserAnalyticsModal })));
+const AnimatedLeaderboard = lazy(() => import('./analytics/AnimatedLeaderboard').then(module => ({ default: module.AnimatedLeaderboard })));
 
 const LibraryDeltaBadge: React.FC<{ value?: number }> = ({ value }) => {
     if (!value) return null;
@@ -472,7 +473,9 @@ return (
                     )}
 
                     <div className="w-full">
-                        <AnimatedLeaderboard users={topUsers} resolveAvatar={resolveUserAvatar} isAdmin={isAdmin} onUserClick={setSelectedUser as any} />
+                        <Suspense fallback={<AnalyticsPanelFallback />}>
+                            <AnimatedLeaderboard users={topUsers} resolveAvatar={resolveUserAvatar} isAdmin={isAdmin} onUserClick={setSelectedUser as any} />
+                        </Suspense>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
