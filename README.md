@@ -482,7 +482,7 @@ Server-Manager-Portal/
 ├── index.tsx           # Frontend entry point
 ├── client/             # React application source
 │   ├── App.tsx         # App shell, routing, responsive layout
-│   ├── screens.tsx     # Dashboards, Discover, login, and shared screens
+│   ├── lazyScreens.tsx # Lazy route imports for dashboards, login, and shared screens
 │   ├── home/           # User dashboard layout and widget renderers
 │   ├── settings/       # Settings UI (Media Player, Home Layout, System, Background Tasks)
 │   ├── shared/         # API helpers, types, theme, skeletons, wrap-up cards
