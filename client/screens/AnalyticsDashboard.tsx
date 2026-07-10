@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Activity, BarChart3, Clock, Film, LineChart as LucideLineChart, MonitorSmartphone, PlaySquare, Star, TrendingUp, Trophy, Users } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
@@ -7,12 +7,11 @@ import { formatSizeCeil } from '../shared/format';
 import { CustomSelect } from '../shared/ui';
 import { Loader } from '../shared/toast';
 
-import { ServerInsightsWidget } from './analytics/ServerInsightsWidget';
-import { TautulliGraphsTab } from './analytics/TautulliGraphsTab';
-import { UserAnalyticsModal } from './analytics/UserAnalyticsModal';
-
 import { AnimatedLeaderboard, CountUp } from './analytics/AnimatedLeaderboard';
 
+const ServerInsightsWidget = lazy(() => import('./analytics/ServerInsightsWidget').then(module => ({ default: module.ServerInsightsWidget })));
+const TautulliGraphsTab = lazy(() => import('./analytics/TautulliGraphsTab').then(module => ({ default: module.TautulliGraphsTab })));
+const UserAnalyticsModal = lazy(() => import('./analytics/UserAnalyticsModal').then(module => ({ default: module.UserAnalyticsModal })));
 
 const LibraryDeltaBadge: React.FC<{ value?: number }> = ({ value }) => {
     if (!value) return null;
@@ -26,6 +25,13 @@ const LibraryDeltaBadge: React.FC<{ value?: number }> = ({ value }) => {
         </span>
     );
 };
+
+const AnalyticsPanelFallback: React.FC<{ className?: string }> = ({ className = '' }) => (
+    <div className={`glass-card-sm p-6 min-h-[320px] flex items-center justify-center ${className}`}>
+        <div className="border-4 border-border border-t-plex rounded-full w-10 h-10 animate-spin" />
+    </div>
+);
+
 export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }> = ({ isAdmin, sessionInfo }) => {
     const [analyticsData, setAnalyticsData] = useState<{
         topUsers: any[],
@@ -214,7 +220,11 @@ return (
                 </div>
             </div>
 
-            {viewTab === 'graphs' && <TautulliGraphsTab />}
+            {viewTab === 'graphs' && (
+                <Suspense fallback={<AnalyticsPanelFallback />}>
+                    <TautulliGraphsTab />
+                </Suspense>
+            )}
 
             {viewTab === 'overview' && (
                 <>
@@ -463,12 +473,14 @@ return (
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                        <ServerInsightsWidget 
-                            peakHours={analyticsData?.peakHours || []} 
-                            tautulliData={tautulliData} 
-                            compare={analyticsData?.compare} 
-                            analyticsSourceLabel={analyticsSourceLabel}
-                        />
+                        <Suspense fallback={<AnalyticsPanelFallback className="lg:col-span-2" />}>
+                            <ServerInsightsWidget
+                                peakHours={analyticsData?.peakHours || []}
+                                tautulliData={tautulliData}
+                                compare={analyticsData?.compare}
+                                analyticsSourceLabel={analyticsSourceLabel}
+                            />
+                        </Suspense>
 
                         {/* Top Devices & Libraries Container */}
                         <div className="flex flex-col gap-6 lg:col-span-1">
@@ -580,13 +592,15 @@ return (
                 </>
             )}
             {isAdmin && selectedUser && (
-                <UserAnalyticsModal
-                    userId={selectedUser.id}
-                    username={selectedUser.username}
-                    thumb={selectedUser.thumb}
-                    days={days}
-                    onClose={() => setSelectedUser(null)}
-                />
+                <Suspense fallback={null}>
+                    <UserAnalyticsModal
+                        userId={selectedUser.id}
+                        username={selectedUser.username}
+                        thumb={selectedUser.thumb}
+                        days={days}
+                        onClose={() => setSelectedUser(null)}
+                    />
+                </Suspense>
             )}
         </div>
     );
