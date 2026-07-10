@@ -10,12 +10,20 @@ const backgroundImageStyle = (url?: string): React.CSSProperties | undefined => 
     };
 };
 
+const stableHash = (value: string) => {
+    let hash = 0;
+    for (let i = 0; i < value.length; i++) {
+        hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
+    }
+    return hash;
+};
+
 export const SlideshowBackground: React.FC<{ backgrounds: string[], intervalSeconds?: number, opacity?: number }> = ({ backgrounds, intervalSeconds = 30, opacity = 1 }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const shuffledBackgrounds = useMemo(() => {
         if (!backgrounds || backgrounds.length === 0) return [];
-        return [...backgrounds].sort(() => 0.5 - Math.random());
+        return [...backgrounds].sort((a, b) => stableHash(a) - stableHash(b));
     }, [backgrounds]);
 
     useEffect(() => {

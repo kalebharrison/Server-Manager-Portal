@@ -272,6 +272,15 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
     const heroBg = heroBgRaw
         ? (heroBgRaw.startsWith('http') ? heroBgRaw : resolvePortalAssetUrl(heroBgRaw))
         : '';
+    const heroMovieColumns = useMemo(() => {
+        const movies = Array.isArray(dashboardData?.recentMovies) ? dashboardData.recentMovies.filter((movie: any) => movie.thumb || movie.thumbUrl) : [];
+        if (movies.length === 0) return [];
+        return Array.from({ length: 6 }, (_, colIdx) => {
+            const shift = (colIdx * Math.max(1, Math.ceil(movies.length / 3))) % movies.length;
+            const ordered = [...movies.slice(shift), ...movies.slice(0, shift)];
+            return [...ordered, ...ordered];
+        });
+    }, [dashboardData?.recentMovies]);
 
     const wrapUpDaysOptions = [
         { value: 7, label: 'Last 7 Days' },
@@ -342,13 +351,13 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                             <div className="absolute inset-0 bg-gradient-to-r from-card via-card/20 to-transparent" />
                             <div className="absolute inset-0 bg-black/10" />
                         </>
-                    ) : dashboardData?.recentMovies?.length > 0 ? (
+                    ) : heroMovieColumns.length > 0 ? (
                         <>
                             <div className="absolute -inset-[50%] opacity-40 transform -rotate-12 scale-110 flex gap-4 overflow-hidden pointer-events-none justify-center">
-                                {[...Array(6)].map((_, colIdx) => (
+                                {heroMovieColumns.map((column, colIdx) => (
                                     <div key={colIdx} className={`flex flex-col gap-4 ${colIdx % 2 === 0 ? 'animate-[scrollVertical_40s_linear_infinite]' : 'animate-[scrollVertical_50s_linear_infinite_reverse]'}`}>
-                                        {[...dashboardData.recentMovies, ...dashboardData.recentMovies].sort(() => 0.5 - Math.random()).map((m: any, i: number) => (m.thumb || m.thumbUrl) && (
-                                            <img key={`c${colIdx}-${i}`} src={m.thumbUrl ? resolvePortalAssetUrl(m.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(m.thumb)}&width=200&height=300`)} className="w-32 md:w-48 rounded-xl object-cover" alt="" />
+                                        {column.map((m: any, i: number) => (
+                                            <img key={`c${colIdx}-${m.ratingKey || m.sourceRatingKey || m.title || i}-${i}`} src={m.thumbUrl ? resolvePortalAssetUrl(m.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(m.thumb)}&width=200&height=300`)} className="w-32 md:w-48 rounded-xl object-cover" alt="" />
                                         ))}
                                     </div>
                                 ))}
