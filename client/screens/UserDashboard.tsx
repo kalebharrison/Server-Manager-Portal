@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, Clock, Home, PlaySquare, Settings, Share2 } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
@@ -7,7 +7,6 @@ import { getAccessProgressPct, getDaysUntilExpiry } from '../shared/format';
 import { PeriodDropdown } from '../shared/PeriodDropdown';
 import { Loader, Toast } from '../shared/toast';
 import { HomeRecentlyAddedSkeleton, TopWatchedGridSkeleton, WrapUpCardsSkeleton } from '../shared/skeletons';
-import { ShareWrapUpModal } from '../shared/ShareWrapUp';
 import { WrapUpCardGrid } from '../shared/WrapUpCards';
 import { SlideshowBackground } from '../shared/theme';
 import { UserDashboardLayout } from '../home/UserDashboardLayout';
@@ -17,8 +16,10 @@ import { ReportIssueModal } from './ReportIssueModal';
 import { DiscoverPosterCard, RECENTLY_ADDED_ITEM_LIMIT } from './DiscoverContent';
 import type { ToastMessage } from '../shared/types';
 
-import { WrapUpModal } from './user/WrapUpModal';
 import { buildHeroMovieColumns, buildJellyfinHomeAnalytics, resolveHomeImage, wrapUpDaysOptions } from './user/userDashboardUtils';
+
+const ShareWrapUpModal = lazy(() => import('../shared/ShareWrapUp').then(module => ({ default: module.ShareWrapUpModal })));
+const WrapUpModal = lazy(() => import('./user/WrapUpModal').then(module => ({ default: module.WrapUpModal })));
 
 export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onLogout: () => void; refreshSession: () => void; onViewAdmin: () => void; onViewStatus: () => void; onViewDashboard: () => void; onViewSettings?: () => void; onViewLogs?: () => void }> = ({ sessionInfo, publicConfig, onLogout, refreshSession, onViewAdmin, onViewStatus, onViewDashboard, onViewSettings, onViewLogs }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -363,17 +364,21 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
             </div>
 
             {selectedMetric && analytics && (
-                <WrapUpModal metric={selectedMetric} analytics={analytics} days={analyticsDays} onClose={() => setSelectedMetric(null)} />
+                <Suspense fallback={null}>
+                    <WrapUpModal metric={selectedMetric} analytics={analytics} days={analyticsDays} onClose={() => setSelectedMetric(null)} />
+                </Suspense>
             )}
             {shareWrapUpOpen && analytics && (
-                <ShareWrapUpModal
-                    analytics={analytics}
-                    days={analyticsDays}
-                    serverName={sessionInfo?.serverName || 'Server Portal'}
-                    username={sessionInfo?.session?.username || user?.username}
-                    onClose={() => setShareWrapUpOpen(false)}
-                    onToast={(message, type) => setToast({ id: Date.now(), message, type })}
-                />
+                <Suspense fallback={null}>
+                    <ShareWrapUpModal
+                        analytics={analytics}
+                        days={analyticsDays}
+                        serverName={sessionInfo?.serverName || 'Server Portal'}
+                        username={sessionInfo?.session?.username || user?.username}
+                        onClose={() => setShareWrapUpOpen(false)}
+                        onToast={(message, type) => setToast({ id: Date.now(), message, type })}
+                    />
+                </Suspense>
             )}
 
             <UserDashboardLayout
