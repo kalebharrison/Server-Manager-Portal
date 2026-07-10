@@ -65,9 +65,9 @@ export const MainApp: React.FC = () => {
     const [sessionInfo, setSessionInfo] = useState<any>(null);
     const [publicConfig, setPublicConfig] = useState<any>({});
 
-    const fetchPublicConfig = useCallback(async () => {
+    const fetchPublicConfig = useCallback(async (forceRefresh = false) => {
         try {
-            const data = await apiFetch('/api/config/public', { forceRefresh: true });
+            const data = await apiFetch(forceRefresh ? '/api/config/public?refresh=1' : '/api/config/public', { forceRefresh });
             window.__USE_24_HOUR_CLOCK__ = data.use24HourClock === true;
             if (typeof data.basePath === 'string') {
                 window.__BASE_PATH__ = data.basePath;
@@ -118,7 +118,7 @@ export const MainApp: React.FC = () => {
     }, [fetchPublicConfig]);
 
     useEffect(() => {
-        const onPublicConfigUpdated = () => { fetchPublicConfig(); };
+        const onPublicConfigUpdated = () => { fetchPublicConfig(true); };
         window.addEventListener('portal-public-config-updated', onPublicConfigUpdated);
         return () => window.removeEventListener('portal-public-config-updated', onPublicConfigUpdated);
     }, [fetchPublicConfig]);
