@@ -882,6 +882,7 @@ registerMaintenanceRoutes({
     tasksInfo,
     markTaskStart,
     markTaskEnd,
+    withCache,
 });
 
 const { monitorConcurrentSessions } = createStreamMonitor({
