@@ -9,6 +9,7 @@ import { CustomSelect } from '../shared/ui';
 import { AuthPageBackground, themeClasses } from '../shared/theme';
 import { accentHoverRgb, hexToRgb } from '../shared/format';
 import type { PlexServer } from '../shared/types';
+import { SetupStepNavigation } from './SetupStepNavigation';
 import {
     BRAND_THEME_COLORS,
     BRAND_THEME_OPTIONS,
@@ -301,33 +302,6 @@ export const SetupWizard: React.FC<{ onComplete: () => void }> = ({ onComplete }
     const primaryBtnClass = themeClasses.btnPrimary;
     const sectionCardClass = `${themeClasses.sectionCard} p-5 md:p-6`;
 
-    const renderStepNav = (compact = false) => (
-        STEPS.map((s, i) => {
-            const Icon = s.icon;
-            const active = s.id === step;
-            const done = i < stepIndex;
-            return (
-                <div
-                    key={s.id}
-                    className={`flex items-start gap-3 rounded-xl transition-all duration-300 ${compact ? 'flex-shrink-0 px-3 py-2' : 'p-3'} ${active ? 'bg-plex/10 border border-plex/25 shadow-[0_0_24px_rgba(229,160,13,0.12)]' : done ? 'opacity-90' : 'opacity-50'}`}
-                >
-                    <div className={`flex-shrink-0 rounded-full flex items-center justify-center border-2 transition-all ${compact ? 'w-8 h-8' : 'w-10 h-10'} ${active ? 'border-plex bg-plex/20 text-plex shadow-[0_0_18px_rgba(229,160,13,0.35)]' : done ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400' : 'border-white/10 bg-white/5 text-muted'}`}>
-                        {done ? <Check className={compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} /> : <Icon className={compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} />}
-                    </div>
-                    {!compact && (
-                        <div className="min-w-0 pt-0.5">
-                            <p className={`text-sm font-bold leading-tight ${active ? 'text-text' : done ? 'text-emerald-400/90' : 'text-muted'}`}>{s.label}</p>
-                            <p className="text-xs text-muted/80 mt-0.5 leading-snug">{s.hint}</p>
-                        </div>
-                    )}
-                    {compact && (
-                        <span className={`text-xs font-bold whitespace-nowrap ${active ? 'text-plex' : done ? 'text-emerald-400' : 'text-muted'}`}>{s.label}</span>
-                    )}
-                </div>
-            );
-        })
-    );
-
     return (
         <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10 overflow-hidden">
             <AuthPageBackground />
@@ -344,7 +318,9 @@ export const SetupWizard: React.FC<{ onComplete: () => void }> = ({ onComplete }
                             <p className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] mt-2">Initial Setup</p>
                         </div>
 
-                        <nav className="flex-1 space-y-1.5">{renderStepNav()}</nav>
+                        <nav className="flex-1 space-y-1.5">
+                            <SetupStepNavigation step={step} stepIndex={stepIndex} />
+                        </nav>
 
                         <div className="mt-8 pt-6 border-t border-white/10">
                             <div className="flex justify-between text-xs font-semibold text-muted mb-2.5">
@@ -365,7 +341,9 @@ export const SetupWizard: React.FC<{ onComplete: () => void }> = ({ onComplete }
                     <div className="flex-1 flex flex-col min-h-0 min-w-0">
                         {/* Mobile / tablet step strip */}
                         <div className="lg:hidden border-b border-white/10 bg-black/20 px-4 py-4 overflow-x-auto">
-                            <div className="flex items-center gap-2 min-w-max">{renderStepNav(true)}</div>
+                            <div className="flex items-center gap-2 min-w-max">
+                                <SetupStepNavigation step={step} stepIndex={stepIndex} compact />
+                            </div>
                             <div className="mt-3 h-1.5 bg-white/5 rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-plex to-plex-hover transition-all duration-500" style={{ width: `${progressPct}%` }} />
                             </div>
