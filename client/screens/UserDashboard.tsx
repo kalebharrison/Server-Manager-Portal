@@ -12,7 +12,6 @@ import { SlideshowBackground } from '../shared/theme';
 import { UserDashboardLayout } from '../home/UserDashboardLayout';
 import { createMainGridWidgetRenderer, createRecentlyAddedWidgetRenderer } from '../home/userDashboardWidgetRenderers';
 import { RebuildLibraryCacheButton } from './RebuildLibraryCacheButton';
-import { ReportIssueModal } from './ReportIssueModal';
 import { DiscoverPosterCard, RECENTLY_ADDED_ITEM_LIMIT } from './DiscoverContent';
 import type { ToastMessage } from '../shared/types';
 
@@ -20,6 +19,7 @@ import { buildHeroMovieColumns, buildJellyfinHomeAnalytics, resolveHomeImage, wr
 
 const ShareWrapUpModal = lazy(() => import('../shared/ShareWrapUp').then(module => ({ default: module.ShareWrapUpModal })));
 const WrapUpModal = lazy(() => import('./user/WrapUpModal').then(module => ({ default: module.WrapUpModal })));
+const ReportIssueModal = lazy(() => import('./ReportIssueModal').then(module => ({ default: module.ReportIssueModal })));
 
 export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onLogout: () => void; refreshSession: () => void; onViewAdmin: () => void; onViewStatus: () => void; onViewDashboard: () => void; onViewSettings?: () => void; onViewLogs?: () => void }> = ({ sessionInfo, publicConfig, onLogout, refreshSession, onViewAdmin, onViewStatus, onViewDashboard, onViewSettings, onViewLogs }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -559,7 +559,9 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
             />
 
             {reportItem && (
-                <ReportIssueModal item={reportItem} onClose={() => setReportItem(null)} />
+                <Suspense fallback={null}>
+                    <ReportIssueModal item={reportItem} onClose={() => setReportItem(null)} />
+                </Suspense>
             )}
         </div>
     );

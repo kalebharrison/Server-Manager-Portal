@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { bindAppConfirm } from './shared/confirm';
 import { apiFetch, clearApiCache } from './shared/api';
 import { portalUrl, stripBasePath } from './shared/basePath';
-import { ConfirmModal } from './shared/ui';
 import { Loader } from './shared/toast';
 import { AppAmbientBackground } from './shared/theme';
 import { PORTAL_WIDE_LAYOUT_THRESHOLD } from './shared/portalLayout';
@@ -21,6 +20,8 @@ import {
     Navigation,
     SettingsDashboard,
 } from './lazyScreens';
+
+const ConfirmModal = React.lazy(() => import('./shared/ConfirmModal').then(module => ({ default: module.ConfirmModal })));
 
 export const MainApp: React.FC = () => {
     const [confirmState, setConfirmState] = useState<{ isOpen: boolean, message: string, onConfirm: () => void }>({ isOpen: false, message: '', onConfirm: () => { } });
@@ -245,7 +246,11 @@ export const MainApp: React.FC = () => {
     return (
         <div className="relative flex w-full min-h-screen overflow-x-clip">
             <AppAmbientBackground backgroundImageUrl={publicConfig?.backgroundImageUrl} />
-            <ConfirmModal isOpen={confirmState.isOpen} message={confirmState.message} onConfirm={handleConfirm} onCancel={closeConfirm} />
+            {confirmState.isOpen && (
+                <React.Suspense fallback={null}>
+                    <ConfirmModal isOpen={true} message={confirmState.message} onConfirm={handleConfirm} onCancel={closeConfirm} />
+                </React.Suspense>
+            )}
             <React.Suspense fallback={null}>
                 {!isPublicView && <Navigation currentRoute={currentRoute} onNavigate={setRoute as any} onLogout={handleLogout} isAdmin={isAdmin} serverName={sessionInfo?.serverName || 'Server Portal'} adminThumb={sessionInfo?.adminThumb} customLogoUrl={publicConfig?.customLogoUrl} requestUrl={sessionInfo?.requestUrl || 'https://yourdomain.com'} navOrder={sessionInfo?.navOrder || ['home', 'discover', 'status', 'analytics', 'mediastack', 'maintenance', 'request', 'settings', 'logout']} appVersion={publicConfig.appVersion} activeTheme={activeTheme} setActiveTheme={setActiveTheme} />}
             </React.Suspense>
