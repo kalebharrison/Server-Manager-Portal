@@ -18,6 +18,7 @@ import { createMediaUserService } from './lib/media-user-service.js';
 import { createMaintenanceService } from './lib/maintenance-service.js';
 import { createNewsletterService } from './lib/newsletter-service.js';
 import { escapeHtmlAttr } from './lib/html-shell.js';
+import { createSerialJobQueue } from './lib/job-queue.js';
 import { loadFile, saveFile } from './lib/json-file-store.js';
 import { isLoopbackAddress, normalizeExternalBaseUrl, resolveIntegrationUrlForFetch } from './lib/network-policy.js';
 import { enrichRecentItemsWithMediaTags } from './lib/plex-media-tags.js';
@@ -190,6 +191,7 @@ const PLEX_API = 'https://plex.tv/api';
 
 // --- Helper Functions ---
 const log = (message) => console.log(`[${new Date().toISOString()}] ${message}`);
+const heavyJobQueue = createSerialJobQueue({ log });
 
 const apiCache = createTtlCache({ maxEntries: 500 });
 
@@ -560,6 +562,7 @@ const plexStatsService = createPlexStatsService({
     markTaskStart,
     markTaskEnd,
     systemJobs,
+    runHeavyJob: heavyJobQueue.run,
     log,
 });
 const { loadPlexStatsFromDisk, buildPlexStatsCache, startPlexStatsBackgroundTask } = plexStatsService;
@@ -770,6 +773,7 @@ const analyticsService = createAnalyticsService({
     markTaskStart,
     markTaskEnd,
     systemJobs,
+    runHeavyJob: heavyJobQueue.run,
     log,
 });
 const {
@@ -852,6 +856,7 @@ const maintenanceService = createMaintenanceService({
     markTaskStart,
     markTaskEnd,
     systemJobs,
+    runHeavyJob: heavyJobQueue.run,
     log,
 });
 const {
