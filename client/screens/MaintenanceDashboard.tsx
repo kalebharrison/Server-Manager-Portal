@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { MaintenanceCalendarSection } from '../maintenance/MaintenanceCalendarSection';
 import { MaintenanceCandidatesSection } from '../maintenance/MaintenanceCandidatesSection';
@@ -9,7 +9,6 @@ import { MaintenanceRunLogsSection } from '../maintenance/MaintenanceRunLogsSect
 import { MaintenanceRuleLibrarySection } from '../maintenance/MaintenanceRuleLibrarySection';
 import { MaintenanceSettingsSection } from '../maintenance/MaintenanceSettingsSection';
 import { MaintenanceStorageSection } from '../maintenance/MaintenanceStorageSection';
-import { LibraryMaintenancePanel } from '../maintenance/LibraryMaintenancePanel';
 import {
     buildCalendarEligibility,
     getSelectedCalendarGroup
@@ -35,6 +34,14 @@ import {
     MaintenanceMobileSectionSelect,
     MaintenanceSectionSidebar
 } from './maintenance/MaintenanceDashboardNavigation';
+
+const LibraryMaintenancePanel = lazy(() => import('../maintenance/LibraryMaintenancePanel').then(module => ({ default: module.LibraryMaintenancePanel })));
+
+const MaintenancePanelFallback: React.FC = () => (
+    <div className="glass-card-sm min-h-[240px] flex items-center justify-center">
+        <div className="border-4 border-border border-t-plex rounded-full w-10 h-10 animate-spin" />
+    </div>
+);
 
 export const MaintenanceDashboard: React.FC = () => {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -320,7 +327,11 @@ export const MaintenanceDashboard: React.FC = () => {
                                         runs={runs}
                                     />
                                 )}
-                                {activeSection === 'rules' && <LibraryMaintenancePanel addToast={addToast} onRulesUpdated={() => loadOverview(true)} />}
+                                {activeSection === 'rules' && (
+                                    <Suspense fallback={<MaintenancePanelFallback />}>
+                                        <LibraryMaintenancePanel addToast={addToast} onRulesUpdated={() => loadOverview(true)} />
+                                    </Suspense>
+                                )}
                                 {activeSection === 'collections' && (
                                     <MaintenanceCollectionsSection
                                         addToast={addToast}
