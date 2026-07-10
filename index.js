@@ -732,6 +732,7 @@ registerJellyfinRoutes({
     isJellyfinConfigured,
     resolveIntegrationUrlForFetch,
     fetchWithTimeout,
+    withCache,
     jellyfinHeaders,
     withBasePath,
     jellyfinItemUrl,
