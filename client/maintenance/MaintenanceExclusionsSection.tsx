@@ -276,7 +276,7 @@ const ResolvedRatingKeyExclusions: React.FC<{ entries: any[] }> = ({ entries }) 
                 <div key={`resolved-key-${entry.ratingKey}`} className="flex items-center gap-2 bg-background/30 border border-white/5 rounded-md p-2">
                     <div className="w-10 h-14 rounded overflow-hidden bg-black/40 flex-shrink-0">
                         {entry.thumb ? (
-                            <img src={portalUrl(`/api/plex/image?path=${encodeURIComponent(entry.thumb)}&width=80&height=120`)} alt={entry.title} className="w-full h-full object-cover" />
+                            <img src={portalUrl(`/api/plex/image?path=${encodeURIComponent(entry.thumb)}&width=80&height=120`)} alt={entry.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-[9px] text-muted">No Poster</div>
                         )}

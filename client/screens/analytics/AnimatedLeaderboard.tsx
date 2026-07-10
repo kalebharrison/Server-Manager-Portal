@@ -73,7 +73,7 @@ export const AnimatedLeaderboard: React.FC<{ users: any[], resolveAvatar: (thumb
                 {isFirst && <div className="absolute -top-6 text-4xl animate-[crown-pulse_2s_ease-in-out_infinite]">👑</div>}
                 {!isFirst && <div className="absolute -top-4 text-3xl">{rank === 2 ? '🥈' : '🥉'}</div>}
                 
-                <img src={resolveAvatar(user.thumb, 80, 80)} alt={user.username} onError={(e) => { (e.target as HTMLImageElement).src = logoUrl(); }} className={`rounded-full object-cover mb-2 border-2 ${isFirst ? 'w-20 h-20 border-yellow-500' : 'w-16 h-16 border-border'} bg-card`} />
+                <img src={resolveAvatar(user.thumb, 80, 80)} alt={user.username} decoding="async" onError={(e) => { (e.target as HTMLImageElement).src = logoUrl(); }} className={`rounded-full object-cover mb-2 border-2 ${isFirst ? 'w-20 h-20 border-yellow-500' : 'w-16 h-16 border-border'} bg-card`} />
                 <span className="font-bold text-text group-hover:text-plex transition-colors truncate w-full text-center">{user.username}</span>
                 <span className="text-xs text-muted font-mono mt-1">{user.plays} plays</span>
                 
@@ -119,7 +119,7 @@ export const AnimatedLeaderboard: React.FC<{ users: any[], resolveAvatar: (thumb
                                 <div className="absolute left-0 top-0 bottom-0 bg-plex/10 animate-[bar-grow_1s_ease-out]" style={{ width: `${pct}%` }}></div>
                                 
                                 <div className="w-6 text-center font-bold text-muted group-hover:text-text z-10">#{rank}</div>
-                                <img src={resolveAvatar(user.thumb, 40, 40)} onError={(e) => { (e.target as HTMLImageElement).src = logoUrl(); }} className="w-8 h-8 rounded-full border border-border z-10 bg-card flex-shrink-0" />
+                                <img src={resolveAvatar(user.thumb, 40, 40)} loading="lazy" decoding="async" onError={(e) => { (e.target as HTMLImageElement).src = logoUrl(); }} className="w-8 h-8 rounded-full border border-border z-10 bg-card flex-shrink-0" />
                                 
                                 <div className="flex-1 flex items-center gap-2 z-10 min-w-0">
                                     <span className="font-bold text-text truncate group-hover:text-plex transition-colors">{user.username}</span>
