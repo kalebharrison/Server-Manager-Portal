@@ -34,21 +34,35 @@ export const SlideshowBackground: React.FC<{ backgrounds: string[], intervalSeco
         return () => clearInterval(timer);
     }, [shuffledBackgrounds, intervalSeconds]);
 
+    useEffect(() => {
+        if (currentIndex >= shuffledBackgrounds.length) setCurrentIndex(0);
+    }, [currentIndex, shuffledBackgrounds.length]);
+
     if (shuffledBackgrounds.length === 0) return null;
+    const currentBackground = shuffledBackgrounds[currentIndex] || shuffledBackgrounds[0];
+    const nextBackground = shuffledBackgrounds.length > 1
+        ? shuffledBackgrounds[(currentIndex + 1) % shuffledBackgrounds.length]
+        : null;
 
     return (
         <div className="absolute inset-0 pointer-events-none" style={{ opacity }}>
-            {shuffledBackgrounds.map((bg, idx) => (
-                <div
-                    key={bg}
-                    className="absolute inset-0 bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out"
-                    style={{
-                        ...backgroundImageStyle(bg),
-                        backgroundSize: 'cover',
-                        opacity: idx === currentIndex ? 1 : 0,
-                    }}
+            <div
+                key={currentBackground}
+                className="absolute inset-0 bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out"
+                style={{
+                    ...backgroundImageStyle(currentBackground),
+                    backgroundSize: 'cover',
+                }}
+            />
+            {nextBackground && (
+                <img
+                    src={nextBackground}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute w-px h-px opacity-0"
+                    decoding="async"
                 />
-            ))}
+            )}
         </div>
     );
 };
