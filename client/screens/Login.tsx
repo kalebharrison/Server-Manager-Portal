@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Sparkles } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
@@ -6,8 +6,9 @@ import { logoUrl, portalUrl, resolvePortalAssetUrl, stripBasePath } from '../sha
 import { updateFavicon } from '../shared/favicon';
 import { AuthPageBackground, themeClasses } from '../shared/theme';
 import { Loader } from '../shared/toast';
-import { SetupWizard } from '../setup/SetupWizard';
 import { LivePlexStats, PublicUptimeBanner } from './PublicStats';
+
+const SetupWizard = lazy(() => import('../setup/SetupWizard').then(module => ({ default: module.SetupWizard })));
 
 const JELLYFIN_ICON_URL = 'https://cdn.jsdelivr.net/gh/selfhst/icons/svg/jellyfin.svg';
 
@@ -191,7 +192,11 @@ export const Login: React.FC<{ onLoginSuccess: () => void, publicConfig?: any, i
     };
 
     if (publicInfo.isConfigured === false || (typeof window !== 'undefined' && stripBasePath(window.location.pathname).startsWith('/auth/setup/'))) {
-        return <SetupWizard onComplete={fetchPublicInfo} />;
+        return (
+            <Suspense fallback={<Loader isLoading={true} isCinematic={!!publicConfig?.useCinematicLoading} />}>
+                <SetupWizard onComplete={fetchPublicInfo} />
+            </Suspense>
+        );
     }
 
     if (publicInfo.isConfigured === null) {
