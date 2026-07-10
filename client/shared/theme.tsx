@@ -59,7 +59,8 @@ export const SlideshowBackground: React.FC<{ backgrounds: string[], intervalSeco
                     src={nextBackground}
                     alt=""
                     aria-hidden="true"
-                    className="absolute w-px h-px opacity-0"
+                    className="absolute opacity-0"
+                    style={{ width: 1, height: 1 }}
                     decoding="async"
                 />
             )}
