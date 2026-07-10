@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Settings, Sparkles, ChevronRight, ChevronLeft, Check, Palette, Mail, Layers, Server, PartyPopper,
+    Settings, Sparkles, ChevronRight, ChevronLeft, Check, PartyPopper,
 } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { getPublicOrigin, logoUrl, portalUrl, stripBasePath } from '../shared/basePath';
@@ -9,118 +9,19 @@ import { CustomSelect } from '../shared/ui';
 import { AuthPageBackground, themeClasses } from '../shared/theme';
 import { accentHoverRgb, hexToRgb } from '../shared/format';
 import type { PlexServer } from '../shared/types';
-
-const STEPS = [
-    { id: 'welcome', label: 'Welcome', icon: Sparkles, hint: 'Overview & what to expect' },
-    { id: 'plex', label: 'Media Server', icon: Server, hint: 'Choose Plex or Jellyfin' },
-    { id: 'branding', label: 'Branding', icon: Palette, hint: 'Colors, logo & domain' },
-    { id: 'email', label: 'Email', icon: Mail, hint: 'SMTP alerts & newsletters' },
-    { id: 'integrations', label: 'Integrations', icon: Layers, hint: 'Sonarr, Radarr & more' },
-    { id: 'finish', label: 'Finish', icon: PartyPopper, hint: 'Review & launch' },
-] as const;
-
-type StepId = (typeof STEPS)[number]['id'];
-
-const WELCOME_FEATURES = [
-    { icon: Server, title: 'Plex or Jellyfin', desc: 'Choose and test your media server' },
-    { icon: Palette, title: 'Your Brand', desc: 'Custom colors, logo & domain' },
-    { icon: Mail, title: 'Email Alerts', desc: 'Expiry reminders & newsletters' },
-    { icon: Layers, title: 'Media Stack', desc: 'Sonarr, Radarr, Tautulli & requests' },
-] as const;
-
-const SETUP_PLEX_STORAGE_KEY = 'setupWizardPlex';
-
-const REQUEST_APP_OPTIONS = [
-    { label: 'Disabled', value: 'none' },
-    { label: 'Seerr', value: 'seerr' },
-    { label: 'Jellyseerr', value: 'jellyseerr' },
-    { label: 'Ombi', value: 'ombi' },
-];
-
-const SELFHST_ICON_BASE = 'https://cdn.jsdelivr.net/gh/selfhst/icons/svg';
-const APP_ICONS: Record<string, string> = {
-    sonarr: `${SELFHST_ICON_BASE}/sonarr.svg`,
-    radarr: `${SELFHST_ICON_BASE}/radarr.svg`,
-    tautulli: `${SELFHST_ICON_BASE}/tautulli.svg`,
-    seerr: `${SELFHST_ICON_BASE}/seerr.svg`,
-    overseerr: `${SELFHST_ICON_BASE}/seerr.svg`,
-    jellyseerr: `${SELFHST_ICON_BASE}/jellyseerr.svg`,
-    ombi: `${SELFHST_ICON_BASE}/ombi.svg`,
-    jellystat: 'https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/jellystat.png',
-};
-
-const ProgramIcon: React.FC<{ app: string; label: string }> = ({ app, label }) => (
-    <span className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
-        {APP_ICONS[app] ? (
-            <img
-                src={APP_ICONS[app]}
-                alt=""
-                className="w-5 h-5 object-contain"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-        ) : (
-            <span className="text-[10px] font-black text-plex">{label.slice(0, 2).toUpperCase()}</span>
-        )}
-        <span className="sr-only">{label}</span>
-    </span>
-);
-
-const MEDIA_SERVER_OPTIONS = [
-    { label: 'Plex', value: 'plex' },
-    { label: 'Jellyfin', value: 'jellyfin' },
-];
-
-const BRAND_THEME_OPTIONS = [
-    { label: 'Plex', value: 'plex' },
-    { label: 'Jellyfin', value: 'jellyfin' },
-    { label: 'Custom', value: 'custom' },
-];
-
-const BRAND_THEME_COLORS: Record<string, string> = {
-    plex: '#F7C600',
-    jellyfin: '#00A4DC',
-};
-
-const readStoredSetupPlex = () => {
-    try {
-        const raw = sessionStorage.getItem(SETUP_PLEX_STORAGE_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw) as {
-            token?: string;
-            mediaServerType?: string;
-            servers?: PlexServer[];
-            serverIdentifier?: string;
-            plexServerUrl?: string;
-            jellyfinUrl?: string;
-            jellyfinApiKey?: string;
-            username?: string;
-            step?: StepId;
-            publicDomain?: string;
-            brandTheme?: string;
-            primaryColor?: string;
-            customLogoUrl?: string;
-            smtpHost?: string;
-            smtpPort?: number;
-            smtpUser?: string;
-            smtpPass?: string;
-            smtpFrom?: string;
-            smtpSecure?: boolean;
-            sonarrUrl?: string;
-            sonarrApiKey?: string;
-            radarrUrl?: string;
-            radarrApiKey?: string;
-            tautulliUrl?: string;
-            tautulliApiKey?: string;
-            jellystatUrl?: string;
-            jellystatApiKey?: string;
-            requestAppType?: string;
-            requestAppUrl?: string;
-            requestAppApiKey?: string;
-        };
-    } catch {
-        return null;
-    }
-};
+import {
+    BRAND_THEME_COLORS,
+    BRAND_THEME_OPTIONS,
+    MEDIA_SERVER_OPTIONS,
+    ProgramIcon,
+    REQUEST_APP_OPTIONS,
+    SETUP_PLEX_STORAGE_KEY,
+    STEPS,
+    WELCOME_FEATURES,
+    readStoredSetupPlex,
+    type StepId,
+    type StoredSetupPlex,
+} from './setupWizardModel';
 
 export const SetupWizard: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
     const storedPlex = readStoredSetupPlex();
@@ -200,7 +101,7 @@ export const SetupWizard: React.FC<{ onComplete: () => void }> = ({ onComplete }
         document.documentElement.style.setProperty('--color-plex-hover', accentHoverRgb(primaryColor));
     }, [primaryColor]);
 
-    const persistSetupPlex = (patch: Partial<ReturnType<typeof readStoredSetupPlex>>) => {
+    const persistSetupPlex = (patch: Partial<StoredSetupPlex>) => {
         const next = {
             token,
             mediaServerType,
