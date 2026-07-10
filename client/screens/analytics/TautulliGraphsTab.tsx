@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, AlertCircle, Calendar, Clock, Layers, LineChart as LucideLineChart, MonitorSmartphone, RefreshCw, TrendingUp, Trophy, Users } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
 
 import { apiFetch } from '../../shared/api';
 import { CustomSelect } from '../../shared/ui';
+import { SimpleLineChart, SimpleStackedBarChart } from './SimpleCharts';
 
 const GRAPH_COLORS = [
     '#3b82f6', // blue
@@ -170,19 +170,16 @@ export const TautulliGraphsTab: React.FC = () => {
                     <LucideLineChart className="w-5 h-5 text-[#3b82f6]" /> {yAxis === 'plays' ? 'Daily Play Count by Media Type' : 'Daily Watch Duration by Media Type (Hours)'}
                 </h3>
                 <div className="h-72 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                            <XAxis dataKey="date" stroke="#666" tick={{ fill: '#888', fontSize: 12 }} tickMargin={10} minTickGap={20} />
-                            <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                            <RechartsTooltip contentStyle={{ backgroundColor: '#1e2329', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
-                            <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                            <Line type="monotone" dataKey="TV" stroke="#eab308" strokeWidth={2} dot={false} />
-                            <Line type="monotone" dataKey="Movies" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                            <Line type="monotone" dataKey="Music" stroke="#ef4444" strokeWidth={2} dot={false} />
-                            <Line type="monotone" dataKey="Total" stroke="#8b5cf6" strokeWidth={2} dot={false} />
-                        </LineChart>
-                    </ResponsiveContainer>
+                    <SimpleLineChart
+                        data={dailyData}
+                        xKey="date"
+                        series={[
+                            { key: 'TV', color: '#eab308' },
+                            { key: 'Movies', color: '#3b82f6' },
+                            { key: 'Music', color: '#ef4444' },
+                            { key: 'Total', color: '#8b5cf6' },
+                        ]}
+                    />
                 </div>
             </div>
 
@@ -193,18 +190,15 @@ export const TautulliGraphsTab: React.FC = () => {
                         <Calendar className="w-5 h-5 text-green-400" /> {yAxis === 'plays' ? 'Play Count by Day of Week' : 'Watch Duration by Day of Week (Hours)'}
                     </h3>
                     <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={dayOfWeekData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis dataKey="date" stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <RechartsTooltip cursor={{ fill: '#ffffff10' }} contentStyle={{ backgroundColor: '#1e2329', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
-                                <Legend />
-                                <Bar dataKey="TV" stackId="a" fill="#eab308" />
-                                <Bar dataKey="Movies" stackId="a" fill="#3b82f6" />
-                                <Bar dataKey="Music" stackId="a" fill="#ef4444" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <SimpleStackedBarChart
+                            data={dayOfWeekData}
+                            xKey="date"
+                            series={[
+                                { key: 'TV', color: '#eab308' },
+                                { key: 'Movies', color: '#3b82f6' },
+                                { key: 'Music', color: '#ef4444' },
+                            ]}
+                        />
                     </div>
                 </div>
 
@@ -214,18 +208,15 @@ export const TautulliGraphsTab: React.FC = () => {
                         <Clock className="w-5 h-5 text-orange-400" /> {yAxis === 'plays' ? 'Play Count by Hour of Day' : 'Watch Duration by Hour of Day (Hours)'}
                     </h3>
                     <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={hourOfDayData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis dataKey="date" stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <RechartsTooltip cursor={{ fill: '#ffffff10' }} contentStyle={{ backgroundColor: '#1e2329', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
-                                <Legend />
-                                <Bar dataKey="TV" stackId="a" fill="#eab308" />
-                                <Bar dataKey="Movies" stackId="a" fill="#3b82f6" />
-                                <Bar dataKey="Music" stackId="a" fill="#ef4444" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <SimpleStackedBarChart
+                            data={hourOfDayData}
+                            xKey="date"
+                            series={[
+                                { key: 'TV', color: '#eab308' },
+                                { key: 'Movies', color: '#3b82f6' },
+                                { key: 'Music', color: '#ef4444' },
+                            ]}
+                        />
                     </div>
                 </div>
 
@@ -235,18 +226,11 @@ export const TautulliGraphsTab: React.FC = () => {
                         <Activity className="w-5 h-5 text-sky-400" /> {yAxis === 'plays' ? 'Daily Stream Type Breakdown' : 'Daily Stream Type Duration Breakdown (Hours)'}
                     </h3>
                     <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={streamTypeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis dataKey="date" stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#1e2329', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
-                                <Legend />
-                                {streamTypeKeys.map((key: string) => (
-                                    <Line key={key} type="monotone" dataKey={key} stroke={STREAM_COLORS[key] || '#3b82f6'} strokeWidth={2} dot={false} />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
+                        <SimpleLineChart
+                            data={streamTypeData}
+                            xKey="date"
+                            series={streamTypeKeys.map((key: string, idx: number) => ({ key, color: STREAM_COLORS[key] || GRAPH_COLORS[idx % GRAPH_COLORS.length] }))}
+                        />
                     </div>
                 </div>
 
@@ -256,18 +240,11 @@ export const TautulliGraphsTab: React.FC = () => {
                         <TrendingUp className="w-5 h-5 text-plex" /> Daily Concurrent Stream Count by Stream Type
                     </h3>
                     <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={concurrentData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis dataKey="date" stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#1e2329', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
-                                <Legend />
-                                {concurrentKeys.map((key: string) => (
-                                    <Line key={key} type="monotone" dataKey={key} stroke={STREAM_COLORS[key] || '#3b82f6'} strokeWidth={2} dot={false} />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
+                        <SimpleLineChart
+                            data={concurrentData}
+                            xKey="date"
+                            series={concurrentKeys.map((key: string, idx: number) => ({ key, color: STREAM_COLORS[key] || GRAPH_COLORS[idx % GRAPH_COLORS.length] }))}
+                        />
                     </div>
                 </div>
             </div>
@@ -279,18 +256,11 @@ export const TautulliGraphsTab: React.FC = () => {
                         <MonitorSmartphone className="w-5 h-5 text-purple-400" /> {yAxis === 'plays' ? 'Stream Resolution Breakdown' : 'Stream Resolution Duration Breakdown (Hours)'}
                     </h3>
                     <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={resolutionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis dataKey="date" stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <RechartsTooltip cursor={{ fill: '#ffffff10' }} contentStyle={{ backgroundColor: '#1e2329', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
-                                <Legend />
-                                {resolutionKeys.map((key: string, idx: number) => (
-                                    <Bar key={key} dataKey={key} stackId="a" fill={GRAPH_COLORS[idx % GRAPH_COLORS.length]} />
-                                ))}
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <SimpleStackedBarChart
+                            data={resolutionData}
+                            xKey="date"
+                            series={resolutionKeys.map((key: string, idx: number) => ({ key, color: GRAPH_COLORS[idx % GRAPH_COLORS.length] }))}
+                        />
                     </div>
                 </div>
 
@@ -301,18 +271,11 @@ export const TautulliGraphsTab: React.FC = () => {
                             <Users className="w-5 h-5 text-teal-400" /> {yAxis === 'plays' ? 'Top 10 Streaming Platforms' : 'Top 10 Platforms by Watch Duration (Hours)'}
                         </h3>
                         <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={platformData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                    <XAxis dataKey="date" stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                    <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                    <RechartsTooltip cursor={{ fill: '#ffffff10' }} contentStyle={{ backgroundColor: '#1e2329', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
-                                    <Legend />
-                                    {platformKeys.map((key: string, idx: number) => (
-                                        <Bar key={key} dataKey={key} stackId="a" fill={GRAPH_COLORS[idx % GRAPH_COLORS.length]} />
-                                    ))}
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <SimpleStackedBarChart
+                                data={platformData}
+                                xKey="date"
+                                series={platformKeys.map((key: string, idx: number) => ({ key, color: GRAPH_COLORS[idx % GRAPH_COLORS.length] }))}
+                            />
                         </div>
                     </div>
                 </div>
@@ -325,18 +288,11 @@ export const TautulliGraphsTab: React.FC = () => {
                         <Layers className="w-5 h-5 text-indigo-400" /> {yAxis === 'plays' ? 'Source File Resolution Breakdown' : 'Source File Resolution Duration Breakdown (Hours)'}
                     </h3>
                     <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={sourceResolutionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis dataKey="date" stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                <RechartsTooltip cursor={{ fill: '#ffffff10' }} contentStyle={{ backgroundColor: '#1e2329', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
-                                <Legend />
-                                {sourceResolutionKeys.map((key: string, idx: number) => (
-                                    <Bar key={key} dataKey={key} stackId="a" fill={GRAPH_COLORS[idx % GRAPH_COLORS.length]} />
-                                ))}
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <SimpleStackedBarChart
+                            data={sourceResolutionData}
+                            xKey="date"
+                            series={sourceResolutionKeys.map((key: string, idx: number) => ({ key, color: GRAPH_COLORS[idx % GRAPH_COLORS.length] }))}
+                        />
                     </div>
                 </div>
 
@@ -347,18 +303,11 @@ export const TautulliGraphsTab: React.FC = () => {
                             <Trophy className="w-5 h-5 text-amber-400" /> {yAxis === 'plays' ? 'Top 10 Active Users Breakdown' : 'Top 10 Users by Watch Duration (Hours)'}
                         </h3>
                         <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={topUsersData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                    <XAxis dataKey="date" stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                    <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12 }} />
-                                    <RechartsTooltip cursor={{ fill: '#ffffff10' }} contentStyle={{ backgroundColor: '#1e2329', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
-                                    <Legend />
-                                    {topUsersKeys.map((key: string, idx: number) => (
-                                        <Bar key={key} dataKey={key} stackId="a" fill={GRAPH_COLORS[idx % GRAPH_COLORS.length]} />
-                                    ))}
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <SimpleStackedBarChart
+                                data={topUsersData}
+                                xKey="date"
+                                series={topUsersKeys.map((key: string, idx: number) => ({ key, color: GRAPH_COLORS[idx % GRAPH_COLORS.length] }))}
+                            />
                         </div>
                     </div>
                 </div>
@@ -366,4 +315,3 @@ export const TautulliGraphsTab: React.FC = () => {
         </div>
     );
 };
-

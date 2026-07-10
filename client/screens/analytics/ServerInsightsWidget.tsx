@@ -1,6 +1,7 @@
 import React from 'react';
 import { Activity, Clock, Film, Monitor, Music, PlaySquare, Settings, TrendingUp, Users } from 'lucide-react';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
+
+import { SimpleLineChart } from './SimpleCharts';
 
 export const ServerInsightsWidget: React.FC<{
     peakHours: number[],
@@ -39,25 +40,7 @@ export const ServerInsightsWidget: React.FC<{
                     <Clock className="w-4 h-4" /> Peak Playback Hours
                 </h3>
                 <div className="w-full h-[250px] sm:h-[320px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="colorPlays" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#e5a00d" stopOpacity={0.4}/>
-                                    <stop offset="95%" stopColor="#e5a00d" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                            <XAxis dataKey="time" stroke="#ffffff40" fontSize={10} tickMargin={10} minTickGap={15} />
-                            <YAxis stroke="#ffffff40" fontSize={10} tickFormatter={(val) => val} />
-                            <RechartsTooltip 
-                                contentStyle={{ backgroundColor: '#111315', borderColor: '#ffffff20', borderRadius: '8px', color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
-                                itemStyle={{ color: '#e5a00d' }}
-                                formatter={(value: any) => [`${value} plays`, 'Activity']}
-                            />
-                            <Area type="monotone" dataKey="plays" stroke="#e5a00d" strokeWidth={3} fillOpacity={1} fill="url(#colorPlays)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    <SimpleLineChart data={chartData} xKey="time" series={[{ key: 'plays', label: 'Activity', color: '#e5a00d' }]} fillFirst />
                 </div>
             </div>
 
@@ -117,4 +100,3 @@ export const ServerInsightsWidget: React.FC<{
         </div>
     );
 };
-

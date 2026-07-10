@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, AlertCircle, BarChart3, Calendar, Clock, Film, Music, PlaySquare, Search, TrendingUp, X } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart as RechartsPieChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
+import { Activity, AlertCircle, Film, Music, PlaySquare, Search, TrendingUp, X } from 'lucide-react';
 
 import { apiFetch } from '../../shared/api';
 import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../../shared/basePath';
 import { Loader } from '../../shared/toast';
+import { SimpleDonutChart, SimpleLineChart, SimpleStackedBarChart, SimpleVerticalBarChart, defaultChartColors } from './SimpleCharts';
 
 export const UserAnalyticsModal: React.FC<{ userId: string, username: string, thumb: string | null, days: string, onClose: () => void }> = ({ userId, username, thumb, days, onClose }) => {
     const [data, setData] = useState<any>(null);
@@ -221,18 +221,12 @@ export const UserAnalyticsModal: React.FC<{ userId: string, username: string, th
                                     <h3 className="text-sm font-bold text-text mb-4 uppercase tracking-wider">Plays by Hour of Day</h3>
                                     <div className="h-64">
                                         {data.hourDistribution ? (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <LineChart data={data.hourDistribution.map((plays: number, i: number) => ({ hour: formatHour(i), plays }))}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                                                    <XAxis dataKey="hour" stroke="rgba(255,255,255,0.3)" fontSize={11} tickMargin={10} minTickGap={20} />
-                                                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} allowDecimals={false} />
-                                                    <RechartsTooltip
-                                                        contentStyle={{ backgroundColor: 'rgba(20,20,20,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                                                        itemStyle={{ color: '#E5A00D' }}
-                                                    />
-                                                    <Line type="monotone" dataKey="plays" name="Plays" stroke="#E5A00D" strokeWidth={3} dot={{ fill: '#E5A00D', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />
-                                                </LineChart>
-                                            </ResponsiveContainer>
+                                            <SimpleLineChart
+                                                data={data.hourDistribution.map((plays: number, i: number) => ({ hour: formatHour(i), plays }))}
+                                                xKey="hour"
+                                                series={[{ key: 'plays', label: 'Plays', color: '#E5A00D' }]}
+                                                fillFirst
+                                            />
                                         ) : <p className="text-muted text-sm">No data.</p>}
                                     </div>
                                 </div>
@@ -241,19 +235,11 @@ export const UserAnalyticsModal: React.FC<{ userId: string, username: string, th
                                     <h3 className="text-sm font-bold text-text mb-4 uppercase tracking-wider">Plays by Day of Week</h3>
                                     <div className="h-64">
                                         {data.dayOfWeekCounts ? (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={Object.values(data.dayOfWeekCounts).map((plays: any, i: number) => ({ day: daysOfWeek[i].substring(0, 3), plays }))}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                                                    <XAxis dataKey="day" stroke="rgba(255,255,255,0.3)" fontSize={11} tickMargin={10} />
-                                                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} allowDecimals={false} />
-                                                    <RechartsTooltip
-                                                        contentStyle={{ backgroundColor: 'rgba(20,20,20,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                                                        itemStyle={{ color: '#E5A00D' }}
-                                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                                    />
-                                                    <Bar dataKey="plays" name="Plays" fill="#E5A00D" radius={[4, 4, 0, 0]} />
-                                                </BarChart>
-                                            </ResponsiveContainer>
+                                            <SimpleStackedBarChart
+                                                data={Object.values(data.dayOfWeekCounts).map((plays: any, i: number) => ({ day: daysOfWeek[i].substring(0, 3), plays }))}
+                                                xKey="day"
+                                                series={[{ key: 'plays', label: 'Plays', color: '#E5A00D' }]}
+                                            />
                                         ) : <p className="text-muted text-sm">No data.</p>}
                                     </div>
                                 </div>
@@ -264,30 +250,7 @@ export const UserAnalyticsModal: React.FC<{ userId: string, username: string, th
                                     <h3 className="text-sm font-bold text-text mb-4 uppercase tracking-wider">Plays by Library</h3>
                                     <div className="h-64">
                                         {data.topLibraries && data.topLibraries.length > 0 ? (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <RechartsPieChart>
-                                                    <Pie
-                                                        data={data.topLibraries}
-                                                        dataKey="plays"
-                                                        nameKey="title"
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        outerRadius={80}
-                                                        innerRadius={40}
-                                                        fill="#E5A00D"
-                                                        label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                                        labelLine={false}
-                                                    >
-                                                        {data.topLibraries.map((entry: any, index: number) => (
-                                                            <Cell key={`cell-${index}`} fill={['#E5A00D', '#3B82F6', '#10B981', '#EF4444', '#8B5CF6', '#EC4899'][index % 6]} />
-                                                        ))}
-                                                    </Pie>
-                                                    <RechartsTooltip
-                                                        contentStyle={{ backgroundColor: 'rgba(20,20,20,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                                                        itemStyle={{ color: '#E5A00D' }}
-                                                    />
-                                                </RechartsPieChart>
-                                            </ResponsiveContainer>
+                                            <SimpleDonutChart data={data.topLibraries} labelKey="title" valueKey="plays" colors={defaultChartColors} />
                                         ) : <p className="text-muted text-sm">No data.</p>}
                                     </div>
                                 </div>
@@ -296,19 +259,7 @@ export const UserAnalyticsModal: React.FC<{ userId: string, username: string, th
                                     <h3 className="text-sm font-bold text-text mb-4 uppercase tracking-wider">Top Watched Shows</h3>
                                     <div className="h-64">
                                         {data.topShows && data.topShows.length > 0 ? (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={data.topShows.slice(0, 5)} layout="vertical" margin={{ left: 0, right: 20 }}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" horizontal={true} vertical={false} />
-                                                    <XAxis type="number" stroke="rgba(255,255,255,0.3)" fontSize={11} allowDecimals={false} />
-                                                    <YAxis dataKey="title" type="category" stroke="rgba(255,255,255,0.3)" fontSize={10} width={90} tickFormatter={(val) => val.length > 13 ? val.substring(0, 13) + '...' : val} />
-                                                    <RechartsTooltip
-                                                        contentStyle={{ backgroundColor: 'rgba(20,20,20,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                                                        itemStyle={{ color: '#E5A00D' }}
-                                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                                    />
-                                                    <Bar dataKey="plays" name="Plays" fill="#3B82F6" radius={[0, 4, 4, 0]} />
-                                                </BarChart>
-                                            </ResponsiveContainer>
+                                            <SimpleVerticalBarChart data={data.topShows.slice(0, 5)} labelKey="title" valueKey="plays" color="#3B82F6" />
                                         ) : <p className="text-muted text-sm">No data.</p>}
                                     </div>
                                 </div>
