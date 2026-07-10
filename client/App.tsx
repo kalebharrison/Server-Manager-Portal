@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useTransition } from 'react';
 import { bindAppConfirm } from './shared/confirm';
 import { apiFetch, clearApiCache } from './shared/api';
 import { portalUrl, stripBasePath } from './shared/basePath';
@@ -22,6 +22,12 @@ import {
 } from './lazyScreens';
 
 const ConfirmModal = React.lazy(() => import('./shared/ConfirmModal').then(module => ({ default: module.ConfirmModal })));
+
+type AppRoute = 'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'settings' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'invite' | 'loading';
+
+const RouteFallback: React.FC = () => (
+    <div className="min-h-[60vh]" aria-hidden="true" />
+);
 
 export const MainApp: React.FC = () => {
     const [confirmState, setConfirmState] = useState<{ isOpen: boolean, message: string, onConfirm: () => void }>({ isOpen: false, message: '', onConfirm: () => { } });
@@ -62,9 +68,17 @@ export const MainApp: React.FC = () => {
         closeConfirm();
     };
 
-    const [currentRoute, setCurrentRoute] = useState<'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'settings' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'invite' | 'loading'>('loading');
+    const [currentRoute, setCurrentRoute] = useState<AppRoute>('loading');
     const [sessionInfo, setSessionInfo] = useState<any>(null);
     const [publicConfig, setPublicConfig] = useState<any>({});
+    const [, startRouteTransition] = useTransition();
+    const updateRoute = useCallback((route: AppRoute) => {
+        if (route === 'loading') {
+            setCurrentRoute(route);
+            return;
+        }
+        startRouteTransition(() => setCurrentRoute(route));
+    }, []);
 
     const fetchPublicConfig = useCallback(async (forceRefresh = false) => {
         try {
@@ -124,13 +138,13 @@ export const MainApp: React.FC = () => {
         return () => window.removeEventListener('portal-public-config-updated', onPublicConfigUpdated);
     }, [fetchPublicConfig]);
 
-    const setRoute = useCallback((route: 'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'settings' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'invite' | 'loading') => {
+    const setRoute = useCallback((route: AppRoute) => {
         if (route === 'logs') {
-            setCurrentRoute('settings');
+            updateRoute('settings');
             window.history.pushState({}, '', portalUrl('/settings#logs'));
             return;
         }
-        setCurrentRoute(route);
+        updateRoute(route);
         if (route !== 'loading' && route !== 'invite') {
             let path = '/';
             if (route === 'admin') path = '/admin';
@@ -144,23 +158,23 @@ export const MainApp: React.FC = () => {
             if (route === 'maintenance') path = '/maintenance';
             window.history.pushState({}, '', portalUrl(path));
         }
-    }, []);
+    }, [updateRoute]);
 
     const checkSession = useCallback(async () => {
         const path = stripBasePath(window.location.pathname);
         if (path.startsWith('/invite/')) {
-            setCurrentRoute('invite');
+            updateRoute('invite');
             return;
         }
         const params = new URLSearchParams(window.location.search);
         const loginError = params.get('loginError');
         if (loginError) {
-            setCurrentRoute('login');
+            updateRoute('login');
             return;
         }
 
         if (path.startsWith('/auth/')) {
-            setCurrentRoute('login');
+            updateRoute('login');
             return;
         }
 
@@ -168,30 +182,30 @@ export const MainApp: React.FC = () => {
             const data = await apiFetch('/api/users/me');
             setSessionInfo(data);
             if (data.serverName) document.title = `${data.serverName} Portal`;
-            if (path === '/status') setCurrentRoute('status');
-            else if (path === '/dashboard') setCurrentRoute('dashboard');
-            else if (path === '/settings' && data.session.isAdmin) setCurrentRoute('settings');
+            if (path === '/status') updateRoute('status');
+            else if (path === '/dashboard') updateRoute('dashboard');
+            else if (path === '/settings' && data.session.isAdmin) updateRoute('settings');
             else if (path === '/logs' && data.session.isAdmin) {
                 window.history.replaceState({}, '', portalUrl('/settings#logs'));
-                setCurrentRoute('settings');
+                updateRoute('settings');
             }
-            else if (path === '/mediastack') setCurrentRoute('mediastack');
-            else if (path === '/maintenance' && data.session.isAdmin) setCurrentRoute('maintenance');
-            else if (path === '/analytics') setCurrentRoute('analytics');
-            else if (path === '/settings' && !data.session.isAdmin) setCurrentRoute('user');
-            else if (path === '/portal') setCurrentRoute('user');
-            else if (path === '/admin') setCurrentRoute('users');
-            else if (path === '/users') setCurrentRoute('users');
+            else if (path === '/mediastack') updateRoute('mediastack');
+            else if (path === '/maintenance' && data.session.isAdmin) updateRoute('maintenance');
+            else if (path === '/analytics') updateRoute('analytics');
+            else if (path === '/settings' && !data.session.isAdmin) updateRoute('user');
+            else if (path === '/portal') updateRoute('user');
+            else if (path === '/admin') updateRoute('users');
+            else if (path === '/users') updateRoute('users');
             else {
                 window.history.replaceState({}, '', portalUrl('/portal'));
-                setCurrentRoute('user');
+                updateRoute('user');
             }
         } catch {
-            if (path === '/status' && publicConfig?.publicStatusEnabled !== false) setCurrentRoute('status');
-            else if (path === '/dashboard') setCurrentRoute('dashboard');
-            else setCurrentRoute('login');
+            if (path === '/status' && publicConfig?.publicStatusEnabled !== false) updateRoute('status');
+            else if (path === '/dashboard') updateRoute('dashboard');
+            else updateRoute('login');
         }
-    }, [publicConfig?.publicStatusEnabled]);
+    }, [publicConfig?.publicStatusEnabled, updateRoute]);
 
     useEffect(() => {
         // Initial session check
@@ -218,7 +232,11 @@ export const MainApp: React.FC = () => {
         const initialLoginError = typeof window !== 'undefined'
             ? new URLSearchParams(window.location.search).get('loginError')
             : null;
-        return <Login onLoginSuccess={checkSession} publicConfig={publicConfig} initialError={initialLoginError || undefined} />;
+        return (
+            <React.Suspense fallback={<RouteFallback />}>
+                <Login onLoginSuccess={checkSession} publicConfig={publicConfig} initialError={initialLoginError || undefined} />
+            </React.Suspense>
+        );
     }
 
     const isAdmin = !!sessionInfo?.session?.isAdmin;
@@ -256,7 +274,7 @@ export const MainApp: React.FC = () => {
             </React.Suspense>
             <div className={`relative z-10 flex-1 min-w-0 flex flex-col items-center px-4 pt-20 pb-[80px] md:p-8 md:pt-8 md:pb-8 overflow-x-visible ${isPublicView ? '!pt-8 !pb-8' : ''}`}>
                 <div className="w-full min-w-0" style={{ maxWidth: contentMaxWidth }}>
-                    <React.Suspense fallback={<Loader isLoading={true} isCinematic={!!publicConfig?.useCinematicLoading} />}>
+                    <React.Suspense fallback={<RouteFallback />}>
                         {renderView()}
                     </React.Suspense>
                 </div>
