@@ -131,6 +131,37 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }
         if (isJellyfinPortal && viewTab === 'graphs') setViewTab('overview');
     }, [isJellyfinPortal, viewTab]);
 
+    const libraryHealth = analyticsData?.libraryHealth || null;
+    const libraryHealthDistributions = useMemo(() => {
+        if (!libraryHealth?.resolutions || !libraryHealth?.codecs || !libraryHealth?.fileSizes) return null;
+
+        const sortedCodecs = Object.entries(libraryHealth.codecs)
+            .map(([name, count]) => ({ name, count: count as number }))
+            .sort((a, b) => b.count - a.count);
+        const totalCodecs = sortedCodecs.reduce((sum, item) => sum + item.count, 0) || 1;
+
+        const sortedResolutions = Object.entries(libraryHealth.resolutions)
+            .map(([name, count]) => ({ name, count: count as number }))
+            .sort((a, b) => b.count - a.count);
+        const totalResolutions = sortedResolutions.reduce((sum, item) => sum + item.count, 0) || 1;
+
+        const fileSizeEntries = Object.entries(libraryHealth.fileSizes)
+            .map(([range, val]) => {
+                let movies = 0;
+                let shows = 0;
+                if (val && typeof val === 'object') {
+                    movies = (val as any).movies || 0;
+                    shows = (val as any).shows || 0;
+                } else if (typeof val === 'number') {
+                    shows = val;
+                }
+                return { range, movies, shows, total: movies + shows };
+            });
+        const maxFileSizeCount = Math.max(...fileSizeEntries.map(e => e.total), 1);
+
+        return { sortedCodecs, totalCodecs, sortedResolutions, totalResolutions, fileSizeEntries, maxFileSizeCount };
+    }, [libraryHealth?.resolutions, libraryHealth?.codecs, libraryHealth?.fileSizes]);
+
     if (isLoading) return <Loader isLoading={true} />;
     if (error) return <div className="text-red-500 font-bold p-8 text-center">{error}</div>;
     if (!analyticsData) return null;
@@ -145,7 +176,6 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }
     if (contentTab === 'shows') activeContent = topShows;
     else if (contentTab === 'music') activeContent = topMusic;
     const compare = analyticsData.compare || null;
-    const libraryHealth = analyticsData.libraryHealth || null;
 
     const formatPriorPeriodLabel = (days: string) => {
         if (days === '1') return '24 hours';
@@ -332,39 +362,14 @@ return (
                                 </div>
                             </div>
 
-                            {libraryHealth.resolutions && libraryHealth.codecs && libraryHealth.fileSizes && (() => {
-                                const sortedCodecs = Object.entries(libraryHealth.codecs || {})
-                                    .map(([name, count]) => ({ name, count: count as number }))
-                                    .sort((a, b) => b.count - a.count);
-                                const totalCodecs = sortedCodecs.reduce((sum, item) => sum + item.count, 0) || 1;
-
-                                const sortedResolutions = Object.entries(libraryHealth.resolutions || {})
-                                    .map(([name, count]) => ({ name, count: count as number }))
-                                    .sort((a, b) => b.count - a.count);
-                                const totalResolutions = sortedResolutions.reduce((sum, item) => sum + item.count, 0) || 1;
-
-                                const fileSizeEntries = Object.entries(libraryHealth.fileSizes || {})
-                                    .map(([range, val]) => {
-                                        let movies = 0;
-                                        let shows = 0;
-                                        if (val && typeof val === 'object') {
-                                            movies = (val as any).movies || 0;
-                                            shows = (val as any).shows || 0;
-                                        } else if (typeof val === 'number') {
-                                            shows = val;
-                                        }
-                                        return { range, movies, shows, total: movies + shows };
-                                    });
-                                const maxFileSizeCount = Math.max(...fileSizeEntries.map(e => e.total), 1);
-
-                                return (
+                            {libraryHealthDistributions && (
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="glass-card-sm p-5 flex flex-col justify-between">
                                             <div>
                                                 <h3 className="text-muted text-xs uppercase tracking-wider font-bold mb-4">Video Codecs</h3>
                                                 <div className="flex flex-col gap-3">
-                                                    {sortedCodecs.map((item) => {
-                                                        const pct = Math.round((item.count / totalCodecs) * 100);
+                                                    {libraryHealthDistributions.sortedCodecs.map((item) => {
+                                                        const pct = Math.round((item.count / libraryHealthDistributions.totalCodecs) * 100);
                                                         return (
                                                             <div key={item.name} className="flex flex-col gap-1">
                                                                 <div className="flex justify-between text-xs font-semibold">
@@ -385,8 +390,8 @@ return (
                                             <div>
                                                 <h3 className="text-muted text-xs uppercase tracking-wider font-bold mb-4">Resolutions</h3>
                                                 <div className="flex flex-col gap-3">
-                                                    {sortedResolutions.map((item) => {
-                                                        const pct = Math.round((item.count / totalResolutions) * 100);
+                                                    {libraryHealthDistributions.sortedResolutions.map((item) => {
+                                                        const pct = Math.round((item.count / libraryHealthDistributions.totalResolutions) * 100);
                                                         return (
                                                             <div key={item.name} className="flex flex-col gap-1">
                                                                 <div className="flex justify-between text-xs font-semibold">
@@ -418,8 +423,8 @@ return (
                                                 </div>
                                             </div>
                                             <div className="flex items-end justify-between h-40 pt-4 px-2 w-full gap-3 mt-auto">
-                                                {fileSizeEntries.map((item) => {
-                                                    const totalHeightPct = (item.total / maxFileSizeCount) * 100;
+                                                {libraryHealthDistributions.fileSizeEntries.map((item) => {
+                                                    const totalHeightPct = (item.total / libraryHealthDistributions.maxFileSizeCount) * 100;
                                                     const moviesPctOfBar = item.total > 0 ? (item.movies / item.total) * 100 : 0;
                                                     const showsPctOfBar = item.total > 0 ? (item.shows / item.total) * 100 : 0;
                                                     
@@ -462,8 +467,7 @@ return (
                                             </div>
                                         </div>
                                     </div>
-                                );
-                            })()}
+                            )}
                         </>
                     )}
 
