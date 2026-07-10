@@ -113,7 +113,8 @@ export const LibraryMaintenancePanel: React.FC<{ addToast: (m: string, t?: 'succ
     const [pinCollectionOnDestructiveRun, setPinCollectionOnDestructiveRun] = useState(false);
 
     const selectedRule = useMemo(() => rules.find((rule: any) => rule.id === selectedRuleId) || null, [rules, selectedRuleId]);
-    const selectedPreview = useMemo(() => previewData.find((preview: any) => preview.ruleId === selectedRuleId) || null, [previewData, selectedRuleId]);
+    const previewByRuleId = useMemo(() => new Map(previewData.map((preview: any) => [preview.ruleId, preview])), [previewData]);
+    const selectedPreview = useMemo(() => selectedRuleId ? previewByRuleId.get(selectedRuleId) || null : null, [previewByRuleId, selectedRuleId]);
 
     const refreshIndexInfo = useCallback(async () => {
         const data = await apiFetch('/api/maintenance/index');
@@ -440,7 +441,7 @@ export const LibraryMaintenancePanel: React.FC<{ addToast: (m: string, t?: 'succ
                 <p className="text-xs text-muted uppercase tracking-wider font-bold mb-3">Saved Filters</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {rules.map((rule: any) => {
-                        const preview = previewData.find((p: any) => p.ruleId === rule.id);
+                        const preview = previewByRuleId.get(rule.id);
                         return (
                             <div key={rule.id} className={`border rounded-lg p-3 transition-colors ${selectedRuleId === rule.id ? 'border-plex bg-plex/5' : 'border-white/5 bg-background/30'}`}>
                                 <div className="flex items-start justify-between gap-2">
