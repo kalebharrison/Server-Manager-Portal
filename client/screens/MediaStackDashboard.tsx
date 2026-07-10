@@ -5,8 +5,20 @@ import { apiFetch } from '../shared/api';
 import { formatTime } from '../shared/format';
 import { Loader } from '../shared/toast';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
+import {
+    clampMonthOffset,
+    formatBytes,
+    formatEventType,
+    formatRelativeAirDate,
+    getHistoryColor,
+    groupCalendarItemsByDate,
+    mapQueueRecords,
+    mapRadarrCalendarItems,
+    mapRadarrHistoryItems,
+    mapSonarrCalendarItems,
+    mapSonarrHistoryItems,
+} from './media-stack/mediaStackUtils';
 
-const clampMonthOffset = (offset: number) => Math.max(-24, Math.min(offset, 24));
 const AUTO_MONTH_SCAN_TTL_MS = 10 * 60 * 1000;
 const MONTH_SUMMARY_CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -56,85 +68,13 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
     }, [fetchData]);
     useVisibleInterval(fetchData, 30000);
 
-    const formatRelativeAirDate = (date: Date) => {
-        const now = new Date();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const isMidnight = date.getHours() === 0 && date.getMinutes() === 0;
-        const timeStr = isMidnight ? '' : ` at ${formatTime(date)}`;
-
-        const diffDays = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (date >= today && date < tomorrow) {
-            return `Today${timeStr}`;
-        }
-        const dayAfterTomorrow = new Date(tomorrow);
-        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
-        if (date >= tomorrow && date < dayAfterTomorrow) {
-            return `Tomorrow${timeStr}`;
-        }
-        if (diffDays > 1 && diffDays < 7) {
-            const dayName = date.toLocaleDateString([], { weekday: 'long' });
-            return `${dayName}${timeStr}`;
-        }
-        return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + timeStr;
-    };
-
-    const formatBytes = (bytes: number) => {
-        if (!bytes) return '0.0 GB';
-        const gb = bytes / (1024 * 1024 * 1024);
-        if (gb >= 1) return `${gb.toFixed(1)} GB`;
-        const mb = bytes / (1024 * 1024);
-        return `${mb.toFixed(1)} MB`;
-    };
-
     const sonarrCalendarItems = useMemo(() => {
-        if (!data?.sonarr?.calendar) return [];
-        const items: any[] = [];
-        data.sonarr.calendar.forEach((ep: any) => {
-            const poster = ep.series?.images?.find((img: any) => img.coverType === 'poster');
-            items.push({
-                id: `sonarr-${ep.id || ep.airDateUtc || ep.airDate}-${ep.title}`,
-                type: 'tv',
-                service: 'Sonarr',
-                title: ep.series?.title || 'Unknown Series',
-                subtitle: `S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')} - ${ep.title}`,
-                date: new Date(ep.airDateUtc || ep.airDate),
-                hasFile: ep.hasFile,
-                monitored: ep.monitored,
-                imageUrl: poster ? (poster.remoteUrl || poster.url) : null,
-                network: ep.series?.network || ''
-            });
-        });
-        return items.sort((a, b) => a.date.getTime() - b.date.getTime());
-    }, [data]);
+        return mapSonarrCalendarItems(data?.sonarr?.calendar || []);
+    }, [data?.sonarr?.calendar]);
 
     const radarrCalendarItems = useMemo(() => {
-        if (!data?.radarr?.calendar) return [];
-        const items: any[] = [];
-        data.radarr.calendar.forEach((movie: any) => {
-            const releaseDateStr = movie.digitalRelease || movie.physicalRelease || movie.inCinemas || movie.added;
-            if (releaseDateStr) {
-                const poster = movie.images?.find((img: any) => img.coverType === 'poster');
-                items.push({
-                    id: `radarr-${movie.id || releaseDateStr}-${movie.title}`,
-                    type: 'movie',
-                    service: 'Radarr',
-                    title: movie.title,
-                    subtitle: movie.studio || 'Movie Release',
-                    date: new Date(releaseDateStr),
-                    hasFile: movie.hasFile,
-                    monitored: movie.monitored,
-                    imageUrl: poster ? (poster.remoteUrl || poster.url) : null,
-                    network: movie.studio || ''
-                });
-            }
-        });
-        return items.sort((a, b) => a.date.getTime() - b.date.getTime());
-    }, [data]);
+        return mapRadarrCalendarItems(data?.radarr?.calendar || []);
+    }, [data?.radarr?.calendar]);
 
     const filteredCalendar = useMemo(() => {
         return activeStackTab === 'sonarr' ? sonarrCalendarItems : radarrCalendarItems;
@@ -187,13 +127,7 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
     }, [activeStackConfigured, activeStackTab, fetchMonthSummary, filteredCalendar.length, data, monthOffset]);
 
     const groupedCalendar = useMemo(() => {
-        const groups: { [dateStr: string]: typeof filteredCalendar } = {};
-        filteredCalendar.forEach(item => {
-            const dateStr = item.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-            if (!groups[dateStr]) groups[dateStr] = [];
-            groups[dateStr].push(item);
-        });
-        return groups;
+        return groupCalendarItemsByDate(filteredCalendar);
     }, [filteredCalendar]);
 
     useEffect(() => {
@@ -208,60 +142,24 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
     }, [filteredCalendar]);
 
     const sonarrQueue = useMemo(() => {
-        if (!data?.sonarr?.queue?.records) return [];
-        return data.sonarr.queue.records.map((item: any) => ({ ...item, service: 'Sonarr' }));
-    }, [data]);
+        return mapQueueRecords(data?.sonarr?.queue?.records || [], 'Sonarr');
+    }, [data?.sonarr?.queue?.records]);
 
     const radarrQueue = useMemo(() => {
-        if (!data?.radarr?.queue?.records) return [];
-        return data.radarr.queue.records.map((item: any) => ({ ...item, service: 'Radarr' }));
-    }, [data]);
+        return mapQueueRecords(data?.radarr?.queue?.records || [], 'Radarr');
+    }, [data?.radarr?.queue?.records]);
 
     const activeQueue = useMemo(() => {
         return activeStackTab === 'sonarr' ? sonarrQueue : radarrQueue;
     }, [activeStackTab, sonarrQueue, radarrQueue]);
 
     const sonarrHistory = useMemo(() => {
-        if (!data?.sonarr?.history?.records) return [];
-        const historyItems: any[] = [];
-        data.sonarr.history.records.forEach((item: any) => {
-            let cleanTitle = '';
-            if (item.series?.title) {
-                cleanTitle = item.series.title;
-                if (item.episode?.seasonNumber !== undefined && item.episode?.episodeNumber !== undefined) {
-                    cleanTitle += ` - S${String(item.episode.seasonNumber).padStart(2, '0')}E${String(item.episode.episodeNumber).padStart(2, '0')}`;
-                    if (item.episode.title) {
-                        cleanTitle += ` - ${item.episode.title}`;
-                    }
-                }
-            } else {
-                cleanTitle = item.sourceTitle || 'Unknown TV Show';
-            }
-            historyItems.push({
-                id: `sonarr-hist-${item.id}`,
-                service: 'Sonarr',
-                title: cleanTitle,
-                date: new Date(item.date),
-                eventType: item.eventType
-            });
-        });
-        return historyItems.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 8);
-    }, [data]);
+        return mapSonarrHistoryItems(data?.sonarr?.history?.records || []);
+    }, [data?.sonarr?.history?.records]);
 
     const radarrHistory = useMemo(() => {
-        if (!data?.radarr?.history?.records) return [];
-        const historyItems: any[] = [];
-        data.radarr.history.records.forEach((item: any) => {
-            historyItems.push({
-                id: `radarr-hist-${item.id}`,
-                service: 'Radarr',
-                title: item.movie?.title || item.sourceTitle || 'Unknown Movie',
-                date: new Date(item.date),
-                eventType: item.eventType
-            });
-        });
-        return historyItems.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 8);
-    }, [data]);
+        return mapRadarrHistoryItems(data?.radarr?.history?.records || []);
+    }, [data?.radarr?.history?.records]);
 
     const activeHistory = useMemo(() => {
         return activeStackTab === 'sonarr' ? sonarrHistory : radarrHistory;
@@ -270,51 +168,6 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
     if (isLoading) return <Loader isLoading={true} />;
     if (error) return <div className="text-center p-8 text-status-expiring">{error}</div>;
     if (!data) return null;
-
-    const getHistoryColor = (type: string) => {
-        if (!type) return 'bg-muted';
-        switch (type.toLowerCase()) {
-            case 'grabbed':
-                return 'bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]';
-            case 'downloadfolderimported':
-            case 'moviefileimported':
-            case 'imported':
-                return 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]';
-            case 'downloadfailed':
-            case 'failed':
-                return 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]';
-            case 'episodefiledeleted':
-            case 'moviefiledeleted':
-            case 'deleted':
-                return 'bg-zinc-600 shadow-[0_0_6px_rgba(113,113,122,0.5)]';
-            default:
-                return 'bg-plex shadow-[0_0_6px_rgba(229,160,13,0.5)]';
-        }
-    };
-
-    const formatEventType = (type: string) => {
-        if (!type) return '';
-        switch (type.toLowerCase()) {
-            case 'grabbed':
-                return 'Grabbed';
-            case 'downloadfolderimported':
-            case 'moviefileimported':
-            case 'imported':
-                return 'Imported';
-            case 'downloadfailed':
-            case 'failed':
-                return 'Failed';
-            case 'episodefiledeleted':
-            case 'moviefiledeleted':
-            case 'deleted':
-                return 'Deleted';
-            default:
-                return type
-                    .replace(/([A-Z])/g, ' $1')
-                    .replace(/^./, str => str.toUpperCase())
-                    .trim();
-        }
-    };
 
     const renderStatusCard = (name: string, info: any) => {
         if (!info || !info.configured) {
