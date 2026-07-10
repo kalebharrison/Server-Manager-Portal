@@ -217,6 +217,18 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
     const heroMovieColumns = useMemo(() => {
         return buildHeroMovieColumns(dashboardData?.recentMovies);
     }, [dashboardData?.recentMovies]);
+    const recentHistoryCount = analytics?.recentHistory?.length || 0;
+    const topWatchedCount = analytics?.topWatched?.length || 0;
+    const recentHistoryPageCount = Math.max(1, Math.ceil(recentHistoryCount / recentHistoryPageSize));
+    const topWatchedPageCount = Math.max(1, Math.ceil(topWatchedCount / topWatchedPageSize));
+    const recentHistoryPageItems = useMemo(() => {
+        const items = analytics?.recentHistory || [];
+        return items.slice(recentHistoryPage * recentHistoryPageSize, (recentHistoryPage + 1) * recentHistoryPageSize);
+    }, [analytics?.recentHistory, recentHistoryPage, recentHistoryPageSize]);
+    const topWatchedPageItems = useMemo(() => {
+        const items = analytics?.topWatched || [];
+        return items.slice(topContentPage * topWatchedPageSize, (topContentPage + 1) * topWatchedPageSize);
+    }, [analytics?.topWatched, topContentPage, topWatchedPageSize]);
 
     const layoutCtx = useMemo(() => ({
         isAdmin: !!sessionInfo.session.isAdmin,
@@ -434,12 +446,12 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                         {/* Recently Watched + Most Watched */}
                         {(sessionInfo.session.isAdmin || user) && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 items-stretch">
-                                {!analyticsLoading && analytics?.recentHistory && analytics.recentHistory.length > 0 && (
+                                {!analyticsLoading && recentHistoryCount > 0 && (
                                     <div className="lg:col-span-1 flex min-h-0">
                                         <div className="glass-card p-4 md:p-5 shadow-xl flex flex-col h-full w-full min-h-0">
                                             <div className="flex items-center justify-between mb-3 md:mb-4 flex-shrink-0">
                                                 <h3 className="text-lg md:text-xl font-bold text-text">Recently Watched</h3>
-                                                {analytics.recentHistory.length > recentHistoryPageSize && (
+                                                {recentHistoryCount > recentHistoryPageSize && (
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={() => setRecentHistoryPage(p => Math.max(0, p - 1))}
@@ -449,11 +461,11 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                                                             <ChevronUp className="w-4 h-4 -rotate-90" />
                                                         </button>
                                                         <span className="text-xs text-muted font-medium w-8 text-center">
-                                                            {recentHistoryPage + 1} / {Math.ceil(analytics.recentHistory.length / recentHistoryPageSize)}
+                                                            {recentHistoryPage + 1} / {recentHistoryPageCount}
                                                         </span>
                                                         <button
-                                                            onClick={() => setRecentHistoryPage(p => Math.min(Math.ceil(analytics.recentHistory.length / recentHistoryPageSize) - 1, p + 1))}
-                                                            disabled={recentHistoryPage >= Math.ceil(analytics.recentHistory.length / recentHistoryPageSize) - 1}
+                                                            onClick={() => setRecentHistoryPage(p => Math.min(recentHistoryPageCount - 1, p + 1))}
+                                                            disabled={recentHistoryPage >= recentHistoryPageCount - 1}
                                                             className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-text"
                                                         >
                                                             <ChevronDown className="w-4 h-4 -rotate-90" />
@@ -462,7 +474,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                                                 )}
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch flex-1 min-h-0 content-start">
-                                                {analytics.recentHistory.slice(recentHistoryPage * recentHistoryPageSize, (recentHistoryPage + 1) * recentHistoryPageSize).map((item: any, idx: number) => (
+                                                {recentHistoryPageItems.map((item: any, idx: number) => (
                                                     <div key={idx} className="flex items-center self-stretch gap-3 p-2 bg-black/20 rounded-xl border border-white/5 hover:border-plex/50 hover:bg-black/40 hover:shadow-[0_0_15px_rgba(229,160,13,0.15)] transition-all group relative">
                                                         <a href={item.plexUrl} target="_blank" rel="noreferrer" className="flex items-center flex-1 min-w-0 gap-3">
                                                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-background flex-shrink-0 shadow-md">
@@ -500,7 +512,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                                     <div className="lg:col-span-2 lg:col-start-2 flex min-h-0">
                                         <TopWatchedGridSkeleton />
                                     </div>
-                                ) : analytics && analytics.totalPlays > 0 && analytics.topWatched && analytics.topWatched.length > 0 ? (
+                                ) : analytics && analytics.totalPlays > 0 && topWatchedCount > 0 ? (
                                     <div className={`flex min-h-0 ${analytics.recentHistory?.length ? 'lg:col-span-2' : 'lg:col-span-2 lg:col-start-2'}`}>
                                         <div className="glass-card p-4 md:p-5 shadow-xl flex flex-col h-full w-full min-h-0">
                                             <div className="flex items-center justify-between mb-3 md:mb-4 flex-shrink-0">
@@ -508,7 +520,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                                                     <h3 className="text-lg md:text-xl font-bold text-text mb-0.5">Your Most Watched</h3>
                                                     <p className="text-muted text-sm">Based on your {analytics.totalPlays} total plays</p>
                                                 </div>
-                                                {analytics.topWatched.length > topWatchedPageSize && (
+                                                {topWatchedCount > topWatchedPageSize && (
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={() => setTopContentPage(p => Math.max(0, p - 1))}
@@ -518,11 +530,11 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                                                             <ChevronUp className="w-4 h-4 -rotate-90" />
                                                         </button>
                                                         <span className="text-xs text-muted font-medium w-8 text-center">
-                                                            {topContentPage + 1} / {Math.ceil(analytics.topWatched.length / topWatchedPageSize)}
+                                                            {topContentPage + 1} / {topWatchedPageCount}
                                                         </span>
                                                         <button
-                                                            onClick={() => setTopContentPage(p => Math.min(Math.ceil(analytics.topWatched.length / topWatchedPageSize) - 1, p + 1))}
-                                                            disabled={topContentPage >= Math.ceil(analytics.topWatched.length / topWatchedPageSize) - 1}
+                                                            onClick={() => setTopContentPage(p => Math.min(topWatchedPageCount - 1, p + 1))}
+                                                            disabled={topContentPage >= topWatchedPageCount - 1}
                                                             className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-text"
                                                         >
                                                             <ChevronDown className="w-4 h-4 -rotate-90" />
@@ -531,7 +543,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                                                 )}
                                             </div>
                                             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5 md:gap-3.5 flex-1 min-h-0 content-start">
-                                                {analytics.topWatched.slice(topContentPage * topWatchedPageSize, (topContentPage + 1) * topWatchedPageSize).map((item: any) => (
+                                                {topWatchedPageItems.map((item: any) => (
                                                     <a key={item.key} href={item.plexUrl} target="_blank" rel="noreferrer" className="group flex flex-col gap-1.5">
                                                         <div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-background border border-white/5 transition-[box-shadow,border-color] duration-300 group-hover:shadow-xl group-hover:border-plex/50">
                                                             {item.thumbUrl ? (
