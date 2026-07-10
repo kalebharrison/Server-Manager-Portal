@@ -7,7 +7,7 @@ import { resolvePortalAssetUrl } from '../shared/basePath';
 import { addMonths, addYears, formatDate, getDaysUntilExpiry } from '../shared/format';
 import { CustomSelect } from '../shared/ui';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
-import type { AppSettings, AuditEntry, DeletedUser, PlexConfig, ToastMessage, User, UserStatus } from '../shared/types';
+import type { AppSettings, PlexConfig, ToastMessage, User, UserStatus } from '../shared/types';
 
 const SettingsIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -230,9 +230,6 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [bulkCustomDate, setBulkCustomDate] = useState('');
-    const [deletedUsers, setDeletedUsers] = useState<DeletedUser[]>([]);
-    const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
-
     // Filters and Sorting States
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'trial' | 'expiring' | 'expired' | 'revoked'>('all');
@@ -253,19 +250,6 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
         }
     }, [addToast]);
 
-    const fetchSecurityData = useCallback(async () => {
-        try {
-            const [deletedUsersData, auditLogData] = await Promise.all([
-                apiFetch('/api/deleted-users'),
-                apiFetch('/api/audit-log')
-            ]);
-            setDeletedUsers(deletedUsersData);
-            setAuditEntries(auditLogData);
-        } catch (error) {
-            addToast(error instanceof Error ? error.message : 'Failed to fetch security data.', 'error');
-        }
-    }, [addToast]);
-
     useEffect(() => {
         const checkConfigAndFetchData = async () => {
             setLoading(true);
@@ -276,7 +260,6 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
 
                 if (configStatus.configured) {
                     await fetchUsers();
-                    await fetchSecurityData();
                 } else {
                     addToast('Welcome! Please configure your media server settings to begin.', 'success');
                     setSettingsModalOpen(true);
@@ -288,7 +271,7 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
             }
         };
         checkConfigAndFetchData();
-    }, [fetchUsers, fetchSecurityData, addToast]);
+    }, [fetchUsers, addToast]);
 
 
     const handleSaveConfig = async (config: PlexConfig) => {
@@ -334,7 +317,6 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
             const result = await apiFetch('/api/sync', { method: 'POST' });
             addToast(result.message || `Synced ${result.count} users from ${mediaServerLabel}.`);
             await fetchUsers(); // Refresh user list
-            await fetchSecurityData();
         } catch (error) {
             addToast(error instanceof Error ? error.message : 'An unknown error occurred during sync.', 'error');
         } finally {
@@ -348,7 +330,6 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
             const updatedUser = await apiFetch(`/api/users/${userId}/revoke`, { method: 'POST' });
             setUsers(currentUsers => currentUsers.map(u => u.id === userId ? updatedUser : u));
             addToast('Plex access revoked successfully.');
-            await fetchSecurityData();
         } catch (error) {
             addToast(error instanceof Error ? error.message : 'Failed to revoke access.', 'error');
         } finally {
@@ -376,7 +357,6 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
             setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
             handleCloseModal();
             addToast('User updated successfully!');
-            await fetchSecurityData();
         } catch (error) {
             addToast(error instanceof Error ? error.message : 'Failed to save user.', 'error');
         } finally {
@@ -391,7 +371,6 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
                 await apiFetch(`/api/users/${userId}`, { method: 'DELETE' });
                 setUsers(users.filter(u => u.id !== userId));
                 addToast('User removed from manager.');
-                await fetchSecurityData();
             } catch (error) {
                 addToast(error instanceof Error ? error.message : 'Failed to delete user.', 'error');
             } finally {
@@ -419,28 +398,11 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
             setSelectedUserIds([]);
             setBulkCustomDate('');
             await fetchUsers();
-            await fetchSecurityData();
         } catch (error) {
             addToast(error instanceof Error ? error.message : 'Bulk update failed.', 'error');
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleUnblockDeletedUser = async (deletedUser: DeletedUser) => {
-        const label = deletedUser.username || deletedUser.email || 'this user';
-        appConfirm(`Allow ${label} to use the portal again? This does not invite them automatically.`, async () => {
-            setLoading(true);
-            try {
-                await apiFetch(`/api/deleted-users/${encodeURIComponent(deletedUser.blockId)}`, { method: 'DELETE' });
-                addToast('Deleted user unblocked.');
-                await fetchSecurityData();
-            } catch (error) {
-                addToast(error instanceof Error ? error.message : 'Failed to unblock user.', 'error');
-            } finally {
-                setLoading(false);
-            }
-        });
     };
 
     // Derived State for Filtering and Sorting

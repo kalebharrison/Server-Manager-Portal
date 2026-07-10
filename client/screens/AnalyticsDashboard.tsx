@@ -74,12 +74,7 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }
     const [error, setError] = useState<string | null>(null);
     const [days, setDays] = useState<string>('30');
     const [selectedUser, setSelectedUser] = useState<{ id: string, username: string, thumb: string | null } | null>(null);
-    const [allUsers, setAllUsers] = useState<any[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [isSearching, setIsSearching] = useState(false);
     const [contentTab, setContentTab] = useState<'movies' | 'shows' | 'music'>('movies');
-    const [viewerPage, setViewerPage] = useState(1);
-    const viewersPerPage = 10;
     const [viewTab, setViewTab] = useState<'overview' | 'graphs'>('overview');
     const mediaServerType = String(sessionInfo?.mediaServerType || 'plex').toLowerCase();
     const isJellyfinPortal = mediaServerType === 'jellyfin';
@@ -93,19 +88,6 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }
         }
         return portalUrl(`/api/plex/image?path=${encodeURIComponent(thumb)}&width=${width}&height=${height}`);
     };
-
-    useEffect(() => {
-        if (!isAdmin) return;
-        const fetchUsers = async () => {
-            try {
-                const usersData = await apiFetch('/api/users');
-                setAllUsers(usersData);
-            } catch (err) {
-                console.error("Failed to fetch users", err);
-            }
-        };
-        fetchUsers();
-    }, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -143,19 +125,6 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }
         if (isJellyfinPortal && viewTab === 'graphs') setViewTab('overview');
     }, [isJellyfinPortal, viewTab]);
 
-    const topUsersLength = analyticsData?.topUsers?.length || 0;
-    const totalViewerPages = Math.max(1, Math.ceil(topUsersLength / viewersPerPage));
-
-    useEffect(() => {
-        setViewerPage(1);
-    }, [days]);
-
-    useEffect(() => {
-        if (viewerPage > totalViewerPages) {
-            setViewerPage(totalViewerPages);
-        }
-    }, [viewerPage, totalViewerPages]);
-
     if (isLoading) return <Loader isLoading={true} />;
     if (error) return <div className="text-red-500 font-bold p-8 text-center">{error}</div>;
     if (!analyticsData) return null;
@@ -165,8 +134,6 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }
     const maxLibraryPlays = Math.max(...topLibraries.map(l => l.plays), 1);
     const maxDevicePlays = Math.max(...topDevices.map(d => d.plays), 1);
     const maxPeakHour = Math.max(...peakHours, 1);
-    const viewerPageSafe = Math.min(viewerPage, totalViewerPages);
-    const pagedTopUsers = topUsers.slice((viewerPageSafe - 1) * viewersPerPage, viewerPageSafe * viewersPerPage);
 
     let activeContent = topMovies;
     if (contentTab === 'shows') activeContent = topShows;

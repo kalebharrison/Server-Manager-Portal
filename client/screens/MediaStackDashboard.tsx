@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, Calendar, Check, ChevronLeft, ChevronRight, Clock, DownloadCloud, FileText, Film, HardDrive, List, Settings, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
@@ -7,6 +7,8 @@ import { Loader } from '../shared/toast';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
 
 const clampMonthOffset = (offset: number) => Math.max(-24, Math.min(offset, 24));
+const AUTO_MONTH_SCAN_TTL_MS = 10 * 60 * 1000;
+const MONTH_SUMMARY_CACHE_TTL_MS = 2 * 60 * 1000;
 
 export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const [data, setData] = useState<any>(null);
@@ -16,6 +18,20 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
     const [activeStackTab, setActiveStackTab] = useState<'sonarr' | 'radarr'>('sonarr');
     const [activeCalendarItem, setActiveCalendarItem] = useState<any>(null);
     const [autoMonthNotice, setAutoMonthNotice] = useState('');
+    const autoMonthScanRef = useRef(new Map<string, number>());
+    const monthSummaryCacheRef = useRef(new Map<number, { at: number; data: any }>());
+
+    const fetchMonthSummary = useCallback(async (offset: number, { force = false } = {}) => {
+        const safeOffset = clampMonthOffset(offset);
+        const cached = monthSummaryCacheRef.current.get(safeOffset);
+        if (!force && cached && Date.now() - cached.at < MONTH_SUMMARY_CACHE_TTL_MS) {
+            return cached.data;
+        }
+        const res = await apiFetch('/api/media-stack/summary?monthOffset=' + safeOffset, { forceRefresh: force });
+        if (res.error) throw new Error(res.error);
+        monthSummaryCacheRef.current.set(safeOffset, { at: Date.now(), data: res });
+        return res;
+    }, []);
 
     const switchStackTab = (tab: 'sonarr' | 'radarr') => {
         if (tab === activeStackTab) return;
@@ -26,15 +42,14 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
 
     const fetchData = useCallback(async () => {
         try {
-            const res = await apiFetch('/api/media-stack/summary?monthOffset=' + monthOffset);
-            if (res.error) throw new Error(res.error);
+            const res = await fetchMonthSummary(monthOffset, { force: true });
             setData(res);
         } catch (err: any) {
             setError(err.message || 'Failed to load Media Stack data.');
         } finally {
             setIsLoading(false);
         }
-    }, [monthOffset]);
+    }, [fetchMonthSummary, monthOffset]);
 
     useEffect(() => {
         fetchData();
@@ -134,15 +149,19 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
     useEffect(() => {
         let cancelled = false;
         const maybeAutoSelectMonthWithReleases = async () => {
-            if (!data || monthOffset !== 0 || filteredCalendar.length > 0) {
+            if (!activeStackConfigured || !data || monthOffset !== 0 || filteredCalendar.length > 0) {
                 if (!cancelled && monthOffset === 0) {
                     setAutoMonthNotice('');
                 }
                 return;
             }
+            const scanKey = `${activeStackTab}:${monthOffset}`;
+            const lastScanAt = autoMonthScanRef.current.get(scanKey) || 0;
+            if (Date.now() - lastScanAt < AUTO_MONTH_SCAN_TTL_MS) return;
+            autoMonthScanRef.current.set(scanKey, Date.now());
             for (let offset = 1; offset <= 6; offset += 1) {
                 try {
-                    const res = await apiFetch(`/api/media-stack/summary?monthOffset=${offset}`);
+                    const res = await fetchMonthSummary(offset);
                     const count = activeStackTab === 'sonarr'
                         ? (Array.isArray(res?.sonarr?.calendar) ? res.sonarr.calendar.length : 0)
                         : (Array.isArray(res?.radarr?.calendar) ? res.radarr.calendar.length : 0);
@@ -165,7 +184,7 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
         return () => {
             cancelled = true;
         };
-    }, [activeStackTab, filteredCalendar.length, data, monthOffset]);
+    }, [activeStackConfigured, activeStackTab, fetchMonthSummary, filteredCalendar.length, data, monthOffset]);
 
     const groupedCalendar = useMemo(() => {
         const groups: { [dateStr: string]: typeof filteredCalendar } = {};

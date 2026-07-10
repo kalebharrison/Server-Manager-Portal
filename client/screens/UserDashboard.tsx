@@ -21,6 +21,8 @@ import type { ToastMessage } from '../shared/types';
 
 import { WrapUpModal } from './user/WrapUpModal';
 
+const HERO_MOVIE_SOURCE_LIMIT = 18;
+
 export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onLogout: () => void; refreshSession: () => void; onViewAdmin: () => void; onViewStatus: () => void; onViewDashboard: () => void; onViewSettings?: () => void; onViewLogs?: () => void }> = ({ sessionInfo, publicConfig, onLogout, refreshSession, onViewAdmin, onViewStatus, onViewDashboard, onViewSettings, onViewLogs }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -211,27 +213,27 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
             }
         };
 
-        const fetchServerData = async () => {
+        const fetchServerStats = async () => {
             if (!isMounted) return;
             try {
-                const p1 = isJellyfinPortal
-                    ? Promise.resolve({ provider: 'jellyfin' }).then(res => { if (isMounted) setServerStats(res); })
-                    : apiFetch('/api/plex/stats').then(res => {
-                        if (isMounted) {
-                            setServerStats(res);
-                            if (res?.isBuilding) {
-                                pollTimer = setTimeout(fetchServerData, 5000);
-                            }
-                        }
-                    }).catch(e => console.error("Failed to fetch server stats", e));
-
-                const p2 = fetchDashboard();
-                await Promise.all([p1, p2]);
+                if (isJellyfinPortal) {
+                    if (isMounted) setServerStats({ provider: 'jellyfin' });
+                    return;
+                }
+                const res = await apiFetch('/api/plex/stats');
+                if (!isMounted) return;
+                setServerStats(res);
+                if (res?.isBuilding) {
+                    pollTimer = setTimeout(fetchServerStats, 5000);
+                }
+            } catch (e) {
+                console.error("Failed to fetch server stats", e);
             } finally {
                 if (isMounted) setServerDataLoading(false);
             }
         };
-        fetchServerData();
+        fetchServerStats();
+        fetchDashboard();
         dashboardTimer = setInterval(fetchDashboard, DASHBOARD_REFRESH_MS);
         return () => {
             isMounted = false;
@@ -273,7 +275,9 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
         ? (heroBgRaw.startsWith('http') ? heroBgRaw : resolvePortalAssetUrl(heroBgRaw))
         : '';
     const heroMovieColumns = useMemo(() => {
-        const movies = Array.isArray(dashboardData?.recentMovies) ? dashboardData.recentMovies.filter((movie: any) => movie.thumb || movie.thumbUrl) : [];
+        const movies = Array.isArray(dashboardData?.recentMovies)
+            ? dashboardData.recentMovies.filter((movie: any) => movie.thumb || movie.thumbUrl).slice(0, HERO_MOVIE_SOURCE_LIMIT)
+            : [];
         if (movies.length === 0) return [];
         return Array.from({ length: 6 }, (_, colIdx) => {
             const shift = (colIdx * Math.max(1, Math.ceil(movies.length / 3))) % movies.length;
@@ -357,7 +361,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                                 {heroMovieColumns.map((column, colIdx) => (
                                     <div key={colIdx} className={`flex flex-col gap-4 ${colIdx % 2 === 0 ? 'animate-[scrollVertical_40s_linear_infinite]' : 'animate-[scrollVertical_50s_linear_infinite_reverse]'}`}>
                                         {column.map((m: any, i: number) => (
-                                            <img key={`c${colIdx}-${m.ratingKey || m.sourceRatingKey || m.title || i}-${i}`} src={m.thumbUrl ? resolvePortalAssetUrl(m.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(m.thumb)}&width=200&height=300`)} className="w-32 md:w-48 rounded-xl object-cover" alt="" />
+                                            <img key={`c${colIdx}-${m.ratingKey || m.sourceRatingKey || m.title || i}-${i}`} src={m.thumbUrl ? resolvePortalAssetUrl(m.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(m.thumb)}&width=200&height=300`)} className="w-32 md:w-48 rounded-xl object-cover" alt="" loading="lazy" decoding="async" />
                                         ))}
                                     </div>
                                 ))}
