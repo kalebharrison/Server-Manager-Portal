@@ -26,9 +26,13 @@ Beta image branch: `beta`
   - Expand the native Seerr/Jellyseerr detail modal with metadata, genres, cast, crew, production companies, external links, TV season facts, and a pinned request action.
   - Upstream PR fit: belongs with the embedded request workflow, possibly as its own frontend/backend detail-view follow-up.
 
-- Pending: request modal scroll and download tab cleanup
+- `0e48c23 ui: tighten request modal and media downloads`
   - Lock page scroll behind the embedded request detail modal, make the modal body scroll as one surface, and split media stack downloads into a dedicated `Downloads` tab without storage or history panels.
   - Upstream PR fit: follow-up UI polish for request workflow and media stack calendar, likely best split by screen.
+
+- Pending: discover downloads and calendar polish
+  - Move active TV/movie download progress to Discover as an `On The Way` poster section, keep file/release names hidden, remove download UI from Media Stack, hide app-brand labels from normal user-facing calendar/status surfaces, add list/month calendar modes, and hide already available request content.
+  - Upstream PR fit: split into Discover download widget, release calendar view, and request browsing cleanup.
 
 ## Split Candidates
 

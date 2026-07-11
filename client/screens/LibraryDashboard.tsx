@@ -9,6 +9,7 @@ import { DiscoverPageSkeleton, TrendingSectionsSkeleton } from '../shared/skelet
 import { activityStreamColumnCount, activityStreamGridClass, discoverPosterGridClass, usePortalWideContentLayout } from '../shared/portalLayout';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { StreamDetailsModal } from './StreamDetailsModal';
+import { DiscoverDownloadsSection } from './DiscoverDownloadsSection';
 import {
     DISCOVER_DESKTOP_ITEM_LIMIT,
     DISCOVER_LIMIT_OPTIONS,
@@ -270,6 +271,10 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
                         <div className="text-center text-muted p-8 border border-dashed border-border rounded-xl mt-4 w-full">No active streams</div>
                     )}
                 </section>
+
+                {!isJellyfinPortal && (
+                    <DiscoverDownloadsSection useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} />
+                )}
 
                 <div className="flex justify-end gap-4 items-center mb-8">
                     <span className="text-xs uppercase tracking-wider text-muted font-semibold">Items Per Section</span>

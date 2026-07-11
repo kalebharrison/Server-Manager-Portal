@@ -70,6 +70,15 @@ export const RequestMediaCard: React.FC<{
                     {item.overview ? (
                         <p className="text-xs text-muted line-clamp-2 mt-1 leading-relaxed">{item.overview}</p>
                     ) : null}
+                    {item.genres?.length ? (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                            {item.genres.slice(0, 2).map((genre) => (
+                                <span key={`${genre.id || genre.name}`} className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-white/5 text-muted border border-white/10">
+                                    {genre.name}
+                                </span>
+                            ))}
+                        </div>
+                    ) : null}
                 </button>
                 <button
                     type="button"

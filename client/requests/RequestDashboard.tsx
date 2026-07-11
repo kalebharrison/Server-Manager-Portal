@@ -73,7 +73,10 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         try {
             const ttl = activeTab === 'search' ? 15_000 : 60_000;
             const data: RequestListResponse = await apiFetch(endpoint, { cacheTtlMs: ttl });
-            setItems(Array.isArray(data?.results) ? data.results : []);
+            const requestableResults = Array.isArray(data?.results)
+                ? data.results.filter((item) => !item.available)
+                : [];
+            setItems(requestableResults);
         } catch (err: any) {
             setError(err?.message || 'Failed to load request content');
             if (!silent) setItems([]);
