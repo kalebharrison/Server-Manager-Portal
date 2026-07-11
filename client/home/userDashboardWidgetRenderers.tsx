@@ -65,6 +65,10 @@ const formatBytes = (bytes: number) => {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
+const isActiveShortTermTrial = (user: any, daysLeft: number | null) => (
+    !!user?.isTrial && daysLeft !== null && daysLeft <= 3
+);
+
 export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
     const {
         sessionInfo,
@@ -101,6 +105,7 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
         { value: 'all' as const, label: 'All Time' },
     ];
     const isJellyfinPortal = String(publicConfig?.mediaServerType || 'plex').toLowerCase() === 'jellyfin';
+    const showTempAccessMessage = isActiveShortTermTrial(user, daysLeft);
 
     return (id: MainGridWidgetId): React.ReactNode => {
         switch (id) {
@@ -126,7 +131,7 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
                                 <div className="flex flex-wrap items-center gap-3">
                                     <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black border uppercase tracking-wider shadow-sm ${isRevoked ? 'bg-red-500/10 border-red-500/30 text-red-400' : isExpiringSoon ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' : 'bg-green-500/10 border-green-500/30 text-green-400'}`}>
                                         <span className={`w-2 h-2 rounded-full animate-pulse ${isRevoked ? 'bg-red-400' : isExpiringSoon ? 'bg-yellow-400' : 'bg-green-400'}`} />
-                                        {user.plexAccessStatus}{user.isTrial && ' · Temp Access'}
+                                        {user.plexAccessStatus}{showTempAccessMessage && ' · Temp Access'}
                                     </span>
                                     {user.expiryDate ? (
                                         <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold bg-white/5 border border-white/10 text-text shadow-sm">
@@ -236,7 +241,7 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
             case 'support':
                 return (
                     <div className="glass-card p-4 md:p-5 shadow-lg flex flex-col">
-                        {user?.isTrial ? (
+                        {showTempAccessMessage ? (
                             <div className="mb-3 md:mb-4 flex-shrink-0">
                                 <p className="text-plex font-bold text-base mb-1">🍿 Enjoying your Temporary Access?</p>
                                 <p className="text-muted text-sm leading-relaxed">Once your 3-day access ends, you'll lose access. Get in touch with the admin to extend your access!</p>

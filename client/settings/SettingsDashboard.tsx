@@ -342,11 +342,16 @@ export const SettingsDashboard: React.FC = () => {
             return;
         }
 
+        let nextCustomLogoUrl = customLogoUrl;
         if (logoFile) {
             try {
                 await fetch(portalUrl('/api/config/logo'), { method: 'POST', body: logoFile });
+                nextCustomLogoUrl = `/static/logo.png?v=${Date.now()}`;
+                setCustomLogoUrl(nextCustomLogoUrl);
+                setLogoFile(null);
             } catch (e) {
                 addToast('Failed to upload logo', 'error');
+                return;
             }
         }
 
@@ -394,7 +399,7 @@ export const SettingsDashboard: React.FC = () => {
             requestAppType,
             requestAppUrl,
             requestAppApiKey,
-            customLogoUrl,
+            customLogoUrl: nextCustomLogoUrl,
             brandingTheme,
             backgroundImageUrl,
             useScrollRevealAnimations,

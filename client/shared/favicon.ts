@@ -11,7 +11,7 @@ export const updateFavicon = (thumbUrl: string | null | undefined) => {
     if (thumbUrl) {
         if (thumbUrl.startsWith('http://') || thumbUrl.startsWith('https://')) {
             link.href = thumbUrl;
-        } else if (thumbUrl.startsWith('/api/')) {
+        } else if (thumbUrl.startsWith('/')) {
             link.href = resolvePortalAssetUrl(thumbUrl);
         } else {
             link.href = portalUrl(`/api/plex/image?path=${encodeURIComponent(thumbUrl)}&width=32&height=32`);

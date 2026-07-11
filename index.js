@@ -46,15 +46,35 @@ import { createStatusRuntime } from './lib/status-runtime.js';
 import { createStreamMonitor } from './lib/stream-monitor.js';
 import { computeNextBackupRun, findRunnableTask, getTasksSnapshot, markTaskEnd, markTaskStart, systemJobs, tasksInfo } from './lib/task-state.js';
 
-let appVersion = 'v1.0.0';
-try {
-    appVersion = fsSync.readFileSync('version.txt', 'utf8').trim();
-} catch (e) {
+const resolveAppVersion = () => {
+    let pkgVersion = '1.0.0';
+    try {
+        const pkg = JSON.parse(fsSync.readFileSync('package.json', 'utf8'));
+        if (pkg?.version) pkgVersion = String(pkg.version);
+    } catch {
+        // package metadata may be absent in unusual deployments
+    }
+
+    try {
+        const stamped = fsSync.readFileSync('version.txt', 'utf8').trim();
+        const expectedPrefix = `v${pkgVersion}`;
+        if (stamped === expectedPrefix || stamped.startsWith(`${expectedPrefix}-`)) {
+            return stamped;
+        }
+    } catch {
+        // version.txt is optional; fall back to package.json plus commit hash
+    }
+
+    const isTagBuild = String(process.env.GITHUB_REF || '').startsWith('refs/tags/');
     try {
         const gitHash = execSync('git rev-parse --short HEAD', { stdio: 'pipe' }).toString().trim();
-        appVersion = `v1.0.0-${gitHash}`;
-    } catch (err) { }
-}
+        return isTagBuild ? `v${pkgVersion}` : `v${pkgVersion}-${gitHash}`;
+    } catch {
+        return `v${pkgVersion}`;
+    }
+};
+
+const appVersion = resolveAppVersion();
 
 const app = express();
 app.use(compression());
@@ -538,6 +558,8 @@ registerConfigRoutes({
     resolveCurrentAdmin,
     canRunInitialSetup,
     sanitizeIntegrationUrl,
+    fetchOwnedPlexServers,
+    validatePlexServerAdminToken,
     syncAdminPlexIdFromConfigToken,
     invalidatePlexConnectionCaches,
     invalidateAdminProfileCache,
@@ -628,6 +650,8 @@ registerInviteRoutes({
     isPortalConfigured,
     resolveCurrentAdmin,
     fetchOwnedPlexServers,
+    validatePlexServerAdminToken,
+    canRunInitialSetup,
     resolveConfiguredPlexServerUrl,
     resolveIntegrationUrlForFetch,
     fetchWithTimeout,
