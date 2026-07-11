@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Check, Clock3, ExternalLink, Film, Globe2, Star, Tv, UserRound, X } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import type { RequestCredit, RequestMediaItem, RequestNamedValue } from './types';
@@ -133,12 +133,22 @@ export const RequestMediaModal: React.FC<{
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);
+    const scrollRef = useRef<HTMLDivElement | null>(null);
     const isTv = detail.mediaType === 'tv';
+
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
         setDetail(item);
         setSelectedSeasons([]);
+        scrollRef.current?.scrollTo({ top: 0 });
         setLoading(true);
         setLoadError(null);
 
@@ -206,56 +216,61 @@ export const RequestMediaModal: React.FC<{
     ].filter(Boolean) as Array<{ label: string; value: string | null; icon: React.ElementType }>;
 
     return (
-        <div className="fixed inset-0 z-[1200] flex items-center justify-center p-3 md:p-5 bg-black/75 backdrop-blur-sm" onClick={onClose}>
+        <div
+            className="fixed inset-0 z-[1200] flex items-center justify-center p-2 md:p-5 bg-black/75 backdrop-blur-sm overscroll-contain"
+            onClick={onClose}
+        >
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-label={`${detail.title} details`}
-                className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-card shadow-2xl"
+                className="relative flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-card shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
             >
-                <div className="relative min-h-[280px] overflow-hidden p-5 md:p-7">
-                    {detail.backdropUrl || detail.posterUrl ? (
-                        <div
-                            className="absolute inset-0 bg-cover bg-center opacity-50"
-                            style={{ backgroundImage: `url(${detail.backdropUrl || detail.posterUrl})` }}
-                            aria-hidden
-                        />
-                    ) : null}
-                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/90 to-card/20" aria-hidden />
-                    <button type="button" onClick={onClose} className="absolute right-4 top-4 z-20 rounded-full bg-black/45 p-2 text-white transition-colors hover:bg-white/10">
-                        <X className="h-5 w-5" />
-                    </button>
+                <button type="button" onClick={onClose} className="absolute right-4 top-4 z-[1201] rounded-full bg-black/55 p-2 text-white transition-colors hover:bg-white/10">
+                    <X className="h-5 w-5" />
+                </button>
 
-                    <div className="relative z-10 flex h-full flex-col justify-end gap-4 md:flex-row md:items-end md:justify-start">
-                        {detail.posterUrl ? (
-                            <img src={detail.posterUrl} alt={detail.title} className="hidden w-32 shrink-0 rounded-xl border border-white/10 object-cover shadow-2xl sm:block md:w-40" />
+                <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain custom-scrollbar">
+                    <div className="relative overflow-hidden p-5 pt-12 md:p-7 md:pt-7">
+                        {detail.backdropUrl || detail.posterUrl ? (
+                            <div
+                                className="absolute inset-0 bg-cover bg-center opacity-45"
+                                style={{ backgroundImage: `url(${detail.backdropUrl || detail.posterUrl})` }}
+                                aria-hidden
+                            />
                         ) : null}
-                        <div className="min-w-0 max-w-4xl">
-                            <div className="mb-3 flex flex-wrap items-center gap-2">
-                                <DetailPill>
-                                    <TypeIcon className="h-3.5 w-3.5" />
-                                    {detail.mediaType === 'tv' ? 'TV' : 'Movie'}
-                                </DetailPill>
-                                {detail.year ? <DetailPill>{detail.year}</DetailPill> : null}
-                                <DetailPill tone={statusTone}>{requestLabel}</DetailPill>
-                                {loading ? <DetailPill>Loading details</DetailPill> : null}
-                            </div>
-                            <h2 className="text-3xl font-black leading-tight tracking-tight text-white md:text-5xl">{detail.title}</h2>
-                            {detail.tagline ? <p className="mt-2 text-base font-semibold italic text-white/80">{detail.tagline}</p> : null}
-                            {detail.overview ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/78 md:text-base">{detail.overview}</p> : null}
-                            {detail.genres?.length ? (
-                                <div className="mt-4 flex flex-wrap gap-2">
-                                    {detail.genres.map((genre) => (
-                                        <DetailPill key={`${genre.id || genre.name}`}>{genre.name}</DetailPill>
-                                    ))}
-                                </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/90 to-card/25" aria-hidden />
+
+                        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-start">
+                            {detail.posterUrl ? (
+                                <img src={detail.posterUrl} alt={detail.title} className="hidden w-28 shrink-0 rounded-xl border border-white/10 object-cover shadow-2xl sm:block md:w-36" />
                             ) : null}
+                            <div className="min-w-0 max-w-4xl">
+                                <div className="mb-3 flex flex-wrap items-center gap-2">
+                                    <DetailPill>
+                                        <TypeIcon className="h-3.5 w-3.5" />
+                                        {detail.mediaType === 'tv' ? 'TV' : 'Movie'}
+                                    </DetailPill>
+                                    {detail.year ? <DetailPill>{detail.year}</DetailPill> : null}
+                                    <DetailPill tone={statusTone}>{requestLabel}</DetailPill>
+                                    {loading ? <DetailPill>Loading details</DetailPill> : null}
+                                </div>
+                                <h2 className="text-3xl font-black leading-tight tracking-tight text-white md:text-4xl">{detail.title}</h2>
+                                {detail.tagline ? <p className="mt-2 text-base font-semibold italic text-white/80">{detail.tagline}</p> : null}
+                                {detail.overview ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/78 md:text-base">{detail.overview}</p> : null}
+                                {detail.genres?.length ? (
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {detail.genres.map((genre) => (
+                                            <DetailPill key={`${genre.id || genre.name}`}>{genre.name}</DetailPill>
+                                        ))}
+                                    </div>
+                                ) : null}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-5 md:p-7">
+                    <div className="p-5 md:p-7">
                     {loadError ? (
                         <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
                             Showing cached browse data. {loadError}
@@ -350,6 +365,7 @@ export const RequestMediaModal: React.FC<{
                                 </DetailSection>
                             ) : null}
                         </div>
+                    </div>
                     </div>
                 </div>
 

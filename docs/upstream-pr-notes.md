@@ -22,9 +22,13 @@ Beta image branch: `beta`
   - Replace split Sonarr/Radarr release columns with a unified calendar filter (`All`, `TV`, `Movies`), make release rows wide enough for readable titles, and move downloads/status/history under a clearly labeled `Automation Activity` section.
   - Upstream PR fit: good UX candidate after visual review and mobile check.
 
-- Pending: rich request detail view
+- `4f78c47 feat: enrich embedded request details`
   - Expand the native Seerr/Jellyseerr detail modal with metadata, genres, cast, crew, production companies, external links, TV season facts, and a pinned request action.
   - Upstream PR fit: belongs with the embedded request workflow, possibly as its own frontend/backend detail-view follow-up.
+
+- Pending: request modal scroll and download tab cleanup
+  - Lock page scroll behind the embedded request detail modal, make the modal body scroll as one surface, and split media stack downloads into a dedicated `Downloads` tab without storage or history panels.
+  - Upstream PR fit: follow-up UI polish for request workflow and media stack calendar, likely best split by screen.
 
 ## Split Candidates
 
