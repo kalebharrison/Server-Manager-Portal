@@ -34,6 +34,8 @@ import { registerPlexRoutes } from './lib/plex-routes.js';
 import { registerJellyfinRoutes } from './lib/jellyfin-routes.js';
 import { registerMaintenanceRoutes } from './lib/maintenance-routes.js';
 import { registerMediaStackRoutes } from './lib/media-stack-routes.js';
+import { createRequestAppService } from './lib/request-app-service.js';
+import { registerRequestAppRoutes } from './lib/request-app-routes.js';
 import { registerStaticShellRoutes } from './lib/static-shell-routes.js';
 import { createBackgroundService } from './lib/background-service.js';
 import { registerCommunicationRoutes } from './lib/communication-routes.js';
@@ -84,6 +86,7 @@ const SETUP_TOKEN = process.env.SETUP_TOKEN || '';
 const ALLOW_PRIVATE_INTEGRATION_URLS = String(process.env.ALLOW_PRIVATE_INTEGRATION_URLS || '').toLowerCase() === 'true';
 const FORCE_SECURE_COOKIES = String(process.env.FORCE_SECURE_COOKIES || '').toLowerCase() === 'true';
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || '';
+const REQUEST_APP_INTERNAL_URL = process.env.REQUEST_APP_INTERNAL_URL || '';
 
 const BASE_PATH = deriveBasePath({ envBasePath: process.env.BASE_PATH, publicBaseUrl: PUBLIC_BASE_URL });
 const { withBasePath, stripBasePathFromUrl } = createBasePathHelpers(BASE_PATH);
@@ -862,6 +865,25 @@ registerMediaStackRoutes({
     withCache,
     fetch,
     normalizeExternalBaseUrl,
+});
+
+const requestAppService = createRequestAppService({
+    fetchWithTimeout,
+    resolveIntegrationUrlForFetch,
+    requestAppInternalUrl: REQUEST_APP_INTERNAL_URL,
+    log,
+});
+
+registerRequestAppRoutes({
+    app,
+    requireAuth,
+    requireMember,
+    requireAdmin,
+    configPath: CONFIG_PATH,
+    loadFile,
+    requestAppService,
+    appendAuditLog,
+    log,
 });
 
 // --- Library Maintenance (Maintainerr-style) ---

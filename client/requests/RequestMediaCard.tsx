@@ -1,0 +1,81 @@
+import React from 'react';
+import { CheckCircle2, Clock3, Film, Loader2, Tv } from 'lucide-react';
+import type { RequestMediaItem } from './types';
+
+const statusText = (item: RequestMediaItem) => {
+    if (item.available) return 'Available';
+    if (item.processing) return 'Processing';
+    if (item.pending) return 'Pending';
+    if (item.approved) return 'Approved';
+    return item.mediaType === 'tv' ? 'Request Show' : 'Request Movie';
+};
+
+const StatusIcon = ({ item, busy }: { item: RequestMediaItem; busy?: boolean }) => {
+    if (busy) return <Loader2 className="w-4 h-4 animate-spin" />;
+    if (item.available || item.approved) return <CheckCircle2 className="w-4 h-4" />;
+    if (item.pending || item.processing) return <Clock3 className="w-4 h-4" />;
+    return item.mediaType === 'tv' ? <Tv className="w-4 h-4" /> : <Film className="w-4 h-4" />;
+};
+
+export const RequestMediaCard: React.FC<{
+    item: RequestMediaItem;
+    busy?: boolean;
+    onRequest: (item: RequestMediaItem) => void;
+}> = ({ item, busy = false, onRequest }) => {
+    const disabled = busy || item.canRequest === false;
+    const badgeClass = item.available
+        ? 'bg-green-500/20 text-green-200 border-green-500/30'
+        : item.pending || item.processing || item.approved
+            ? 'bg-amber-500/20 text-amber-100 border-amber-500/30'
+            : 'bg-plex/15 text-plex border-plex/30';
+
+    return (
+        <article className="group relative overflow-hidden rounded-xl border border-white/10 bg-card shadow-lg min-h-full flex flex-col">
+            <div className="relative aspect-[2/3] bg-background overflow-hidden">
+                {item.posterUrl ? (
+                    <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted bg-background/70">
+                        {item.mediaType === 'tv' ? <Tv className="w-10 h-10" /> : <Film className="w-10 h-10" />}
+                    </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-95" />
+                <div className="absolute top-2 left-2 flex gap-1.5">
+                    <span className="px-2 py-1 rounded-md bg-black/70 text-[10px] font-bold uppercase tracking-wider text-white border border-white/10">
+                        {item.mediaType === 'tv' ? 'TV' : 'Movie'}
+                    </span>
+                    {item.year && (
+                        <span className="px-2 py-1 rounded-md bg-black/60 text-[10px] font-bold text-white/80 border border-white/10">
+                            {item.year}
+                        </span>
+                    )}
+                </div>
+                {item.rating ? (
+                    <span className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/70 text-[10px] font-bold text-white border border-white/10">
+                        {item.rating.toFixed(1)}
+                    </span>
+                ) : null}
+            </div>
+
+            <div className="p-3 flex flex-col gap-3 flex-1">
+                <div className="min-h-[3rem]">
+                    <h3 className="font-bold text-sm text-text line-clamp-2 leading-snug group-hover:text-plex transition-colors">
+                        {item.title}
+                    </h3>
+                    {item.overview ? (
+                        <p className="text-xs text-muted line-clamp-2 mt-1 leading-relaxed">{item.overview}</p>
+                    ) : null}
+                </div>
+                <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onRequest(item)}
+                    className={`mt-auto inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-80 ${badgeClass} ${disabled ? '' : 'hover:bg-plex hover:text-background hover:border-plex'}`}
+                >
+                    <StatusIcon item={item} busy={busy} />
+                    {statusText(item)}
+                </button>
+            </div>
+        </article>
+    );
+};

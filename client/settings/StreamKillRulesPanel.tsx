@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, ChevronUp, ChevronDown } from 'lucide-react';
 import { apiFetch } from '../shared/api';
+import { createClientId } from '../shared/id';
 import { CustomSelect } from '../shared/ui';
 // ─────────────────────────────────────────────────────────────────────────────
 // Stream Kill Rules Panel
@@ -30,7 +31,7 @@ function krGetOps(field: any) {
     if (field.type === 'select') return KR_OP_SELECT;
     return KR_OP_TEXT;
 }
-function krMkCond() { return { id: (typeof crypto !== 'undefined' && (crypto as any).randomUUID ? (crypto as any).randomUUID() : Math.random().toString(36).slice(2)), field: 'isTranscoding', operator: 'equals', value: 'true' }; }
+function krMkCond() { return { id: createClientId(), field: 'isTranscoding', operator: 'equals', value: 'true' }; }
 function krMkRule(): any { return { id: Date.now().toString(), name: 'New Rule', enabled: true, conditionLogic: 'AND', conditions: [krMkCond()], killMessage: 'Your stream has been stopped by the server administrator.' }; }
 
 const KRConditionRow: React.FC<{ cond: any; onCh: (c: any) => void; onDel: () => void }> = ({ cond, onCh, onDel }) => {

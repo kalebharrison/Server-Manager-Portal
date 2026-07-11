@@ -8,13 +8,12 @@ import { CustomSelect } from '../shared/ui';
 
 interface NavigationProps {
     currentRoute: string;
-    onNavigate: (route: 'admin' | 'user' | 'status' | 'dashboard' | 'settings' | 'logs' | 'analytics' | 'mediastack' | 'maintenance') => void;
+    onNavigate: (route: 'admin' | 'user' | 'status' | 'dashboard' | 'settings' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request') => void;
     onLogout: () => void;
     isAdmin: boolean;
     serverName: string;
     adminThumb?: string | null;
     customLogoUrl?: string | null;
-    requestUrl: string;
     navOrder: string[];
     navFeatures?: {
         maintenance?: boolean;
@@ -25,7 +24,7 @@ interface NavigationProps {
     setActiveTheme: (theme: string) => void;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate, onLogout, isAdmin, serverName, adminThumb, customLogoUrl, requestUrl, navOrder, navFeatures, appVersion, activeTheme, setActiveTheme }) => {
+export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate, onLogout, isAdmin, serverName, adminThumb, customLogoUrl, navOrder, navFeatures, appVersion, activeTheme, setActiveTheme }) => {
     const serverIcon = customLogoUrl ? resolvePortalAssetUrl(customLogoUrl) : (adminThumb ? (adminThumb.startsWith('http') ? adminThumb : portalUrl(`/api/plex/image?path=${encodeURIComponent(adminThumb)}&width=256&height=256`)) : logoUrl());
     useEffect(() => {
         updateFavicon(serverIcon);
@@ -63,7 +62,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
         'analytics': { label: 'Analytics', icon: BarChart3, route: 'analytics', adminOnly: false },
         'mediastack': { label: 'Calendar', icon: Layers, route: 'mediastack', adminOnly: false },
         'maintenance': { label: 'Cleaner', icon: Shield, route: 'maintenance', adminOnly: true },
-        'request': { label: 'Request Content', icon: Sparkles, route: '', adminOnly: false, href: requestUrl },
+        'request': { label: 'Request Content', icon: Sparkles, route: 'request', adminOnly: false },
         'settings': { label: 'Settings', icon: Settings, route: 'settings', adminOnly: true },
         'logout': { label: 'Logout', icon: LogOut, route: '', adminOnly: false, onClick: onLogout }
     };
