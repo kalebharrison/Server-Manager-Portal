@@ -1145,6 +1145,9 @@
   .min-w-0 {
     min-width: 0;
   }
+  .min-w-\[4\.25rem\] {
+    min-width: 4.25rem;
+  }
   .min-w-\[100px\] {
     min-width: 100px;
   }
@@ -1381,9 +1384,6 @@
   .items-stretch {
     align-items: stretch;
   }
-  .justify-around {
-    justify-content: space-around;
-  }
   .justify-between {
     justify-content: space-between;
   }
@@ -1570,6 +1570,9 @@
   }
   .overflow-y-auto {
     overflow-y: auto;
+  }
+  .overscroll-x-contain {
+    overscroll-behavior-x: contain;
   }
   .scroll-smooth {
     scroll-behavior: smooth;
@@ -2796,6 +2799,9 @@
   .px-12 {
     padding-inline: calc(var(--spacing) * 12);
   }
+  .px-\[max\(0\.5rem\,env\(safe-area-inset-left\)\)\] {
+    padding-inline: max(0.5rem, env(safe-area-inset-left));
+  }
   .py-0\.5 {
     padding-block: calc(var(--spacing) * 0.5);
   }
@@ -2880,6 +2886,9 @@
   .pt-20 {
     padding-top: calc(var(--spacing) * 20);
   }
+  .pt-\[env\(safe-area-inset-top\)\] {
+    padding-top: env(safe-area-inset-top);
+  }
   .pr-1 {
     padding-right: var(--spacing);
   }
@@ -2897,6 +2906,9 @@
   }
   .pr-20 {
     padding-right: calc(var(--spacing) * 20);
+  }
+  .pr-\[max\(0\.5rem\,env\(safe-area-inset-right\)\)\] {
+    padding-right: max(0.5rem, env(safe-area-inset-right));
   }
   .\!pb-8 {
     padding-bottom: calc(var(--spacing) * 8) !important;
