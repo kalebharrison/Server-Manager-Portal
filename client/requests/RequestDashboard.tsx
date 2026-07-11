@@ -234,6 +234,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                             key={`${item.mediaType}-${item.tmdbId}`}
                                             item={item}
                                             busy={requestingId === item.tmdbId}
+                                            onOpen={setSelectedItem}
                                             onRequest={(nextItem) => {
                                                 if (nextItem.canRequest === false) return;
                                                 setSelectedItem(nextItem);

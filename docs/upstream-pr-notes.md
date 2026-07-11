@@ -18,9 +18,13 @@ Beta image branch: `beta`
   - Native Seerr/Jellyseerr request browsing, search, TV season selection, request submission, admin queue actions, server-side request app proxy, `REQUEST_APP_INTERNAL_URL`, safe browser ID helper, user-sync typo fix.
   - Upstream PR fit: likely useful, but should be split into request-app service/routes, frontend request UI, and standalone bug fixes.
 
-- Pending: media stack calendar cleanup
+- `7cd531d ui: unify media stack calendar`
   - Replace split Sonarr/Radarr release columns with a unified calendar filter (`All`, `TV`, `Movies`), make release rows wide enough for readable titles, and move downloads/status/history under a clearly labeled `Automation Activity` section.
   - Upstream PR fit: good UX candidate after visual review and mobile check.
+
+- Pending: rich request detail view
+  - Expand the native Seerr/Jellyseerr detail modal with metadata, genres, cast, crew, production companies, external links, TV season facts, and a pinned request action.
+  - Upstream PR fit: belongs with the embedded request workflow, possibly as its own frontend/backend detail-view follow-up.
 
 ## Split Candidates
 

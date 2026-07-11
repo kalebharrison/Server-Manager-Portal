@@ -20,8 +20,9 @@ const StatusIcon = ({ item, busy }: { item: RequestMediaItem; busy?: boolean }) 
 export const RequestMediaCard: React.FC<{
     item: RequestMediaItem;
     busy?: boolean;
+    onOpen: (item: RequestMediaItem) => void;
     onRequest: (item: RequestMediaItem) => void;
-}> = ({ item, busy = false, onRequest }) => {
+}> = ({ item, busy = false, onOpen, onRequest }) => {
     const disabled = busy || item.canRequest === false;
     const badgeClass = item.available
         ? 'bg-green-500/20 text-green-200 border-green-500/30'
@@ -31,7 +32,11 @@ export const RequestMediaCard: React.FC<{
 
     return (
         <article className="group relative overflow-hidden rounded-xl border border-white/10 bg-card shadow-lg min-h-full flex flex-col">
-            <div className="relative aspect-[2/3] bg-background overflow-hidden">
+            <button
+                type="button"
+                onClick={() => onOpen(item)}
+                className="relative block w-full aspect-[2/3] bg-background overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-plex/70"
+            >
                 {item.posterUrl ? (
                     <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                 ) : (
@@ -55,17 +60,17 @@ export const RequestMediaCard: React.FC<{
                         {item.rating.toFixed(1)}
                     </span>
                 ) : null}
-            </div>
+            </button>
 
             <div className="p-3 flex flex-col gap-3 flex-1">
-                <div className="min-h-[3rem]">
+                <button type="button" onClick={() => onOpen(item)} className="w-full min-h-[3rem] text-left focus:outline-none focus:ring-2 focus:ring-plex/70 rounded-md">
                     <h3 className="font-bold text-sm text-text line-clamp-2 leading-snug group-hover:text-plex transition-colors">
                         {item.title}
                     </h3>
                     {item.overview ? (
                         <p className="text-xs text-muted line-clamp-2 mt-1 leading-relaxed">{item.overview}</p>
                     ) : null}
-                </div>
+                </button>
                 <button
                     type="button"
                     disabled={disabled}

@@ -8,6 +8,19 @@ export type RequestSeason = {
     statusLabel?: string | null;
 };
 
+export type RequestNamedValue = {
+    id?: number | string | null;
+    name: string;
+    logoUrl?: string;
+};
+
+export type RequestCredit = {
+    id?: number | string | null;
+    name: string;
+    role?: string;
+    profileUrl?: string;
+};
+
 export type RequestMediaItem = {
     id: number;
     tmdbId: number;
@@ -15,11 +28,30 @@ export type RequestMediaItem = {
     title: string;
     year?: string | null;
     overview?: string;
+    tagline?: string;
     posterUrl?: string;
     backdropUrl?: string;
     rating?: number | null;
     releaseDate?: string | null;
     firstAirDate?: string | null;
+    runtime?: number | null;
+    status?: string | null;
+    originalLanguage?: string | null;
+    homepage?: string | null;
+    imdbId?: string | null;
+    budget?: number | null;
+    revenue?: number | null;
+    network?: string | null;
+    studio?: string | null;
+    numberOfSeasons?: number | null;
+    numberOfEpisodes?: number | null;
+    lastAirDate?: string | null;
+    nextAirDate?: string | null;
+    genres?: RequestNamedValue[];
+    productionCompanies?: RequestNamedValue[];
+    cast?: RequestCredit[];
+    crew?: RequestCredit[];
+    creators?: RequestCredit[];
     seasons?: RequestSeason[];
     requestId?: number | null;
     requestStatus?: number | null;
