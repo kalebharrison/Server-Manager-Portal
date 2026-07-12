@@ -28,6 +28,8 @@ type SettingsSavePayloadInput = {
     sonarrApiKey: string;
     radarrUrl: string;
     radarrApiKey: string;
+    lidarrUrl: string;
+    lidarrApiKey: string;
     tautulliUrl: string;
     tautulliApiKey: string;
     jellystatUrl: string;
@@ -44,6 +46,8 @@ type SettingsSavePayloadInput = {
     useTrendingSlideshow: boolean;
     trendingSlideshowInterval: number;
     tmdbApiKey: string;
+    tvdbApiKey: string;
+    tvdbPin: string;
     referralEnabled: boolean;
     referralTrialDays: number;
     referralRewardDays: number;

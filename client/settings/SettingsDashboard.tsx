@@ -117,6 +117,8 @@ export const SettingsDashboard: React.FC = () => {
     const [sonarrApiKey, setSonarrApiKey] = useState('');
     const [radarrUrl, setRadarrUrl] = useState('');
     const [radarrApiKey, setRadarrApiKey] = useState('');
+    const [lidarrUrl, setLidarrUrl] = useState('');
+    const [lidarrApiKey, setLidarrApiKey] = useState('');
     const [tautulliUrl, setTautulliUrl] = useState('');
     const [tautulliApiKey, setTautulliApiKey] = useState('');
     const [jellystatUrl, setJellystatUrl] = useState('');
@@ -142,6 +144,8 @@ export const SettingsDashboard: React.FC = () => {
     const [useTrendingSlideshow, setUseTrendingSlideshow] = useState(false);
     const [trendingSlideshowInterval, setTrendingSlideshowInterval] = useState(30);
     const [tmdbApiKey, setTmdbApiKey] = useState('');
+    const [tvdbApiKey, setTvdbApiKey] = useState('');
+    const [tvdbPin, setTvdbPin] = useState('');
     const [brandingTheme, setBrandingTheme] = useState('plex');
     const [referralEnabled, setReferralEnabled] = useState(false);
     const [referralTrialDays, setReferralTrialDays] = useState(3);
@@ -268,6 +272,8 @@ export const SettingsDashboard: React.FC = () => {
                 setSonarrApiKey,
                 setRadarrUrl,
                 setRadarrApiKey,
+                setLidarrUrl,
+                setLidarrApiKey,
                 setTautulliUrl,
                 setTautulliApiKey,
                 setJellystatUrl,
@@ -284,6 +290,8 @@ export const SettingsDashboard: React.FC = () => {
                 setUseTrendingSlideshow,
                 setTrendingSlideshowInterval,
                 setTmdbApiKey,
+                setTvdbApiKey,
+                setTvdbPin,
                 setReferralEnabled,
                 setReferralTrialDays,
                 setReferralRewardDays,
@@ -372,6 +380,8 @@ export const SettingsDashboard: React.FC = () => {
             sonarrApiKey,
             radarrUrl,
             radarrApiKey,
+            lidarrUrl,
+            lidarrApiKey,
             tautulliUrl,
             tautulliApiKey,
             jellystatUrl,
@@ -388,6 +398,8 @@ export const SettingsDashboard: React.FC = () => {
             useTrendingSlideshow,
             trendingSlideshowInterval,
             tmdbApiKey,
+            tvdbApiKey,
+            tvdbPin,
             referralEnabled,
             referralTrialDays,
             referralRewardDays,
@@ -420,9 +432,9 @@ export const SettingsDashboard: React.FC = () => {
         newsletterFrequency, newsletterDay, publicDomain, isTestingNewsletter, isSendingNewsletter,
         setNewsletterFrequency, setNewsletterDay, setPublicDomain, handleTestNewsletter, handleSendNewsletterNow,
         inactiveCleanupEnabled, inactiveCleanupDays, setInactiveCleanupEnabled, setInactiveCleanupDays,
-        sonarrUrl, sonarrApiKey, radarrUrl, radarrApiKey, tmdbApiKey, tautulliUrl, tautulliApiKey,
+        sonarrUrl, sonarrApiKey, radarrUrl, radarrApiKey, lidarrUrl, lidarrApiKey, tmdbApiKey, tvdbApiKey, tvdbPin, tautulliUrl, tautulliApiKey,
         jellystatUrl, jellystatApiKey, requestAppType, requestAppUrl, requestAppApiKey,
-        setSonarrUrl, setSonarrApiKey, setRadarrUrl, setRadarrApiKey, setTmdbApiKey, setTautulliUrl,
+        setSonarrUrl, setSonarrApiKey, setRadarrUrl, setRadarrApiKey, setLidarrUrl, setLidarrApiKey, setTmdbApiKey, setTvdbApiKey, setTvdbPin, setTautulliUrl,
         setTautulliApiKey, setJellystatUrl, setJellystatApiKey, setRequestAppType, setRequestAppUrl, setRequestAppApiKey,
         dashboardLayout, updateDashboardLayout, navOrder, setNavOrder, users,
         statusConfig, publicStatusEnabled, setPublicStatusEnabled, setStatusDraft, fetchStatusConfig,

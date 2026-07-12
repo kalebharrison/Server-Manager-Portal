@@ -5,6 +5,7 @@ const SELFHST_ICON_BASE = 'https://cdn.jsdelivr.net/gh/selfhst/icons/svg';
 const APP_ICONS: Record<string, string> = {
     sonarr: `${SELFHST_ICON_BASE}/sonarr.svg`,
     radarr: `${SELFHST_ICON_BASE}/radarr.svg`,
+    lidarr: `${SELFHST_ICON_BASE}/lidarr.svg`,
     tautulli: `${SELFHST_ICON_BASE}/tautulli.svg`,
     seerr: `${SELFHST_ICON_BASE}/seerr.svg`,
     overseerr: `${SELFHST_ICON_BASE}/seerr.svg`,
@@ -12,6 +13,7 @@ const APP_ICONS: Record<string, string> = {
     ombi: `${SELFHST_ICON_BASE}/ombi.svg`,
     jellystat: 'https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/jellystat.png',
     tmdb: `${SELFHST_ICON_BASE}/tmdb.svg`,
+    tvdb: `${SELFHST_ICON_BASE}/the-tvdb.svg`,
 };
 
 export const hasIntegrationCredentials = (

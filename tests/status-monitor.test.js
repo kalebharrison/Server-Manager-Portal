@@ -79,6 +79,14 @@ test('built-in status URLs follow current application settings', () => {
     assert.equal(result.services.find(service => service.id === 'custom').url, 'http://custom:8080');
 });
 
+test('configured Lidarr is added to status monitoring with member-safe labels', () => {
+    const reconciled = reconcileBuiltInStatusConfig({ groups: [], services: [] }, { lidarrUrl: 'http://lidarr:8686' });
+    const payload = createPublicStatusPayload(reconciled);
+    assert.equal(reconciled.services[0].url, 'http://lidarr:8686');
+    assert.equal(payload.config.services[0].name, 'Music Automation');
+    assert.equal(payload.config.services[0].description, 'Music release automation');
+});
+
 test('stale generated Plex monitor is removed without a Plex URL', () => {
     const result = reconcileBuiltInStatusConfig({
         groups: [],

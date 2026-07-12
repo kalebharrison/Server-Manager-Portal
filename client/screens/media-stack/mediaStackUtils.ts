@@ -71,14 +71,20 @@ const queuePhase = (item: any, progress: number) => {
 
 export const mapQueueRecords = (records: any[] = [], service: string) => records.map((item: any, index: number) => {
     const isTv = service === 'Sonarr';
-    const subject = isTv ? item.series : item.movie;
-    const title = subject?.title || '';
+    const isMusic = service === 'Lidarr';
+    const subject = isTv ? item.series : isMusic ? item.album : item.movie;
+    const artist = isMusic ? item.artist : null;
+    const title = isMusic ? (artist?.artistName || artist?.name || subject?.artist?.artistName || subject?.title || '') : (subject?.title || '');
     const total = Number(item.size || 0);
     const remaining = Number(item.sizeleft || 0);
     const downloaded = Math.max(0, total - remaining);
     const progress = total > 0 ? Math.max(0, Math.min(100, (downloaded / total) * 100)) : 0;
     const episode = item.episode || {};
-    const hasExistingFile = isTv ? episode.hasFile : subject?.hasFile;
+    const hasExistingFile = isTv
+        ? episode.hasFile
+        : isMusic
+            ? (subject?.statistics?.trackFileCount > 0 ? true : subject?.statistics?.trackFileCount === 0 ? false : undefined)
+            : subject?.hasFile;
     const acquisitionKind = hasExistingFile === true ? 'upgrade' : hasExistingFile === false ? 'new' : 'unknown';
     const seasonEpisode = episode.seasonNumber !== undefined && episode.episodeNumber !== undefined
         ? `S${String(episode.seasonNumber).padStart(2, '0')}E${String(episode.episodeNumber).padStart(2, '0')}`
@@ -87,16 +93,18 @@ export const mapQueueRecords = (records: any[] = [], service: string) => records
     return {
         id: `${service}-${item.id || subject?.id || item.downloadId || item.trackedDownloadId || index}`,
         service,
-        type: isTv ? 'tv' : 'movie',
-        kindLabel: isTv ? 'TV Show' : 'Movie',
+        type: isTv ? 'tv' : isMusic ? 'music' : 'movie',
+        kindLabel: isTv ? 'TV Show' : isMusic ? 'Music' : 'Movie',
         acquisitionKind,
         acquisitionLabel: acquisitionKind === 'upgrade' ? 'Upgrade' : acquisitionKind === 'new' ? 'New' : 'Checking',
         title,
         hasMediaTitle: !!title,
         subtitle: isTv
             ? [seasonEpisode, episode.title].filter(Boolean).join(' - ')
-            : subject?.year ? String(subject.year) : '',
-        imageUrl: pickPosterUrl(subject?.images || []),
+            : isMusic
+                ? subject?.title || ''
+                : subject?.year ? String(subject.year) : '',
+        imageUrl: pickPosterUrl((artist?.images?.length ? artist.images : subject?.images) || []),
         progress,
         phase: queuePhase(item, progress),
         timeleft: item.timeleft || '',

@@ -418,6 +418,7 @@ The template uses `ghcr.io/jl94x4/server-manager-portal:latest` by default.
 | Variable | Required | Description |
 |---|---|---|
 | `JWT_SECRET` | Yes | Session signing secret (min 32 characters) |
+| `CONFIG_ENCRYPTION_KEY` | Recommended | Dedicated secret used to encrypt stored credentials and backups. Defaults to `JWT_SECRET` for compatibility; preserve it when migrating/restoring. |
 | `PUID` | No | User ID to run the app as (default `1000`; `99` on Unraid) |
 | `PGID` | No | Group ID to run the app as (default `1000`; `100` on Unraid) |
 | `PORT` | No | Listen port inside the container (default `2121`) |
@@ -431,6 +432,8 @@ The template uses `ghcr.io/jl94x4/server-manager-portal:latest` by default.
 | `CLIENT_ID` | No | Fixed Plex OAuth client id (auto-generated if unset; Plex mode only) |
 
 See `.env.example` for a full template.
+
+Stored integration credentials and generated backups are encrypted with authenticated AES-256-GCM. Set and preserve `CONFIG_ENCRYPTION_KEY` for independent key management. When it is omitted, the existing `JWT_SECRET` is used as encryption key material for backwards-compatible upgrades. Changing either active key without first restoring the original value makes encrypted configuration and backups unreadable. Legacy plaintext config and rolling backups are migrated automatically on startup; separately downloaded legacy backups must be deleted or protected manually.
 
 ---
 

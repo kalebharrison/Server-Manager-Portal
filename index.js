@@ -20,7 +20,8 @@ import { createNewsletterService } from './lib/newsletter-service.js';
 import { escapeHtmlAttr } from './lib/html-shell.js';
 import { createSecurityHeadersMiddleware, secureTokenEquals } from './lib/http-security.js';
 import { createSerialJobQueue } from './lib/job-queue.js';
-import { loadFile, saveFile } from './lib/json-file-store.js';
+import { loadFile as loadJsonFile, saveFile as saveJsonFile } from './lib/json-file-store.js';
+import { createConfigSecretProtector } from './lib/config-secrets.js';
 import { isLoopbackAddress, normalizeExternalBaseUrl, resolveIntegrationUrlForFetch } from './lib/network-policy.js';
 import { enrichRecentItemsWithMediaTags } from './lib/plex-media-tags.js';
 import { createPlexStatsService } from './lib/plex-stats-service.js';
@@ -37,6 +38,7 @@ import { registerJellyfinRoutes } from './lib/jellyfin-routes.js';
 import { registerMaintenanceRoutes } from './lib/maintenance-routes.js';
 import { registerMediaStackRoutes } from './lib/media-stack-routes.js';
 import { createRequestAppService } from './lib/request-app-service.js';
+import { createTvdbService } from './lib/tvdb-service.js';
 import { registerRequestAppRoutes } from './lib/request-app-routes.js';
 import { registerStaticShellRoutes } from './lib/static-shell-routes.js';
 import { createBackgroundService } from './lib/background-service.js';
@@ -108,6 +110,27 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
     console.error('Set it in a .env file or your process environment before starting the server.');
     process.exit(1);
 }
+const CONFIG_ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY || JWT_SECRET;
+if (CONFIG_ENCRYPTION_KEY.length < 32) {
+    console.error('FATAL: CONFIG_ENCRYPTION_KEY must be at least 32 characters long.');
+    process.exit(1);
+}
+const configSecretProtector = createConfigSecretProtector(CONFIG_ENCRYPTION_KEY);
+const loadFile = async (filePath, defaultContent) => {
+    const value = await loadJsonFile(filePath, defaultContent);
+    return filePath === CONFIG_PATH ? configSecretProtector.unprotectConfig(value) : value;
+};
+const saveFile = async (filePath, value) => saveJsonFile(
+    filePath,
+    filePath === CONFIG_PATH ? configSecretProtector.protectConfig(value) : value,
+);
+const secureConfigAtRest = async () => {
+    const stored = await loadJsonFile(CONFIG_PATH, {});
+    const hadPlaintextSecrets = configSecretProtector.hasPlaintextSecrets(stored);
+    const runtimeConfig = configSecretProtector.unprotectConfig(stored);
+    await saveJsonFile(CONFIG_PATH, configSecretProtector.protectConfig(runtimeConfig));
+    return hadPlaintextSecrets;
+};
 
 let CLIENT_ID = process.env.CLIENT_ID || 'plex-expiry-manager-client-id'; // Now dynamically generated if missing
 
@@ -691,9 +714,15 @@ const {
     createBackupObject,
     enforceBackupRetention,
     listBackupFiles,
+    secureStoredBackups,
     writeBackupToFolder,
     backupDir: BACKUP_DIR,
-} = createBackupService({ loadFile, saveFile });
+} = createBackupService({
+    loadFile,
+    saveFile,
+    sealBackup: configSecretProtector.sealBackup,
+    openBackup: configSecretProtector.openBackup,
+});
 
 registerAdminRoutes({
     app,
@@ -887,9 +916,11 @@ const mediaStackRoutes = registerMediaStackRoutes({
     normalizeExternalBaseUrl,
 });
 
+const tvdbService = createTvdbService({ fetchWithTimeout, log });
 const requestAppService = createRequestAppService({
     fetchWithTimeout,
     resolveIntegrationUrlForFetch,
+    tvdbService,
     requestAppInternalUrl: REQUEST_APP_INTERNAL_URL,
     log,
 });
@@ -978,6 +1009,9 @@ const startPortalService = async () => {
     }
 
     await migrateConfigFiles((message) => log(`[config] ${message}`));
+    if (await secureConfigAtRest()) log('[config] Migrated stored credentials to encrypted values.');
+    const migratedBackups = await secureStoredBackups();
+    if (migratedBackups > 0) log(`[config] Encrypted ${migratedBackups} legacy backup file(s).`);
 
     // Ensure unique CLIENT_ID per installation to avoid Plex Auth blocking
     let config = await loadFile(CONFIG_PATH, {});

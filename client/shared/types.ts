@@ -58,6 +58,11 @@ export interface AppSettings {
     sonarrApiKey?: string;
     radarrUrl?: string;
     radarrApiKey?: string;
+    lidarrUrl?: string;
+    lidarrApiKey?: string;
+    tmdbApiKey?: string;
+    tvdbApiKey?: string;
+    tvdbPin?: string;
     tautulliUrl?: string;
     tautulliApiKey?: string;
     jellystatUrl?: string;

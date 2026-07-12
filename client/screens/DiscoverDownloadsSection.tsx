@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowUpCircle, CircleHelp, DownloadCloud, Film, Sparkles, Tv } from 'lucide-react';
+import { ArrowUpCircle, CircleHelp, DownloadCloud, Film, Music, Sparkles, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
 import { discoverPosterGridClass } from '../shared/portalLayout';
@@ -21,7 +21,7 @@ const phaseClass = (phase: string) => {
 };
 
 const DownloadPosterCard: React.FC<{ item: any }> = ({ item }) => {
-    const TypeIcon = item.type === 'tv' ? Tv : Film;
+    const TypeIcon = item.type === 'tv' ? Tv : item.type === 'music' ? Music : Film;
     const AcquisitionIcon = item.acquisitionKind === 'upgrade' ? ArrowUpCircle : item.acquisitionKind === 'new' ? Sparkles : CircleHelp;
     const acquisitionClass = item.acquisitionKind === 'upgrade'
         ? 'bg-violet-700/85 border-violet-300/25'
@@ -78,6 +78,7 @@ export const DiscoverDownloadsSection: React.FC<{ useScrollRevealAnimations?: bo
             const next = [
                 ...mapQueueRecords(queueRecords(summary?.sonarr?.queue), 'Sonarr'),
                 ...mapQueueRecords(queueRecords(summary?.radarr?.queue), 'Radarr'),
+                ...mapQueueRecords(queueRecords(summary?.lidarr?.queue), 'Lidarr'),
             ].filter((item) => item.hasMediaTitle && item.progress >= 0);
             setDownloads(next);
         } catch {

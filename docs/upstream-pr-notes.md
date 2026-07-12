@@ -102,6 +102,10 @@ Beta image branch: `beta`
   - Persist per-user Plex wrap-up snapshots across restarts with background refresh; remove Home analytics loading placeholders; keep one privacy-aware live-stream panel above both Discover views and on the admin Home; add a sessions-only Jellyfin endpoint; and abstract default request-provider branding on member Status pages while clarifying public display-name settings.
   - Upstream PR fit: split into personal analytics caching, shared streams UI/Jellyfin sessions, and Status label abstraction.
 
+- Pending: encrypted configuration, protected backups, and metadata/music integrations
+  - Encrypt all stored credentials with authenticated AES-256-GCM using environment-held key material; migrate plaintext config and rolling backups; enforce owner-only permissions; add TVDB fallback enrichment for TV details; and add Lidarr connection, status, and active-download support without bypassing request-app permissions.
+  - Upstream PR fit: split encryption/storage hardening from TVDB metadata and Lidarr automation support.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

@@ -30,6 +30,8 @@ type SettingsHydrationSetters = {
     setSonarrApiKey: (value: string) => void;
     setRadarrUrl: (value: string) => void;
     setRadarrApiKey: (value: string) => void;
+    setLidarrUrl: (value: string) => void;
+    setLidarrApiKey: (value: string) => void;
     setTautulliUrl: (value: string) => void;
     setTautulliApiKey: (value: string) => void;
     setJellystatUrl: (value: string) => void;
@@ -46,6 +48,8 @@ type SettingsHydrationSetters = {
     setUseTrendingSlideshow: (value: boolean) => void;
     setTrendingSlideshowInterval: (value: number) => void;
     setTmdbApiKey: (value: string) => void;
+    setTvdbApiKey: (value: string) => void;
+    setTvdbPin: (value: string) => void;
     setReferralEnabled: (value: boolean) => void;
     setReferralTrialDays: (value: number) => void;
     setReferralRewardDays: (value: number) => void;
@@ -96,6 +100,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setSonarrApiKey(initialSettings.sonarrApiKey || '');
     setters.setRadarrUrl(initialSettings.radarrUrl || '');
     setters.setRadarrApiKey(initialSettings.radarrApiKey || '');
+    setters.setLidarrUrl(initialSettings.lidarrUrl || '');
+    setters.setLidarrApiKey(initialSettings.lidarrApiKey || '');
     setters.setTautulliUrl(initialSettings.tautulliUrl || '');
     setters.setTautulliApiKey(initialSettings.tautulliApiKey || '');
     setters.setJellystatUrl(initialSettings.jellystatUrl || '');
@@ -112,6 +118,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setUseTrendingSlideshow(!!initialSettings.useTrendingSlideshow);
     setters.setTrendingSlideshowInterval(initialSettings.trendingSlideshowInterval || 30);
     setters.setTmdbApiKey(initialSettings.tmdbApiKey || '');
+    setters.setTvdbApiKey(initialSettings.tvdbApiKey || '');
+    setters.setTvdbPin(initialSettings.tvdbPin || '');
     setters.setReferralEnabled(!!initialSettings.referralEnabled);
     setters.setReferralTrialDays(initialSettings.referralTrialDays || 3);
     setters.setReferralRewardDays(initialSettings.referralRewardDays || 7);

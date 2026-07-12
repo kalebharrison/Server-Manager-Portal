@@ -12,7 +12,11 @@ type MediaStackSettingsTabProps = {
     sonarrApiKey: string;
     radarrUrl: string;
     radarrApiKey: string;
+    lidarrUrl: string;
+    lidarrApiKey: string;
     tmdbApiKey: string;
+    tvdbApiKey: string;
+    tvdbPin: string;
     tautulliUrl: string;
     tautulliApiKey: string;
     jellystatUrl: string;
@@ -24,7 +28,11 @@ type MediaStackSettingsTabProps = {
     onSonarrApiKeyChange: (value: string) => void;
     onRadarrUrlChange: (value: string) => void;
     onRadarrApiKeyChange: (value: string) => void;
+    onLidarrUrlChange: (value: string) => void;
+    onLidarrApiKeyChange: (value: string) => void;
     onTmdbApiKeyChange: (value: string) => void;
+    onTvdbApiKeyChange: (value: string) => void;
+    onTvdbPinChange: (value: string) => void;
     onTautulliUrlChange: (value: string) => void;
     onTautulliApiKeyChange: (value: string) => void;
     onJellystatUrlChange: (value: string) => void;
@@ -42,7 +50,11 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     sonarrApiKey,
     radarrUrl,
     radarrApiKey,
+    lidarrUrl,
+    lidarrApiKey,
     tmdbApiKey,
+    tvdbApiKey,
+    tvdbPin,
     tautulliUrl,
     tautulliApiKey,
     jellystatUrl,
@@ -54,7 +66,11 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     onSonarrApiKeyChange,
     onRadarrUrlChange,
     onRadarrApiKeyChange,
+    onLidarrUrlChange,
+    onLidarrApiKeyChange,
     onTmdbApiKeyChange,
+    onTvdbApiKeyChange,
+    onTvdbPinChange,
     onTautulliUrlChange,
     onTautulliApiKeyChange,
     onJellystatUrlChange,
@@ -105,6 +121,23 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
         />
 
+        <IntegrationHeading app="lidarr" title="Lidarr Integration" subtitle="Music automation and download status" className="mt-8" />
+        <div className="mb-4">
+            <label htmlFor="lidarrUrl">Lidarr URL</label>
+            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="lidarrUrl" type="text" value={lidarrUrl} onChange={(e) => onLidarrUrlChange(e.target.value)} placeholder="http://localhost:8686" />
+        </div>
+        <div className="mb-4">
+            <label htmlFor="lidarrApiKey">Lidarr API Key</label>
+            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="lidarrApiKey" type="password" value={lidarrApiKey} onChange={(e) => onLidarrApiKeyChange(e.target.value)} placeholder="API Key from Lidarr Settings -> General" />
+        </div>
+        <IntegrationTestButton
+            type="lidarr"
+            payload={{ lidarrUrl, lidarrApiKey }}
+            disabled={!hasIntegrationCredentials(lidarrUrl, lidarrApiKey, initialSettings.lidarrUrl, initialSettings.lidarrApiKey)}
+            className="mb-6"
+            onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
+        />
+
         <IntegrationHeading app="tmdb" title="TMDB Integration" subtitle="Request discovery and trending artwork" className="mt-8" />
         <div className="mb-4">
             <label htmlFor="tmdbApiKey">TMDB API Key</label>
@@ -113,6 +146,24 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
                 <SettingHint>Provides request discovery metadata and optional trending portal artwork.</SettingHint>
             </div>
         </div>
+
+        <IntegrationHeading app="tvdb" title="TVDB Integration" subtitle="Optional TV metadata fallback" className="mt-8" />
+        <div className="mb-4">
+            <label htmlFor="tvdbApiKey">TVDB API Key</label>
+            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tvdbApiKey" type="password" value={tvdbApiKey} onChange={(e) => onTvdbApiKeyChange(e.target.value)} placeholder="TVDB v4 API key" />
+            <div className="mt-2"><SettingHint>Fills missing TV summaries, air dates, status, network, and genres when a TVDB ID is available.</SettingHint></div>
+        </div>
+        <div className="mb-4">
+            <label htmlFor="tvdbPin">TVDB Subscriber PIN (optional)</label>
+            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tvdbPin" type="password" value={tvdbPin} onChange={(e) => onTvdbPinChange(e.target.value)} placeholder="Only required for subscriber-supported keys" />
+        </div>
+        <IntegrationTestButton
+            type="tvdb"
+            payload={{ tvdbApiKey, tvdbPin }}
+            disabled={!String(tvdbApiKey || initialSettings.tvdbApiKey || '').trim()}
+            className="mb-6"
+            onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
+        />
 
         {mediaServerType === 'plex' && <>
         <IntegrationHeading app="tautulli" title="Tautulli Integration" subtitle="Plex activity and analytics" className="mt-8" />
@@ -158,7 +209,7 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
         <IntegrationHeading
             app={requestAppType === 'none' ? 'seerr' : requestAppType}
             title="Request App Integration"
-            subtitle="Seerr, Jellyseerr, or Ombi for media requests"
+            subtitle="Seerr or Jellyseerr for embedded requests; Ombi for external request workflows"
             className="mt-8"
         />
         <div className="mb-4">
@@ -175,7 +226,11 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
                 ]}
             />
             <div className="mt-2">
-                <SettingHint>Powers the embedded Request tab, request status, issue reporting, and maintenance request history.</SettingHint>
+                <SettingHint>
+                    {requestAppType === 'ombi'
+                        ? 'Ombi connection testing and status are supported. Embedded browsing and request actions currently require Seerr or Jellyseerr.'
+                        : 'Powers the embedded Request tab, request status, issue reporting, and maintenance request history.'}
+                </SettingHint>
             </div>
         </div>
         <div className="mb-4">
