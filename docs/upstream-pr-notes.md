@@ -47,7 +47,7 @@ Beta image branch: `beta`
   - Upstream PR fit: split into media-stack data/calendar work, request browsing, and generic Discover rendering performance.
 
 - Pending: request discovery pagination correction
-  - Make next-page detection work with Seerr instances that omit `pageInfo.pages`; remove unsupported upcoming-genre queries; and batch a bounded set of source pages for Japanese-animation discovery.
+  - Make next-page detection work with Seerr instances that omit `pageInfo.pages`; remove unsupported upstream genre queries; batch source pages for Japanese-animation discovery; and add composable genre filtering.
   - Upstream PR fit: request-app service and request browsing follow-up.
 
 ## Split Candidates

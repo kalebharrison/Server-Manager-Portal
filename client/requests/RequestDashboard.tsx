@@ -23,6 +23,14 @@ const mediaFilters = [
     { id: 'tv' as const, label: 'TV' },
 ];
 
+const genreFilters = [
+    { id: 28, label: 'Action' }, { id: 12, label: 'Adventure' }, { id: 16, label: 'Animation' },
+    { id: 35, label: 'Comedy' }, { id: 80, label: 'Crime' }, { id: 18, label: 'Drama' },
+    { id: 10751, label: 'Family' }, { id: 14, label: 'Fantasy' }, { id: 27, label: 'Horror' },
+    { id: 9648, label: 'Mystery' }, { id: 10749, label: 'Romance' }, { id: 878, label: 'Science Fiction' },
+    { id: 53, label: 'Thriller' }, { id: 10759, label: 'Action & Adventure' }, { id: 10765, label: 'Sci-Fi & Fantasy' },
+];
+
 const cardSkeletons = Array.from({ length: 12 }, (_, index) => index);
 
 const isExistingOrInProgress = (item: RequestMediaItem) => (
@@ -36,6 +44,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
     const [browseCategory, setBrowseCategory] = useState<BrowseCategory>('trending');
     const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
     const [animeOnly, setAnimeOnly] = useState(false);
+    const [genreId, setGenreId] = useState<number | null>(null);
     const [includeExisting, setIncludeExisting] = useState(false);
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -75,10 +84,10 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         if (activeView === 'queue') return '';
         if (activeView === 'search') {
             if (debouncedQuery.length < 2) return '';
-            return `/api/request-app/search?query=${encodeURIComponent(debouncedQuery)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}`;
+            return `/api/request-app/search?query=${encodeURIComponent(debouncedQuery)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}&genreId=${genreId || ''}`;
         }
-        return `/api/request-app/discover?category=${encodeURIComponent(browseCategory)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}`;
-    }, [activeView, animeOnly, browseCategory, debouncedQuery, mediaFilter]);
+        return `/api/request-app/discover?category=${encodeURIComponent(browseCategory)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}&genreId=${genreId || ''}`;
+    }, [activeView, animeOnly, browseCategory, debouncedQuery, genreId, mediaFilter]);
 
     const loadItems = useCallback(async ({ page = 1, append = false, silent = false } = {}) => {
         if (!endpointBase || status?.ready === false) {
@@ -179,6 +188,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
     const showSkeleton = loading && items.length === 0 && !showSearchHint && activeView !== 'queue';
     const activeCategoryLabel = browseCategories.find((entry) => entry.id === browseCategory)?.label || 'Trending';
     const activeMediaLabel = animeOnly ? 'Anime' : mediaFilters.find((entry) => entry.id === mediaFilter)?.label || 'All';
+    const activeGenreLabel = genreFilters.find((entry) => entry.id === genreId)?.label || '';
     const contentTitle = activeView === 'search'
         ? 'Search Results'
         : animeOnly
@@ -186,6 +196,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         : mediaFilter === 'all'
             ? activeCategoryLabel
             : `${activeCategoryLabel} ${activeMediaLabel}`;
+    const detailedContentTitle = activeGenreLabel ? `${contentTitle} - ${activeGenreLabel}` : contentTitle;
 
     return (
         <div className="w-full animate-fade-in space-y-6">
@@ -267,6 +278,17 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                             >
                                 Anime
                             </button>
+                            <label className="inline-flex items-center gap-2 ml-0 sm:ml-2">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Genre</span>
+                                <select
+                                    value={genreId || ''}
+                                    onChange={(event) => setGenreId(event.target.value ? Number(event.target.value) : null)}
+                                    className="h-9 rounded-lg border border-border bg-background/60 px-3 text-sm font-bold text-text outline-none focus:border-plex"
+                                >
+                                    <option value="">All genres</option>
+                                    {genreFilters.map((genre) => <option key={genre.id} value={genre.id}>{genre.label}</option>)}
+                                </select>
+                            </label>
                             <button
                                 type="button"
                                 onClick={() => setIncludeExisting((value) => !value)}
@@ -301,7 +323,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                             <div className="flex items-center justify-between gap-3 mb-4">
                                 <div>
                                     <h2 className="text-xl font-black text-plex">
-                                        {contentTitle}
+                                        {detailedContentTitle}
                                     </h2>
                                     <p className="text-xs text-muted mt-1">
                                         {refreshing
