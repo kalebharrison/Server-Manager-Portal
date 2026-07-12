@@ -7,10 +7,12 @@ import { RequestMediaCard } from './RequestMediaCard';
 import { RequestMediaModal } from './RequestMediaModal';
 import type { RequestAppStatus, RequestListResponse, RequestMediaItem } from './types';
 
-type RequestTab = 'trending' | 'movies' | 'tv' | 'search' | 'queue';
+type RequestTab = 'trending' | 'popular' | 'upcoming' | 'movies' | 'tv' | 'search' | 'queue';
 
 const tabs = [
     { id: 'trending' as const, label: 'Trending' },
+    { id: 'popular' as const, label: 'Popular' },
+    { id: 'upcoming' as const, label: 'Upcoming' },
     { id: 'movies' as const, label: 'Movies' },
     { id: 'tv' as const, label: 'TV' },
     { id: 'search' as const, label: 'Search' },

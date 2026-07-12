@@ -30,9 +30,13 @@ Beta image branch: `beta`
   - Lock page scroll behind the embedded request detail modal, make the modal body scroll as one surface, and split media stack downloads into a dedicated `Downloads` tab without storage or history panels.
   - Upstream PR fit: follow-up UI polish for request workflow and media stack calendar, likely best split by screen.
 
-- Pending: discover downloads and calendar polish
+- `3fec734 ui: move downloads into discover`
   - Move active TV/movie download progress to Discover as an `On The Way` poster section, keep file/release names hidden, remove download UI from Media Stack, hide app-brand labels from normal user-facing calendar/status surfaces, add list/month calendar modes, and hide already available request content.
   - Upstream PR fit: split into Discover download widget, release calendar view, and request browsing cleanup.
+
+- Pending: request browse and issue parity
+  - Add embedded request browse categories for trending, popular, upcoming, movies, and TV; show genre chips from Seerr/TMDB data; and submit basic media issue reports through the request app when the title is tracked there.
+  - Upstream PR fit: request-app frontend/backend follow-up after the base embedded workflow.
 
 ## Split Candidates
 

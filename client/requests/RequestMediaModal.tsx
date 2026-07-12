@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, Check, Clock3, ExternalLink, Film, Globe2, Star, Tv, UserRound, X } from 'lucide-react';
+import { AlertTriangle, CalendarDays, Check, Clock3, ExternalLink, Film, Globe2, Star, Tv, UserRound, X } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import type { RequestCredit, RequestMediaItem, RequestNamedValue } from './types';
 
@@ -74,6 +74,13 @@ const DetailSection: React.FC<{ title: string; children: React.ReactNode; classN
     </section>
 );
 
+const issueOptions = [
+    { id: 'video', label: 'Video' },
+    { id: 'audio', label: 'Audio' },
+    { id: 'subtitles', label: 'Subtitles' },
+    { id: 'other', label: 'Other' },
+] as const;
+
 const CreditStrip: React.FC<{ title: string; credits?: RequestCredit[] }> = ({ title, credits = [] }) => {
     if (!credits.length) return null;
 
@@ -133,6 +140,11 @@ export const RequestMediaModal: React.FC<{
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);
+    const [showIssueForm, setShowIssueForm] = useState(false);
+    const [issueType, setIssueType] = useState<(typeof issueOptions)[number]['id']>('video');
+    const [issueMessage, setIssueMessage] = useState('');
+    const [issueStatus, setIssueStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+    const [issueError, setIssueError] = useState('');
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const isTv = detail.mediaType === 'tv';
 
@@ -148,6 +160,11 @@ export const RequestMediaModal: React.FC<{
         let cancelled = false;
         setDetail(item);
         setSelectedSeasons([]);
+        setShowIssueForm(false);
+        setIssueType('video');
+        setIssueMessage('');
+        setIssueStatus('idle');
+        setIssueError('');
         scrollRef.current?.scrollTo({ top: 0 });
         setLoading(true);
         setLoadError(null);
@@ -190,9 +207,45 @@ export const RequestMediaModal: React.FC<{
         ));
     };
 
+    const submitIssue = async () => {
+        const message = issueMessage.trim();
+        if (!message) return;
+        setIssueStatus('submitting');
+        setIssueError('');
+        try {
+            await apiFetch(`/api/request-app/media/${detail.mediaType}/${detail.tmdbId}/issue`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    title: detail.title,
+                    issueType,
+                    message,
+                }),
+            });
+            setIssueStatus('success');
+            setIssueMessage('');
+        } catch (err: any) {
+            setIssueStatus('error');
+            setIssueError(err?.message || 'Failed to report issue');
+        }
+    };
+
+    const toggleIssueForm = () => {
+        setShowIssueForm((current) => {
+            const next = !current;
+            if (next) {
+                window.setTimeout(() => {
+                    const node = scrollRef.current;
+                    if (node) node.scrollTo({ top: node.scrollHeight, behavior: 'smooth' });
+                }, 0);
+            }
+            return next;
+        });
+    };
+
     const TypeIcon = detail.mediaType === 'tv' ? Tv : Film;
     const canRequest = detail.canRequest !== false;
     const canSubmit = !saving && canRequest && (!isTv || selectedSeasons.length > 0);
+    const canReportIssue = !!detail.mediaId;
     const releaseLabel = formatDate(detail.releaseDate || detail.firstAirDate);
     const runtimeLabel = formatRuntime(detail.runtime);
     const requestLabel = requestStateLabel(detail);
@@ -366,6 +419,57 @@ export const RequestMediaModal: React.FC<{
                             ) : null}
                         </div>
                     </div>
+                    {showIssueForm ? (
+                        <DetailSection title="Report Issue" className="mt-7">
+                            <div className="rounded-xl border border-white/10 bg-background/35 p-4">
+                                <div className="mb-3 flex flex-wrap gap-2">
+                                    {issueOptions.map((option) => (
+                                        <button
+                                            key={option.id}
+                                            type="button"
+                                            onClick={() => setIssueType(option.id)}
+                                            className={`rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${issueType === option.id ? 'border-plex bg-plex text-background' : 'border-border text-muted hover:text-text hover:bg-white/5'}`}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <textarea
+                                    value={issueMessage}
+                                    onChange={(event) => {
+                                        setIssueMessage(event.target.value);
+                                        setIssueStatus('idle');
+                                        setIssueError('');
+                                    }}
+                                    placeholder="Describe what is wrong."
+                                    className="h-28 w-full resize-none rounded-xl border border-border bg-card p-3 text-sm text-text outline-none transition-colors focus:border-plex"
+                                />
+                                {issueStatus === 'success' ? (
+                                    <p className="mt-2 text-sm font-semibold text-green-300">Issue submitted.</p>
+                                ) : issueStatus === 'error' ? (
+                                    <p className="mt-2 text-sm font-semibold text-red-300">{issueError}</p>
+                                ) : null}
+                                <div className="mt-3 flex justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setShowIssueForm(false); setIssueMessage(''); setIssueStatus('idle'); setIssueError(''); }}
+                                        className="rounded-lg border border-border px-3 py-2 text-sm text-muted transition-colors hover:bg-white/5 hover:text-text"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={issueStatus === 'submitting' || !issueMessage.trim()}
+                                        onClick={submitIssue}
+                                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-plex px-3 py-2 text-sm font-bold text-background transition-colors hover:bg-plex-hover disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {issueStatus === 'submitting' ? <Clock3 className="h-4 w-4 animate-pulse" /> : <AlertTriangle className="h-4 w-4" />}
+                                        Submit Issue
+                                    </button>
+                                </div>
+                            </div>
+                        </DetailSection>
+                    ) : null}
                     </div>
                 </div>
 
@@ -374,6 +478,16 @@ export const RequestMediaModal: React.FC<{
                         {canRequest ? 'Requests are submitted to your configured request app.' : `${detail.title} is marked ${requestLabel.toLowerCase()}.`}
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                        {canReportIssue ? (
+                            <button
+                                type="button"
+                                onClick={toggleIssueForm}
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-500/30 px-4 py-2 font-bold text-amber-100 transition-colors hover:bg-amber-500/10"
+                            >
+                                <AlertTriangle className="h-4 w-4" />
+                                Report Issue
+                            </button>
+                        ) : null}
                         <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-muted transition-colors hover:bg-white/5 hover:text-text">
                             Close
                         </button>

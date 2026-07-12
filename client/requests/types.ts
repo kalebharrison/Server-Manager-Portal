@@ -24,6 +24,7 @@ export type RequestCredit = {
 export type RequestMediaItem = {
     id: number;
     tmdbId: number;
+    mediaId?: number | null;
     mediaType: RequestMediaType;
     title: string;
     year?: string | null;
