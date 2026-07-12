@@ -5,17 +5,18 @@ import { ScrollReveal } from '../shared/ui';
 import { discoverPosterGridClass } from '../shared/portalLayout';
 
 export const DiscoverPosterCard: React.FC<{
-    item: { title: string; thumb?: string; thumbUrl?: string; plexUrl: string; tags?: string[]; year?: number | string; parentTitle?: string };
+    item: { ratingKey?: string; title: string; thumb?: string; thumbUrl?: string; plexUrl: string; tags?: string[]; year?: number | string; parentTitle?: string };
     aspect?: '2/3' | 'square';
     overlay?: React.ReactNode;
     variant?: 'discover' | 'home';
     className?: string;
     footer?: React.ReactNode;
     showQualityBadges?: boolean;
-}> = ({ item, aspect = '2/3', overlay, variant = 'discover', className = 'w-full', footer, showQualityBadges = true }) => {
+    priority?: boolean;
+}> = ({ item, aspect = '2/3', overlay, variant = 'discover', className = 'w-full', footer, showQualityBadges = true, priority = false }) => {
     const posterShell = variant === 'home'
         ? 'relative rounded-xl overflow-hidden bg-background border border-white/5 transition-[box-shadow,border-color] duration-300 group-hover:shadow-xl group-hover:border-plex/50'
-        : 'relative rounded-lg overflow-hidden border border-border group-hover:border-plex transition-colors shadow-md';
+        : 'relative rounded-lg overflow-hidden bg-background border border-border group-hover:border-plex transition-colors shadow-md';
 
     return (
         <a
@@ -30,7 +31,8 @@ export const DiscoverPosterCard: React.FC<{
                     <img
                         src={item.thumbUrl ? resolvePortalAssetUrl(item.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=300&height=${aspect === 'square' ? 300 : 450}`)}
                         alt={item.title}
-                        loading="lazy"
+                        loading={priority ? 'eager' : 'lazy'}
+                        fetchPriority={priority ? 'high' : 'auto'}
                         decoding="async"
                         className={`w-full h-full object-cover ${variant === 'home' ? 'transition-[transform,opacity] duration-300 group-hover:scale-105 group-hover:opacity-80' : ''}`}
                     />
@@ -73,13 +75,9 @@ export const DISCOVER_LIMIT_OPTIONS = [
     { value: '20', label: '20 Items' },
     { value: '25', label: '25 Items' },
     { value: '50', label: '50 Items' },
-    { value: '100', label: '100 Items' },
-    { value: '150', label: '150 Items' },
-    { value: '200', label: '200 Items' },
-    { value: '250', label: '250 Items' },
 ];
 
-export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; limit: number; showQualityBadges?: boolean; useScrollRevealAnimations?: boolean }> = ({ title, items, limit, showQualityBadges = true, useScrollRevealAnimations }) => {
+export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; limit: number; showQualityBadges?: boolean; useScrollRevealAnimations?: boolean; preloadPosters?: boolean }> = ({ title, items, limit, showQualityBadges = true, useScrollRevealAnimations, preloadPosters = false }) => {
     if (!items?.length) return null;
     return (
         <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col discover-deferred-section">
@@ -87,10 +85,11 @@ export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; li
             <div className={discoverPosterGridClass}>
                 {items.slice(0, limit).map((item, i) => (
                     <DiscoverPosterCard
-                        key={i}
+                        key={item.ratingKey || `${item.title}-${i}`}
                         item={{ ...item, plexUrl: item.plexUrl || '#' }}
                         overlay={discoverViewsOverlay(item.views)}
                         showQualityBadges={showQualityBadges}
+                        priority={preloadPosters && i < 8}
                     />
                 ))}
             </div>
