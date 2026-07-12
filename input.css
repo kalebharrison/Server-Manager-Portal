@@ -252,6 +252,12 @@
     contain-intrinsic-size: auto 36rem;
   }
 
+  .discover-poster-grid > * {
+    content-visibility: auto;
+    contain: layout paint style;
+    contain-intrinsic-size: auto 16rem;
+  }
+
   @container (min-width: 24rem) {
     .discover-poster-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));

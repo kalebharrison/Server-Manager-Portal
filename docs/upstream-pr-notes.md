@@ -50,6 +50,10 @@ Beta image branch: `beta`
   - Make next-page detection work with Seerr instances that omit `pageInfo.pages`; remove unsupported upstream genre queries; batch source pages for Japanese-animation discovery; and add composable genre filtering.
   - Upstream PR fit: request-app service and request browsing follow-up.
 
+- Pending: Discover cache and rendering performance
+  - Separate live stream polling from cached recent-library data, cache expensive quality-tag enrichment, parallelize initial Discover data sources, strengthen poster-cache headers, and contain individual poster-card rendering.
+  - Upstream PR fit: standalone performance improvement with focused Plex dashboard coverage.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

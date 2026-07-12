@@ -83,6 +83,9 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
         setError(null);
         if (!hasLoadedDashboard.current) setDashboardLoading(true);
         if (!isJellyfinPortal && !hasLoadedTrending.current) setTrendingLoading(true);
+        const trendingPromise = isJellyfinPortal
+            ? null
+            : apiFetch('/api/plex/stats/trending').catch(() => null);
         try {
             const res = await apiFetch(`${isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/dashboard'}?limit=${recentLimit}`);
             if (res.error) throw new Error(res.error);
@@ -102,7 +105,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
         }
 
         try {
-            const statsRes = await apiFetch('/api/plex/stats/trending');
+            const statsRes = await trendingPromise;
             if (!statsRes.error) {
                 setTrendingStats(statsRes);
             }
