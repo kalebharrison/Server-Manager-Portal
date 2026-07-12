@@ -329,7 +329,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
                 {!isJellyfinPortal && trendingLoading && !trendingStats ? (
                     <TrendingSectionsSkeleton count={trendingCount} sections={3} />
                 ) : !isJellyfinPortal && trendingStats && (
-                    <div className="mt-16 w-full flex flex-col gap-12 discover-deferred-section">
+                    <div className="mt-16 w-full flex flex-col gap-12">
                         <div className="flex flex-col gap-2 items-center text-center mb-4">
                             <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Other things happening on {publicConfig?.serverIdentifier || 'this server'}</h2>
                             <p className="text-muted text-sm max-w-xl">A look at what the community is currently watching across the entire server.</p>
