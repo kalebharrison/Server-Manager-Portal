@@ -74,6 +74,7 @@ export type RequestListResponse = {
         pages?: number;
         results?: number;
         pageSize?: number;
+        hasNextPage?: boolean;
     };
 };
 

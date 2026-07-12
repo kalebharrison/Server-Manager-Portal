@@ -46,6 +46,10 @@ Beta image branch: `beta`
   - Hydrate Arr queue records with their media metadata, add incremental request browsing and an Anime filter, summarize same-day TV season dumps in the calendar, and defer off-screen poster rendering and image decoding.
   - Upstream PR fit: split into media-stack data/calendar work, request browsing, and generic Discover rendering performance.
 
+- Pending: request discovery pagination correction
+  - Make next-page detection work with Seerr instances that omit `pageInfo.pages`; remove unsupported upcoming-genre queries; and batch a bounded set of source pages for Japanese-animation discovery.
+  - Upstream PR fit: request-app service and request browsing follow-up.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

@@ -129,7 +129,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         loadItems();
     }, [activeView, loadItems, status]);
 
-    const hasMore = !!pageInfo && (Number(pageInfo.pages) > Number(pageInfo.page || 1));
+    const hasMore = !!pageInfo && (pageInfo.hasNextPage === true || Number(pageInfo.pages) > Number(pageInfo.page || 1));
     const loadMore = useCallback(() => {
         if (!hasMore || loadingMore || loading) return;
         loadItems({ page: Number(pageInfo?.page || 1) + 1, append: true });
