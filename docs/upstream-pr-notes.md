@@ -54,6 +54,14 @@ Beta image branch: `beta`
   - Separate live stream polling from cached recent-library data, cache expensive quality-tag enrichment, parallelize initial Discover data sources, strengthen poster-cache headers, and avoid waking all analytics rows at once while scrolling.
   - Upstream PR fit: standalone performance improvement with focused Plex dashboard coverage.
 
+- Pending: focused security and Discover analytics cleanup
+  - Move HTTP security policy into a dedicated module, remove setup tokens from query-string authentication, use constant-time token comparison, stop logging upstream account response bodies, classify On The Way items as new or upgrades, and reduce community analytics from nine poster rows to three deterministic core rankings.
+  - Upstream PR fit: split into setup/header hardening, download classification, and analytics builder/UI simplification.
+
+- Pending: presentation and stylesheet cleanup
+  - Extract request-detail presentation components from the modal, remove a duplicated 202-line Tailwind component block, cap Discover sections at 50 items, use stable poster keys, and preload the first visible posters.
+  - Upstream PR fit: separate request-modal organization and Discover CSS/rendering cleanup.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.
