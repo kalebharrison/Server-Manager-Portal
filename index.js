@@ -18,6 +18,7 @@ import { createMediaUserService } from './lib/media-user-service.js';
 import { createMaintenanceService } from './lib/maintenance-service.js';
 import { createNewsletterService } from './lib/newsletter-service.js';
 import { escapeHtmlAttr } from './lib/html-shell.js';
+import { createSecurityHeadersMiddleware, secureTokenEquals } from './lib/http-security.js';
 import { createSerialJobQueue } from './lib/job-queue.js';
 import { loadFile, saveFile } from './lib/json-file-store.js';
 import { isLoopbackAddress, normalizeExternalBaseUrl, resolveIntegrationUrlForFetch } from './lib/network-policy.js';
@@ -108,23 +109,7 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 
 let CLIENT_ID = process.env.CLIENT_ID || 'plex-expiry-manager-client-id'; // Now dynamically generated if missing
 
-// --- Security: HTTP Security Headers ---
-app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'");
-    if (req.secure || FORCE_SECURE_COOKIES) {
-        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    }
-    if (req.path.startsWith('/api/')) {
-        res.setHeader('Cache-Control', 'no-store, private');
-        res.setHeader('Pragma', 'no-cache');
-    }
-    next();
-});
+app.use(createSecurityHeadersMiddleware({ forceHsts: FORCE_SECURE_COOKIES }));
 
 const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 10 });
 const authCallbackRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 40 });
@@ -135,8 +120,8 @@ const setupRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests
 
 const hasValidSetupToken = (req) => {
     if (!SETUP_TOKEN) return false;
-    const provided = req.headers['x-setup-token'] || req.body?.setupToken || req.query?.setupToken;
-    return typeof provided === 'string' && provided === SETUP_TOKEN;
+    const provided = req.headers['x-setup-token'] || req.body?.setupToken;
+    return secureTokenEquals(provided, SETUP_TOKEN);
 };
 
 // Use the raw TCP peer address for setup authorization. req.ip honors the
