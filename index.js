@@ -222,6 +222,13 @@ const statusRuntime = createStatusRuntime({
     loadFile,
     saveFile,
     normalizeExternalBaseUrl,
+    port: PORT,
+    basePath: BASE_PATH,
+    resolveServiceUrl: async (service) => {
+        if (service?.id !== 'plex') return '';
+        const appConfig = await loadFile(CONFIG_PATH, {});
+        return getPlexConnectionUri(appConfig);
+    },
 });
 
 const { sendEmail, checkAndSendNotifications, sendExpiryEmail, sendAdjustmentEmail } = createEmailService({
