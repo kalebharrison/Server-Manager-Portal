@@ -9,7 +9,7 @@ import type { AppSettings, PlexConfig, ToastMessage, User } from '../shared/type
 import { UserCard } from './admin/UserCard';
 import { UserModal } from './admin/UserModal';
 
-export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: () => void, onViewStatus: () => void, onViewDashboard: () => void }> = ({ onLogout, onViewUserPortal, onViewStatus, onViewDashboard }) => {
+export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: () => void, onViewStatus: () => void, onViewDashboard: () => void, onViewAsUser: (userId: string) => Promise<void> }> = ({ onLogout, onViewUserPortal, onViewStatus, onViewDashboard, onViewAsUser }) => {
     const [users, setUsers] = useState<User[]>([]);
     const [isConfigured, setConfigured] = useState(false);
     const [configSettings, setConfigSettings] = useState<AppSettings>({ checkIntervalMinutes: 60 });
@@ -130,6 +130,16 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
     const handleOpenUserModal = (user: User) => {
         setEditingUser(user);
         setUserModalOpen(true);
+    };
+
+    const handleViewAsUser = async (user: User) => {
+        setLoading(true);
+        try {
+            await onViewAsUser(user.id);
+        } catch (error) {
+            addToast(error instanceof Error ? error.message : 'Failed to view as user.', 'error');
+            setLoading(false);
+        }
     };
 
     const handleCloseModal = () => {
@@ -371,6 +381,7 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
                             onEdit={() => handleOpenUserModal(user)}
                             onDelete={() => handleDeleteUser(user.id)}
                             onRevoke={() => revokePlexAccess(user.id)}
+                            onViewAs={() => handleViewAsUser(user)}
                             isConfigured={isConfigured}
                             isSelected={selectedUserIds.includes(user.id)}
                             onSelect={handleToggleSelection}

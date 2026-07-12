@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Eye } from 'lucide-react';
 
 import { resolvePortalAssetUrl } from '../../shared/basePath';
 import { formatDate, getDaysUntilExpiry } from '../../shared/format';
@@ -9,11 +10,12 @@ export const UserCard: React.FC<{
     onEdit: () => void;
     onDelete: () => void;
     onRevoke: () => void;
+    onViewAs: () => void;
     isConfigured: boolean;
     isSelected: boolean;
     onSelect: (id: string) => void;
     providerLabel?: string;
-}> = ({ user, onEdit, onDelete, onRevoke, isConfigured, isSelected, onSelect, providerLabel = 'Plex' }) => {
+}> = ({ user, onEdit, onDelete, onRevoke, onViewAs, isConfigured, isSelected, onSelect, providerLabel = 'Plex' }) => {
     const { status, statusText, daysRemainingText, pillClass, borderClass, glowClass } = useMemo(() => {
         const days = getDaysUntilExpiry(user.expiryDate);
         let status: UserStatus = 'active';
@@ -94,7 +96,11 @@ export const UserCard: React.FC<{
                     <span className="text-text font-medium">{user.lastLogin ? formatDate(user.lastLogin) : 'Never'}</span>
                 </div>
             </div>
-            <div className="flex gap-2 mt-auto pt-4" onClick={e => e.stopPropagation()}>
+            <div className="flex flex-wrap gap-2 mt-auto pt-4" onClick={e => e.stopPropagation()}>
+                <button className="px-3 py-1.5 bg-plex/15 text-plex border border-plex/30 rounded-md text-xs font-semibold hover:bg-plex/25 transition-colors flex items-center justify-center gap-1.5" onClick={onViewAs} title="View portal as this user">
+                    <Eye className="w-3.5 h-3.5" />
+                    View as
+                </button>
                 <button className="px-3 py-1.5 bg-border text-text rounded-md text-xs font-semibold hover:bg-opacity-80 transition-colors flex items-center justify-center gap-1.5" onClick={onEdit}>Edit</button>
                 <button className="px-3 py-1.5 bg-border text-text rounded-md text-xs font-semibold hover:bg-opacity-80 transition-colors flex items-center justify-center gap-1.5" onClick={onDelete}>Delete</button>
                 {status === 'expired' && user.plexAccessStatus !== 'revoked' && (

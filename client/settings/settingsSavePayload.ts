@@ -51,7 +51,6 @@ type SettingsSavePayloadInput = {
     announcement: string;
     navOrder: string[];
     hideStreamUsers: string;
-    showUsernamesInAnalytics: boolean;
     useTrendingSlideshowOnLogin: boolean;
     publicStatusEnabled: boolean;
     defaultLibraryIds: string[];

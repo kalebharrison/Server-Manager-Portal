@@ -26,7 +26,6 @@ type MediaServerSettingsTabProps = {
     libraries: LibraryOption[];
     defaultLibraryIds: string[];
     hideStreamUsers: string;
-    showUsernamesInAnalytics: boolean;
     requestUrl: string;
     contactUrl: string;
     onMediaServerTypeChange: (value: MediaServerType) => void;
@@ -38,7 +37,6 @@ type MediaServerSettingsTabProps = {
     onCheckIntervalChange: (value: number) => void;
     onDefaultLibraryIdsChange: (value: string[]) => void;
     onHideStreamUsersChange: (value: string) => void;
-    onShowUsernamesInAnalyticsChange: (value: boolean) => void;
     onRequestUrlChange: (value: string) => void;
     onContactUrlChange: (value: string) => void;
     onFetchServers: () => void;
@@ -58,7 +56,6 @@ export const MediaServerSettingsTab: React.FC<MediaServerSettingsTabProps> = ({
     libraries,
     defaultLibraryIds,
     hideStreamUsers,
-    showUsernamesInAnalytics,
     requestUrl,
     contactUrl,
     onMediaServerTypeChange,
@@ -70,7 +67,6 @@ export const MediaServerSettingsTab: React.FC<MediaServerSettingsTabProps> = ({
     onCheckIntervalChange,
     onDefaultLibraryIdsChange,
     onHideStreamUsersChange,
-    onShowUsernamesInAnalyticsChange,
     onRequestUrlChange,
     onContactUrlChange,
     onFetchServers,
@@ -230,35 +226,18 @@ export const MediaServerSettingsTab: React.FC<MediaServerSettingsTabProps> = ({
             <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
                 <div>
                     <h4 className="font-bold text-text">Stream User Privacy</h4>
-                    <p className="text-sm text-muted">Control how stream users are displayed to non-admins (e.g. on the public status page).</p>
+                    <p className="text-sm text-muted">Choose whether non-admins see anonymous activity or no viewer label. Admins always see the account name.</p>
                 </div>
                 <div className="w-56 ml-4 flex-shrink-0">
                     <CustomSelect
                         value={String(hideStreamUsers)}
                         onChange={onHideStreamUsersChange}
                         options={[
-                            { label: 'Show Names', value: 'false' },
                             { label: 'Show as Anonymous', value: 'anonymous' },
                             { label: 'Hide Completely', value: 'hidden' }
                         ]}
                     />
                 </div>
-            </div>
-
-            <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
-                <div>
-                    <h4 className="font-bold text-text">Show Usernames in Analytics</h4>
-                    <p className="text-sm text-muted">Allow non-admin users to see real usernames on the Analytics dashboard. If disabled, usernames are shown as Viewer 1, Viewer 2, etc.</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
-                    <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={showUsernamesInAnalytics}
-                        onChange={e => onShowUsernamesInAnalyticsChange(e.target.checked)}
-                    />
-                    <div className="w-11 h-6 bg-background peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-plex"></div>
-                </label>
             </div>
 
             <div className="mb-4" style={{ marginTop: '1rem' }}>

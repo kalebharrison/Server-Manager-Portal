@@ -74,8 +74,7 @@ export const SettingsDashboard: React.FC = () => {
     const [servers, setServers] = useState<PlexServer[]>([]);
     const [selectedServer, setSelectedServer] = useState('');
     const [checkInterval, setCheckInterval] = useState(60);
-    const [hideStreamUsers, setHideStreamUsers] = useState<string>('false');
-    const [showUsernamesInAnalytics, setShowUsernamesInAnalytics] = useState(false);
+    const [hideStreamUsers, setHideStreamUsers] = useState<string>('anonymous');
     const [useTrendingSlideshowOnLogin, setUseTrendingSlideshowOnLogin] = useState(false);
     const [publicStatusEnabled, setPublicStatusEnabled] = useState(true);
     const [defaultLibraryIds, setDefaultLibraryIds] = useState<string[]>([]);
@@ -292,7 +291,6 @@ export const SettingsDashboard: React.FC = () => {
                 setAnnouncement,
                 setNavOrder,
                 setHideStreamUsers,
-                setShowUsernamesInAnalytics,
                 setUseTrendingSlideshowOnLogin,
                 setPublicStatusEnabled,
                 setDefaultLibraryIds,
@@ -397,7 +395,6 @@ export const SettingsDashboard: React.FC = () => {
             announcement,
             navOrder,
             hideStreamUsers,
-            showUsernamesInAnalytics,
             useTrendingSlideshowOnLogin,
             publicStatusEnabled,
             defaultLibraryIds,
@@ -414,9 +411,9 @@ export const SettingsDashboard: React.FC = () => {
     const settingsTabPanelProps = buildSettingsTabPanelProps({
         activeTab, addToast, streamRulesSaveHandlerRef, initialSettings,
         mediaServerType, token, plexServerUrl, jellyfinUrl, jellyfinApiKey, servers, selectedServer,
-        checkInterval, libraries, defaultLibraryIds, hideStreamUsers, showUsernamesInAnalytics, requestUrl, contactUrl,
+        checkInterval, libraries, defaultLibraryIds, hideStreamUsers, requestUrl, contactUrl,
         setMediaServerType, setToken, setPlexServerUrl, setJellyfinUrl, setJellyfinApiKey, setSelectedServer,
-        setCheckInterval, setDefaultLibraryIds, setHideStreamUsers, setShowUsernamesInAnalytics, setRequestUrl,
+        setCheckInterval, setDefaultLibraryIds, setHideStreamUsers, setRequestUrl,
         setContactUrl, handleFetchServers,
         smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, emailDaysBefore, testRecipient,
         isTestingSmtp, setSmtpHost, setSmtpPort, setSmtpUser, setSmtpPass, setSmtpFrom, setSmtpSecure,

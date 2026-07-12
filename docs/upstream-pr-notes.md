@@ -74,6 +74,10 @@ Beta image branch: `beta`
   - Hydrate Arr queue movie/episode state before labeling downloads as New or Upgrade; use stable poster placeholders without per-image React renders; resolve built-in portal/Plex monitors through local/runtime connection paths; validate status configuration limits and URLs; reorganize settings, mark admin-only navigation, defer tab-specific data, and remove duplicate task/audit views.
   - Upstream PR fit: split into Arr queue enrichment, status monitor reliability/security, Discover poster rendering, and settings information architecture.
 
+- Pending: analytics privacy and safe admin impersonation
+  - Always anonymize analytics and active-stream identities for non-admins; remove peer account IDs from personal leaderboard data; remove the unsafe username-sharing setting; restore audited admin View As with short-lived tokens, cache clearing, explicit exit UI, and mutation blocking; split Analytics data loading and trending content into focused modules.
+  - Upstream PR fit: split into privacy enforcement, impersonation restoration/hardening, and Analytics component organization.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

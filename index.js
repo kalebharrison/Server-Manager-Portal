@@ -45,6 +45,7 @@ import { registerKillRuleRoutes } from './lib/kill-rule-routes.js';
 import { createAnalyticsService } from './lib/analytics-service.js';
 import { createRateLimiter } from './lib/rate-limit.js';
 import { createAuditLogger } from './lib/audit-log.js';
+import { isImpersonatingSession } from './lib/impersonation.js';
 import { createStatusRuntime } from './lib/status-runtime.js';
 import { createStreamMonitor } from './lib/stream-monitor.js';
 import { computeNextBackupRun, findRunnableTask, getTasksSnapshot, markTaskEnd, markTaskStart, systemJobs, tasksInfo } from './lib/task-state.js';
@@ -148,10 +149,10 @@ const clearSessionCookie = (req, res) => {
     res.clearCookie('session', sessionCookieBase());
 };
 
-const setSessionCookie = (req, res, token) => {
+const setSessionCookie = (req, res, token, { maxAgeMs = 7 * 24 * 60 * 60 * 1000 } = {}) => {
     res.cookie('session', token, {
         ...sessionCookieBase(),
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: maxAgeMs,
     });
 };
 
@@ -319,6 +320,10 @@ const getAdminId = async (config) => {
 
 const findLocalUserForSession = (users, sessionUser) => {
     if (!sessionUser || !Array.isArray(users)) return null;
+    if (sessionUser.impersonatingUserId) {
+        const target = users.find((user) => normalized(user.id) === normalized(sessionUser.impersonatingUserId));
+        if (target) return target;
+    }
     const sessionId = normalized(sessionUser.id);
     const sessionPlexId = normalized(sessionUser.plexId);
     const sessionJellyfinId = normalized(sessionUser.jellyfinId);
@@ -435,6 +440,9 @@ const requireAdmin = async (req, res, next) => {
         req.user = jwt.verify(token, JWT_SECRET);
     } catch (e) {
         return res.status(401).json({ error: 'Invalid session' });
+    }
+    if (isImpersonatingSession(req.user)) {
+        return res.status(403).json({ error: 'Admin actions are disabled while viewing as another user.' });
     }
 
     const config = await loadFile(CONFIG_PATH, {});
@@ -676,6 +684,7 @@ registerAdminRoutes({
     requireAdmin,
     requireAuth,
     requireMember,
+    jwtSecret: JWT_SECRET,
     configDir: CONFIG_DIR,
     configPath: CONFIG_PATH,
     usersPath: USERS_PATH,
@@ -721,6 +730,7 @@ registerAdminRoutes({
     rememberDeletedUser,
     resolveCurrentAdmin,
     clearSessionCookie,
+    setSessionCookie,
     log,
 });
 

@@ -53,7 +53,6 @@ type SettingsHydrationSetters = {
     setAnnouncement: (value: string) => void;
     setNavOrder: (value: string[]) => void;
     setHideStreamUsers: (value: string) => void;
-    setShowUsernamesInAnalytics: (value: boolean) => void;
     setUseTrendingSlideshowOnLogin: (value: boolean) => void;
     setPublicStatusEnabled: (value: boolean) => void;
     setDefaultLibraryIds: (value: string[]) => void;
@@ -119,8 +118,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setReferralRewardDays(initialSettings.referralRewardDays || 7);
     setters.setAnnouncement(initialSettings.announcement || '');
     if (initialSettings.navOrder) setters.setNavOrder(ensureMaintenanceNavOrder(initialSettings.navOrder));
-    setters.setHideStreamUsers(initialSettings.hideStreamUsers === true ? 'anonymous' : (initialSettings.hideStreamUsers || 'false'));
-    setters.setShowUsernamesInAnalytics(!!initialSettings.showUsernamesInAnalytics);
+    setters.setHideStreamUsers(initialSettings.hideStreamUsers === 'hidden' ? 'hidden' : 'anonymous');
     setters.setUseTrendingSlideshowOnLogin(initialSettings.useTrendingSlideshowOnLogin !== false);
     setters.setPublicStatusEnabled(initialSettings.publicStatusEnabled !== false);
     if (initialSettings.defaultLibraryIds) setters.setDefaultLibraryIds(initialSettings.defaultLibraryIds);

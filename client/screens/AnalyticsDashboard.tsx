@@ -1,13 +1,14 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { Activity, BarChart3, Clock, Film, LineChart as LucideLineChart, MonitorSmartphone, PlaySquare, Star, TrendingUp, Trophy, Users } from 'lucide-react';
+import { Activity, BarChart3, Clock, LineChart as LucideLineChart, MonitorSmartphone, PlaySquare, Trophy, Users } from 'lucide-react';
 
-import { apiFetch } from '../shared/api';
 import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { formatSizeCeil } from '../shared/format';
 import { CustomSelect } from '../shared/ui';
 import { Loader } from '../shared/toast';
 
 import { CountUp } from './analytics/CountUp';
+import { useAnalyticsData } from './analytics/useAnalyticsData';
+import { AnalyticsTrendingContent } from './analytics/AnalyticsTrendingContent';
 
 const ServerInsightsWidget = lazy(() => import('./analytics/ServerInsightsWidget').then(module => ({ default: module.ServerInsightsWidget })));
 const TautulliGraphsTab = lazy(() => import('./analytics/TautulliGraphsTab').then(module => ({ default: module.TautulliGraphsTab })));
@@ -32,58 +33,13 @@ const AnalyticsPanelFallback: React.FC<{ className?: string }> = ({ className = 
 );
 
 export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }> = ({ isAdmin, sessionInfo }) => {
-    const [analyticsData, setAnalyticsData] = useState<{
-        topUsers: any[],
-        topLibraries: any[],
-        topMovies: any[],
-        topShows: any[],
-        topMusic: any[],
-        topDevices: any[],
-        peakHours: number[],
-        totalPlaybacks: number,
-        maxConcurrentStreams: number,
-        maxDirectPlays: number,
-        maxTranscodes: number,
-        compare?: {
-            previousPeriodDays: string,
-            totalPlaybacks: { absolute: number, percent: number | null, previous?: number, current?: number },
-            uniqueViewers: { absolute: number, percent: number | null, previous?: number, current?: number },
-            libraryPlays: { absolute: number, percent: number | null, previous?: number, current?: number }
-        } | null,
-        libraryHealth?: {
-            activeLibraries: number,
-            concentrationPct: number,
-            totalCatalogItems: number,
-            totalCatalogBytes?: number,
-            sizeGB: number,
-            fourKPercent: number,
-            catalogWatchedPct?: number,
-            healthLabel: string,
-            movies?: number,
-            shows?: number,
-            episodes?: number,
-            artists?: number,
-            albums?: number,
-            tracks?: number,
-            resolutions?: Record<string, number> | null,
-            codecs?: Record<string, number> | null,
-            fileSizes?: Record<string, any> | null,
-            deltas?: any
-        },
-        requestedPeriodDays?: string | number,
-        cachePeriodDays?: string | number | null,
-        cacheFallback?: boolean,
-    } | null>(null);
-    const [tautulliData, setTautulliData] = useState<{ streamsRecord: number, transcodeRecord: number, directPlayRecord: number, directStreamRecord: number, totalPlays: number, tvPlays: number, moviePlays: number, musicPlays: number, totalTimeStr: string } | null>(null);
-    const [isLoading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [days, setDays] = useState<string>('30');
     const [selectedUser, setSelectedUser] = useState<{ id: string, username: string, thumb: string | null } | null>(null);
-    const [contentTab, setContentTab] = useState<'movies' | 'shows' | 'music'>('movies');
     const [viewTab, setViewTab] = useState<'overview' | 'graphs'>('overview');
     const mediaServerType = String(sessionInfo?.mediaServerType || 'plex').toLowerCase();
     const isJellyfinPortal = mediaServerType === 'jellyfin';
     const analyticsSourceLabel = isJellyfinPortal ? 'Jellystat' : 'Tautulli';
+    const { analyticsData, providerData: tautulliData, isLoading, error } = useAnalyticsData({ days, isAdmin, isJellyfinPortal });
     const libraryDeltas = (analyticsData?.libraryHealth as any)?.deltas || {};
 
     const resolveUserAvatar = (thumb: string | null | undefined, width = 80, height = 80) => {
@@ -93,38 +49,6 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }
         }
         return portalUrl(`/api/plex/image?path=${encodeURIComponent(thumb)}&width=${width}&height=${height}`);
     };
-
-    useEffect(() => {
-        let cancelled = false;
-        const fetchAnalytics = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const data = await apiFetch(`${isJellyfinPortal ? '/api/jellystat/analytics' : '/api/plex/analytics'}?days=${days}`);
-                if (cancelled) return;
-                setAnalyticsData(data);
-
-                if (isAdmin) {
-                    try {
-                        const tData = isJellyfinPortal ? data.jellystatInsights : await apiFetch('/api/tautulli/stats');
-                        if (cancelled) return;
-                        setTautulliData(tData);
-                    } catch (e) {
-                        // Tautulli/Jellystat might not be configured, ignore the extra panel.
-                        if (!cancelled) setTautulliData(null);
-                    }
-                } else {
-                    setTautulliData(null);
-                }
-            } catch (err: any) {
-                if (!cancelled) setError(err.message);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-        fetchAnalytics();
-        return () => { cancelled = true; };
-    }, [days, isAdmin, isJellyfinPortal]);
 
     useEffect(() => {
         if (isJellyfinPortal && viewTab === 'graphs') setViewTab('overview');
@@ -171,9 +95,6 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean, sessionInfo: any }
     const maxDevicePlays = Math.max(...topDevices.map(d => d.plays), 1);
     const maxPeakHour = Math.max(...peakHours, 1);
 
-    let activeContent = topMovies;
-    if (contentTab === 'shows') activeContent = topShows;
-    else if (contentTab === 'music') activeContent = topMusic;
     const compare = analyticsData.compare || null;
 
     const formatPriorPeriodLabel = (days: string) => {
@@ -532,67 +453,7 @@ return (
 
 
 
-                        {/* Trending Content Card */}
-                        <div className="glass-card-sm p-4 md:p-6 col-span-full">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                                <h2 className="text-xl font-bold text-text uppercase tracking-wider flex items-center gap-2"><TrendingUp className="text-plex w-5 h-5" /> Trending Content</h2>
-                                <div className="flex items-center gap-2 bg-black/30 p-1 rounded-lg border border-border">
-                                    <button onClick={() => setContentTab('movies')} className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${contentTab === 'movies' ? 'bg-plex text-black shadow-md' : 'text-muted hover:text-text hover:bg-white/5'}`}>Movies</button>
-                                    <button onClick={() => setContentTab('shows')} className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${contentTab === 'shows' ? 'bg-plex text-black shadow-md' : 'text-muted hover:text-text hover:bg-white/5'}`}>TV Shows</button>
-                                    <button onClick={() => setContentTab('music')} className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${contentTab === 'music' ? 'bg-plex text-black shadow-md' : 'text-muted hover:text-text hover:bg-white/5'}`}>Music</button>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-4">
-                                {activeContent.length === 0 ? <p className="text-muted text-sm col-span-full">No data available.</p> : activeContent.slice(0, 10).map((item, idx) => (
-                                    <a key={item.key} href={item.plexUrl} target="_blank" rel="noreferrer" className="flex flex-col sm:flex-row bg-black/20 rounded-xl overflow-hidden hover:bg-black/40 transition-all cursor-pointer group hover:ring-1 hover:ring-plex shadow-md">
-                                        <div className={`sm:w-32 lg:w-40 flex-shrink-0 relative ${contentTab === 'music' ? 'aspect-square' : 'aspect-[2/3]'}`}>
-                                            {item.thumbUrl ? (
-                                                <img src={resolvePortalAssetUrl(item.thumbUrl)} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-black/40"><Film className="w-8 h-8 opacity-50 text-muted" /></div>
-                                            )}
-                                            <div className="absolute top-2 left-2 bg-plex text-black font-bold text-xs px-2 py-1 rounded-md shadow-lg drop-shadow-md">#{idx + 1}</div>
-                                        </div>
-                                        <div className="p-4 sm:p-5 flex flex-col justify-between flex-grow">
-                                            <div>
-                                                <div className="flex items-start justify-between gap-2 mb-2">
-                                                    <h3 className="text-lg sm:text-xl font-bold text-text group-hover:text-plex transition-colors line-clamp-1">{item.title}</h3>
-                                                    <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-md text-xs font-mono text-plex flex-shrink-0 whitespace-nowrap shadow-sm">
-                                                        <PlaySquare className="w-3 h-3" /> {item.plays} plays
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted mb-3 font-medium">
-                                                    {item.year && <span>{item.year}</span>}
-                                                    {item.year && (item.contentRating || item.rating || item.duration > 0 || (item.genres && item.genres.length > 0)) && <span className="opacity-50">&bull;</span>}
-                                                    {item.contentRating && <span>{item.contentRating}</span>}
-                                                    {item.contentRating && (item.rating || item.duration > 0 || (item.genres && item.genres.length > 0)) && <span className="opacity-50">&bull;</span>}
-                                                    {item.duration > 0 && <span>{Math.round(item.duration / 60000)} min</span>}
-                                                    {item.duration > 0 && item.rating && <span className="opacity-50">&bull;</span>}
-                                                    {item.rating && (
-                                                        <span className="flex items-center gap-1 text-yellow-500">
-                                                            <Star className="w-3 h-3 fill-current" /> {item.rating}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-sm text-text/80 line-clamp-2 sm:line-clamp-3 mb-3 leading-relaxed">
-                                                    {item.summary || "No summary available."}
-                                                </p>
-                                            </div>
-                                            {item.genres && item.genres.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 mt-auto">
-                                                    {item.genres.slice(0, 4).map((g: string, i: number) => (
-                                                        <span key={i} className="text-[10px] uppercase tracking-wider bg-white/5 border border-white/10 text-muted px-2 py-1 rounded-full shadow-sm">{g}</span>
-                                                    ))}
-                                                    {item.genres.length > 4 && (
-                                                        <span className="text-[10px] uppercase tracking-wider bg-white/5 border border-white/10 text-muted px-2 py-1 rounded-full shadow-sm">+{item.genres.length - 4}</span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
+                        <AnalyticsTrendingContent movies={topMovies} shows={topShows} music={topMusic} />
                     </div>
                 </>
             )}
