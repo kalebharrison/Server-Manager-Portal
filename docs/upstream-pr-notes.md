@@ -54,12 +54,20 @@ Beta image branch: `beta`
   - Separate live stream polling from cached recent-library data, cache expensive quality-tag enrichment, parallelize initial Discover data sources, strengthen poster-cache headers, and avoid waking all analytics rows at once while scrolling.
   - Upstream PR fit: standalone performance improvement with focused Plex dashboard coverage.
 
-- Pending: focused security and Discover analytics cleanup
-  - Move HTTP security policy into a dedicated module, remove setup tokens from query-string authentication, use constant-time token comparison, stop logging upstream account response bodies, classify On The Way items as new or upgrades, and reduce community analytics from nine poster rows to three deterministic core rankings.
-  - Upstream PR fit: split into setup/header hardening, download classification, and analytics builder/UI simplification.
+- `b10bc01 feat: classify active downloads`
+  - Label On The Way items as new content or upgrades using Arr file-state metadata without exposing release filenames.
+  - Upstream PR fit: standalone Discover download-card enhancement.
 
-- Pending: presentation and stylesheet cleanup
-  - Extract request-detail presentation components from the modal, remove a duplicated 202-line Tailwind component block, cap Discover sections at 50 items, use stable poster keys, and preload the first visible posters.
+- `776dbda perf: simplify discover community analytics`
+  - Reduce community analytics from nine poster rows to three deterministic core rankings, isolate ranking logic, cap oversized sections, stabilize poster keys, and preload the first visible posters.
+  - Upstream PR fit: standalone analytics builder and Discover performance cleanup.
+
+- `d4899f8 security: harden setup and upstream logging`
+  - Move HTTP security policy into a dedicated module, remove setup tokens from query-string authentication, use constant-time token comparison, and stop logging upstream account response bodies.
+  - Upstream PR fit: focused setup/header and sensitive-logging hardening.
+
+- `0ce8c22 refactor: remove duplicate presentation code`
+  - Extract request-detail presentation components from the modal and remove a duplicated 202-line Tailwind component block plus its generated CSS.
   - Upstream PR fit: separate request-modal organization and Discover CSS/rendering cleanup.
 
 ## Split Candidates
