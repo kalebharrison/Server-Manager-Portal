@@ -1,21 +1,20 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
-import { Loader, ToastContainer, pushToast, type ToastMessage } from '../shared/toast';
-import type { User, PlexServer } from '../shared/types';
+import { pushToast, type ToastMessage } from '../shared/toast';
+import type { PlexServer } from '../shared/types';
 import { DEFAULT_DASHBOARD_LAYOUT, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { hasIntegrationCredentials } from './integrationDisplay';
-import { SettingsNavigation } from './SettingsNavigation';
 import { getDefaultSettingsNavOrder } from './settingsNavOrder';
 import { hydrateSettingsFromConfig } from './settingsInitializers';
 import { buildSettingsSavePayload } from './settingsSavePayload';
 import { buildSettingsTabPanelProps } from './settingsTabPanelProps';
-import { SettingsTabPanel } from './SettingsTabPanel';
+import { SettingsPageLayout } from './SettingsPageLayout';
 import { usePlexServerDiscovery } from './usePlexServerDiscovery';
 import { useSettingsEmailActions } from './useSettingsEmailActions';
 import { useSettingsAdminPanel } from './useSettingsAdminPanel';
 import { useSettingsTabs } from './useSettingsTabs';
-
+import { useSettingsResources } from './useSettingsResources';
 
 export const SettingsDashboard: React.FC = () => {
     const [statusDraft, setStatusDraft] = useState<any>(null);
@@ -26,19 +25,8 @@ export const SettingsDashboard: React.FC = () => {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const streamRulesSaveHandlerRef = useRef<(() => Promise<boolean>) | null>(null);
 
-    // Admin features moved here
-    const [statusConfig, setStatusConfig] = useState<any>({});
-    const [users, setUsers] = useState<User[]>([]);
-
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToasts(t => pushToast(t, message, type));
-    }, []);
-
-    const fetchStatusConfig = useCallback(async () => {
-        try {
-            const sConf = await apiFetch('/api/status/config');
-            setStatusConfig(sConf);
-        } catch (e) { }
     }, []);
 
     useEffect(() => {
@@ -50,9 +38,6 @@ export const SettingsDashboard: React.FC = () => {
                 if (configData.settings) {
                     setInitialSettings(configData.settings);
                 }
-                const usersData = await apiFetch('/api/users');
-                setUsers(usersData);
-                await fetchStatusConfig();
                 setIsConfigLoaded(true);
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'Failed to load config';
@@ -63,9 +48,7 @@ export const SettingsDashboard: React.FC = () => {
             }
         };
         fetchConfig();
-        // Libraries call Plex on the server — can hang in Docker if a loopback URI is used.
-        apiFetch('/api/plex/libraries').then((libData) => setLibraries(libData || [])).catch(() => setLibraries([]));
-    }, [addToast, fetchStatusConfig]);
+    }, [addToast]);
 
     const handleSaveConfig = async (newConfig: any) => {
         setLoading(true);
@@ -96,7 +79,6 @@ export const SettingsDashboard: React.FC = () => {
     const [useTrendingSlideshowOnLogin, setUseTrendingSlideshowOnLogin] = useState(false);
     const [publicStatusEnabled, setPublicStatusEnabled] = useState(true);
     const [defaultLibraryIds, setDefaultLibraryIds] = useState<string[]>([]);
-    const [libraries, setLibraries] = useState<any[]>([]);
     const {
         activeTab,
         setActiveTab,
@@ -106,6 +88,7 @@ export const SettingsDashboard: React.FC = () => {
         settingsTabsFlat,
         visibleTabGroups,
     } = useSettingsTabs();
+    const { statusConfig, setStatusConfig, users, libraries, setLibraries, fetchStatusConfig } = useSettingsResources({ activeTab, addToast });
 
     // SMTP States
     const [smtpHost, setSmtpHost] = useState('');
@@ -465,43 +448,18 @@ export const SettingsDashboard: React.FC = () => {
         deletedUsersLog, pagedEmailEntries, emailLogPage, totalEmailLogPages, handleUnblockDeletedUser, setEmailLogPage,
     });
 
-    return (
-        <div className="w-full flex flex-col box-border">
-            <Loader isLoading={isLoading} />
-            <ToastContainer toasts={toasts} setToasts={setToasts} />
-
-
-            <header className="flex items-center justify-between w-full mb-6 mt-2 md:mt-0">
-                <h1 className="text-xl md:text-3xl font-bold text-plex">Settings</h1>
-            </header>
-
-            {configLoadError && (
-                <div className="mb-6 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 text-sm">
-                    Could not load settings: {configLoadError}. Try refreshing the page. If this persists on Docker, confirm your session cookie is valid and the container can reach the API.
-                </div>
-            )}
-
-            <div className="w-full flex flex-col min-w-0">
-                <div className="w-full md:grid md:grid-cols-[18rem_minmax(0,1fr)] md:gap-8 xl:gap-10">
-                    <SettingsNavigation
-                        activeTab={activeTab}
-                        settingsSearch={settingsSearch}
-                        settingsTabs={settingsTabsFlat}
-                        visibleTabGroups={visibleTabGroups}
-                        onSearchChange={setSettingsSearch}
-                        onTabChange={setActiveTab}
-                    />
-
-                    <div className="overflow-y-auto flex-grow mb-4 custom-scrollbar md:pr-1 min-w-0 w-full">
-                        <div className="settings-panel">
-                            <SettingsTabPanel {...settingsTabPanelProps} />
-                        </div>
-                    </div>
-                </div>
-                <div className="flex justify-end gap-4 mt-8 pb-1">
-                    <button className="w-full sm:w-auto px-6 py-3 bg-plex text-background rounded-lg font-bold hover:bg-plex-hover transition-colors flex items-center justify-center gap-2 shadow-lg shadow-plex/10" onClick={handleSave}>{activeTab === 'stream-rules' ? 'Save Stream Rules' : 'Save Settings'}</button>
-                </div>
-            </div>
-        </div>
-    );
+    return <SettingsPageLayout
+        activeTab={activeTab}
+        isLoading={isLoading}
+        configLoadError={configLoadError}
+        toasts={toasts}
+        setToasts={setToasts}
+        settingsSearch={settingsSearch}
+        settingsTabs={settingsTabsFlat}
+        visibleTabGroups={visibleTabGroups}
+        panelProps={settingsTabPanelProps}
+        onSearchChange={setSettingsSearch}
+        onTabChange={setActiveTab}
+        onSave={handleSave}
+    />;
 };

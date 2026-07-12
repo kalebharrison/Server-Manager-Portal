@@ -3,11 +3,12 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const NAV_LABELS: Record<string, string> = {
     home: 'Home',
+    users: 'Users (Admin Only)',
     discover: 'Discover',
     status: 'Status',
     logs: 'Logs (Admin Only)',
     analytics: 'Analytics',
-    mediastack: 'Integrations',
+    mediastack: 'Calendar',
     maintenance: 'Cleaner (Admin Only)',
     request: 'Request Content',
     settings: 'Settings (Admin Only)',

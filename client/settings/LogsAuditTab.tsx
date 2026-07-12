@@ -1,30 +1,48 @@
 import React from 'react';
 
 import { formatAuditDateTime } from './auditLogFormat';
+import { SystemAuditLogViewer } from './SystemAuditLogViewer';
 
 type LogsAuditTabProps = {
     deletedUsersLog: any[];
+    pagedAuditEntries: any[];
     pagedEmailEntries: any[];
     emailLogPage: number;
     totalEmailLogPages: number;
+    auditLogPage: number;
+    totalAuditLogPages: number;
     isLoadingAuditLog: boolean;
     onRefreshAuditLog: () => void;
     onUnblockDeletedUser: (deletedUser: any) => void;
     onEmailLogPageChange: (updater: (page: number) => number) => void;
+    onAuditLogPageChange: React.Dispatch<React.SetStateAction<number>>;
 };
 
 export const LogsAuditTab: React.FC<LogsAuditTabProps> = ({
     deletedUsersLog,
+    pagedAuditEntries,
     pagedEmailEntries,
     emailLogPage,
     totalEmailLogPages,
+    auditLogPage,
+    totalAuditLogPages,
     isLoadingAuditLog,
     onRefreshAuditLog,
     onUnblockDeletedUser,
     onEmailLogPageChange,
+    onAuditLogPageChange,
 }) => (
     <div className="mb-8 animate-fade-in space-y-8">
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Logs & Audit</h3>
+
+        <SystemAuditLogViewer
+            pagedAuditEntries={pagedAuditEntries}
+            auditLogPage={auditLogPage}
+            totalAuditLogPages={totalAuditLogPages}
+            isLoadingAuditLog={isLoadingAuditLog}
+            onRefresh={onRefreshAuditLog}
+            onAuditLogPageChange={onAuditLogPageChange}
+        />
 
         <section className="space-y-3">
             <div className="flex items-center justify-between">

@@ -29,7 +29,6 @@ export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled:
             category: 'web',
             type: 'http',
             groupId: null,
-            isCritical: true,
             description: ''
         };
         const newConfig = { ...localConfig, services: [...localConfig.services, newService] };
@@ -149,8 +148,9 @@ export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled:
                                     type="text"
                                     value={service.url}
                                     onChange={(e) => updateService(service.id, 'url', e.target.value)}
+                                    disabled={service.id === 'plex' && !service.url}
                                     className="w-full p-3 rounded-lg bg-background border border-border focus:border-plex outline-none text-sm font-mono"
-                                    placeholder="Service URL (e.g. https://...)"
+                                    placeholder={service.id === 'plex' ? 'Resolved automatically from Media Server settings' : 'Service URL (e.g. https://...)'}
                                 />
                             </div>
                             <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
@@ -168,13 +168,6 @@ export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled:
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-                                    <button
-                                        type="button"
-                                        onClick={() => updateService(service.id, 'isCritical', !service.isCritical)}
-                                        className={`px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 ${service.isCritical ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-white/10 text-muted hover:bg-white/20'}`}
-                                    >
-                                        Critical: {service.isCritical ? 'Yes' : 'No'}
-                                    </button>
                                     <button type="button" onClick={() => removeService(service.id)} className="px-4 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-md text-xs font-bold transition-colors w-[5.75rem]">Remove</button>
                                 </div>
                             </div>

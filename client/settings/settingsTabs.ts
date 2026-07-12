@@ -19,38 +19,38 @@ export const isSettingsTabId = (value: string): value is SettingsTabId => (
 
 export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
     {
-        title: 'Portal',
+        title: 'Portal Experience',
         tabs: [
-            { id: 'branding', label: 'Portal UI', keywords: ['theme', 'logo', 'color', 'announcement', 'referral', 'quality', 'badges', 'poster', 'hdr', 'codec'] },
-            { id: 'contact', label: 'Contact Details', keywords: ['email', 'whatsapp', 'support'] },
+            { id: 'branding', label: 'Appearance', keywords: ['theme', 'logo', 'color', 'announcement', 'referral', 'quality', 'badges', 'poster', 'hdr', 'codec', 'ui'] },
+            { id: 'home-layout', label: 'Home Page', keywords: ['dashboard', 'widgets', 'sections', 'home', 'layout', 'reorder', 'hide'] },
             { id: 'navigation', label: 'Navigation', keywords: ['menu', 'order', 'sidebar'] },
-            { id: 'home-layout', label: 'Home Layout', keywords: ['dashboard', 'widgets', 'sections', 'home', 'layout', 'reorder', 'hide'] }
+            { id: 'contact', label: 'Contact & Support', keywords: ['email', 'whatsapp', 'support'] }
         ]
     },
     {
         title: 'Media Stack',
         tabs: [
-            { id: 'plex', label: 'Media Player', keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct', 'privacy', 'usernames', 'analytics'] },
-            { id: 'mediastack', label: 'Integrations', keywords: ['sonarr', 'radarr', 'tautulli', 'jellystat', 'seerr', 'jellyseerr'] },
-            { id: 'status', label: 'Status Monitor', keywords: ['uptime', 'health', 'services'] }
+            { id: 'plex', label: 'Media Server', keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct', 'privacy', 'usernames', 'analytics'] },
+            { id: 'mediastack', label: 'Automation & Requests', keywords: ['sonarr', 'radarr', 'tautulli', 'jellystat', 'seerr', 'jellyseerr', 'integrations'] },
+            { id: 'status', label: 'Status Page', keywords: ['uptime', 'health', 'services', 'monitor'] }
         ]
     },
     {
-        title: 'Comms',
+        title: 'Users & Communication',
         tabs: [
-            { id: 'smtp', label: 'SMTP Alerts', keywords: ['mail', 'smtp', 'test'] },
+            { id: 'cleanup', label: 'Access & Cleanup', keywords: ['inactive', 'revoke', 'expiry', 'users'] },
+            { id: 'invites', label: 'Invites', keywords: ['invite', 'link', 'code', 'users'] },
+            { id: 'smtp', label: 'Email Delivery', keywords: ['mail', 'smtp', 'test'] },
             { id: 'newsletter', label: 'Newsletter', keywords: ['digest', 'send', 'frequency'] },
-            { id: 'broadcast', label: 'Broadcast Email', keywords: ['announcement', 'bulk', 'users'] },
-            { id: 'invites', label: 'Invites', keywords: ['invite', 'link', 'code'] }
+            { id: 'broadcast', label: 'Broadcast Email', keywords: ['announcement', 'bulk', 'users'] }
         ]
     },
     {
-        title: 'Automation',
+        title: 'Operations',
         tabs: [
-            { id: 'cleanup', label: 'Cleanup', keywords: ['inactive', 'revoke', 'expiry'] },
-            { id: 'stream-rules', label: 'Stream Rules', keywords: ['kill', 'transcode', 'rule'] },
-            { id: 'tasks', label: 'Background Tasks', keywords: ['jobs', 'scheduler', 'run now'] },
-            { id: 'system', label: 'System', keywords: ['backup', 'restore', 'diagnostics'] },
+            { id: 'stream-rules', label: 'Stream Policies', keywords: ['kill', 'transcode', 'rule'] },
+            { id: 'tasks', label: 'Scheduled Tasks', keywords: ['jobs', 'scheduler', 'run now', 'background'] },
+            { id: 'system', label: 'System & Backups', keywords: ['backup', 'restore', 'diagnostics', 'health'] },
             { id: 'logs', label: 'Logs & Audit', keywords: ['audit', 'emails', 'deleted users', 'history'] }
         ]
     }

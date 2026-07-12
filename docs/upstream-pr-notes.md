@@ -70,6 +70,10 @@ Beta image branch: `beta`
   - Extract request-detail presentation components from the modal and remove a duplicated 202-line Tailwind component block plus its generated CSS.
   - Upstream PR fit: separate request-modal organization and Discover CSS/rendering cleanup.
 
+- Pending: queue accuracy, status reliability, and settings cleanup
+  - Hydrate Arr queue movie/episode state before labeling downloads as New or Upgrade; use stable poster placeholders without per-image React renders; resolve built-in portal/Plex monitors through local/runtime connection paths; validate status configuration limits and URLs; reorganize settings, mark admin-only navigation, defer tab-specific data, and remove duplicate task/audit views.
+  - Upstream PR fit: split into Arr queue enrichment, status monitor reliability/security, Discover poster rendering, and settings information architecture.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

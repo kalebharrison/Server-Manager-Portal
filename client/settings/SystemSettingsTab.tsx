@@ -1,9 +1,7 @@
 import React from 'react';
 import { BackupRestorePanel } from './BackupRestorePanel';
-import { SystemAuditLogViewer } from './SystemAuditLogViewer';
 import { SystemDiagnosticsPanel } from './SystemDiagnosticsPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
-import { SystemJobQueuePanel } from './SystemJobQueuePanel';
 
 type SystemSettingsTabProps = {
     systemHealth: any;
@@ -18,11 +16,6 @@ type SystemSettingsTabProps = {
     diagnostics: any;
     mediaServerType: 'plex' | 'jellyfin';
     isLoadingDiagnostics: boolean;
-    tasks: any[];
-    pagedAuditEntries: any[];
-    auditLogPage: number;
-    totalAuditLogPages: number;
-    isLoadingAuditLog: boolean;
     onMaintenanceExperimentalEnabledChange: (value: boolean) => void;
     onAutoBackupEnabledChange: (value: boolean) => void;
     onAutoBackupIntervalDaysChange: (value: number) => void;
@@ -33,8 +26,6 @@ type SystemSettingsTabProps = {
     onRestoreBackup: () => void;
     onRestoreFromFile: (filename: string) => void;
     onRefreshDiagnostics: () => void;
-    onRefreshAuditLog: () => void;
-    onAuditLogPageChange: React.Dispatch<React.SetStateAction<number>>;
 };
 
 export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
@@ -50,11 +41,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     diagnostics,
     mediaServerType,
     isLoadingDiagnostics,
-    tasks,
-    pagedAuditEntries,
-    auditLogPage,
-    totalAuditLogPages,
-    isLoadingAuditLog,
     onMaintenanceExperimentalEnabledChange,
     onAutoBackupEnabledChange,
     onAutoBackupIntervalDaysChange,
@@ -65,8 +51,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     onRestoreBackup,
     onRestoreFromFile,
     onRefreshDiagnostics,
-    onRefreshAuditLog,
-    onAuditLogPageChange,
 }) => (
     <div className="mb-8 animate-fade-in space-y-6">
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">System</h3>
@@ -115,15 +99,5 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
             onRefresh={onRefreshDiagnostics}
         />
 
-        <SystemJobQueuePanel tasks={tasks} />
-
-        <SystemAuditLogViewer
-            pagedAuditEntries={pagedAuditEntries}
-            auditLogPage={auditLogPage}
-            totalAuditLogPages={totalAuditLogPages}
-            isLoadingAuditLog={isLoadingAuditLog}
-            onRefresh={onRefreshAuditLog}
-            onAuditLogPageChange={onAuditLogPageChange}
-        />
     </div>
 );

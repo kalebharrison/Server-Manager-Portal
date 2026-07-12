@@ -164,8 +164,10 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
                         }
 
                         return (
-                            <button key={key} type="button" className={`flex items-center gap-4 p-3 rounded-xl transition-all font-medium bg-transparent border-0 cursor-pointer ${isCurrent ? 'nav-item-active' : 'text-muted hover:bg-white/5 hover:text-text'}`} onClick={(e) => { e.preventDefault(); if (item.onClick) item.onClick(e); else onNavigate(item.route as any); }}>
-                                <item.icon className="w-5 h-5 flex-shrink-0" /> {item.label}
+                            <button key={key} type="button" className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium bg-transparent border-0 cursor-pointer ${isCurrent ? 'nav-item-active' : 'text-muted hover:bg-white/5 hover:text-text'}`} onClick={(e) => { e.preventDefault(); if (item.onClick) item.onClick(e); else onNavigate(item.route as any); }}>
+                                <item.icon className="w-5 h-5 flex-shrink-0" />
+                                <span>{item.label}</span>
+                                {item.adminOnly && <span className="ml-auto rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-muted">Admin</span>}
                             </button>
                         );
                     })}
