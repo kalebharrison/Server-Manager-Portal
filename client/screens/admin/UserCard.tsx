@@ -95,6 +95,10 @@ export const UserCard: React.FC<{
                     <span className="text-muted text-[10px] uppercase tracking-wider font-bold">Last Login</span>
                     <span className="text-text font-medium">{user.lastLogin ? formatDate(user.lastLogin) : 'Never'}</span>
                 </div>
+                <div className="flex justify-between items-center text-xs pb-1.5 border-b border-white/5 last:border-0 last:pb-0">
+                    <span className="text-muted text-[10px] uppercase tracking-wider font-bold">Newsletter</span>
+                    <span className={`font-medium ${user.optOutNewsletter ? 'text-muted' : 'text-green-300'}`}>{user.optOutNewsletter ? 'Disabled' : 'Enabled'}</span>
+                </div>
             </div>
             <div className="flex flex-wrap gap-2 mt-auto pt-4" onClick={e => e.stopPropagation()}>
                 <button className="px-3 py-1.5 bg-plex/15 text-plex border border-plex/30 rounded-md text-xs font-semibold hover:bg-plex/25 transition-colors flex items-center justify-center gap-1.5" onClick={onViewAs} title="View portal as this user">

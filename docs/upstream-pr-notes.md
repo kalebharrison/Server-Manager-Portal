@@ -78,6 +78,10 @@ Beta image branch: `beta`
   - Always anonymize analytics and active-stream identities for non-admins; remove peer account IDs from personal leaderboard data; remove the unsafe username-sharing setting; restore audited admin View As with short-lived tokens, cache clearing, explicit exit UI, and mutation blocking; split Analytics data loading and trending content into focused modules.
   - Upstream PR fit: split into privacy enforcement, impersonation restoration/hardening, and Analytics component organization.
 
+- Pending: user-facing status reliability and account preference visibility
+  - Replace redundant status analytics with a concise overview and daily history; calculate accurate 30-day uptime; distinguish uncollected history from outages; stop counting portal downtime as service downtime; migrate invalid legacy history; and show persisted newsletter preferences on admin user cards.
+  - Upstream PR fit: split into status history correctness, status page UX, and admin user preference visibility.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

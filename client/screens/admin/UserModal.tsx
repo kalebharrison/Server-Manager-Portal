@@ -77,6 +77,7 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
                         <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${exemptFromCleanup ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                 </div>
+                <h3 className="text-xs uppercase tracking-wider font-bold text-muted mt-6 mb-2">User Preferences</h3>
                 <div className="mb-4 flex items-center justify-between bg-black/10 p-4 rounded-lg border border-border">
                     <div>
                         <label className="font-bold block mb-1">Disable Newsletter</label>
