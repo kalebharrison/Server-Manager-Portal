@@ -38,7 +38,7 @@ export const RequestMediaCard: React.FC<{
                 className="relative block w-full aspect-[2/3] bg-background overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-plex/70"
             >
                 {item.posterUrl ? (
-                    <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                    <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted bg-background/70">
                         {item.mediaType === 'tv' ? <Tv className="w-10 h-10" /> : <Film className="w-10 h-10" />}

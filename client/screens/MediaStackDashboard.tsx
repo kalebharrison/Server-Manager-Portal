@@ -10,6 +10,7 @@ import {
     groupCalendarItemsByDate,
     mapRadarrCalendarItems,
     mapSonarrCalendarItems,
+    summarizeSeasonReleaseBatches,
 } from './media-stack/mediaStackUtils';
 
 type StackFilter = 'all' | 'sonarr' | 'radarr';
@@ -68,13 +69,14 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = () => {
 
     const sonarrCalendarItems = useMemo(() => mapSonarrCalendarItems(data?.sonarr?.calendar || []), [data?.sonarr?.calendar]);
     const radarrCalendarItems = useMemo(() => mapRadarrCalendarItems(data?.radarr?.calendar || []), [data?.radarr?.calendar]);
-    const allCalendarItems = useMemo(() => [...sonarrCalendarItems, ...radarrCalendarItems].sort((a, b) => a.date.getTime() - b.date.getTime()), [sonarrCalendarItems, radarrCalendarItems]);
+    const summarizedSonarrCalendarItems = useMemo(() => summarizeSeasonReleaseBatches(sonarrCalendarItems), [sonarrCalendarItems]);
+    const allCalendarItems = useMemo(() => [...summarizedSonarrCalendarItems, ...radarrCalendarItems].sort((a, b) => a.date.getTime() - b.date.getTime()), [radarrCalendarItems, summarizedSonarrCalendarItems]);
 
     const filteredCalendar = useMemo(() => {
-        if (calendarFilter === 'sonarr') return sonarrCalendarItems;
+        if (calendarFilter === 'sonarr') return summarizedSonarrCalendarItems;
         if (calendarFilter === 'radarr') return radarrCalendarItems;
         return allCalendarItems;
-    }, [allCalendarItems, calendarFilter, sonarrCalendarItems, radarrCalendarItems]);
+    }, [allCalendarItems, calendarFilter, summarizedSonarrCalendarItems, radarrCalendarItems]);
 
     const calendarConfigured = calendarFilter === 'sonarr'
         ? !!data?.sonarr?.configured
@@ -157,7 +159,7 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = () => {
         >
             <div className="w-14 sm:w-16 aspect-[2/3] rounded-lg overflow-hidden bg-background/70 border border-white/10 flex-shrink-0">
                 {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                    <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted/40">
                         {item.type === 'tv' ? <Tv className="w-6 h-6" /> : <Film className="w-6 h-6" />}

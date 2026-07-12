@@ -7,8 +7,11 @@ export const mapSonarrCalendarItems = (calendar: any[] = []) => calendar
             id: `sonarr-${ep.id || ep.airDateUtc || ep.airDate}-${ep.title}`,
             type: 'tv',
             service: 'Sonarr',
+            sourceId: ep.series?.id || ep.seriesId || '',
             title: ep.series?.title || 'Unknown Series',
             subtitle: `S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')} - ${ep.title}`,
+            seasonNumber: Number(ep.seasonNumber),
+            episodeNumber: Number(ep.episodeNumber),
             date: new Date(ep.airDateUtc || ep.airDate),
             hasFile: ep.hasFile,
             monitored: ep.monitored,
@@ -106,4 +109,37 @@ export const groupCalendarItemsByDate = (items: any[]) => {
         groups[dateStr].push(item);
     });
     return groups;
+};
+
+export const summarizeSeasonReleaseBatches = (items: any[] = []) => {
+    const batches = new Map<string, any[]>();
+    const singles: any[] = [];
+    items.forEach((item) => {
+        if (item.type !== 'tv' || !Number.isFinite(item.seasonNumber) || !Number.isFinite(item.episodeNumber)) {
+            singles.push(item);
+            return;
+        }
+        const key = `${item.sourceId || item.title}:${item.date.toISOString().slice(0, 10)}:${item.seasonNumber}`;
+        const batch = batches.get(key) || [];
+        batch.push(item);
+        batches.set(key, batch);
+    });
+
+    const summaries = Array.from(batches.values()).map((batch) => {
+        if (batch.length === 1) return batch[0];
+        const first = batch[0];
+        const episodes = batch.map((item) => item.episodeNumber).sort((a, b) => a - b);
+        const range = episodes[0] === episodes[episodes.length - 1]
+            ? String(episodes[0])
+            : `${episodes[0]}-${episodes[episodes.length - 1]}`;
+        return {
+            ...first,
+            id: `${first.id}-batch`,
+            subtitle: `Season ${first.seasonNumber} - Episodes ${range}`,
+            hasFile: batch.every((item) => item.hasFile),
+            monitored: batch.some((item) => item.monitored),
+            releaseCount: batch.length,
+        };
+    });
+    return [...singles, ...summaries].sort((a, b) => a.date.getTime() - b.date.getTime());
 };

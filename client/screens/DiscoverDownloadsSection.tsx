@@ -27,7 +27,7 @@ const DownloadPosterCard: React.FC<{ item: any }> = ({ item }) => {
             <div className="relative rounded-lg overflow-hidden border border-border bg-background shadow-md">
                 <div className="aspect-[2/3] w-full">
                     {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <img src={item.imageUrl} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center p-4 text-center bg-white/5">
                             <DownloadCloud className="w-8 h-8 text-muted/50" />
@@ -84,7 +84,7 @@ export const DiscoverDownloadsSection: React.FC<{ useScrollRevealAnimations?: bo
     if (!visibleDownloads.length) return null;
 
     return (
-        <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col mb-12">
+        <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col mb-12 discover-deferred-section">
             <h2 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">ON THE WAY</h2>
             <div className={discoverPosterGridClass}>
                 {visibleDownloads.map((item) => <DownloadPosterCard key={item.id} item={item} />)}

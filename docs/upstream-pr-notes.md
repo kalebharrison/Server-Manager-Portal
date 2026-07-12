@@ -38,9 +38,13 @@ Beta image branch: `beta`
   - Add embedded request browse categories for trending, popular, upcoming, movies, and TV; show genre chips from Seerr/TMDB data; and submit basic media issue reports through the request app when the title is tracked there.
   - Upstream PR fit: request-app frontend/backend follow-up after the base embedded workflow.
 
-- Pending: request filter polish
+- `edc1fd6 ui: refine request filters`
   - Replace mutually exclusive request tabs with independent category and type toggles, make search include available/in-progress titles, add a browse toggle for existing titles, and hide generic Arr queue download cards that lack real media metadata.
   - Upstream PR fit: follow-up UX polish for embedded requests and Discover download status.
+
+- Pending: request pagination and Discover performance
+  - Hydrate Arr queue records with their media metadata, add incremental request browsing and an Anime filter, summarize same-day TV season dumps in the calendar, and defer off-screen poster rendering and image decoding.
+  - Upstream PR fit: split into media-stack data/calendar work, request browsing, and generic Discover rendering performance.
 
 ## Split Candidates
 

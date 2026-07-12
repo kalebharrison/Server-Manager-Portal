@@ -289,7 +289,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
 
                 <div className="flex flex-col gap-12 w-full">
                     {/* RECENT MOVIES */}
-                    <ScrollReveal enabled={!!publicConfig?.useScrollRevealAnimations} className="flex flex-col">
+                    <ScrollReveal enabled={!!publicConfig?.useScrollRevealAnimations} className="flex flex-col discover-deferred-section">
                         <h2 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">RECENTLY ADDED MOVIES</h2>
                         <div className={discoverPosterGridClass}>
                             {dashboardData && dashboardData.recentMovies.slice(0, recentLimit).map((item, i) => (
@@ -300,7 +300,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
                     </ScrollReveal>
 
                     {/* RECENT TV SHOWS */}
-                    <ScrollReveal enabled={!!publicConfig?.useScrollRevealAnimations} className="flex flex-col">
+                    <ScrollReveal enabled={!!publicConfig?.useScrollRevealAnimations} className="flex flex-col discover-deferred-section">
                         <h2 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">{isJellyfinPortal ? 'RECENTLY ADDED EPISODES' : 'RECENTLY ADDED TV SHOWS'}</h2>
                         <div className={discoverPosterGridClass}>
                             {dashboardData && dashboardData.recentShows.slice(0, recentLimit).map((item, i) => (
@@ -311,7 +311,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
                     </ScrollReveal>
 
                     {/* RECENT MUSIC */}
-                    <ScrollReveal enabled={!!publicConfig?.useScrollRevealAnimations} className="flex flex-col">
+                    <ScrollReveal enabled={!!publicConfig?.useScrollRevealAnimations} className="flex flex-col discover-deferred-section">
                         <h2 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">RECENTLY ADDED MUSIC</h2>
                         <div className={discoverPosterGridClass}>
                             {dashboardData && dashboardData.recentMusic.slice(0, recentLimit).map((item, i) => (
@@ -326,7 +326,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
                 {!isJellyfinPortal && trendingLoading && !trendingStats ? (
                     <TrendingSectionsSkeleton count={trendingCount} sections={3} />
                 ) : !isJellyfinPortal && trendingStats && (
-                    <div className="mt-16 w-full flex flex-col gap-12">
+                    <div className="mt-16 w-full flex flex-col gap-12 discover-deferred-section">
                         <div className="flex flex-col gap-2 items-center text-center mb-4">
                             <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Other things happening on {publicConfig?.serverIdentifier || 'this server'}</h2>
                             <p className="text-muted text-sm max-w-xl">A look at what the community is currently watching across the entire server.</p>

@@ -246,6 +246,12 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  /* Skip layout and painting for poster sections until they approach the viewport. */
+  .discover-deferred-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 36rem;
+  }
+
   @container (min-width: 24rem) {
     .discover-poster-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));

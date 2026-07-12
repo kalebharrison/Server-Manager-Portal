@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Search, Sparkles } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { pushToast, ToastContainer, type ToastMessage } from '../shared/toast';
@@ -35,15 +35,20 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
     const [activeView, setActiveView] = useState<RequestView>('browse');
     const [browseCategory, setBrowseCategory] = useState<BrowseCategory>('trending');
     const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
+    const [animeOnly, setAnimeOnly] = useState(false);
     const [includeExisting, setIncludeExisting] = useState(false);
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [items, setItems] = useState<RequestMediaItem[]>([]);
+    const [pageInfo, setPageInfo] = useState<RequestListResponse['pageInfo']>();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<RequestMediaItem | null>(null);
     const [requestingId, setRequestingId] = useState<number | null>(null);
+    const loadSequence = useRef(0);
+    const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToasts((prev) => pushToast(prev, message, type));
@@ -66,42 +71,52 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         return () => { cancelled = true; };
     }, []);
 
-    const endpoint = useMemo(() => {
+    const endpointBase = useMemo(() => {
         if (activeView === 'queue') return '';
         if (activeView === 'search') {
             if (debouncedQuery.length < 2) return '';
-            return `/api/request-app/search?query=${encodeURIComponent(debouncedQuery)}`;
+            return `/api/request-app/search?query=${encodeURIComponent(debouncedQuery)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}`;
         }
-        return `/api/request-app/discover?category=${encodeURIComponent(browseCategory)}&type=${encodeURIComponent(mediaFilter)}`;
-    }, [activeView, browseCategory, debouncedQuery, mediaFilter]);
+        return `/api/request-app/discover?category=${encodeURIComponent(browseCategory)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}`;
+    }, [activeView, animeOnly, browseCategory, debouncedQuery, mediaFilter]);
 
-    const loadItems = useCallback(async (silent = false) => {
-        if (!endpoint || status?.ready === false) {
+    const loadItems = useCallback(async ({ page = 1, append = false, silent = false } = {}) => {
+        if (!endpointBase || status?.ready === false) {
             setItems([]);
+            setPageInfo(undefined);
             setLoading(false);
             return;
         }
-        if (silent) setRefreshing(true);
+        const sequence = ++loadSequence.current;
+        if (append) setLoadingMore(true);
+        else if (silent) setRefreshing(true);
         else setLoading(true);
         setError(null);
         try {
             const ttl = activeView === 'search' ? 15_000 : 60_000;
-            const data: RequestListResponse = await apiFetch(endpoint, { cacheTtlMs: ttl });
+            const separator = endpointBase.includes('?') ? '&' : '?';
+            const data: RequestListResponse = await apiFetch(`${endpointBase}${separator}page=${page}`, { cacheTtlMs: ttl });
+            if (sequence !== loadSequence.current) return;
             const includeBlocked = includeExisting || activeView === 'search';
             const nextItems = Array.isArray(data?.results)
                 ? data.results
                     .filter((item) => mediaFilter === 'all' || item.mediaType === mediaFilter)
                     .filter((item) => includeBlocked || !isExistingOrInProgress(item))
                 : [];
-            setItems(nextItems);
+            setItems((previous) => append ? [...previous, ...nextItems.filter((item) => !previous.some((existing) => existing.tmdbId === item.tmdbId && existing.mediaType === item.mediaType))] : nextItems);
+            setPageInfo(data?.pageInfo);
         } catch (err: any) {
+            if (sequence !== loadSequence.current) return;
             setError(err?.message || 'Failed to load request content');
-            if (!silent) setItems([]);
+            if (!silent && !append) setItems([]);
         } finally {
-            setLoading(false);
-            setRefreshing(false);
+            if (sequence === loadSequence.current) {
+                setLoading(false);
+                setRefreshing(false);
+                setLoadingMore(false);
+            }
         }
-    }, [activeView, endpoint, includeExisting, mediaFilter, status?.ready]);
+    }, [activeView, endpointBase, includeExisting, mediaFilter, status?.ready]);
 
     useEffect(() => {
         if (!status) return;
@@ -109,8 +124,26 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
             setLoading(false);
             return;
         }
-        loadItems(false);
+        setItems([]);
+        setPageInfo(undefined);
+        loadItems();
     }, [activeView, loadItems, status]);
+
+    const hasMore = !!pageInfo && (Number(pageInfo.pages) > Number(pageInfo.page || 1));
+    const loadMore = useCallback(() => {
+        if (!hasMore || loadingMore || loading) return;
+        loadItems({ page: Number(pageInfo?.page || 1) + 1, append: true });
+    }, [hasMore, loadItems, loading, loadingMore, pageInfo?.page]);
+
+    useEffect(() => {
+        const target = loadMoreRef.current;
+        if (!target || !hasMore) return;
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0]?.isIntersecting) loadMore();
+        }, { rootMargin: '600px 0px' });
+        observer.observe(target);
+        return () => observer.disconnect();
+    }, [hasMore, loadMore]);
 
     const markRequested = (target: RequestMediaItem) => {
         setItems((prev) => prev.map((item) => (
@@ -145,9 +178,11 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
     const showSearchHint = activeView === 'search' && debouncedQuery.length < 2;
     const showSkeleton = loading && items.length === 0 && !showSearchHint && activeView !== 'queue';
     const activeCategoryLabel = browseCategories.find((entry) => entry.id === browseCategory)?.label || 'Trending';
-    const activeMediaLabel = mediaFilters.find((entry) => entry.id === mediaFilter)?.label || 'All';
+    const activeMediaLabel = animeOnly ? 'Anime' : mediaFilters.find((entry) => entry.id === mediaFilter)?.label || 'All';
     const contentTitle = activeView === 'search'
         ? 'Search Results'
+        : animeOnly
+            ? `${activeCategoryLabel} ${activeMediaLabel}`
         : mediaFilter === 'all'
             ? activeCategoryLabel
             : `${activeCategoryLabel} ${activeMediaLabel}`;
@@ -226,6 +261,14 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                             ))}
                             <button
                                 type="button"
+                                onClick={() => { setActiveView(activeView === 'queue' ? 'browse' : activeView); setAnimeOnly((value) => !value); }}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${animeOnly ? 'bg-fuchsia-400 text-background shadow-lg shadow-fuchsia-400/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
+                                title="Japanese animation. Combine with Movies or TV to narrow it further."
+                            >
+                                Anime
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => setIncludeExisting((value) => !value)}
                                 className={`ml-0 sm:ml-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${includeExisting ? 'bg-amber-400 text-background shadow-lg shadow-amber-400/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
                                 title="Search always includes existing and in-progress content."
@@ -266,10 +309,10 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                             : `${items.length} title${items.length === 1 ? '' : 's'}${activeView === 'search' ? ' · search includes existing content' : includeExisting ? ' · includes existing content' : ''}`}
                                     </p>
                                 </div>
-                                {endpoint && (
+                                {endpointBase && (
                                     <button
                                         type="button"
-                                        onClick={() => loadItems(true)}
+                                        onClick={() => loadItems({ silent: true })}
                                         className="text-xs font-semibold text-muted hover:text-text"
                                     >
                                         Refresh
@@ -288,20 +331,23 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                     ))}
                                 </div>
                             ) : items.length ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
-                                    {items.map((item) => (
-                                        <RequestMediaCard
-                                            key={`${item.mediaType}-${item.tmdbId}`}
-                                            item={item}
-                                            busy={requestingId === item.tmdbId}
-                                            onOpen={setSelectedItem}
-                                            onRequest={(nextItem) => {
-                                                if (nextItem.canRequest === false) return;
-                                                setSelectedItem(nextItem);
-                                            }}
-                                        />
-                                    ))}
-                                </div>
+                                <>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
+                                        {items.map((item) => (
+                                            <RequestMediaCard
+                                                key={`${item.mediaType}-${item.tmdbId}`}
+                                                item={item}
+                                                busy={requestingId === item.tmdbId}
+                                                onOpen={setSelectedItem}
+                                                onRequest={(nextItem) => {
+                                                    if (nextItem.canRequest === false) return;
+                                                    setSelectedItem(nextItem);
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                    {(hasMore || loadingMore) && <div ref={loadMoreRef} className="py-6 text-center text-xs font-semibold text-muted">{loadingMore ? 'Loading more titles...' : 'More titles load as you scroll'}</div>}
+                                </>
                             ) : (
                                 <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">No titles found.</div>
                             )}

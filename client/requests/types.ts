@@ -73,6 +73,7 @@ export type RequestListResponse = {
         page?: number;
         pages?: number;
         results?: number;
+        pageSize?: number;
     };
 };
 

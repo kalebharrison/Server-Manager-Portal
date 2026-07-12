@@ -31,6 +31,7 @@ export const DiscoverPosterCard: React.FC<{
                         src={item.thumbUrl ? resolvePortalAssetUrl(item.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=300&height=${aspect === 'square' ? 300 : 450}`)}
                         alt={item.title}
                         loading="lazy"
+                        decoding="async"
                         className={`w-full h-full object-cover ${variant === 'home' ? 'transition-[transform,opacity] duration-300 group-hover:scale-105 group-hover:opacity-80' : ''}`}
                     />
                 ) : (
@@ -81,7 +82,7 @@ export const DISCOVER_LIMIT_OPTIONS = [
 export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; limit: number; showQualityBadges?: boolean; useScrollRevealAnimations?: boolean }> = ({ title, items, limit, showQualityBadges = true, useScrollRevealAnimations }) => {
     if (!items?.length) return null;
     return (
-        <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col">
+        <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col discover-deferred-section">
             <h3 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">{title}</h3>
             <div className={discoverPosterGridClass}>
                 {items.slice(0, limit).map((item, i) => (
