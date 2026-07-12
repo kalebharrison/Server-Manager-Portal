@@ -44,6 +44,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
     const [browseCategory, setBrowseCategory] = useState<BrowseCategory>('trending');
     const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
     const [animeOnly, setAnimeOnly] = useState(false);
+    const [foreignOnly, setForeignOnly] = useState(false);
     const [genreId, setGenreId] = useState<number | null>(null);
     const [includeExisting, setIncludeExisting] = useState(false);
     const [query, setQuery] = useState('');
@@ -84,10 +85,10 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         if (activeView === 'queue') return '';
         if (activeView === 'search') {
             if (debouncedQuery.length < 2) return '';
-            return `/api/request-app/search?query=${encodeURIComponent(debouncedQuery)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}&genreId=${genreId || ''}`;
+            return `/api/request-app/search?query=${encodeURIComponent(debouncedQuery)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}&foreign=${foreignOnly}&genreId=${genreId || ''}`;
         }
-        return `/api/request-app/discover?category=${encodeURIComponent(browseCategory)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}&genreId=${genreId || ''}`;
-    }, [activeView, animeOnly, browseCategory, debouncedQuery, genreId, mediaFilter]);
+        return `/api/request-app/discover?category=${encodeURIComponent(browseCategory)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}&foreign=${foreignOnly}&genreId=${genreId || ''}`;
+    }, [activeView, animeOnly, browseCategory, debouncedQuery, foreignOnly, genreId, mediaFilter]);
 
     const loadItems = useCallback(async ({ page = 1, append = false, silent = false } = {}) => {
         if (!endpointBase || status?.ready === false) {
@@ -193,6 +194,8 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         ? 'Search Results'
         : animeOnly
             ? `${activeCategoryLabel} ${activeMediaLabel}`
+        : foreignOnly
+            ? `${activeCategoryLabel} Foreign`
         : mediaFilter === 'all'
             ? activeCategoryLabel
             : `${activeCategoryLabel} ${activeMediaLabel}`;
@@ -257,6 +260,17 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                     {category.label}
                                 </button>
                             ))}
+                            <label className="inline-flex items-center gap-2 ml-0 sm:ml-2">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Genre</span>
+                                <select
+                                    value={genreId || ''}
+                                    onChange={(event) => setGenreId(event.target.value ? Number(event.target.value) : null)}
+                                    className="h-9 rounded-lg border border-border bg-background/60 px-3 text-sm font-bold text-text outline-none focus:border-plex"
+                                >
+                                    <option value="">All genres</option>
+                                    {genreFilters.map((genre) => <option key={genre.id} value={genre.id}>{genre.label}</option>)}
+                                </select>
+                            </label>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted mr-1">Type</span>
@@ -278,17 +292,14 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                             >
                                 Anime
                             </button>
-                            <label className="inline-flex items-center gap-2 ml-0 sm:ml-2">
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Genre</span>
-                                <select
-                                    value={genreId || ''}
-                                    onChange={(event) => setGenreId(event.target.value ? Number(event.target.value) : null)}
-                                    className="h-9 rounded-lg border border-border bg-background/60 px-3 text-sm font-bold text-text outline-none focus:border-plex"
-                                >
-                                    <option value="">All genres</option>
-                                    {genreFilters.map((genre) => <option key={genre.id} value={genre.id}>{genre.label}</option>)}
-                                </select>
-                            </label>
+                            <button
+                                type="button"
+                                onClick={() => { setActiveView(activeView === 'queue' ? 'browse' : activeView); setForeignOnly((value) => !value); }}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${foreignOnly ? 'bg-violet-400 text-background shadow-lg shadow-violet-400/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
+                                title="Titles whose original language is not English. Combine with Movies, TV, Anime, or a genre."
+                            >
+                                Foreign
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => setIncludeExisting((value) => !value)}
