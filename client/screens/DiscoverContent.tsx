@@ -4,6 +4,31 @@ import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { ScrollReveal } from '../shared/ui';
 import { discoverPosterGridClass } from '../shared/portalLayout';
 
+export const PosterImage: React.FC<{
+    src: string;
+    alt: string;
+    priority?: boolean;
+    className?: string;
+}> = ({ src, alt, priority = false, className = '' }) => {
+    return (
+        <>
+            <div className="absolute inset-0 skeleton-base transition-opacity duration-150" aria-hidden="true" />
+            <img
+                src={src}
+                alt={alt}
+                loading={priority ? 'eager' : 'lazy'}
+                fetchPriority={priority ? 'high' : 'auto'}
+                decoding="async"
+                onLoad={(event) => {
+                    event.currentTarget.classList.remove('opacity-0');
+                    event.currentTarget.previousElementSibling?.classList.add('opacity-0');
+                }}
+                className={`absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-150 ${className}`}
+            />
+        </>
+    );
+};
+
 export const DiscoverPosterCard: React.FC<{
     item: { ratingKey?: string; title: string; thumb?: string; thumbUrl?: string; plexUrl: string; tags?: string[]; year?: number | string; parentTitle?: string };
     aspect?: '2/3' | 'square';
@@ -28,13 +53,11 @@ export const DiscoverPosterCard: React.FC<{
         >
             <div className={`${posterShell} ${aspect === 'square' ? 'aspect-square' : 'aspect-[2/3]'} w-full`}>
                 {item.thumb ? (
-                    <img
+                    <PosterImage
                         src={item.thumbUrl ? resolvePortalAssetUrl(item.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=300&height=${aspect === 'square' ? 300 : 450}`)}
                         alt={item.title}
-                        loading={priority ? 'eager' : 'lazy'}
-                        fetchPriority={priority ? 'high' : 'auto'}
-                        decoding="async"
-                        className={`w-full h-full object-cover ${variant === 'home' ? 'transition-[transform,opacity] duration-300 group-hover:scale-105 group-hover:opacity-80' : ''}`}
+                        priority={priority}
+                        className={variant === 'home' ? 'group-hover:opacity-80' : ''}
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center p-4 text-center bg-white/5">

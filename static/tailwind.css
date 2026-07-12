@@ -58,6 +58,7 @@
     --color-rose-400: oklch(71.2% 0.194 13.428);
     --color-slate-300: oklch(86.9% 0.022 252.894);
     --color-slate-500: oklch(55.4% 0.046 257.417);
+    --color-slate-700: oklch(37.2% 0.044 257.287);
     --color-slate-800: oklch(27.9% 0.041 260.031);
     --color-gray-100: oklch(96.7% 0.003 264.542);
     --color-gray-200: oklch(92.8% 0.006 264.531);
@@ -1920,6 +1921,12 @@
       border-color: color-mix(in oklab, var(--color-sky-500) 20%, transparent);
     }
   }
+  .border-slate-300\/25 {
+    border-color: color-mix(in srgb, oklch(86.9% 0.022 252.894) 25%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-slate-300) 25%, transparent);
+    }
+  }
   .border-status-active\/30 {
     border-color: color-mix(in oklab, #238636 30%, transparent);
   }
@@ -2425,6 +2432,12 @@
     background-color: color-mix(in srgb, oklch(55.4% 0.046 257.417) 10%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-slate-500) 10%, transparent);
+    }
+  }
+  .bg-slate-700\/85 {
+    background-color: color-mix(in srgb, oklch(37.2% 0.044 257.287) 85%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-slate-700) 85%, transparent);
     }
   }
   .bg-slate-800 {
@@ -4070,6 +4083,10 @@
     transition-property: transform, translate, scale, rotate;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
     transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .duration-150 {
+    --tw-duration: 150ms;
+    transition-duration: 150ms;
   }
   .duration-200 {
     --tw-duration: 200ms;
@@ -5919,11 +5936,6 @@
       padding-top: calc(var(--spacing) * 32);
     }
   }
-  .md\:pr-1 {
-    @media (width >= 48rem) {
-      padding-right: var(--spacing);
-    }
-  }
   .md\:pr-2 {
     @media (width >= 48rem) {
       padding-right: calc(var(--spacing) * 2);
@@ -6780,13 +6792,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .discover-deferred-section {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 36rem;
+    contain: layout paint;
   }
   .discover-poster-grid > * {
-    content-visibility: auto;
     contain: layout paint style;
-    contain-intrinsic-size: auto 16rem;
   }
   @container (min-width: 24rem) {
     .discover-poster-grid {

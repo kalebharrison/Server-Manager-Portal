@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowUpCircle, DownloadCloud, Film, Sparkles, Tv } from 'lucide-react';
+import { ArrowUpCircle, CircleHelp, DownloadCloud, Film, Sparkles, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
 import { discoverPosterGridClass } from '../shared/portalLayout';
 import { ScrollReveal } from '../shared/ui';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { mapQueueRecords } from './media-stack/mediaStackUtils';
+import { PosterImage } from './DiscoverContent';
 
 const queueRecords = (queue: any) => (
     Array.isArray(queue?.records) ? queue.records : Array.isArray(queue) ? queue : []
@@ -21,14 +22,19 @@ const phaseClass = (phase: string) => {
 
 const DownloadPosterCard: React.FC<{ item: any }> = ({ item }) => {
     const TypeIcon = item.type === 'tv' ? Tv : Film;
-    const AcquisitionIcon = item.acquisitionKind === 'upgrade' ? ArrowUpCircle : Sparkles;
+    const AcquisitionIcon = item.acquisitionKind === 'upgrade' ? ArrowUpCircle : item.acquisitionKind === 'new' ? Sparkles : CircleHelp;
+    const acquisitionClass = item.acquisitionKind === 'upgrade'
+        ? 'bg-violet-700/85 border-violet-300/25'
+        : item.acquisitionKind === 'new'
+            ? 'bg-emerald-700/85 border-emerald-300/25'
+            : 'bg-slate-700/85 border-slate-300/25';
 
     return (
         <article className="flex flex-col gap-2 group">
             <div className="relative rounded-lg overflow-hidden border border-border bg-background shadow-md">
                 <div className="aspect-[2/3] w-full">
                     {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <PosterImage src={item.imageUrl} alt={item.title} />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center p-4 text-center bg-white/5">
                             <DownloadCloud className="w-8 h-8 text-muted/50" />
@@ -41,7 +47,7 @@ const DownloadPosterCard: React.FC<{ item: any }> = ({ item }) => {
                         {item.kindLabel}
                     </span>
                 </div>
-                <span className={`absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wide text-white border ${item.acquisitionKind === 'upgrade' ? 'bg-violet-700/85 border-violet-300/25' : 'bg-emerald-700/85 border-emerald-300/25'}`}>
+                <span className={`absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wide text-white border ${acquisitionClass}`}>
                     <AcquisitionIcon className="w-3 h-3" />
                     {item.acquisitionLabel}
                 </span>

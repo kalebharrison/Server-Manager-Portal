@@ -246,16 +246,13 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  /* Skip layout and painting for poster sections until they approach the viewport. */
+  /* Isolate poster sections without triggering a large synchronous paint on entry. */
   .discover-deferred-section {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 36rem;
+    contain: layout paint;
   }
 
   .discover-poster-grid > * {
-    content-visibility: auto;
     contain: layout paint style;
-    contain-intrinsic-size: auto 16rem;
   }
 
   @container (min-width: 24rem) {

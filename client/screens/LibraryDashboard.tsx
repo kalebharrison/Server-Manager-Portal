@@ -308,7 +308,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
                         <h2 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">{isJellyfinPortal ? 'RECENTLY ADDED EPISODES' : 'RECENTLY ADDED TV SHOWS'}</h2>
                         <div className={discoverPosterGridClass}>
                             {dashboardData && dashboardData.recentShows.slice(0, recentLimit).map((item, i) => (
-                                <DiscoverPosterCard key={item.ratingKey || `${item.title}-${i}`} item={item} showQualityBadges={showQualityBadges} priority={i < 8} />
+                                <DiscoverPosterCard key={item.ratingKey || `${item.title}-${i}`} item={item} showQualityBadges={showQualityBadges} />
                             ))}
                             {(!dashboardData || dashboardData.recentShows.length === 0) && <div className="text-center text-muted p-8 border border-dashed border-border rounded-xl mt-4 w-full col-span-full">{isJellyfinPortal ? 'No recent episodes' : 'No recent TV shows'}</div>}
                         </div>
@@ -319,7 +319,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
                         <h2 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">RECENTLY ADDED MUSIC</h2>
                         <div className={discoverPosterGridClass}>
                             {dashboardData && dashboardData.recentMusic.slice(0, recentLimit).map((item, i) => (
-                                <DiscoverPosterCard key={item.ratingKey || `${item.title}-${i}`} item={item} aspect="square" showQualityBadges={showQualityBadges} priority={i < 8} />
+                                <DiscoverPosterCard key={item.ratingKey || `${item.title}-${i}`} item={item} aspect="square" showQualityBadges={showQualityBadges} />
                             ))}
                             {(!dashboardData || dashboardData.recentMusic.length === 0) && <div className="text-center text-muted p-8 border border-dashed border-border rounded-xl mt-4 w-full col-span-full">No recent music</div>}
                         </div>
@@ -336,7 +336,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
                             <p className="text-muted text-sm max-w-xl">A look at what the community is currently watching across the entire server.</p>
                         </div>
 
-                        <TrendingDiscoverSection useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} title="Trending This Week" items={trendingStats.trending7Days} limit={recentLimit} showQualityBadges={showQualityBadges} preloadPosters />
+                        <TrendingDiscoverSection useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} title="Trending This Week" items={trendingStats.trending7Days} limit={recentLimit} showQualityBadges={showQualityBadges} />
                         <TrendingDiscoverSection useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} title="Most Watched Movies This Month" items={trendingStats.movies30Days} limit={recentLimit} showQualityBadges={showQualityBadges} />
                         <TrendingDiscoverSection useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} title="Most Watched Shows This Month" items={trendingStats.shows30Days} limit={recentLimit} showQualityBadges={showQualityBadges} />
                     </div>

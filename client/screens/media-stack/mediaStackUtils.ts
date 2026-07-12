@@ -78,7 +78,8 @@ export const mapQueueRecords = (records: any[] = [], service: string) => records
     const downloaded = Math.max(0, total - remaining);
     const progress = total > 0 ? Math.max(0, Math.min(100, (downloaded / total) * 100)) : 0;
     const episode = item.episode || {};
-    const isUpgrade = isTv ? episode.hasFile === true : subject?.hasFile === true;
+    const hasExistingFile = isTv ? episode.hasFile : subject?.hasFile;
+    const acquisitionKind = hasExistingFile === true ? 'upgrade' : hasExistingFile === false ? 'new' : 'unknown';
     const seasonEpisode = episode.seasonNumber !== undefined && episode.episodeNumber !== undefined
         ? `S${String(episode.seasonNumber).padStart(2, '0')}E${String(episode.episodeNumber).padStart(2, '0')}`
         : '';
@@ -88,8 +89,8 @@ export const mapQueueRecords = (records: any[] = [], service: string) => records
         service,
         type: isTv ? 'tv' : 'movie',
         kindLabel: isTv ? 'TV Show' : 'Movie',
-        acquisitionKind: isUpgrade ? 'upgrade' : 'new',
-        acquisitionLabel: isUpgrade ? 'Upgrade' : 'New',
+        acquisitionKind,
+        acquisitionLabel: acquisitionKind === 'upgrade' ? 'Upgrade' : acquisitionKind === 'new' ? 'New' : 'Checking',
         title,
         hasMediaTitle: !!title,
         subtitle: isTv
