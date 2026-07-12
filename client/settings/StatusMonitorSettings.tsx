@@ -109,6 +109,7 @@ export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled:
                     <h4 className="font-bold text-xl text-text">Service Groups</h4>
                     <button onClick={addGroup} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-text rounded-md text-sm font-bold transition-colors">Add Group</button>
                 </div>
+                <p className="mb-4 text-sm text-muted">Group names become the section headings on the Status page.</p>
                 {localConfig.groups.map((group: any) => (
                     <div key={group.id} className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
                         <input
@@ -140,6 +141,16 @@ export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled:
                                     onChange={(e) => updateService(service.id, 'name', e.target.value)}
                                     className="w-full p-3 rounded-lg bg-background border border-border focus:border-plex outline-none text-sm font-bold"
                                     placeholder="Service Name"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-muted mb-1">Status Page Subtitle</label>
+                                <input
+                                    type="text"
+                                    value={service.description || ''}
+                                    onChange={(e) => updateService(service.id, 'description', e.target.value)}
+                                    className="w-full p-3 rounded-lg bg-background border border-border focus:border-plex outline-none text-sm"
+                                    placeholder="Short description shown below the service name"
                                 />
                             </div>
                             <div>

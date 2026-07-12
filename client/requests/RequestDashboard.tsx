@@ -62,6 +62,23 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
     const loadSequence = useRef(0);
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+    const fetchRequestPage = useCallback(async (url: string, cacheTtlMs: number) => {
+        let lastError: unknown;
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                return await apiFetch(url, {
+                    cacheTtlMs,
+                    staleIfErrorMs: activeView === 'search' ? 120_000 : 10 * 60_000,
+                    forceRefresh: attempt > 0,
+                }) as RequestListResponse;
+            } catch (requestError) {
+                lastError = requestError;
+                if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 350));
+            }
+        }
+        throw lastError;
+    }, [activeView]);
+
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToasts((prev) => pushToast(prev, message, type));
     }, []);
@@ -107,7 +124,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         try {
             const ttl = activeView === 'search' ? 15_000 : 60_000;
             const separator = endpointBase.includes('?') ? '&' : '?';
-            const data: RequestListResponse = await apiFetch(`${endpointBase}${separator}page=${page}`, { cacheTtlMs: ttl });
+            const data = await fetchRequestPage(`${endpointBase}${separator}page=${page}`, ttl);
             if (sequence !== loadSequence.current) return;
             const includeBlocked = includeExisting;
             const nextItems = Array.isArray(data?.results)
@@ -120,7 +137,6 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         } catch (err: any) {
             if (sequence !== loadSequence.current) return;
             setError(err?.message || 'Failed to load request content');
-            if (!silent && !append) setItems([]);
         } finally {
             if (sequence === loadSequence.current) {
                 setLoading(false);
@@ -128,7 +144,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                 setLoadingMore(false);
             }
         }
-    }, [activeView, endpointBase, includeExisting, mediaFilter, status?.ready]);
+    }, [activeView, endpointBase, fetchRequestPage, includeExisting, mediaFilter, status?.ready]);
 
     useEffect(() => {
         if (!status) return;
@@ -355,9 +371,14 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                 )}
                             </div>
 
-                            {error ? (
-                                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">{error}</div>
-                            ) : showSearchHint ? (
+                            {error && (
+                                <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+                                    <span>{items.length ? `${error}. Showing the most recent results.` : error}</span>
+                                    <button type="button" onClick={() => loadItems()} className="shrink-0 rounded-md border border-red-300/30 px-3 py-1.5 font-bold hover:bg-red-500/10">Retry</button>
+                                </div>
+                            )}
+
+                            {showSearchHint ? (
                                 <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">Type at least two characters to search.</div>
                             ) : showSkeleton ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
@@ -383,9 +404,9 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                     </div>
                                     {(hasMore || loadingMore) && <div ref={loadMoreRef} className="py-6 text-center text-xs font-semibold text-muted">{loadingMore ? 'Loading more titles...' : 'More titles load as you scroll'}</div>}
                                 </>
-                            ) : (
+                            ) : !error ? (
                                 <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted">No titles found.</div>
-                            )}
+                            ) : null}
                         </section>
                     )}
                 </>

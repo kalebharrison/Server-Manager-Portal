@@ -90,6 +90,10 @@ Beta image branch: `beta`
   - Reorganize admin settings by ownership; move access, privacy, cleanup, support, and announcement controls out of connection/appearance forms; remove the obsolete external Request URL UI; add member-local time, poster, motion, and request defaults; fix masked-token Plex discovery; require explicit opt-in for public status and library totals; protect diagnostics; minimize public branding data; and enforce a route-classification regression test.
   - Upstream PR fit: split into Plex discovery correctness, settings information architecture, member preferences, and public API hardening.
 
+- Pending: resilient request browsing and focused Discover views
+  - Retry transient request-app reads, serve recently cached browse data during short Seerr outages, keep errors actionable, preserve custom Status page group/service labels, split Discover into Library and Community views, and remove compounded spacing between download and recently added sections.
+  - Upstream PR fit: split into request-app resilience, Status page label customization, and Discover view/component organization.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

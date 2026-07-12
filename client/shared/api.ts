@@ -2,13 +2,14 @@ import { portalUrl } from './basePath';
 
 type ApiFetchOptions = RequestInit & {
     cacheTtlMs?: number;
+    staleIfErrorMs?: number;
     cacheKey?: string;
     forceRefresh?: boolean;
 };
 
 const DEFAULT_GET_CACHE_TTL_MS = 5000;
 const MAX_API_CACHE_ENTRIES = 100;
-const apiCache = new Map<string, { expiresAt: number; value: any }>();
+const apiCache = new Map<string, { expiresAt: number; staleUntil: number; value: any }>();
 const inFlightRequests = new Map<string, Promise<any>>();
 let cacheVersion = 0;
 
@@ -36,22 +37,22 @@ export const clearApiCache = (predicate?: (key: string) => boolean) => {
 };
 
 export const apiFetch = async (url: string, options: ApiFetchOptions = {}) => {
-    const { cacheTtlMs: requestedCacheTtlMs, cacheKey: _cacheKey, forceRefresh, headers, ...fetchOptions } = options;
+    const { cacheTtlMs: requestedCacheTtlMs, staleIfErrorMs = 0, cacheKey: _cacheKey, forceRefresh, headers, ...fetchOptions } = options;
     const method = methodFor(options);
     const isGet = method === 'GET';
     const cacheTtlMs = requestedCacheTtlMs ?? (isGet ? DEFAULT_GET_CACHE_TTL_MS : 0);
     const cacheKey = stableCacheKey(url, options);
     const now = Date.now();
     const requestCacheVersion = cacheVersion;
+    const cached = isGet ? apiCache.get(cacheKey) : undefined;
 
     if (isGet && cacheTtlMs > 0 && !forceRefresh) {
-        const cached = apiCache.get(cacheKey);
         if (cached && cached.expiresAt > now) {
             apiCache.delete(cacheKey);
             apiCache.set(cacheKey, cached);
             return cached.value;
         }
-        if (cached) apiCache.delete(cacheKey);
+        if (cached && cached.staleUntil <= now) apiCache.delete(cacheKey);
         const pending = inFlightRequests.get(cacheKey);
         if (pending) return pending;
     }
@@ -75,16 +76,23 @@ export const apiFetch = async (url: string, options: ApiFetchOptions = {}) => {
         const value = await response.json();
         if (isGet && cacheTtlMs > 0 && requestCacheVersion === cacheVersion) {
             for (const [key, entry] of apiCache) {
-                if (entry.expiresAt <= Date.now()) apiCache.delete(key);
+                if (entry.staleUntil <= Date.now()) apiCache.delete(key);
             }
             while (apiCache.size >= MAX_API_CACHE_ENTRIES) {
                 const oldestKey = apiCache.keys().next().value;
                 if (!oldestKey) break;
                 apiCache.delete(oldestKey);
             }
-            apiCache.set(cacheKey, { expiresAt: Date.now() + cacheTtlMs, value });
+            apiCache.set(cacheKey, {
+                expiresAt: Date.now() + cacheTtlMs,
+                staleUntil: Date.now() + cacheTtlMs + Math.max(0, staleIfErrorMs),
+                value,
+            });
         }
         return value;
+    }).catch((error) => {
+        if (isGet && requestCacheVersion === cacheVersion && cached && cached.staleUntil > Date.now()) return cached.value;
+        throw error;
     }).finally(() => {
         inFlightRequests.delete(cacheKey);
     });

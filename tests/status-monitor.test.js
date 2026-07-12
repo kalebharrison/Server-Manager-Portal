@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { createDefaultStatusConfig, reconcileBuiltInStatusConfig } from '../lib/status-monitor.js';
+import { createDefaultStatusConfig, createPublicStatusPayload, reconcileBuiltInStatusConfig } from '../lib/status-monitor.js';
 import { createStatusRuntime, STATUS_HEALTH_SCHEMA_VERSION } from '../lib/status-runtime.js';
 import { resolvePlexDiscoveryToken } from '../lib/invite-routes.js';
 import { canExposePublicServerStats, canExposePublicStatus } from '../lib/public-status-routes.js';
@@ -36,6 +36,21 @@ test('default status config does not point Plex at the portal URL', () => {
 test('default status config keeps auto-resolved Plex monitor for a selected server', () => {
     const config = createDefaultStatusConfig({ serverIdentifier: 'server-id' });
     assert.equal(config.services.find(service => service.id === 'plex')?.url, '');
+});
+
+test('status payload abstracts vendor defaults but preserves custom labels', () => {
+    const payload = createPublicStatusPayload({
+        groups: [{ id: 'downloads', name: 'Automation Health', order: 0 }],
+        services: [
+            { id: 'sonarr', name: 'Sonarr', description: 'TV automation', groupId: 'downloads' },
+            { id: 'radarr', name: 'Cinema Pipeline', description: 'Movie acquisition and upgrades', groupId: 'downloads' },
+        ],
+    });
+    assert.equal(payload.config.groups[0].name, 'Automation Health');
+    assert.deepEqual(payload.config.services.map(({ name, description }) => ({ name, description })), [
+        { name: 'TV Automation', description: 'TV release automation' },
+        { name: 'Cinema Pipeline', description: 'Movie acquisition and upgrades' },
+    ]);
 });
 
 test('built-in status URLs follow current application settings', () => {

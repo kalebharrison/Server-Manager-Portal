@@ -95,8 +95,8 @@ export const DiscoverDownloadsSection: React.FC<{ useScrollRevealAnimations?: bo
     if (!visibleDownloads.length) return null;
 
     return (
-        <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col mb-12 discover-deferred-section">
-            <h2 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">ON THE WAY</h2>
+        <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col discover-deferred-section">
+            <h2 className="text-plex text-sm uppercase tracking-[2px] mb-5 font-bold border-b border-white/10 pb-2">ON THE WAY</h2>
             <div className={discoverPosterGridClass}>
                 {visibleDownloads.map((item) => <DownloadPosterCard key={item.id} item={item} />)}
             </div>

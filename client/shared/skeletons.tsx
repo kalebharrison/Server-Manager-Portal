@@ -59,15 +59,15 @@ export const DiscoverSectionSkeleton: React.FC<{ title: string; count?: number; 
     </div>
 );
 
-export const DiscoverPageSkeleton: React.FC<{ recentLimit?: number; wideLayout?: boolean }> = ({ recentLimit = 20, wideLayout = false }) => {
+export const DiscoverPageSkeleton: React.FC<{ recentLimit?: number }> = ({ recentLimit = 20 }) => {
     const count = recentLimit;
     return (
         <div className="w-full flex flex-col min-h-screen" aria-busy="true" aria-label="Loading discover">
             <main className="discover-layout-container w-full pb-8 mt-4 md:mt-0">
-                <section className="mb-12 w-full">
-                    <h2 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">ACTIVITY</h2>
-                    <ActivityGridSkeleton count={wideLayout ? 4 : 3} wideLayout={wideLayout} />
-                </section>
+                <div className="mb-8 flex w-full max-w-xl gap-2 rounded-lg border border-border bg-card/70 p-1">
+                    <SkeletonBlock className="h-12 flex-1 rounded-md" />
+                    <SkeletonBlock className="h-12 flex-1 rounded-md" />
+                </div>
 
                 <div className="flex justify-end gap-4 items-center mb-8">
                     <SkeletonBlock className="h-4 w-36 rounded" />
@@ -78,16 +78,6 @@ export const DiscoverPageSkeleton: React.FC<{ recentLimit?: number; wideLayout?:
                     <DiscoverSectionSkeleton title="RECENTLY ADDED MOVIES" count={count} />
                     <DiscoverSectionSkeleton title="RECENTLY ADDED TV SHOWS" count={count} />
                     <DiscoverSectionSkeleton title="RECENTLY ADDED MUSIC" count={count} aspect="square" />
-                </div>
-
-                <div className="mt-16 w-full flex flex-col gap-12">
-                    <div className="flex flex-col gap-2 items-center text-center mb-4">
-                        <SkeletonBlock className="h-10 w-72 max-w-full rounded" />
-                        <SkeletonBlock className="h-4 w-96 max-w-full rounded" />
-                    </div>
-                    <DiscoverSectionSkeleton title="🔥 TRENDING THIS WEEK" count={count} />
-                    <DiscoverSectionSkeleton title="🍿 MOST WATCHED MOVIES (THIS MONTH)" count={count} />
-                    <DiscoverSectionSkeleton title="📺 MOST WATCHED SHOWS (THIS MONTH)" count={count} />
                 </div>
             </main>
         </div>
@@ -168,7 +158,7 @@ export const TopWatchedGridSkeleton: React.FC = () => (
 );
 
 export const TrendingSectionsSkeleton: React.FC<{ count?: number; sections?: number }> = ({ count = 20, sections = 3 }) => (
-    <div className="mt-16 w-full flex flex-col gap-12" aria-busy="true" aria-label="Loading trending">
+    <div className="w-full flex flex-col gap-10" aria-busy="true" aria-label="Loading trending">
         <div className="flex flex-col gap-2 items-center text-center mb-4">
             <SkeletonBlock className="h-10 w-72 max-w-full rounded" />
             <SkeletonBlock className="h-4 w-96 max-w-full rounded" />
