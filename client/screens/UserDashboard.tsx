@@ -6,10 +6,11 @@ import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { getAccessProgressPct, getDaysUntilExpiry } from '../shared/format';
 import { PeriodDropdown } from '../shared/PeriodDropdown';
 import { Loader, Toast } from '../shared/toast';
-import { HomeRecentlyAddedSkeleton, TopWatchedGridSkeleton, WrapUpCardsSkeleton } from '../shared/skeletons';
+import { TopWatchedGridSkeleton, WrapUpCardsSkeleton } from '../shared/skeletons';
 import { WrapUpCardGrid } from '../shared/WrapUpCards';
 import { SlideshowBackground } from '../shared/theme';
 import { UserDashboardLayout } from '../home/UserDashboardLayout';
+import { HomeWeekCalendar } from '../home/HomeWeekCalendar';
 import { createMainGridWidgetRenderer, createRecentlyAddedWidgetRenderer } from '../home/userDashboardWidgetRenderers';
 import { RebuildLibraryCacheButton } from './RebuildLibraryCacheButton';
 import { DiscoverPosterCard, RECENTLY_ADDED_ITEM_LIMIT } from './DiscoverContent';
@@ -21,13 +22,30 @@ const ShareWrapUpModal = lazy(() => import('../shared/ShareWrapUp').then(module 
 const WrapUpModal = lazy(() => import('./user/WrapUpModal').then(module => ({ default: module.WrapUpModal })));
 const ReportIssueModal = lazy(() => import('./ReportIssueModal').then(module => ({ default: module.ReportIssueModal })));
 
+const HOME_LIBRARY_CACHE_KEY = 'homeLibrarySnapshot';
+const readCachedHomeLibrary = () => {
+    try {
+        return JSON.parse(sessionStorage.getItem(HOME_LIBRARY_CACHE_KEY) || 'null');
+    } catch {
+        return null;
+    }
+};
+const analyticsCacheKey = (sessionInfo: any, days: number | 'all') => `homeAnalytics:${sessionInfo?.session?.accountId || sessionInfo?.session?.username || 'member'}:${days}`;
+const readCachedHomeAnalytics = (sessionInfo: any, days: number | 'all') => {
+    try {
+        return JSON.parse(sessionStorage.getItem(analyticsCacheKey(sessionInfo, days)) || 'null');
+    } catch {
+        return null;
+    }
+};
+
 export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onLogout: () => void; refreshSession: () => void; onViewAdmin: () => void; onViewStatus: () => void; onViewDashboard: () => void; onViewSettings?: () => void; onViewLogs?: () => void }> = ({ sessionInfo, publicConfig, onLogout, refreshSession, onViewAdmin, onViewStatus, onViewDashboard, onViewSettings, onViewLogs }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState<ToastMessage | null>(null);
-    const [analytics, setAnalytics] = useState<any>(null);
-    const [analyticsLoading, setAnalyticsLoading] = useState(true);
+    const [analytics, setAnalytics] = useState<any>(() => readCachedHomeAnalytics(sessionInfo, 30));
+    const [analyticsLoading, setAnalyticsLoading] = useState(() => !readCachedHomeAnalytics(sessionInfo, 30));
     const [serverStats, setServerStats] = useState<any>(null);
-    const [dashboardData, setDashboardData] = useState<any>(null);
+    const [dashboardData, setDashboardData] = useState<any>(readCachedHomeLibrary);
     const [serverDataLoading, setServerDataLoading] = useState(true);
     const [topContentPage, setTopContentPage] = useState(0);
     const topWatchedPageSize = (publicConfig?.dashboardLayout?.topWatchedRows || 2) * 6;
@@ -100,22 +118,29 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                 setAnalyticsLoading(false);
                 return;
             }
+            const cached = readCachedHomeAnalytics(sessionInfo, analyticsDays);
+            if (cached) setAnalytics(cached);
             try {
-                setAnalyticsLoading(true);
+                setAnalyticsLoading(!cached);
                 setAnalyticsError(null);
                 const res = isJellyfinPortal
                     ? buildJellyfinHomeAnalytics(await apiFetch(`/api/jellystat/analytics?days=${analyticsDays}`))
                     : await apiFetch(`/api/plex/analytics/me?days=${analyticsDays}`);
                 if (cancelled) return;
                 setAnalytics(res);
+                sessionStorage.setItem(analyticsCacheKey(sessionInfo, analyticsDays), JSON.stringify(res));
                 setTopContentPage(0);
                 setRecentHistoryPage(0);
             } catch (e: any) {
                 if (!cancelled) {
                     const message = e?.message || 'Failed to load your analytics';
-                    setAnalyticsError(message);
-                    setAnalytics(null);
-                    setToast({ id: Date.now(), message, type: 'error' });
+                    if (!cached) {
+                        setAnalyticsError(message);
+                        setAnalytics(null);
+                        setToast({ id: Date.now(), message, type: 'error' });
+                    } else {
+                        setAnalyticsError(null);
+                    }
                 }
             } finally {
                 if (!cancelled) setAnalyticsLoading(false);
@@ -146,8 +171,12 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
         const fetchDashboard = async () => {
             if (!isMounted) return;
             try {
-                const res = await apiFetch(`${isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/dashboard'}?limit=${RECENTLY_ADDED_ITEM_LIMIT}`);
-                if (isMounted) setDashboardData(res);
+                const endpoint = isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/library';
+                const res = await apiFetch(`${endpoint}?limit=${RECENTLY_ADDED_ITEM_LIMIT}`, { cacheTtlMs: 5 * 60_000, staleIfErrorMs: 60 * 60_000 });
+                if (isMounted) {
+                    setDashboardData(res);
+                    sessionStorage.setItem(HOME_LIBRARY_CACHE_KEY, JSON.stringify(res));
+                }
             } catch (e) {
                 console.error('Failed to refresh dashboard data', e);
             }
@@ -398,9 +427,10 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                 layoutCtx={layoutCtx}
                 renderMainGridWidget={renderMainGridWidget}
                 renderRecentlyAddedWidget={renderRecentlyAddedWidget}
-                recentlyAddedLoading={serverDataLoading}
+                renderWeekCalendar={() => <HomeWeekCalendar />}
+                recentlyAddedLoading={false}
                 hasDashboardData={!!dashboardData}
-                renderRecentlyAddedSkeleton={() => <HomeRecentlyAddedSkeleton />}
+                renderRecentlyAddedSkeleton={() => null}
                 renderWrapUp={() => (
                     <>
                         {/* Personal Wrap-Up */}
@@ -475,7 +505,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch flex-1 min-h-0 content-start">
                                                 {recentHistoryPageItems.map((item: any, idx: number) => (
-                                                    <div key={idx} className="flex items-center self-stretch gap-3 p-2 bg-black/20 rounded-xl border border-white/5 hover:border-plex/50 hover:bg-black/40 hover:shadow-[0_0_15px_rgba(229,160,13,0.15)] transition-all group relative">
+                                                    <div key={item.historyKey || `${item.type}-${item.title}-${idx}`} className="flex items-center self-stretch gap-3 p-2 bg-black/20 rounded-xl border border-white/5 hover:border-plex/50 hover:bg-black/40 hover:shadow-[0_0_15px_rgba(229,160,13,0.15)] transition-all group relative">
                                                         <a href={item.plexUrl} target="_blank" rel="noreferrer" className="flex items-center flex-1 min-w-0 gap-3">
                                                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-background flex-shrink-0 shadow-md">
                                                                 {item.thumbUrl ? (

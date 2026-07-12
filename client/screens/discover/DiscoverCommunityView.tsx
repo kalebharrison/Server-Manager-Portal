@@ -3,7 +3,6 @@ import React from 'react';
 import { portalUrl, resolvePortalAssetUrl } from '../../shared/basePath';
 import { formatTime } from '../../shared/format';
 import { activityStreamColumnCount, activityStreamGridClass } from '../../shared/portalLayout';
-import { TrendingSectionsSkeleton } from '../../shared/skeletons';
 import { TrendingDiscoverSection } from '../DiscoverContent';
 
 const StreamCard: React.FC<{
@@ -76,7 +75,6 @@ const StreamCard: React.FC<{
 export const DiscoverCommunityView: React.FC<{
     activeSessions: any[];
     trendingStats: { trending7Days: any[]; movies30Days: any[]; shows30Days: any[] } | null;
-    trendingLoading: boolean;
     recentLimit: number;
     isWidePortalLayout: boolean;
     showQualityBadges: boolean;
@@ -84,7 +82,7 @@ export const DiscoverCommunityView: React.FC<{
     serverName?: string;
     isJellyfinPortal: boolean;
     onSelectSession: (session: any) => void;
-}> = ({ activeSessions, trendingStats, trendingLoading, recentLimit, isWidePortalLayout, showQualityBadges, useScrollRevealAnimations, serverName, isJellyfinPortal, onSelectSession }) => {
+}> = ({ activeSessions, trendingStats, recentLimit, isWidePortalLayout, showQualityBadges, useScrollRevealAnimations, serverName, isJellyfinPortal, onSelectSession }) => {
     const totalStreams = activeSessions.length;
     const transcodingStreams = activeSessions.filter((session) => session.isTranscoding).length;
     const totalBandwidthMbps = (activeSessions.reduce((total, session) => total + (Number(session.bandwidth) || 0), 0) / 1000).toFixed(2);
@@ -114,9 +112,7 @@ export const DiscoverCommunityView: React.FC<{
                 )}
             </section>
 
-            {!isJellyfinPortal && trendingLoading && !trendingStats ? (
-                <TrendingSectionsSkeleton count={recentLimit} sections={3} />
-            ) : !isJellyfinPortal && trendingStats ? (
+            {!isJellyfinPortal && trendingStats ? (
                 <section className="flex w-full flex-col gap-10">
                     <div className="text-center">
                         <h2 className="text-2xl font-extrabold text-white md:text-3xl">Community activity on {serverName || 'this server'}</h2>

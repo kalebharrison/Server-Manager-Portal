@@ -94,6 +94,10 @@ Beta image branch: `beta`
   - Retry transient request-app reads, serve recently cached browse data during short Seerr outages, keep errors actionable, preserve custom Status page group/service labels, split Discover into Library and Community views, and remove compounded spacing between download and recently added sections.
   - Upstream PR fit: split into request-app resilience, Status page label customization, and Discover view/component organization.
 
+- Pending: instant media surfaces and simplified Home activity
+  - Persist and refresh recent Plex library data every five minutes; separate cached library reads from live sessions; use stale-while-refresh caches; prewarm request discovery and release-calendar data; add a configurable seven-day Home calendar; simplify Discover navigation; collapse recent TV episodes into one series entry; and remove obsolete loading skeletons.
+  - Upstream PR fit: split into Plex dashboard cache service/routes, generic cache behavior, Home calendar, and recent-history aggregation.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

@@ -1,4 +1,4 @@
-export type DashboardSectionId = 'wrapUp' | 'mainGrid' | 'watchRow' | 'recentlyAdded';
+export type DashboardSectionId = 'wrapUp' | 'mainGrid' | 'weekCalendar' | 'watchRow' | 'recentlyAdded';
 
 export type MainGridWidgetId =
     | 'adminBadge'
@@ -30,6 +30,7 @@ export interface DashboardLayoutConfig {
 export const DASHBOARD_SECTION_LABELS: Record<DashboardSectionId, string> = {
     wrapUp: 'Personal Wrap-Up',
     mainGrid: 'Main dashboard grid',
+    weekCalendar: 'One-week release calendar',
     watchRow: 'Recently / Most Watched',
     recentlyAdded: 'Recently Added rows',
 };
@@ -55,7 +56,7 @@ export const RECENTLY_ADDED_WIDGET_META: Record<RecentlyAddedWidgetId, string> =
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutConfig = {
     version: 1,
-    sections: ['wrapUp', 'mainGrid', 'watchRow', 'recentlyAdded'],
+    sections: ['wrapUp', 'mainGrid', 'weekCalendar', 'watchRow', 'recentlyAdded'],
     mainGridOrder: [
         'adminBadge',
         'quickActions',
@@ -74,7 +75,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutConfig = {
     topWatchedRows: 2,
 };
 
-const ALL_SECTIONS: DashboardSectionId[] = ['wrapUp', 'mainGrid', 'watchRow', 'recentlyAdded'];
+const ALL_SECTIONS: DashboardSectionId[] = ['wrapUp', 'mainGrid', 'weekCalendar', 'watchRow', 'recentlyAdded'];
 const ALL_MAIN_GRID: MainGridWidgetId[] = Object.keys(MAIN_GRID_WIDGET_META) as MainGridWidgetId[];
 const ALL_RECENTLY_ADDED: RecentlyAddedWidgetId[] = ['recentMovies', 'recentShows', 'recentMusic'];
 
@@ -95,6 +96,11 @@ const uniqueValid = <T extends string>(values: unknown, allowed: T[], fallback: 
     return result;
 };
 
+const validSubset = <T extends string>(values: unknown, allowed: T[]): T[] => {
+    if (!Array.isArray(values)) return [];
+    return [...new Set(values.filter((value): value is T => typeof value === 'string' && allowed.includes(value as T)))];
+};
+
 export const normalizeDashboardLayout = (raw: unknown): DashboardLayoutConfig => {
     const input = raw && typeof raw === 'object' ? (raw as Partial<DashboardLayoutConfig>) : {};
     return {
@@ -102,11 +108,10 @@ export const normalizeDashboardLayout = (raw: unknown): DashboardLayoutConfig =>
         sections: uniqueValid(input.sections, ALL_SECTIONS, DEFAULT_DASHBOARD_LAYOUT.sections),
         mainGridOrder: uniqueValid(input.mainGridOrder, ALL_MAIN_GRID, DEFAULT_DASHBOARD_LAYOUT.mainGridOrder),
         recentlyAddedOrder: uniqueValid(input.recentlyAddedOrder, ALL_RECENTLY_ADDED, DEFAULT_DASHBOARD_LAYOUT.recentlyAddedOrder),
-        hiddenSections: uniqueValid(input.hiddenSections, ALL_SECTIONS, []),
-        hiddenWidgets: uniqueValid(
+        hiddenSections: validSubset(input.hiddenSections, ALL_SECTIONS),
+        hiddenWidgets: validSubset(
             input.hiddenWidgets,
-            [...ALL_MAIN_GRID, ...ALL_RECENTLY_ADDED] as DashboardWidgetId[],
-            []
+            [...ALL_MAIN_GRID, ...ALL_RECENTLY_ADDED] as DashboardWidgetId[]
         ),
         recentHistoryRows: typeof input.recentHistoryRows === 'number' ? input.recentHistoryRows : DEFAULT_DASHBOARD_LAYOUT.recentHistoryRows,
         topWatchedRows: typeof input.topWatchedRows === 'number' ? input.topWatchedRows : DEFAULT_DASHBOARD_LAYOUT.topWatchedRows,
@@ -180,6 +185,11 @@ export const SECTION_PREVIEW_META: Record<
         shortLabel: 'Main grid',
         description: 'Fixed layout: admin/actions left · library/analytics right',
         previewClass: 'h-20',
+    },
+    weekCalendar: {
+        shortLabel: 'Coming Up',
+        description: 'Seven-day TV and movie release calendar',
+        previewClass: 'h-12',
     },
     watchRow: {
         shortLabel: 'Watch history',

@@ -49,3 +49,23 @@ test('media stack summary hydrates hasFile state for queue classification', asyn
     assert.equal(result.sonarr.queue.records[0].episode.hasFile, true);
     assert.equal(result.radarr.queue.records[0].movie.hasFile, true);
 });
+
+test('media stack calendar returns a bounded cached week', async () => {
+    let routeHandler;
+    const app = { get(path, ...handlers) { if (path === '/api/media-stack/calendar') routeHandler = handlers.at(-1); } };
+    registerMediaStackRoutes({
+        app,
+        requireAuth: (_req, _res, next) => next(),
+        requireMember: (_req, _res, next) => next(),
+        configPath: 'config.json',
+        loadFile: async () => ({ sonarrUrl: 'http://sonarr', sonarrApiKey: 'key' }),
+        withCache: async (_key, _ttl, load) => load(),
+        fetch: async (url) => ({ ok: true, json: async () => url.includes('sonarr') ? [{ id: 1 }] : [] }),
+        normalizeExternalBaseUrl: (url) => `${url}/`,
+    });
+    let result;
+    await routeHandler({ query: { weekOffset: '1' } }, { json(value) { result = value; }, status() { return this; } });
+    assert.equal(result.sonarr.configured, true);
+    assert.equal(result.sonarr.calendar.length, 1);
+    assert.equal((new Date(`${result.end}T00:00:00`) - new Date(`${result.start}T00:00:00`)) / 86400000, 7);
+});

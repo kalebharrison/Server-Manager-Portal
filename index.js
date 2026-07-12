@@ -24,6 +24,7 @@ import { loadFile, saveFile } from './lib/json-file-store.js';
 import { isLoopbackAddress, normalizeExternalBaseUrl, resolveIntegrationUrlForFetch } from './lib/network-policy.js';
 import { enrichRecentItemsWithMediaTags } from './lib/plex-media-tags.js';
 import { createPlexStatsService } from './lib/plex-stats-service.js';
+import { createPlexDashboardService } from './lib/plex-dashboard-service.js';
 import { createPlexConnectionService } from './lib/plex-connection-service.js';
 import { registerAuthRoutes } from './lib/auth-routes.js';
 import { registerInviteRoutes } from './lib/invite-routes.js';
@@ -192,6 +193,7 @@ import {
     MAINTENANCE_REQUEST_INDEX_PATH,
     MAINTENANCE_PREFS_PATH,
     PLEX_STATS_CACHE_PATH,
+    PLEX_DASHBOARD_CACHE_PATH,
     migrateConfigFiles,
 } from './lib/data-paths.js';
 import { createBackupService } from './lib/backup.js';
@@ -594,6 +596,16 @@ const plexStatsService = createPlexStatsService({
 });
 const { loadPlexStatsFromDisk, buildPlexStatsCache, startPlexStatsBackgroundTask } = plexStatsService;
 
+const plexDashboardService = createPlexDashboardService({
+    configPath: CONFIG_PATH,
+    cachePath: PLEX_DASHBOARD_CACHE_PATH,
+    loadFile,
+    saveFile,
+    getPlexConnectionUri,
+    fetch,
+    log,
+});
+
 registerPlexRoutes({
     app,
     requireAuth,
@@ -604,7 +616,7 @@ registerPlexRoutes({
     getPlexConnectionUri,
     fetch,
     fetchWithTimeout,
-    withCache,
+    plexDashboardService,
     plexStatsService,
     loadPlexStatsFromDisk,
     buildPlexStatsCache,
@@ -861,7 +873,7 @@ const { checkAndCleanupInactive, runAutoBackupCycle, startBackgroundService } = 
     log,
 });
 
-registerMediaStackRoutes({
+const mediaStackRoutes = registerMediaStackRoutes({
     app,
     requireAuth,
     requireMember,
@@ -982,6 +994,9 @@ const startPortalService = async () => {
     setInterval(monitorConcurrentSessions, 15000);
     startBackgroundService();
     startPlexStatsBackgroundTask(); // start 24-hour library size cache task
+    await plexDashboardService.start();
+    mediaStackRoutes.startCacheWarmer();
+    requestAppService.startCacheWarmer(() => loadFile(CONFIG_PATH, {}));
 
     // Background cache builders: reuse on-disk cache and schedule next run by interval.
     startTrendingStatsBackgroundTask();
