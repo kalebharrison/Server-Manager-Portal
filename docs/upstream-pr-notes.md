@@ -82,6 +82,10 @@ Beta image branch: `beta`
   - Replace redundant status analytics with a concise overview and daily history; calculate accurate 30-day uptime; distinguish uncollected history from outages; stop counting portal downtime as service downtime; migrate invalid legacy history; and show persisted newsletter preferences on admin user cards.
   - Upstream PR fit: split into status history correctness, status page UX, and admin user preference visibility.
 
+- Pending: member preferences and clean request artwork
+  - Remove the unnecessary dark overlay from request posters and give members a stable Preferences route for their local theme and persisted newsletter subscription, independent of dashboard widget visibility.
+  - Upstream PR fit: split into request-card visual cleanup and member preference navigation.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

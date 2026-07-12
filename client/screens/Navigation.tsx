@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Activity, BarChart3, FileText, Film, Home, Layers, LogOut, Palette, Settings, Shield, Sparkles, Users } from 'lucide-react';
+import { Activity, BarChart3, FileText, Film, Home, Layers, LogOut, Palette, Settings, Shield, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
 
 import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { updateFavicon } from '../shared/favicon';
@@ -8,7 +8,7 @@ import { CustomSelect } from '../shared/ui';
 
 interface NavigationProps {
     currentRoute: string;
-    onNavigate: (route: 'admin' | 'user' | 'status' | 'dashboard' | 'settings' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request') => void;
+    onNavigate: (route: 'admin' | 'user' | 'status' | 'dashboard' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request') => void;
     onLogout: () => void;
     isAdmin: boolean;
     serverName: string;
@@ -63,6 +63,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
         'mediastack': { label: 'Calendar', icon: Layers, route: 'mediastack', adminOnly: false },
         'maintenance': { label: 'Cleaner', icon: Shield, route: 'maintenance', adminOnly: true },
         'request': { label: 'Request Content', icon: Sparkles, route: 'request', adminOnly: false },
+        'preferences': { label: 'Preferences', icon: SlidersHorizontal, route: 'preferences', adminOnly: false },
         'settings': { label: 'Settings', icon: Settings, route: 'settings', adminOnly: true },
         'logout': { label: 'Logout', icon: LogOut, route: '', adminOnly: false, onClick: onLogout }
     };
@@ -72,6 +73,11 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
             const requestIndex = order.indexOf('request');
             if (requestIndex >= 0) order.splice(requestIndex, 0, 'maintenance');
             else order.push('maintenance');
+        }
+        if (!isAdmin && !order.includes('preferences')) {
+            const logoutIndex = order.indexOf('logout');
+            if (logoutIndex >= 0) order.splice(logoutIndex, 0, 'preferences');
+            else order.push('preferences');
         }
         return order.filter((key) => {
             const item = navItemsConfig[key];

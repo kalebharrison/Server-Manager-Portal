@@ -18,13 +18,14 @@ import {
     RequestDashboard,
     AdminDashboard,
     UserDashboard,
+    UserPreferencesDashboard,
     Navigation,
     SettingsDashboard,
 } from './lazyScreens';
 
 const ConfirmModal = React.lazy(() => import('./shared/ConfirmModal').then(module => ({ default: module.ConfirmModal })));
 
-type AppRoute = 'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'settings' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request' | 'invite' | 'loading';
+type AppRoute = 'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request' | 'invite' | 'loading';
 
 const RouteFallback: React.FC = () => (
     <div className="min-h-[60vh]" aria-hidden="true" />
@@ -154,6 +155,7 @@ export const MainApp: React.FC = () => {
             if (route === 'status') path = '/status';
             if (route === 'dashboard') path = '/dashboard';
             if (route === 'settings') path = '/settings#branding';
+            if (route === 'preferences') path = '/preferences';
             if (route === 'analytics') path = '/analytics';
             if (route === 'mediastack') path = '/mediastack';
             if (route === 'maintenance') path = '/maintenance';
@@ -187,6 +189,7 @@ export const MainApp: React.FC = () => {
             if (path === '/status') updateRoute('status');
             else if (path === '/dashboard') updateRoute('dashboard');
             else if (path === '/settings' && data.session.isAdmin) updateRoute('settings');
+            else if (path === '/preferences') updateRoute('preferences');
             else if (path === '/logs' && data.session.isAdmin) {
                 window.history.replaceState({}, '', portalUrl('/settings#logs'));
                 updateRoute('settings');
@@ -276,6 +279,7 @@ export const MainApp: React.FC = () => {
         if (currentRoute === 'status') return <StatusDashboard onBack={() => isPublicStatus ? setRoute('login') : setRoute('user')} isAdmin={isAdmin} isPublic={isPublicStatus} />;
         if (currentRoute === 'dashboard') return <LibraryDashboard onBack={() => setRoute('user')} isAdmin={isAdmin} publicConfig={publicConfig} mediaServerType={sessionInfo?.mediaServerType} />;
         if (currentRoute === 'settings' && isAdmin) return <SettingsDashboard />;
+        if (currentRoute === 'preferences') return <UserPreferencesDashboard account={sessionInfo?.account} activeTheme={activeTheme} setActiveTheme={setActiveTheme} refreshSession={checkSession} readOnly={isImpersonating} />;
         if (currentRoute === 'maintenance' && isAdmin) return <MaintenanceDashboard />;
         if (currentRoute === 'logs' && isAdmin) return <LogsDashboard onLogout={handleLogout} />;
         if (currentRoute === 'mediastack') return <MediaStackDashboard isAdmin={isAdmin} />;

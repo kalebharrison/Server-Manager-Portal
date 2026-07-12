@@ -44,7 +44,6 @@ export const RequestMediaCard: React.FC<{
                         {item.mediaType === 'tv' ? <Tv className="w-10 h-10" /> : <Film className="w-10 h-10" />}
                     </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-95" />
                 <div className="absolute top-2 left-2 flex gap-1.5">
                     <span className="px-2 py-1 rounded-md bg-black/70 text-[10px] font-bold uppercase tracking-wider text-white border border-white/10">
                         {item.mediaType === 'tv' ? 'TV' : 'Movie'}

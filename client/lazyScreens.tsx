@@ -18,6 +18,7 @@ export const AnalyticsDashboard = lazyComponent(() => import('./screens/Analytic
 export const RequestDashboard = lazyComponent(() => import('./requests/RequestDashboard'), (module) => module.RequestDashboard);
 export const AdminDashboard = lazyComponent(() => import('./screens/AdminDashboard'), (module) => module.AdminDashboard);
 export const UserDashboard = lazyComponent(() => import('./screens/UserDashboard'), (module) => module.UserDashboard);
+export const UserPreferencesDashboard = lazyComponent(() => import('./screens/UserPreferencesDashboard'), (module) => module.UserPreferencesDashboard);
 export const Navigation = lazyComponent(() => import('./screens/Navigation'), (module) => module.Navigation);
 
 export const SettingsDashboard = React.lazy(async () => {

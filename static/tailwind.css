@@ -1562,6 +1562,11 @@
       border-bottom-width: calc(1px * calc(1 - var(--tw-divide-y-reverse)));
     }
   }
+  .divide-border {
+    :where(& > :not(:last-child)) {
+      border-color: rgb(var(--color-border) / 1);
+    }
+  }
   .divide-border\/40 {
     :where(& > :not(:last-child)) {
       border-color: color-mix(in srgb, rgb(rgb(var(--color-border) / 1) / 1) 40%, transparent);
@@ -2537,13 +2542,6 @@
     --tw-gradient-from: color-mix(in srgb, #000 80%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       --tw-gradient-from: color-mix(in oklab, var(--color-black) 80%, transparent);
-    }
-    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
-  }
-  .from-black\/90 {
-    --tw-gradient-from: color-mix(in srgb, #000 90%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      --tw-gradient-from: color-mix(in oklab, var(--color-black) 90%, transparent);
     }
     --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
   }
@@ -3629,9 +3627,6 @@
   }
   .opacity-90 {
     opacity: 90%;
-  }
-  .opacity-95 {
-    opacity: 95%;
   }
   .opacity-100 {
     opacity: 100%;
@@ -5255,6 +5250,11 @@
   .sm\:w-32 {
     @media (width >= 40rem) {
       width: calc(var(--spacing) * 32);
+    }
+  }
+  .sm\:w-52 {
+    @media (width >= 40rem) {
+      width: calc(var(--spacing) * 52);
     }
   }
   .sm\:w-64 {
