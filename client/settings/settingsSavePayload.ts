@@ -1,5 +1,6 @@
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { ensureMaintenanceNavOrder } from './settingsNavOrder';
+import type { ArrInstance } from '../shared/types';
 
 type SettingsSavePayloadInput = {
     token: string;
@@ -24,12 +25,7 @@ type SettingsSavePayloadInput = {
     contactUrl: string;
     contactWhatsApp: string;
     contactEmail: string;
-    sonarrUrl: string;
-    sonarrApiKey: string;
-    radarrUrl: string;
-    radarrApiKey: string;
-    lidarrUrl: string;
-    lidarrApiKey: string;
+    arrInstances: ArrInstance[];
     tautulliUrl: string;
     tautulliApiKey: string;
     jellystatUrl: string;
@@ -37,6 +33,8 @@ type SettingsSavePayloadInput = {
     requestAppType: string;
     requestAppUrl: string;
     requestAppApiKey: string;
+    ombiUrl: string;
+    ombiApiKey: string;
     customLogoUrl: string;
     brandingTheme: string;
     backgroundImageUrl: string;

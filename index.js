@@ -22,6 +22,7 @@ import { createSecurityHeadersMiddleware, secureTokenEquals } from './lib/http-s
 import { createSerialJobQueue } from './lib/job-queue.js';
 import { loadFile as loadJsonFile, saveFile as saveJsonFile } from './lib/json-file-store.js';
 import { createConfigSecretProtector } from './lib/config-secrets.js';
+import { normalizeArrConfig } from './lib/arr-instances.js';
 import { isLoopbackAddress, normalizeExternalBaseUrl, resolveIntegrationUrlForFetch } from './lib/network-policy.js';
 import { enrichRecentItemsWithMediaTags } from './lib/plex-media-tags.js';
 import { createPlexStatsService } from './lib/plex-stats-service.js';
@@ -39,6 +40,7 @@ import { registerMaintenanceRoutes } from './lib/maintenance-routes.js';
 import { registerMediaStackRoutes } from './lib/media-stack-routes.js';
 import { createRequestAppService } from './lib/request-app-service.js';
 import { createTvdbService } from './lib/tvdb-service.js';
+import { createMetadataHealthProbe } from './lib/metadata-health.js';
 import { registerRequestAppRoutes } from './lib/request-app-routes.js';
 import { registerStaticShellRoutes } from './lib/static-shell-routes.js';
 import { createBackgroundService } from './lib/background-service.js';
@@ -118,16 +120,16 @@ if (CONFIG_ENCRYPTION_KEY.length < 32) {
 const configSecretProtector = createConfigSecretProtector(CONFIG_ENCRYPTION_KEY);
 const loadFile = async (filePath, defaultContent) => {
     const value = await loadJsonFile(filePath, defaultContent);
-    return filePath === CONFIG_PATH ? configSecretProtector.unprotectConfig(value) : value;
+    return filePath === CONFIG_PATH ? normalizeArrConfig(configSecretProtector.unprotectConfig(value)) : value;
 };
 const saveFile = async (filePath, value) => saveJsonFile(
     filePath,
-    filePath === CONFIG_PATH ? configSecretProtector.protectConfig(value) : value,
+    filePath === CONFIG_PATH ? configSecretProtector.protectConfig(normalizeArrConfig(value)) : value,
 );
 const secureConfigAtRest = async () => {
     const stored = await loadJsonFile(CONFIG_PATH, {});
     const hadPlaintextSecrets = configSecretProtector.hasPlaintextSecrets(stored);
-    const runtimeConfig = configSecretProtector.unprotectConfig(stored);
+    const runtimeConfig = normalizeArrConfig(configSecretProtector.unprotectConfig(stored));
     await saveJsonFile(CONFIG_PATH, configSecretProtector.protectConfig(runtimeConfig));
     return hadPlaintextSecrets;
 };
@@ -256,6 +258,7 @@ const statusRuntime = createStatusRuntime({
         const appConfig = await loadFile(CONFIG_PATH, {});
         return getPlexConnectionUri(appConfig);
     },
+    probeService: (service) => metadataHealthProbe(service),
 });
 
 const { sendEmail, checkAndSendNotifications, sendExpiryEmail, sendAdjustmentEmail } = createEmailService({
@@ -392,6 +395,13 @@ const {
     findLocalUserForSession,
     getClientId: () => CLIENT_ID,
     log,
+});
+
+const tvdbService = createTvdbService({ fetchWithTimeout, log });
+const metadataHealthProbe = createMetadataHealthProbe({
+    loadConfig: () => loadFile(CONFIG_PATH, {}),
+    fetchWithTimeout,
+    tvdbService,
 });
 
 const resolveCurrentAdmin = async (sessionUser, config = null) => {
@@ -595,6 +605,7 @@ registerConfigRoutes({
     invalidatePlexConnectionCaches,
     invalidateAdminProfileCache,
     invalidateArrCatalogCache: () => invalidateArrCatalogCache(),
+    reconcileStatusConfig: () => statusRuntime.reconcileStatusConfig(),
     computeNextBackupRun,
     systemJobs,
     startBackgroundService: () => startBackgroundService(),
@@ -916,7 +927,6 @@ const mediaStackRoutes = registerMediaStackRoutes({
     normalizeExternalBaseUrl,
 });
 
-const tvdbService = createTvdbService({ fetchWithTimeout, log });
 const requestAppService = createRequestAppService({
     fetchWithTimeout,
     resolveIntegrationUrlForFetch,

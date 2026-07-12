@@ -9,6 +9,7 @@ test('configuration credentials are authenticated and encrypted at rest', () => 
     const protector = createConfigSecretProtector(KEY);
     const config = Object.fromEntries(SECRET_FIELDS.map((field) => [field, `${field}-secret-value`]));
     config.serverIdentifier = 'server-id';
+    config.arrInstances = [{ id: 'sonarr-main', type: 'sonarr', apiKey: 'nested-secret' }];
 
     const protectedConfig = protector.protectConfig(config);
     for (const field of SECRET_FIELDS) {
@@ -16,6 +17,8 @@ test('configuration credentials are authenticated and encrypted at rest', () => 
         assert.equal(protectedConfig[field].includes(config[field]), false);
     }
     assert.equal(protectedConfig.serverIdentifier, 'server-id');
+    assert.match(protectedConfig.arrInstances[0].apiKey, /^smp:enc:v1:/);
+    assert.equal(JSON.stringify(protectedConfig).includes('nested-secret'), false);
     assert.deepEqual(protector.unprotectConfig(protectedConfig), config);
 });
 

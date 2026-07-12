@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { pushToast, type ToastMessage } from '../shared/toast';
-import type { PlexServer } from '../shared/types';
+import type { ArrInstance, PlexServer } from '../shared/types';
 import { DEFAULT_DASHBOARD_LAYOUT, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { hasIntegrationCredentials } from './integrationDisplay';
 import { getDefaultSettingsNavOrder } from './settingsNavOrder';
@@ -113,12 +113,7 @@ export const SettingsDashboard: React.FC = () => {
     const [inactiveCleanupDays, setInactiveCleanupDays] = useState(90);
 
     // Media Stack States
-    const [sonarrUrl, setSonarrUrl] = useState('');
-    const [sonarrApiKey, setSonarrApiKey] = useState('');
-    const [radarrUrl, setRadarrUrl] = useState('');
-    const [radarrApiKey, setRadarrApiKey] = useState('');
-    const [lidarrUrl, setLidarrUrl] = useState('');
-    const [lidarrApiKey, setLidarrApiKey] = useState('');
+    const [arrInstances, setArrInstances] = useState<ArrInstance[]>([]);
     const [tautulliUrl, setTautulliUrl] = useState('');
     const [tautulliApiKey, setTautulliApiKey] = useState('');
     const [jellystatUrl, setJellystatUrl] = useState('');
@@ -126,6 +121,8 @@ export const SettingsDashboard: React.FC = () => {
     const [requestAppType, setRequestAppType] = useState('none');
     const [requestAppUrl, setRequestAppUrl] = useState('');
     const [requestAppApiKey, setRequestAppApiKey] = useState('');
+    const [ombiUrl, setOmbiUrl] = useState('');
+    const [ombiApiKey, setOmbiApiKey] = useState('');
     const [maintenanceExperimentalEnabled, setMaintenanceExperimentalEnabled] = useState(false);
     const [dashboardLayout, setDashboardLayout] = useState<DashboardLayoutConfig>(DEFAULT_DASHBOARD_LAYOUT);
     const dashboardLayoutRef = useRef<DashboardLayoutConfig>(DEFAULT_DASHBOARD_LAYOUT);
@@ -268,12 +265,7 @@ export const SettingsDashboard: React.FC = () => {
                 setContactUrl,
                 setContactWhatsApp,
                 setContactEmail,
-                setSonarrUrl,
-                setSonarrApiKey,
-                setRadarrUrl,
-                setRadarrApiKey,
-                setLidarrUrl,
-                setLidarrApiKey,
+                setArrInstances,
                 setTautulliUrl,
                 setTautulliApiKey,
                 setJellystatUrl,
@@ -281,6 +273,8 @@ export const SettingsDashboard: React.FC = () => {
                 setRequestAppType,
                 setRequestAppUrl,
                 setRequestAppApiKey,
+                setOmbiUrl,
+                setOmbiApiKey,
                 setBrandingTheme,
                 setCustomLogoUrl,
                 setBackgroundImageUrl,
@@ -376,12 +370,7 @@ export const SettingsDashboard: React.FC = () => {
             contactUrl,
             contactWhatsApp,
             contactEmail,
-            sonarrUrl,
-            sonarrApiKey,
-            radarrUrl,
-            radarrApiKey,
-            lidarrUrl,
-            lidarrApiKey,
+            arrInstances,
             tautulliUrl,
             tautulliApiKey,
             jellystatUrl,
@@ -389,6 +378,8 @@ export const SettingsDashboard: React.FC = () => {
             requestAppType,
             requestAppUrl,
             requestAppApiKey,
+            ombiUrl,
+            ombiApiKey,
             customLogoUrl: nextCustomLogoUrl,
             brandingTheme,
             backgroundImageUrl,
@@ -432,10 +423,10 @@ export const SettingsDashboard: React.FC = () => {
         newsletterFrequency, newsletterDay, publicDomain, isTestingNewsletter, isSendingNewsletter,
         setNewsletterFrequency, setNewsletterDay, setPublicDomain, handleTestNewsletter, handleSendNewsletterNow,
         inactiveCleanupEnabled, inactiveCleanupDays, setInactiveCleanupEnabled, setInactiveCleanupDays,
-        sonarrUrl, sonarrApiKey, radarrUrl, radarrApiKey, lidarrUrl, lidarrApiKey, tmdbApiKey, tvdbApiKey, tvdbPin, tautulliUrl, tautulliApiKey,
-        jellystatUrl, jellystatApiKey, requestAppType, requestAppUrl, requestAppApiKey,
-        setSonarrUrl, setSonarrApiKey, setRadarrUrl, setRadarrApiKey, setLidarrUrl, setLidarrApiKey, setTmdbApiKey, setTvdbApiKey, setTvdbPin, setTautulliUrl,
-        setTautulliApiKey, setJellystatUrl, setJellystatApiKey, setRequestAppType, setRequestAppUrl, setRequestAppApiKey,
+        arrInstances, tmdbApiKey, tvdbApiKey, tvdbPin, tautulliUrl, tautulliApiKey,
+        jellystatUrl, jellystatApiKey, requestAppType, requestAppUrl, requestAppApiKey, ombiUrl, ombiApiKey,
+        setArrInstances, setTmdbApiKey, setTvdbApiKey, setTvdbPin, setTautulliUrl,
+        setTautulliApiKey, setJellystatUrl, setJellystatApiKey, setRequestAppType, setRequestAppUrl, setRequestAppApiKey, setOmbiUrl, setOmbiApiKey,
         dashboardLayout, updateDashboardLayout, navOrder, setNavOrder, users,
         statusConfig, publicStatusEnabled, setPublicStatusEnabled, setStatusDraft, fetchStatusConfig,
         contactWhatsApp, contactEmail, setContactWhatsApp, setContactEmail,

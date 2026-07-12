@@ -2,6 +2,7 @@ import type React from 'react';
 
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { ensureMaintenanceNavOrder } from './settingsNavOrder';
+import type { ArrInstance } from '../shared/types';
 
 type SettingsHydrationSetters = {
     setToken: (value: string) => void;
@@ -26,12 +27,7 @@ type SettingsHydrationSetters = {
     setContactUrl: (value: string) => void;
     setContactWhatsApp: (value: string) => void;
     setContactEmail: (value: string) => void;
-    setSonarrUrl: (value: string) => void;
-    setSonarrApiKey: (value: string) => void;
-    setRadarrUrl: (value: string) => void;
-    setRadarrApiKey: (value: string) => void;
-    setLidarrUrl: (value: string) => void;
-    setLidarrApiKey: (value: string) => void;
+    setArrInstances: (value: ArrInstance[]) => void;
     setTautulliUrl: (value: string) => void;
     setTautulliApiKey: (value: string) => void;
     setJellystatUrl: (value: string) => void;
@@ -39,6 +35,8 @@ type SettingsHydrationSetters = {
     setRequestAppType: (value: string) => void;
     setRequestAppUrl: (value: string) => void;
     setRequestAppApiKey: (value: string) => void;
+    setOmbiUrl: (value: string) => void;
+    setOmbiApiKey: (value: string) => void;
     setBrandingTheme: (value: string) => void;
     setCustomLogoUrl: (value: string) => void;
     setBackgroundImageUrl: (value: string) => void;
@@ -96,12 +94,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setContactUrl(initialSettings.contactUrl || '');
     setters.setContactWhatsApp(initialSettings.contactWhatsApp || '');
     setters.setContactEmail(initialSettings.contactEmail || '');
-    setters.setSonarrUrl(initialSettings.sonarrUrl || '');
-    setters.setSonarrApiKey(initialSettings.sonarrApiKey || '');
-    setters.setRadarrUrl(initialSettings.radarrUrl || '');
-    setters.setRadarrApiKey(initialSettings.radarrApiKey || '');
-    setters.setLidarrUrl(initialSettings.lidarrUrl || '');
-    setters.setLidarrApiKey(initialSettings.lidarrApiKey || '');
+    setters.setArrInstances(Array.isArray(initialSettings.arrInstances) ? initialSettings.arrInstances : []);
     setters.setTautulliUrl(initialSettings.tautulliUrl || '');
     setters.setTautulliApiKey(initialSettings.tautulliApiKey || '');
     setters.setJellystatUrl(initialSettings.jellystatUrl || '');
@@ -109,6 +102,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setRequestAppType(initialSettings.requestAppType === 'overseerr' ? 'seerr' : (initialSettings.requestAppType || 'none'));
     setters.setRequestAppUrl(initialSettings.requestAppUrl || '');
     setters.setRequestAppApiKey(initialSettings.requestAppApiKey || '');
+    setters.setOmbiUrl(initialSettings.ombiUrl || '');
+    setters.setOmbiApiKey(initialSettings.ombiApiKey || '');
     setters.setBrandingTheme(initialSettings.brandingTheme || 'plex');
     setters.setCustomLogoUrl(initialSettings.customLogoUrl || '');
     setters.setBackgroundImageUrl(initialSettings.backgroundImageUrl || '');

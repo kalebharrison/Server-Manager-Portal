@@ -80,11 +80,37 @@ test('built-in status URLs follow current application settings', () => {
 });
 
 test('configured Lidarr is added to status monitoring with member-safe labels', () => {
-    const reconciled = reconcileBuiltInStatusConfig({ groups: [], services: [] }, { lidarrUrl: 'http://lidarr:8686' });
+    const reconciled = reconcileBuiltInStatusConfig({ groups: [], services: [] }, { lidarrUrl: 'http://lidarr:8686', lidarrApiKey: 'secret' });
     const payload = createPublicStatusPayload(reconciled);
     assert.equal(reconciled.services[0].url, 'http://lidarr:8686');
     assert.equal(payload.config.services[0].name, 'Music Automation');
     assert.equal(payload.config.services[0].description, 'Music release automation');
+});
+
+test('metadata APIs and additional Arr instances receive distinct status monitors', () => {
+    const config = createDefaultStatusConfig({
+        tmdbApiKey: 'tmdb-secret',
+        tvdbApiKey: 'tvdb-secret',
+        arrInstances: [
+            { id: 'tv-main', type: 'sonarr', name: 'Sonarr', url: 'http://sonarr:8989', apiKey: 'one', enabled: true, isDefault: true },
+            { id: 'tv-anime', type: 'sonarr', name: 'Anime', url: 'http://anime:8989', apiKey: 'two', enabled: true, isDefault: false },
+        ],
+    });
+    assert.deepEqual(config.services.map((service) => service.id), ['sonarr', 'sonarr-tv-anime', 'tmdb', 'tvdb']);
+    const payload = createPublicStatusPayload(config);
+    assert.deepEqual(payload.config.services.map((service) => service.name), ['TV Automation', 'Anime', 'Media Metadata', 'TV Metadata']);
+});
+
+test('Seerr and Ombi can coexist without exposing provider names to members', () => {
+    const config = createDefaultStatusConfig({
+        requestAppType: 'seerr',
+        requestAppUrl: 'http://seerr:5055',
+        requestAppApiKey: 'seerr-key',
+        ombiUrl: 'http://ombi:3579',
+        ombiApiKey: 'ombi-key',
+    });
+    const payload = createPublicStatusPayload(config);
+    assert.deepEqual(payload.config.services.map((service) => service.name), ['Request Service', 'Music Requests']);
 });
 
 test('stale generated Plex monitor is removed without a Plex URL', () => {

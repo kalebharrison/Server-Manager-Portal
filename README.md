@@ -126,7 +126,7 @@ Browse your Sonarr and Radarr activity directly inside the portal:
 - **Month Navigation** - Browse releases by month with auto-advance to the next month that has content
 - **Smart ID Matching** - Uses IMDb, TMDB, and TVDB IDs to accurately map and display metadata
 
-Configure Sonarr/Radarr URLs and API keys in **Settings → Apps & Automation**.
+Configure named Sonarr, Radarr, and Lidarr instances in **Settings → Apps & Automation**. One default instance per type remains compatible with maintenance workflows, while calendars and active downloads combine every enabled instance.
 
 ---
 

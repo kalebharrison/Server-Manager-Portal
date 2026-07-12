@@ -12,6 +12,18 @@ export interface User {
     lastLogin?: string;
 }
 
+export type ArrType = 'sonarr' | 'radarr' | 'lidarr';
+
+export interface ArrInstance {
+    id: string;
+    type: ArrType;
+    name: string;
+    url: string;
+    apiKey: string;
+    enabled: boolean;
+    isDefault: boolean;
+}
+
 export interface PlexConfig {
     token: string;
     mediaServerType?: 'plex' | 'jellyfin';
@@ -60,9 +72,12 @@ export interface AppSettings {
     radarrApiKey?: string;
     lidarrUrl?: string;
     lidarrApiKey?: string;
+    arrInstances?: ArrInstance[];
     tmdbApiKey?: string;
     tvdbApiKey?: string;
     tvdbPin?: string;
+    ombiUrl?: string;
+    ombiApiKey?: string;
     tautulliUrl?: string;
     tautulliApiKey?: string;
     jellystatUrl?: string;

@@ -20,6 +20,7 @@ const InvitesSettings = lazyTab(() => import('./InvitesSettings').then(module =>
 const LogsAuditTab = lazyTab(() => import('./LogsAuditTab').then(module => ({ default: module.LogsAuditTab })));
 const MediaServerSettingsTab = lazyTab(() => import('./MediaServerSettingsTab').then(module => ({ default: module.MediaServerSettingsTab })));
 const MediaStackSettingsTab = lazyTab(() => import('./MediaStackSettingsTab').then(module => ({ default: module.MediaStackSettingsTab })));
+const MetadataSettingsTab = lazyTab(() => import('./MetadataSettingsTab').then(module => ({ default: module.MetadataSettingsTab })));
 const NavigationOrderTab = lazyTab(() => import('./NavigationOrderTab').then(module => ({ default: module.NavigationOrderTab })));
 const NewsletterSettingsTab = lazyTab(() => import('./NewsletterSettingsTab').then(module => ({ default: module.NewsletterSettingsTab })));
 const PublicAccessSettingsTab = lazyTab(() => import('./PublicAccessSettingsTab').then(module => ({ default: module.PublicAccessSettingsTab })));
@@ -42,6 +43,7 @@ export type SettingsTabPanelProps = {
     publicAccess: TabProps;
     cleanup: TabProps;
     mediaStack: TabProps;
+    metadata: TabProps;
     homeLayout: TabProps;
     navigation: TabProps;
     broadcast: TabProps;
@@ -64,6 +66,7 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
     publicAccess,
     cleanup,
     mediaStack,
+    metadata,
     homeLayout,
     navigation,
     broadcast,
@@ -91,6 +94,7 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
         {activeTab === 'public-access' && <PublicAccessSettingsTab {...publicAccess} />}
         {activeTab === 'cleanup' && <CleanupSettingsTab {...cleanup} />}
         {activeTab === 'mediastack' && <MediaStackSettingsTab {...mediaStack} />}
+        {activeTab === 'metadata' && <MetadataSettingsTab {...metadata} />}
         {activeTab === 'home-layout' && <HomeLayoutSettings {...homeLayout} />}
         {activeTab === 'navigation' && <NavigationOrderTab {...navigation} />}
         {activeTab === 'broadcast' && <BroadcastTab {...broadcast} />}

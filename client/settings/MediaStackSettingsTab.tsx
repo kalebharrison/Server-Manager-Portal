@@ -1,22 +1,16 @@
 import React from 'react';
 
 import { IntegrationTestButton } from '../shared/IntegrationTestButton';
+import type { ArrInstance } from '../shared/types';
 import { CustomSelect } from '../shared/ui';
+import { ArrInstancesPanel } from './ArrInstancesPanel';
 import { IntegrationHeading, hasIntegrationCredentials } from './integrationDisplay';
 import { SettingHint } from './SettingHint';
 
 type MediaStackSettingsTabProps = {
     initialSettings: any;
     mediaServerType: 'plex' | 'jellyfin';
-    sonarrUrl: string;
-    sonarrApiKey: string;
-    radarrUrl: string;
-    radarrApiKey: string;
-    lidarrUrl: string;
-    lidarrApiKey: string;
-    tmdbApiKey: string;
-    tvdbApiKey: string;
-    tvdbPin: string;
+    arrInstances: ArrInstance[];
     tautulliUrl: string;
     tautulliApiKey: string;
     jellystatUrl: string;
@@ -24,15 +18,9 @@ type MediaStackSettingsTabProps = {
     requestAppType: string;
     requestAppUrl: string;
     requestAppApiKey: string;
-    onSonarrUrlChange: (value: string) => void;
-    onSonarrApiKeyChange: (value: string) => void;
-    onRadarrUrlChange: (value: string) => void;
-    onRadarrApiKeyChange: (value: string) => void;
-    onLidarrUrlChange: (value: string) => void;
-    onLidarrApiKeyChange: (value: string) => void;
-    onTmdbApiKeyChange: (value: string) => void;
-    onTvdbApiKeyChange: (value: string) => void;
-    onTvdbPinChange: (value: string) => void;
+    ombiUrl: string;
+    ombiApiKey: string;
+    onArrInstancesChange: (value: ArrInstance[]) => void;
     onTautulliUrlChange: (value: string) => void;
     onTautulliApiKeyChange: (value: string) => void;
     onJellystatUrlChange: (value: string) => void;
@@ -40,21 +28,15 @@ type MediaStackSettingsTabProps = {
     onRequestAppTypeChange: (value: string) => void;
     onRequestAppUrlChange: (value: string) => void;
     onRequestAppApiKeyChange: (value: string) => void;
+    onOmbiUrlChange: (value: string) => void;
+    onOmbiApiKeyChange: (value: string) => void;
     addToast: (message: string, type?: 'success' | 'error') => void;
 };
 
 export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     initialSettings,
     mediaServerType,
-    sonarrUrl,
-    sonarrApiKey,
-    radarrUrl,
-    radarrApiKey,
-    lidarrUrl,
-    lidarrApiKey,
-    tmdbApiKey,
-    tvdbApiKey,
-    tvdbPin,
+    arrInstances,
     tautulliUrl,
     tautulliApiKey,
     jellystatUrl,
@@ -62,15 +44,9 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     requestAppType,
     requestAppUrl,
     requestAppApiKey,
-    onSonarrUrlChange,
-    onSonarrApiKeyChange,
-    onRadarrUrlChange,
-    onRadarrApiKeyChange,
-    onLidarrUrlChange,
-    onLidarrApiKeyChange,
-    onTmdbApiKeyChange,
-    onTvdbApiKeyChange,
-    onTvdbPinChange,
+    ombiUrl,
+    ombiApiKey,
+    onArrInstancesChange,
     onTautulliUrlChange,
     onTautulliApiKeyChange,
     onJellystatUrlChange,
@@ -78,92 +54,24 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     onRequestAppTypeChange,
     onRequestAppUrlChange,
     onRequestAppApiKeyChange,
+    onOmbiUrlChange,
+    onOmbiApiKeyChange,
     addToast,
 }) => (
     <div className="mb-8 animate-fade-in">
-        <IntegrationHeading app="sonarr" title="Sonarr Integration" subtitle="TV series automation" />
-        <div className="mb-4">
-            <label htmlFor="sonarrUrl">Sonarr URL</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="sonarrUrl" type="text" value={sonarrUrl} onChange={(e) => onSonarrUrlChange(e.target.value)} placeholder="http://localhost:8989" />
-            <div className="mt-2">
-                <SettingHint>The URL to your Sonarr instance.</SettingHint>
-            </div>
-        </div>
-        <div className="mb-4">
-            <label htmlFor="sonarrApiKey">Sonarr API Key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="sonarrApiKey" type="password" value={sonarrApiKey} onChange={(e) => onSonarrApiKeyChange(e.target.value)} placeholder="API Key from Sonarr Settings -> General" />
-        </div>
-        <IntegrationTestButton
-            type="sonarr"
-            payload={{ sonarrUrl, sonarrApiKey }}
-            disabled={!hasIntegrationCredentials(sonarrUrl, sonarrApiKey, initialSettings.sonarrUrl, initialSettings.sonarrApiKey)}
-            className="mb-6"
-            onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
-        />
-
-        <IntegrationHeading app="radarr" title="Radarr Integration" subtitle="Movie automation" className="mt-8" />
-        <div className="mb-4">
-            <label htmlFor="radarrUrl">Radarr URL</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="radarrUrl" type="text" value={radarrUrl} onChange={(e) => onRadarrUrlChange(e.target.value)} placeholder="http://localhost:7878" />
-            <div className="mt-2">
-                <SettingHint>The URL to your Radarr instance.</SettingHint>
-            </div>
-        </div>
-        <div className="mb-4">
-            <label htmlFor="radarrApiKey">Radarr API Key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="radarrApiKey" type="password" value={radarrApiKey} onChange={(e) => onRadarrApiKeyChange(e.target.value)} placeholder="Enter Radarr API Key" />
-        </div>
-        <IntegrationTestButton
-            type="radarr"
-            payload={{ radarrUrl, radarrApiKey }}
-            disabled={!hasIntegrationCredentials(radarrUrl, radarrApiKey, initialSettings.radarrUrl, initialSettings.radarrApiKey)}
-            className="mb-6"
-            onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
-        />
-
-        <IntegrationHeading app="lidarr" title="Lidarr Integration" subtitle="Music automation and download status" className="mt-8" />
-        <div className="mb-4">
-            <label htmlFor="lidarrUrl">Lidarr URL</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="lidarrUrl" type="text" value={lidarrUrl} onChange={(e) => onLidarrUrlChange(e.target.value)} placeholder="http://localhost:8686" />
-        </div>
-        <div className="mb-4">
-            <label htmlFor="lidarrApiKey">Lidarr API Key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="lidarrApiKey" type="password" value={lidarrApiKey} onChange={(e) => onLidarrApiKeyChange(e.target.value)} placeholder="API Key from Lidarr Settings -> General" />
-        </div>
-        <IntegrationTestButton
-            type="lidarr"
-            payload={{ lidarrUrl, lidarrApiKey }}
-            disabled={!hasIntegrationCredentials(lidarrUrl, lidarrApiKey, initialSettings.lidarrUrl, initialSettings.lidarrApiKey)}
-            className="mb-6"
-            onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
-        />
-
-        <IntegrationHeading app="tmdb" title="TMDB Integration" subtitle="Request discovery and trending artwork" className="mt-8" />
-        <div className="mb-4">
-            <label htmlFor="tmdbApiKey">TMDB API Key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tmdbApiKey" type="password" value={tmdbApiKey} onChange={(e) => onTmdbApiKeyChange(e.target.value)} placeholder="Enter TMDB API Key" />
-            <div className="mt-2">
-                <SettingHint>Provides request discovery metadata and optional trending portal artwork.</SettingHint>
-            </div>
-        </div>
-
-        <IntegrationHeading app="tvdb" title="TVDB Integration" subtitle="Optional TV metadata fallback" className="mt-8" />
-        <div className="mb-4">
-            <label htmlFor="tvdbApiKey">TVDB API Key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tvdbApiKey" type="password" value={tvdbApiKey} onChange={(e) => onTvdbApiKeyChange(e.target.value)} placeholder="TVDB v4 API key" />
-            <div className="mt-2"><SettingHint>Fills missing TV summaries, air dates, status, network, and genres when a TVDB ID is available.</SettingHint></div>
-        </div>
-        <div className="mb-4">
-            <label htmlFor="tvdbPin">TVDB Subscriber PIN (optional)</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tvdbPin" type="password" value={tvdbPin} onChange={(e) => onTvdbPinChange(e.target.value)} placeholder="Only required for subscriber-supported keys" />
-        </div>
-        <IntegrationTestButton
-            type="tvdb"
-            payload={{ tvdbApiKey, tvdbPin }}
-            disabled={!String(tvdbApiKey || initialSettings.tvdbApiKey || '').trim()}
-            className="mb-6"
-            onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
-        />
+        {(['sonarr', 'radarr', 'lidarr'] as const).map((type, index) => (
+            <ArrInstancesPanel
+                key={type}
+                type={type}
+                instances={arrInstances.filter((instance) => instance.type === type)}
+                onChange={(typedInstances) => onArrInstancesChange([
+                    ...arrInstances.filter((instance) => instance.type !== type),
+                    ...typedInstances,
+                ])}
+                onMessage={(message, ok) => addToast(message, ok ? 'success' : 'error')}
+                className={index === 0 ? '' : 'mt-8'}
+            />
+        ))}
 
         {mediaServerType === 'plex' && <>
         <IntegrationHeading app="tautulli" title="Tautulli Integration" subtitle="Plex activity and analytics" className="mt-8" />
@@ -208,8 +116,8 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
 
         <IntegrationHeading
             app={requestAppType === 'none' ? 'seerr' : requestAppType}
-            title="Request App Integration"
-            subtitle="Seerr or Jellyseerr for embedded requests; Ombi for external request workflows"
+            title="Primary Movie & TV Requester"
+            subtitle="Seerr or Jellyseerr powers the embedded request experience"
             className="mt-8"
         />
         <div className="mb-4">
@@ -222,13 +130,13 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
                     { label: 'Disabled', value: 'none' },
                     { label: 'Seerr', value: 'seerr' },
                     { label: 'Jellyseerr', value: 'jellyseerr' },
-                    { label: 'Ombi', value: 'ombi' }
+                    ...(requestAppType === 'ombi' ? [{ label: 'Ombi (legacy external mode)', value: 'ombi' }] : [])
                 ]}
             />
             <div className="mt-2">
                 <SettingHint>
                     {requestAppType === 'ombi'
-                        ? 'Ombi connection testing and status are supported. Embedded browsing and request actions currently require Seerr or Jellyseerr.'
+                        ? 'This legacy configuration remains usable for connection testing and status. Choose Seerr or Jellyseerr for embedded browsing and requests.'
                         : 'Powers the embedded Request tab, request status, issue reporting, and maintenance request history.'}
                 </SettingHint>
             </div>
@@ -247,5 +155,24 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             disabled={requestAppType === 'none' || !hasIntegrationCredentials(requestAppUrl, requestAppApiKey, initialSettings.requestAppUrl, initialSettings.requestAppApiKey)}
             onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
         />
+
+        {requestAppType !== 'ombi' && <>
+            <IntegrationHeading app="ombi" title="Ombi Music Requests" subtitle="Optional secondary requester for Lidarr workflows" className="mt-8" />
+            <div className="mb-4">
+                <label htmlFor="ombiUrl">Ombi URL</label>
+                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="ombiUrl" type="text" value={ombiUrl} onChange={(event) => onOmbiUrlChange(event.target.value)} placeholder="http://localhost:3579" />
+                <div className="mt-2"><SettingHint>Runs alongside Seerr for music requests. It does not replace the embedded movie and TV requester.</SettingHint></div>
+            </div>
+            <div className="mb-4">
+                <label htmlFor="ombiApiKey">Ombi API Key</label>
+                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="ombiApiKey" type="password" value={ombiApiKey} onChange={(event) => onOmbiApiKeyChange(event.target.value)} placeholder="API key from Ombi settings" />
+            </div>
+            <IntegrationTestButton
+                type="requestApp"
+                payload={{ requestAppType: 'ombi', ombiUrl, ombiApiKey }}
+                disabled={!hasIntegrationCredentials(ombiUrl, ombiApiKey, initialSettings.ombiUrl, initialSettings.ombiApiKey)}
+                onMessage={(message, ok) => addToast(message, ok ? 'success' : 'error')}
+            />
+        </>}
     </div>
 );

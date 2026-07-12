@@ -106,6 +106,10 @@ Beta image branch: `beta`
   - Encrypt all stored credentials with authenticated AES-256-GCM using environment-held key material; migrate plaintext config and rolling backups; enforce owner-only permissions; add TVDB fallback enrichment for TV details; and add Lidarr connection, status, and active-download support without bypassing request-app permissions.
   - Upstream PR fit: split encryption/storage hardening from TVDB metadata and Lidarr automation support.
 
+- Pending: metadata health and multi-instance automation
+  - Separate TMDB/TVDB settings from application connections; monitor both APIs with cached authenticated probes; support named Sonarr, Radarr, and Lidarr instances while preserving legacy defaults; and allow Seerr/Jellyseerr to coexist with a secondary Ombi music-request connection.
+  - Upstream PR fit: split metadata settings/status probes from the multi-instance Arr port and dual-requester configuration.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.
