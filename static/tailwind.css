@@ -651,6 +651,9 @@
   .mb-8 {
     margin-bottom: calc(var(--spacing) * 8);
   }
+  .mb-10 {
+    margin-bottom: calc(var(--spacing) * 10);
+  }
   .-ml-1 {
     margin-left: calc(var(--spacing) * -1);
   }
@@ -912,9 +915,6 @@
   .min-h-\[60vh\] {
     min-height: 60vh;
   }
-  .min-h-\[112px\] {
-    min-height: 112px;
-  }
   .min-h-\[140px\] {
     min-height: 140px;
   }
@@ -1022,9 +1022,6 @@
   }
   .w-48 {
     width: calc(var(--spacing) * 48);
-  }
-  .w-56 {
-    width: calc(var(--spacing) * 56);
   }
   .w-72 {
     width: calc(var(--spacing) * 72);

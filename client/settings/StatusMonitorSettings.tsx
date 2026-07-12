@@ -130,21 +130,22 @@ export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled:
                     <h4 className="font-bold text-xl text-text">Monitored Services</h4>
                     <button onClick={addService} className="px-4 py-2 bg-plex text-background hover:bg-plex-hover rounded-md text-sm font-bold transition-colors shadow-lg">Add Service</button>
                 </div>
+                <p className="mb-4 text-sm text-muted">These display fields control exactly what members see on the Status page. Connection URLs remain admin-only.</p>
                 <div className="flex flex-col gap-6">
                     {localConfig.services.map((service: any) => (
                         <div key={service.id} className="flex flex-col gap-3 pb-6 border-b border-border/40 last:border-b-0 last:pb-0">
                             <div>
-                                <label className="block text-sm text-muted mb-1">Service Name</label>
+                                <label className="block text-sm text-muted mb-1">Public Display Name</label>
                                 <input
                                     type="text"
                                     value={service.name}
                                     onChange={(e) => updateService(service.id, 'name', e.target.value)}
                                     className="w-full p-3 rounded-lg bg-background border border-border focus:border-plex outline-none text-sm font-bold"
-                                    placeholder="Service Name"
+                                    placeholder="Name shown on the Status page"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm text-muted mb-1">Status Page Subtitle</label>
+                                <label className="block text-sm text-muted mb-1">Public Subtitle</label>
                                 <input
                                     type="text"
                                     value={service.description || ''}

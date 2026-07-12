@@ -6,7 +6,6 @@ import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { getAccessProgressPct, getDaysUntilExpiry } from '../shared/format';
 import { PeriodDropdown } from '../shared/PeriodDropdown';
 import { Loader, Toast } from '../shared/toast';
-import { TopWatchedGridSkeleton, WrapUpCardsSkeleton } from '../shared/skeletons';
 import { WrapUpCardGrid } from '../shared/WrapUpCards';
 import { SlideshowBackground } from '../shared/theme';
 import { UserDashboardLayout } from '../home/UserDashboardLayout';
@@ -14,6 +13,7 @@ import { HomeWeekCalendar } from '../home/HomeWeekCalendar';
 import { createMainGridWidgetRenderer, createRecentlyAddedWidgetRenderer } from '../home/userDashboardWidgetRenderers';
 import { RebuildLibraryCacheButton } from './RebuildLibraryCacheButton';
 import { DiscoverPosterCard, RECENTLY_ADDED_ITEM_LIMIT } from './DiscoverContent';
+import { ActiveStreamsPanel } from './discover/ActiveStreamsPanel';
 import type { ToastMessage } from '../shared/types';
 
 import { buildHeroMovieColumns, buildJellyfinHomeAnalytics, resolveHomeImage, wrapUpDaysOptions } from './user/userDashboardUtils';
@@ -23,6 +23,7 @@ const WrapUpModal = lazy(() => import('./user/WrapUpModal').then(module => ({ de
 const ReportIssueModal = lazy(() => import('./ReportIssueModal').then(module => ({ default: module.ReportIssueModal })));
 
 const HOME_LIBRARY_CACHE_KEY = 'homeLibrarySnapshot';
+const homeServerStatsCacheKey = (publicConfig: any) => `homeServerStats:${String(publicConfig?.mediaServerType || 'plex').toLowerCase()}`;
 const readCachedHomeLibrary = () => {
     try {
         return JSON.parse(sessionStorage.getItem(HOME_LIBRARY_CACHE_KEY) || 'null');
@@ -38,15 +39,22 @@ const readCachedHomeAnalytics = (sessionInfo: any, days: number | 'all') => {
         return null;
     }
 };
+const readCachedHomeServerStats = (publicConfig: any) => {
+    try {
+        return JSON.parse(sessionStorage.getItem(homeServerStatsCacheKey(publicConfig)) || 'null');
+    } catch {
+        return null;
+    }
+};
 
 export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onLogout: () => void; refreshSession: () => void; onViewAdmin: () => void; onViewStatus: () => void; onViewDashboard: () => void; onViewSettings?: () => void; onViewLogs?: () => void }> = ({ sessionInfo, publicConfig, onLogout, refreshSession, onViewAdmin, onViewStatus, onViewDashboard, onViewSettings, onViewLogs }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState<ToastMessage | null>(null);
     const [analytics, setAnalytics] = useState<any>(() => readCachedHomeAnalytics(sessionInfo, 30));
     const [analyticsLoading, setAnalyticsLoading] = useState(() => !readCachedHomeAnalytics(sessionInfo, 30));
-    const [serverStats, setServerStats] = useState<any>(null);
+    const [serverStats, setServerStats] = useState<any>(() => readCachedHomeServerStats(publicConfig));
     const [dashboardData, setDashboardData] = useState<any>(readCachedHomeLibrary);
-    const [serverDataLoading, setServerDataLoading] = useState(true);
+    const [serverDataLoading, setServerDataLoading] = useState(() => !readCachedHomeServerStats(publicConfig));
     const [topContentPage, setTopContentPage] = useState(0);
     const topWatchedPageSize = (publicConfig?.dashboardLayout?.topWatchedRows || 2) * 6;
     const [recentHistoryPage, setRecentHistoryPage] = useState(0);
@@ -62,6 +70,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
     const user = sessionInfo.account;
     const showQualityBadges = publicConfig?.showPosterQualityBadges !== false;
     const isJellyfinPortal = String(publicConfig?.mediaServerType || 'plex').toLowerCase() === 'jellyfin';
+    const serverStatsStorageKey = homeServerStatsCacheKey(publicConfig);
     const [optOutNewsletter, setOptOutNewsletter] = useState(user?.optOutNewsletter || false);
 
     const handleToggleNewsletter = async () => {
@@ -186,12 +195,13 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
             if (!isMounted) return;
             try {
                 if (isJellyfinPortal) {
-                    if (isMounted) setServerStats({ provider: 'jellyfin' });
+                    if (isMounted) setServerStats((current: any) => current || { provider: 'jellyfin' });
                     return;
                 }
                 const res = await apiFetch('/api/plex/stats');
                 if (!isMounted) return;
                 setServerStats(res);
+                sessionStorage.setItem(serverStatsStorageKey, JSON.stringify(res));
                 if (res?.isBuilding) {
                     pollTimer = setTimeout(fetchServerStats, 5000);
                 }
@@ -209,16 +219,20 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
             if (pollTimer) clearTimeout(pollTimer);
             if (dashboardTimer) clearInterval(dashboardTimer);
         };
-    }, [isJellyfinPortal]);
+    }, [isJellyfinPortal, serverStatsStorageKey]);
 
     useEffect(() => {
         if (!isJellyfinPortal || !analytics?.libraryHealth) return;
-        setServerStats((current: any) => ({
-            ...(current || {}),
+        const nextStats = {
             provider: 'jellyfin',
             ...analytics.libraryHealth,
+        };
+        setServerStats((current: any) => ({
+            ...(current || {}),
+            ...nextStats,
         }));
-    }, [isJellyfinPortal, analytics?.libraryHealth]);
+        sessionStorage.setItem(serverStatsStorageKey, JSON.stringify(nextStats));
+    }, [isJellyfinPortal, analytics?.libraryHealth, serverStatsStorageKey]);
 
     const handleRelink = async () => {
         setIsLoading(true);
@@ -404,6 +418,10 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                 </div>
             </div>
 
+            {sessionInfo.session.isAdmin && (
+                <ActiveStreamsPanel isAdmin isJellyfinPortal={isJellyfinPortal} />
+            )}
+
             {selectedMetric && analytics && (
                 <Suspense fallback={null}>
                     <WrapUpModal metric={selectedMetric} analytics={analytics} days={analyticsDays} onClose={() => setSelectedMetric(null)} />
@@ -434,9 +452,6 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                 renderWrapUp={() => (
                     <>
                         {/* Personal Wrap-Up */}
-                        {(sessionInfo.session.isAdmin || user) && analyticsLoading && (
-                            <WrapUpCardsSkeleton />
-                        )}
                         {(sessionInfo.session.isAdmin || user) && !analyticsLoading && analyticsError && (
                             <div className="glass-card p-4 md:p-5 shadow-xl border border-red-500/30 bg-red-500/5">
                                 <p className="text-red-300 text-sm font-medium">{analyticsError}</p>
@@ -538,11 +553,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                                         </div>
                                     </div>
                                 )}
-                                {analyticsLoading ? (
-                                    <div className="lg:col-span-2 lg:col-start-2 flex min-h-0">
-                                        <TopWatchedGridSkeleton />
-                                    </div>
-                                ) : analytics && analytics.totalPlays > 0 && topWatchedCount > 0 ? (
+                                {!analyticsLoading && analytics && analytics.totalPlays > 0 && topWatchedCount > 0 ? (
                                     <div className={`flex min-h-0 ${analytics.recentHistory?.length ? 'lg:col-span-2' : 'lg:col-span-2 lg:col-start-2'}`}>
                                         <div className="glass-card p-4 md:p-5 shadow-xl flex flex-col h-full w-full min-h-0">
                                             <div className="flex items-center justify-between mb-3 md:mb-4 flex-shrink-0">

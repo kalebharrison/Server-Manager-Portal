@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { getPublicOrigin } from '../shared/basePath';
 import type { MainGridWidgetId, RecentlyAddedWidgetId } from '../shared/dashboardLayout';
-import { LibraryStatsSkeleton } from '../shared/skeletons';
 import { PeriodDropdown } from '../shared/PeriodDropdown';
 import { ScrollReveal } from '../shared/ui';
 
@@ -269,15 +268,14 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
                     </div>
                 );
             case 'libraryStats':
+                if (serverDataLoading && !serverStats) return null;
                 if (isJellyfinPortal) {
                     return (
                         <div className="glass-card p-4 md:p-5 shadow-xl flex flex-col justify-center flex-shrink-0">
                             <div className="flex items-center justify-between mb-3 md:mb-4">
                                 <p className="text-muted text-sm uppercase tracking-widest font-semibold">Jellyfin Library</p>
                             </div>
-                            {serverDataLoading && !serverStats ? (
-                                <LibraryStatsSkeleton />
-                            ) : serverStats ? (
+                            {serverStats ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 md:gap-3">
                                     <div className="bg-background/60 p-3 md:p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center shadow-inner hover:bg-background/80 transition-colors">
                                         <Film className="w-7 h-7 text-plex mb-2 opacity-80" />
@@ -307,9 +305,7 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
                             <p className="text-muted text-sm uppercase tracking-widest font-semibold">Server Library Size</p>
                             {sessionInfo.session.isAdmin && <RebuildLibraryCacheButton />}
                         </div>
-                        {serverDataLoading && !serverStats ? (
-                            <LibraryStatsSkeleton />
-                        ) : serverStats?.isBuilding ? (
+                        {serverStats?.isBuilding ? (
                             <div className="flex flex-col gap-2">
                                 <div className="flex gap-3 items-center text-muted"><div className="w-5 h-5 rounded-full border-2 border-plex border-t-transparent animate-spin" /> Building library size cache in background...</div>
                                 <p className="text-xs text-muted/60">This runs once and may take a few minutes for large libraries. The page will auto-update when ready.</p>
@@ -348,6 +344,7 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
                 );
             case 'analytics':
                 if (!sessionInfo.session.isAdmin && !user) return null;
+                if (analyticsLoading && !analytics) return null;
                 if (isJellyfinPortal) {
                     return (
                         <div className="glass-card p-3 md:p-4 shadow-xl flex flex-col flex-1 min-h-0">
@@ -364,12 +361,7 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
                                     options={analyticsDaysOptions}
                                 />
                             </div>
-                            {analyticsLoading ? (
-                                <div className="flex items-center gap-3 text-muted mt-4">
-                                    <div className="w-5 h-5 rounded-full border-2 border-plex border-t-transparent animate-spin" />
-                                    Loading Jellystat activity...
-                                </div>
-                            ) : analytics && analytics.totalPlays > 0 ? (
+                            {analytics && analytics.totalPlays > 0 ? (
                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mt-4">
                                     <div className="bg-background/60 rounded-xl border border-white/5 p-3">
                                         <p className="text-[10px] text-muted uppercase tracking-widest font-bold">Total Plays</p>

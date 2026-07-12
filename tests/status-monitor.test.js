@@ -44,13 +44,21 @@ test('status payload abstracts vendor defaults but preserves custom labels', () 
         services: [
             { id: 'sonarr', name: 'Sonarr', description: 'TV automation', groupId: 'downloads' },
             { id: 'radarr', name: 'Cinema Pipeline', description: 'Movie acquisition and upgrades', groupId: 'downloads' },
+            { id: 'seerr', name: 'Seerr', description: 'Requests portal', groupId: 'external' },
         ],
     });
     assert.equal(payload.config.groups[0].name, 'Automation Health');
     assert.deepEqual(payload.config.services.map(({ name, description }) => ({ name, description })), [
         { name: 'TV Automation', description: 'TV release automation' },
         { name: 'Cinema Pipeline', description: 'Movie acquisition and upgrades' },
+        { name: 'Request Service', description: 'Media requests' },
     ]);
+});
+
+test('default status config does not expose the request provider brand', () => {
+    const config = createDefaultStatusConfig({ requestAppType: 'seerr', requestAppUrl: 'http://requests:5055' });
+    assert.equal(config.services[0].name, 'Request Service');
+    assert.equal(config.services[0].description, 'Media requests');
 });
 
 test('built-in status URLs follow current application settings', () => {

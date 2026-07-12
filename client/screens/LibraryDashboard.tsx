@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { apiFetch } from '../shared/api';
-import { usePortalWideContentLayout } from '../shared/portalLayout';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
+import { ActiveStreamsPanel } from './discover/ActiveStreamsPanel';
 import { DiscoverCommunityView } from './discover/DiscoverCommunityView';
 import { DiscoverLibraryView } from './discover/DiscoverLibraryView';
-import { StreamDetailsModal } from './StreamDetailsModal';
 import { DISCOVER_DESKTOP_ITEM_LIMIT, DISCOVER_MOBILE_ITEM_LIMIT } from './DiscoverContent';
 
 type DiscoverView = 'library' | 'community';
@@ -26,11 +25,8 @@ const readCachedLibrary = (): LibraryData | null => {
 export const LibraryDashboard: React.FC<{ onBack: () => void; isAdmin?: boolean; publicConfig?: any; mediaServerType?: string }> = ({ isAdmin, publicConfig, mediaServerType }) => {
     const [activeView, setActiveView] = useState<DiscoverView>('library');
     const [libraryData, setLibraryData] = useState<LibraryData | null>(readCachedLibrary);
-    const [activeSessions, setActiveSessions] = useState<any[]>([]);
     const [trendingStats, setTrendingStats] = useState<TrendingStats | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [selectedSession, setSelectedSession] = useState<any | null>(null);
-    const isWidePortalLayout = usePortalWideContentLayout();
     const [isDiscoverDesktop, setIsDiscoverDesktop] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
     const [recentLimitOverride, setRecentLimitOverride] = useState<number | null>(() => {
         const saved = localStorage.getItem('discoverRecentLimitOverride');
@@ -68,22 +64,11 @@ export const LibraryDashboard: React.FC<{ onBack: () => void; isAdmin?: boolean;
             const endpoint = isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/library';
             const result = await apiFetch(`${endpoint}?limit=${recentLimit}`, { cacheTtlMs: 5 * 60_000, staleIfErrorMs: 60 * 60_000 });
             updateLibrary(result);
-            if (isJellyfinPortal) setActiveSessions(result?.activeSessions || []);
             setError(null);
         } catch (fetchError: any) {
             if (!readCachedLibrary()) setError(fetchError?.message || 'Discover is temporarily unavailable');
         }
     }, [isJellyfinPortal, recentLimit, updateLibrary]);
-
-    const fetchSessions = useCallback(async () => {
-        try {
-            const endpoint = isJellyfinPortal ? '/api/jellyfin/dashboard?limit=1' : '/api/plex/sessions';
-            const result = await apiFetch(endpoint, { cacheTtlMs: 8_000, staleIfErrorMs: 60_000, forceRefresh: true });
-            setActiveSessions(result?.activeSessions || []);
-        } catch {
-            // Preserve the last live-session snapshot during a short backend interruption.
-        }
-    }, [isJellyfinPortal]);
 
     const fetchTrending = useCallback(async () => {
         if (isJellyfinPortal) return;
@@ -98,11 +83,9 @@ export const LibraryDashboard: React.FC<{ onBack: () => void; isAdmin?: boolean;
     useEffect(() => { void fetchLibrary(); }, [fetchLibrary]);
     useEffect(() => {
         if (activeView !== 'community') return;
-        void fetchSessions();
         void fetchTrending();
-    }, [activeView, fetchSessions, fetchTrending]);
+    }, [activeView, fetchTrending]);
     useVisibleInterval(fetchLibrary, 5 * 60_000);
-    useVisibleInterval(activeView === 'community' ? fetchSessions : () => {}, activeView === 'community' ? 10_000 : null);
     useVisibleInterval(activeView === 'community' ? fetchTrending : () => {}, activeView === 'community' ? 5 * 60_000 : null);
 
     return (
@@ -121,13 +104,14 @@ export const LibraryDashboard: React.FC<{ onBack: () => void; isAdmin?: boolean;
                     </nav>
                 </header>
 
+                <ActiveStreamsPanel isAdmin={isAdmin} isJellyfinPortal={isJellyfinPortal} className="mb-10" />
+
                 {activeView === 'library' ? (
                     <DiscoverLibraryView data={libraryData || EMPTY_LIBRARY} recentLimit={recentLimit} onRecentLimitChange={handleRecentLimitChange} isJellyfinPortal={isJellyfinPortal} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} />
                 ) : (
-                    <DiscoverCommunityView activeSessions={activeSessions} trendingStats={trendingStats} recentLimit={recentLimit} isWidePortalLayout={isWidePortalLayout} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} serverName={publicConfig?.serverIdentifier} isJellyfinPortal={isJellyfinPortal} onSelectSession={setSelectedSession} />
+                    <DiscoverCommunityView trendingStats={trendingStats} recentLimit={recentLimit} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} serverName={publicConfig?.serverIdentifier} isJellyfinPortal={isJellyfinPortal} />
                 )}
             </main>
-            {selectedSession && <StreamDetailsModal session={selectedSession} onClose={() => setSelectedSession(null)} isAdmin={isAdmin} onKilled={fetchSessions} providerLabel={isJellyfinPortal ? 'Jellyfin' : 'Plex'} />}
         </div>
     );
 };

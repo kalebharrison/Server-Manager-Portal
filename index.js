@@ -186,6 +186,7 @@ import {
     HEALTH_PATH,
     TRENDING_CACHE_PATH,
     ANALYTICS_CACHE_PATH,
+    PERSONAL_ANALYTICS_CACHE_PATH,
     KILL_RULES_PATH,
     MAINTENANCE_RULES_PATH,
     MAINTENANCE_MEDIA_INDEX_PATH,
@@ -794,6 +795,7 @@ const analyticsService = createAnalyticsService({
     configPath: CONFIG_PATH,
     usersPath: USERS_PATH,
     analyticsCachePath: ANALYTICS_CACHE_PATH,
+    personalAnalyticsCachePath: PERSONAL_ANALYTICS_CACHE_PATH,
     trendingCachePath: TRENDING_CACHE_PATH,
     plexStatsCachePath: PLEX_STATS_CACHE_PATH,
     loadFile,
@@ -825,6 +827,7 @@ const {
     calculateTrendingStats,
     startTrendingStatsBackgroundTask,
     startAnalyticsStatsBackgroundTask,
+    startPersonalAnalyticsCacheWarmer,
 } = analyticsService;
 
 registerSpeedtestRoutes({
@@ -1001,6 +1004,7 @@ const startPortalService = async () => {
     // Background cache builders: reuse on-disk cache and schedule next run by interval.
     startTrendingStatsBackgroundTask();
     startAnalyticsStatsBackgroundTask();
+    void startPersonalAnalyticsCacheWarmer().catch((error) => log(`[PersonalAnalyticsCache] Startup failed: ${error.message}`));
     systemJobs.maintenanceIndex.nextRun = new Date(Date.now() + (20 * 1000)).toISOString();
     setTimeout(async () => {
         try {

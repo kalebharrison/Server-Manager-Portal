@@ -98,6 +98,10 @@ Beta image branch: `beta`
   - Persist and refresh recent Plex library data every five minutes; separate cached library reads from live sessions; use stale-while-refresh caches; prewarm request discovery and release-calendar data; add a configurable seven-day Home calendar; simplify Discover navigation; collapse recent TV episodes into one series entry; and remove obsolete loading skeletons.
   - Upstream PR fit: split into Plex dashboard cache service/routes, generic cache behavior, Home calendar, and recent-history aggregation.
 
+- Pending: persisted personal summaries and shared live streams
+  - Persist per-user Plex wrap-up snapshots across restarts with background refresh; remove Home analytics loading placeholders; keep one privacy-aware live-stream panel above both Discover views and on the admin Home; add a sessions-only Jellyfin endpoint; and abstract default request-provider branding on member Status pages while clarifying public display-name settings.
+  - Upstream PR fit: split into personal analytics caching, shared streams UI/Jellyfin sessions, and Status label abstraction.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.
