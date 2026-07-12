@@ -126,7 +126,7 @@ Browse your Sonarr and Radarr activity directly inside the portal:
 - **Month Navigation** - Browse releases by month with auto-advance to the next month that has content
 - **Smart ID Matching** - Uses IMDb, TMDB, and TVDB IDs to accurately map and display metadata
 
-Configure Sonarr/Radarr URLs and API keys in **Settings → Media Stack**.
+Configure Sonarr/Radarr URLs and API keys in **Settings → Apps & Automation**.
 
 ---
 
@@ -247,7 +247,7 @@ npm start
 - Choose **Plex** or **Jellyfin** in the first-time setup wizard
 - Plex setup uses Plex OAuth/token and server selection
 - Jellyfin setup uses Jellyfin URL + API key, then supports Jellyfin login and Quick Connect
-- Go to **Settings** in the sidebar to configure **Media Player**, SMTP, temporary access settings, branding, and scheduled tasks
+- Go to **Settings** in the sidebar to configure **Plex / Jellyfin**, email delivery, access and privacy, appearance, and scheduled tasks
 
 ### Media player modes
 
@@ -440,18 +440,20 @@ All configuration is managed through the **Settings UI** in the browser. Key opt
 
 | Setting | Description |
 |---|---|
-| Media Player | Choose Plex or Jellyfin |
+| Plex / Jellyfin | Choose and connect the portal media server |
 | Plex Token / Server | Plex admin token, selected server, and optional direct Plex URL |
 | Jellyfin URL / API Key | Jellyfin server URL and API key for users, sessions, Quick Connect, and branding proxy |
-| Branding & UI | Portal accent colour, server logo, Jellyfin/Plex preset, and splash background |
-| Temporary Access Duration | Number of days new users get for free |
+| Appearance | Portal theme, server logo, artwork, animation, and poster details |
+| Access & Privacy | Registration, referrals, public login/status visibility, shared libraries, and stream-name privacy |
 | Inactivity Threshold | Days of inactivity before auto-removal |
 | SMTP Settings | Host, port, username, password, from address |
 | Newsletter Schedule | Weekly or monthly, with day/time selection |
 | Home Layout | Section order and visibility for the user home page |
-| Sonarr / Radarr URLs | For media stack calendar, queue, and history |
+| Sonarr / Radarr URLs | For release calendar and download progress |
 | Tautulli / Jellystat | Tautulli for Plex analytics, Jellystat for Jellyfin analytics |
 | Status Page Services | Define services and their health check URLs |
+
+Library totals and the status page require explicit admin opt-in before they are available without authentication. Member APIs remain authenticated regardless of these display settings.
 
 ---
 

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef, useTransition } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useTransition } from 'react';
 import { bindAppConfirm } from './shared/confirm';
 import { apiFetch, clearApiCache } from './shared/api';
 import { portalUrl, stripBasePath } from './shared/basePath';
 import { Loader } from './shared/toast';
 import { AppAmbientBackground } from './shared/theme';
 import { PORTAL_WIDE_LAYOUT_THRESHOLD } from './shared/portalLayout';
+import { applyLocalPortalPreferences, loadLocalPortalPreferences, USER_PREFERENCES_EVENT } from './shared/userPreferences';
 import {
     updateFavicon,
     Login,
@@ -73,6 +74,8 @@ export const MainApp: React.FC = () => {
     const [currentRoute, setCurrentRoute] = useState<AppRoute>('loading');
     const [sessionInfo, setSessionInfo] = useState<any>(null);
     const [publicConfig, setPublicConfig] = useState<any>({});
+    const [localPreferences, setLocalPreferences] = useState(loadLocalPortalPreferences);
+    const effectivePublicConfig = useMemo(() => applyLocalPortalPreferences(publicConfig, localPreferences), [localPreferences, publicConfig]);
     const [, startRouteTransition] = useTransition();
     const updateRoute = useCallback((route: AppRoute) => {
         if (route === 'loading') {
@@ -85,7 +88,6 @@ export const MainApp: React.FC = () => {
     const fetchPublicConfig = useCallback(async (forceRefresh = false) => {
         try {
             const data = await apiFetch(forceRefresh ? '/api/config/public?refresh=1' : '/api/config/public', { forceRefresh });
-            window.__USE_24_HOUR_CLOCK__ = data.use24HourClock === true;
             if (typeof data.basePath === 'string') {
                 window.__BASE_PATH__ = data.basePath;
             }
@@ -96,6 +98,16 @@ export const MainApp: React.FC = () => {
             }
         } catch (e) { }
     }, []);
+
+    useEffect(() => {
+        const updatePreferences = () => setLocalPreferences(loadLocalPortalPreferences());
+        window.addEventListener(USER_PREFERENCES_EVENT, updatePreferences);
+        return () => window.removeEventListener(USER_PREFERENCES_EVENT, updatePreferences);
+    }, []);
+
+    useEffect(() => {
+        window.__USE_24_HOUR_CLOCK__ = effectivePublicConfig.use24HourClock === true;
+    }, [effectivePublicConfig.use24HourClock]);
 
     const lastBrandingTheme = useRef<string | null>(null);
 
@@ -123,12 +135,12 @@ export const MainApp: React.FC = () => {
     }, [activeTheme]);
 
     useEffect(() => {
-        if (publicConfig?.useBrandedSkeleton !== false) {
+        if (effectivePublicConfig?.useBrandedSkeleton !== false) {
             document.documentElement.classList.add('branded-skeleton');
         } else {
             document.documentElement.classList.remove('branded-skeleton');
         }
-    }, [publicConfig?.useBrandedSkeleton]);
+    }, [effectivePublicConfig?.useBrandedSkeleton]);
 
     useEffect(() => {
         fetchPublicConfig();
@@ -252,14 +264,14 @@ export const MainApp: React.FC = () => {
         setRoute('users');
     };
 
-    if (currentRoute === 'loading') return <Loader isLoading={true} isCinematic={!!publicConfig?.useCinematicLoading} />;
+    if (currentRoute === 'loading') return <Loader isLoading={true} isCinematic={!!effectivePublicConfig?.useCinematicLoading} />;
     if (currentRoute === 'login') {
         const initialLoginError = typeof window !== 'undefined'
             ? new URLSearchParams(window.location.search).get('loginError')
             : null;
         return (
             <React.Suspense fallback={<RouteFallback />}>
-                <Login onLoginSuccess={checkSession} publicConfig={publicConfig} initialError={initialLoginError || undefined} />
+                <Login onLoginSuccess={checkSession} publicConfig={effectivePublicConfig} initialError={initialLoginError || undefined} />
             </React.Suspense>
         );
     }
@@ -274,10 +286,10 @@ export const MainApp: React.FC = () => {
     const renderView = () => {
         if (currentRoute === 'invite') {
             const code = stripBasePath(window.location.pathname).split('/')[2];
-            return <PublicInviteClaim code={code} />;
+            return <PublicInviteClaim code={code} showServerStats={effectivePublicConfig?.showLoginServerStats === true} />;
         }
         if (currentRoute === 'status') return <StatusDashboard onBack={() => isPublicStatus ? setRoute('login') : setRoute('user')} isAdmin={isAdmin} isPublic={isPublicStatus} />;
-        if (currentRoute === 'dashboard') return <LibraryDashboard onBack={() => setRoute('user')} isAdmin={isAdmin} publicConfig={publicConfig} mediaServerType={sessionInfo?.mediaServerType} />;
+        if (currentRoute === 'dashboard') return <LibraryDashboard onBack={() => setRoute('user')} isAdmin={isAdmin} publicConfig={effectivePublicConfig} mediaServerType={sessionInfo?.mediaServerType} />;
         if (currentRoute === 'settings' && isAdmin) return <SettingsDashboard />;
         if (currentRoute === 'preferences') return <UserPreferencesDashboard account={sessionInfo?.account} activeTheme={activeTheme} setActiveTheme={setActiveTheme} refreshSession={checkSession} readOnly={isImpersonating} />;
         if (currentRoute === 'maintenance' && isAdmin) return <MaintenanceDashboard />;
@@ -286,7 +298,7 @@ export const MainApp: React.FC = () => {
         if (currentRoute === 'analytics') return <AnalyticsDashboard isAdmin={isAdmin} sessionInfo={sessionInfo} />;
         if (currentRoute === 'request') return <RequestDashboard isAdmin={isAdmin} />;
         if (currentRoute === 'admin' || currentRoute === 'users') return <AdminDashboard onLogout={handleLogout} onViewUserPortal={() => setRoute('user')} onViewStatus={() => setRoute('status')} onViewDashboard={() => setRoute('dashboard')} onViewAsUser={handleViewAsUser} />;
-        return <UserDashboard sessionInfo={sessionInfo} publicConfig={publicConfig} onLogout={handleLogout} refreshSession={checkSession} onViewAdmin={() => setRoute('users')} onViewStatus={() => setRoute('status')} onViewDashboard={() => setRoute('dashboard')} onViewSettings={() => setRoute('settings')} onViewLogs={() => setRoute('logs')} />;
+        return <UserDashboard sessionInfo={sessionInfo} publicConfig={effectivePublicConfig} onLogout={handleLogout} refreshSession={checkSession} onViewAdmin={() => setRoute('users')} onViewStatus={() => setRoute('status')} onViewDashboard={() => setRoute('dashboard')} onViewSettings={() => setRoute('settings')} onViewLogs={() => setRoute('logs')} />;
     };
 
     return (

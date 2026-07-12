@@ -76,7 +76,8 @@ export const SettingsDashboard: React.FC = () => {
     const [checkInterval, setCheckInterval] = useState(60);
     const [hideStreamUsers, setHideStreamUsers] = useState<string>('anonymous');
     const [useTrendingSlideshowOnLogin, setUseTrendingSlideshowOnLogin] = useState(false);
-    const [publicStatusEnabled, setPublicStatusEnabled] = useState(true);
+    const [showLoginServerStats, setShowLoginServerStats] = useState(false);
+    const [publicStatusEnabled, setPublicStatusEnabled] = useState(false);
     const [defaultLibraryIds, setDefaultLibraryIds] = useState<string[]>([]);
     const {
         activeTab,
@@ -103,7 +104,6 @@ export const SettingsDashboard: React.FC = () => {
     const [newsletterFrequency, setNewsletterFrequency] = useState('disabled');
     const [newsletterDay, setNewsletterDay] = useState(0);
     const [publicDomain, setPublicDomain] = useState('https://yourdomain.com');
-    const [requestUrl, setRequestUrl] = useState('https://yourdomain.com');
     const [contactUrl, setContactUrl] = useState('');
     const [contactWhatsApp, setContactWhatsApp] = useState('');
     const [contactEmail, setContactEmail] = useState('');
@@ -261,7 +261,6 @@ export const SettingsDashboard: React.FC = () => {
                 setInactiveCleanupEnabled,
                 setInactiveCleanupDays,
                 setPublicDomain,
-                setRequestUrl,
                 setContactUrl,
                 setContactWhatsApp,
                 setContactEmail,
@@ -292,6 +291,7 @@ export const SettingsDashboard: React.FC = () => {
                 setNavOrder,
                 setHideStreamUsers,
                 setUseTrendingSlideshowOnLogin,
+                setShowLoginServerStats,
                 setPublicStatusEnabled,
                 setDefaultLibraryIds,
                 setUse24HourClock,
@@ -365,7 +365,6 @@ export const SettingsDashboard: React.FC = () => {
             inactiveCleanupEnabled,
             inactiveCleanupDays,
             publicDomain,
-            requestUrl,
             contactUrl,
             contactWhatsApp,
             contactEmail,
@@ -396,6 +395,7 @@ export const SettingsDashboard: React.FC = () => {
             navOrder,
             hideStreamUsers,
             useTrendingSlideshowOnLogin,
+            showLoginServerStats,
             publicStatusEnabled,
             defaultLibraryIds,
             use24HourClock,
@@ -411,10 +411,9 @@ export const SettingsDashboard: React.FC = () => {
     const settingsTabPanelProps = buildSettingsTabPanelProps({
         activeTab, addToast, streamRulesSaveHandlerRef, initialSettings,
         mediaServerType, token, plexServerUrl, jellyfinUrl, jellyfinApiKey, servers, selectedServer,
-        checkInterval, libraries, defaultLibraryIds, hideStreamUsers, requestUrl, contactUrl,
+        checkInterval, libraries, defaultLibraryIds, hideStreamUsers, contactUrl,
         setMediaServerType, setToken, setPlexServerUrl, setJellyfinUrl, setJellyfinApiKey, setSelectedServer,
-        setCheckInterval, setDefaultLibraryIds, setHideStreamUsers, setRequestUrl,
-        setContactUrl, handleFetchServers,
+        setCheckInterval, setDefaultLibraryIds, setHideStreamUsers, setContactUrl, handleFetchServers,
         smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, emailDaysBefore, testRecipient,
         isTestingSmtp, setSmtpHost, setSmtpPort, setSmtpUser, setSmtpPass, setSmtpFrom, setSmtpSecure,
         setEmailDaysBefore, setTestRecipient, handleTestEmail,
@@ -429,11 +428,11 @@ export const SettingsDashboard: React.FC = () => {
         statusConfig, publicStatusEnabled, setPublicStatusEnabled, setStatusDraft, fetchStatusConfig,
         contactWhatsApp, contactEmail, setContactWhatsApp, setContactEmail,
         customLogoUrl, brandingTheme, backgroundImageUrl, useScrollRevealAnimations, useCinematicLoading,
-        useBrandedSkeleton, useTrendingSlideshow, trendingSlideshowInterval, useTrendingSlideshowOnLogin,
+        useBrandedSkeleton, useTrendingSlideshow, trendingSlideshowInterval, useTrendingSlideshowOnLogin, showLoginServerStats,
         use24HourClock, showPosterQualityBadges, allowTemporaryAccess, announcement, isPushingAnnouncement,
         referralEnabled, referralTrialDays, referralRewardDays, setCustomLogoUrl, setLogoFile, setBrandingTheme,
         setBackgroundImageUrl, setUseScrollRevealAnimations, setUseCinematicLoading, setUseBrandedSkeleton,
-        setUseTrendingSlideshow, setTrendingSlideshowInterval, setUseTrendingSlideshowOnLogin, setUse24HourClock,
+        setUseTrendingSlideshow, setTrendingSlideshowInterval, setUseTrendingSlideshowOnLogin, setShowLoginServerStats, setUse24HourClock,
         setShowPosterQualityBadges, setAllowTemporaryAccess, setAnnouncement, handlePushAnnouncement,
         setReferralEnabled, setReferralTrialDays, setReferralRewardDays,
         tasks, handleRunTask, systemHealth, highlightMaintenanceToggle, maintenanceExperimentalEnabled,

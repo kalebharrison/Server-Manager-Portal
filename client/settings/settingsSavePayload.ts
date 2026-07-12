@@ -21,7 +21,6 @@ type SettingsSavePayloadInput = {
     inactiveCleanupEnabled: boolean;
     inactiveCleanupDays: number;
     publicDomain: string;
-    requestUrl: string;
     contactUrl: string;
     contactWhatsApp: string;
     contactEmail: string;
@@ -52,6 +51,7 @@ type SettingsSavePayloadInput = {
     navOrder: string[];
     hideStreamUsers: string;
     useTrendingSlideshowOnLogin: boolean;
+    showLoginServerStats: boolean;
     publicStatusEnabled: boolean;
     defaultLibraryIds: string[];
     use24HourClock: boolean;

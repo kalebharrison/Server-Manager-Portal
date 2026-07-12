@@ -22,6 +22,7 @@ const MediaServerSettingsTab = lazyTab(() => import('./MediaServerSettingsTab').
 const MediaStackSettingsTab = lazyTab(() => import('./MediaStackSettingsTab').then(module => ({ default: module.MediaStackSettingsTab })));
 const NavigationOrderTab = lazyTab(() => import('./NavigationOrderTab').then(module => ({ default: module.NavigationOrderTab })));
 const NewsletterSettingsTab = lazyTab(() => import('./NewsletterSettingsTab').then(module => ({ default: module.NewsletterSettingsTab })));
+const PublicAccessSettingsTab = lazyTab(() => import('./PublicAccessSettingsTab').then(module => ({ default: module.PublicAccessSettingsTab })));
 const SmtpSettingsTab = lazyTab(() => import('./SmtpSettingsTab').then(module => ({ default: module.SmtpSettingsTab })));
 const StatusSettingsTab = lazyTab(() => import('./StatusSettingsTab').then(module => ({ default: module.StatusSettingsTab })));
 const StreamKillRulesPanel = lazyTab(() => import('./StreamKillRulesPanel').then(module => ({ default: module.StreamKillRulesPanel })));
@@ -38,6 +39,7 @@ export type SettingsTabPanelProps = {
     mediaServer: TabProps;
     smtp: TabProps;
     newsletter: TabProps;
+    publicAccess: TabProps;
     cleanup: TabProps;
     mediaStack: TabProps;
     homeLayout: TabProps;
@@ -59,6 +61,7 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
     mediaServer,
     smtp,
     newsletter,
+    publicAccess,
     cleanup,
     mediaStack,
     homeLayout,
@@ -85,6 +88,7 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
         {activeTab === 'plex' && <MediaServerSettingsTab {...mediaServer} />}
         {activeTab === 'smtp' && <SmtpSettingsTab {...smtp} />}
         {activeTab === 'newsletter' && <NewsletterSettingsTab {...newsletter} />}
+        {activeTab === 'public-access' && <PublicAccessSettingsTab {...publicAccess} />}
         {activeTab === 'cleanup' && <CleanupSettingsTab {...cleanup} />}
         {activeTab === 'mediastack' && <MediaStackSettingsTab {...mediaStack} />}
         {activeTab === 'home-layout' && <HomeLayoutSettings {...homeLayout} />}

@@ -1,4 +1,4 @@
-export const SETTINGS_TABS = ['plex', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'broadcast', 'stream-rules', 'logs'] as const;
+export const SETTINGS_TABS = ['plex', 'public-access', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'broadcast', 'stream-rules', 'logs'] as const;
 
 export type SettingsTabId = typeof SETTINGS_TABS[number];
 
@@ -19,27 +19,33 @@ export const isSettingsTabId = (value: string): value is SettingsTabId => (
 
 export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
     {
-        title: 'Portal Experience',
+        title: 'Portal',
         tabs: [
-            { id: 'branding', label: 'Appearance', keywords: ['theme', 'logo', 'color', 'announcement', 'referral', 'quality', 'badges', 'poster', 'hdr', 'codec', 'ui'] },
+            { id: 'branding', label: 'Appearance', keywords: ['theme', 'logo', 'color', 'quality', 'badges', 'poster', 'hdr', 'codec', 'ui', 'animation', 'background'] },
             { id: 'home-layout', label: 'Home Page', keywords: ['dashboard', 'widgets', 'sections', 'home', 'layout', 'reorder', 'hide'] },
             { id: 'navigation', label: 'Navigation', keywords: ['menu', 'order', 'sidebar'] },
-            { id: 'contact', label: 'Contact & Support', keywords: ['email', 'whatsapp', 'support'] }
+            { id: 'contact', label: 'Support & Announcements', keywords: ['email', 'whatsapp', 'support', 'announcement', 'banner'] }
         ]
     },
     {
-        title: 'Media Stack',
+        title: 'Connections',
         tabs: [
-            { id: 'plex', label: 'Media Server', keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct', 'privacy', 'usernames', 'analytics'] },
-            { id: 'mediastack', label: 'Automation & Requests', keywords: ['sonarr', 'radarr', 'tautulli', 'jellystat', 'seerr', 'jellyseerr', 'integrations'] },
+            { id: 'plex', label: 'Plex / Jellyfin', keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct', 'privacy', 'usernames'] },
+            { id: 'mediastack', label: 'Apps & Automation', keywords: ['sonarr', 'radarr', 'tautulli', 'jellystat', 'seerr', 'jellyseerr', 'requests', 'integrations'] },
             { id: 'status', label: 'Status Page', keywords: ['uptime', 'health', 'services', 'monitor'] }
         ]
     },
     {
-        title: 'Users & Communication',
+        title: 'Access',
         tabs: [
-            { id: 'cleanup', label: 'Access & Cleanup', keywords: ['inactive', 'revoke', 'expiry', 'users'] },
+            { id: 'public-access', label: 'Access & Privacy', keywords: ['public', 'login', 'stats', 'registration', 'temporary', 'referral', 'privacy', 'libraries'] },
+            { id: 'cleanup', label: 'User Cleanup', keywords: ['inactive', 'revoke', 'expiry', 'users'] },
             { id: 'invites', label: 'Invites', keywords: ['invite', 'link', 'code', 'users'] },
+        ]
+    },
+    {
+        title: 'Email',
+        tabs: [
             { id: 'smtp', label: 'Email Delivery', keywords: ['mail', 'smtp', 'test'] },
             { id: 'newsletter', label: 'Newsletter', keywords: ['digest', 'send', 'frequency'] },
             { id: 'broadcast', label: 'Broadcast Email', keywords: ['announcement', 'bulk', 'users'] }

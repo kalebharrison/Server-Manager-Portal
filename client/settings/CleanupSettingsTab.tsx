@@ -5,15 +5,19 @@ import { SettingHint } from './SettingHint';
 type CleanupSettingsTabProps = {
     inactiveCleanupEnabled: boolean;
     inactiveCleanupDays: number;
+    checkInterval: number;
     onInactiveCleanupEnabledChange: (enabled: boolean) => void;
     onInactiveCleanupDaysChange: (days: number) => void;
+    onCheckIntervalChange: (minutes: number) => void;
 };
 
 export const CleanupSettingsTab: React.FC<CleanupSettingsTabProps> = ({
     inactiveCleanupEnabled,
     inactiveCleanupDays,
+    checkInterval,
     onInactiveCleanupEnabledChange,
     onInactiveCleanupDaysChange,
+    onCheckIntervalChange,
 }) => (
     <div className="mb-8 animate-fade-in">
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Automated User Cleanup</h3>
@@ -50,6 +54,12 @@ export const CleanupSettingsTab: React.FC<CleanupSettingsTabProps> = ({
                     <SettingHint>Revoke access if a user has not watched anything in this many days.</SettingHint>
                 </div>
             </div>
+        </div>
+
+        <div className="mb-4 mt-6">
+            <label htmlFor="checkInterval">Access Check Interval (Minutes)</label>
+            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex" id="checkInterval" type="number" min="1" value={checkInterval} onChange={(event) => onCheckIntervalChange(Math.max(1, Number(event.target.value) || 1))} />
+            <div className="mt-2"><SettingHint>How often the portal checks account expiration and cleanup conditions.</SettingHint></div>
         </div>
     </div>
 );

@@ -5,7 +5,7 @@ import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { Loader } from '../shared/toast';
 import { LivePlexStats } from './PublicStats';
 
-export const PublicInviteClaim: React.FC<{ code: string }> = ({ code }) => {
+export const PublicInviteClaim: React.FC<{ code: string; showServerStats?: boolean }> = ({ code, showServerStats = false }) => {
     const [info, setInfo] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [claimed, setClaimed] = useState(false);
@@ -94,9 +94,7 @@ export const PublicInviteClaim: React.FC<{ code: string }> = ({ code }) => {
                 You have been invited to join <strong className="text-plex">{info.serverName}</strong> for a period of <strong className="text-plex">{info.durationDays} days</strong>.
             </p>
 
-            <div className="w-full mb-8">
-                <LivePlexStats />
-            </div>
+            {showServerStats && <div className="w-full mb-8"><LivePlexStats enabled /></div>}
 
             <button
                 onClick={handlePlexLogin}

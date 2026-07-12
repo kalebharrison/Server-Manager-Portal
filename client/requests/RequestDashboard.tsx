@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, Search, Sparkles } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { pushToast, ToastContainer, type ToastMessage } from '../shared/toast';
+import { loadLocalPortalPreferences } from '../shared/userPreferences';
 import { AdminRequestQueue } from './AdminRequestQueue';
 import { RequestMediaCard } from './RequestMediaCard';
 import { RequestMediaModal } from './RequestMediaModal';
@@ -38,15 +39,16 @@ const isExistingOrInProgress = (item: RequestMediaItem) => (
 );
 
 export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
+    const initialPreferences = useMemo(loadLocalPortalPreferences, []);
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [status, setStatus] = useState<RequestAppStatus | null>(null);
     const [activeView, setActiveView] = useState<RequestView>('browse');
     const [browseCategory, setBrowseCategory] = useState<BrowseCategory>('trending');
-    const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
+    const [mediaFilter, setMediaFilter] = useState<MediaFilter>(initialPreferences.requestMediaType);
     const [animeOnly, setAnimeOnly] = useState(false);
     const [foreignOnly, setForeignOnly] = useState(false);
     const [genreId, setGenreId] = useState<number | null>(null);
-    const [includeExisting, setIncludeExisting] = useState(true);
+    const [includeExisting, setIncludeExisting] = useState(initialPreferences.requestIncludeExisting);
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [items, setItems] = useState<RequestMediaItem[]>([]);

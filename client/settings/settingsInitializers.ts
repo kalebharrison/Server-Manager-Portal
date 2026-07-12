@@ -23,7 +23,6 @@ type SettingsHydrationSetters = {
     setInactiveCleanupEnabled: (value: boolean) => void;
     setInactiveCleanupDays: (value: number) => void;
     setPublicDomain: (value: string) => void;
-    setRequestUrl: (value: string) => void;
     setContactUrl: (value: string) => void;
     setContactWhatsApp: (value: string) => void;
     setContactEmail: (value: string) => void;
@@ -54,6 +53,7 @@ type SettingsHydrationSetters = {
     setNavOrder: (value: string[]) => void;
     setHideStreamUsers: (value: string) => void;
     setUseTrendingSlideshowOnLogin: (value: boolean) => void;
+    setShowLoginServerStats: (value: boolean) => void;
     setPublicStatusEnabled: (value: boolean) => void;
     setDefaultLibraryIds: (value: string[]) => void;
     setUse24HourClock: (value: boolean) => void;
@@ -89,7 +89,6 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setInactiveCleanupEnabled(!!initialSettings.inactiveCleanupEnabled);
     setters.setInactiveCleanupDays(initialSettings.inactiveCleanupDays || 90);
     setters.setPublicDomain(initialSettings.publicDomain || 'https://portal.yourdomain.com');
-    setters.setRequestUrl(initialSettings.requestUrl || 'https://yourdomain.com');
     setters.setContactUrl(initialSettings.contactUrl || '');
     setters.setContactWhatsApp(initialSettings.contactWhatsApp || '');
     setters.setContactEmail(initialSettings.contactEmail || '');
@@ -104,7 +103,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setRequestAppType(initialSettings.requestAppType === 'overseerr' ? 'seerr' : (initialSettings.requestAppType || 'none'));
     setters.setRequestAppUrl(initialSettings.requestAppUrl || '');
     setters.setRequestAppApiKey(initialSettings.requestAppApiKey || '');
-    setters.setBrandingTheme(localStorage.getItem('portal-theme') || initialSettings.brandingTheme || 'plex');
+    setters.setBrandingTheme(initialSettings.brandingTheme || 'plex');
     setters.setCustomLogoUrl(initialSettings.customLogoUrl || '');
     setters.setBackgroundImageUrl(initialSettings.backgroundImageUrl || '');
     setters.setUseScrollRevealAnimations(!!initialSettings.useScrollRevealAnimations);
@@ -120,7 +119,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     if (initialSettings.navOrder) setters.setNavOrder(ensureMaintenanceNavOrder(initialSettings.navOrder));
     setters.setHideStreamUsers(initialSettings.hideStreamUsers === 'hidden' ? 'hidden' : 'anonymous');
     setters.setUseTrendingSlideshowOnLogin(initialSettings.useTrendingSlideshowOnLogin !== false);
-    setters.setPublicStatusEnabled(initialSettings.publicStatusEnabled !== false);
+    setters.setShowLoginServerStats(initialSettings.showLoginServerStats === true);
+    setters.setPublicStatusEnabled(initialSettings.publicStatusEnabled === true);
     if (initialSettings.defaultLibraryIds) setters.setDefaultLibraryIds(initialSettings.defaultLibraryIds);
     if (initialSettings.use24HourClock !== undefined) setters.setUse24HourClock(!!initialSettings.use24HourClock);
     if (initialSettings.showPosterQualityBadges !== undefined) setters.setShowPosterQualityBadges(initialSettings.showPosterQualityBadges !== false);

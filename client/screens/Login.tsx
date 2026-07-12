@@ -233,7 +233,7 @@ export const Login: React.FC<{ onLoginSuccess: () => void, publicConfig?: any, i
                             </p>
 
                             <div className="mb-6">
-                                <LivePlexStats />
+                                <LivePlexStats enabled={publicConfig?.showLoginServerStats === true} />
                             </div>
 
                             <p className="text-xs text-muted/80 leading-relaxed mb-5">
@@ -362,15 +362,15 @@ export const Login: React.FC<{ onLoginSuccess: () => void, publicConfig?: any, i
                             </button>
                         )}
 
-                        {!showTrialAccess && !isJellyfinAuth && (
+                        {!showTrialAccess && !isJellyfinAuth && publicConfig?.showLoginServerStats === true && (
                             <div className="w-full mt-10 pt-8 border-t border-white/10">
-                                <LivePlexStats />
+                                <LivePlexStats enabled />
                             </div>
                         )}
                     </div>
                 </div>
 
-                <PublicUptimeBanner />
+                <PublicUptimeBanner enabled={publicConfig?.publicStatusEnabled === true} />
 
                 {error && (
                     <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm flex items-start gap-3">

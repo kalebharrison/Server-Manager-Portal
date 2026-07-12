@@ -1,5 +1,4 @@
 import React from 'react';
-import { Check } from 'lucide-react';
 import { CustomSelect } from '../shared/ui';
 import { SettingHint } from './SettingHint';
 import { IntegrationTestButton } from '../shared/IntegrationTestButton';
@@ -7,11 +6,6 @@ import type { PlexServer } from '../shared/types';
 import { hasIntegrationCredentials } from './integrationDisplay';
 
 type MediaServerType = 'plex' | 'jellyfin';
-
-type LibraryOption = {
-    id: string;
-    title: string;
-};
 
 type MediaServerSettingsTabProps = {
     initialSettings: any;
@@ -22,23 +16,12 @@ type MediaServerSettingsTabProps = {
     jellyfinApiKey: string;
     servers: PlexServer[];
     selectedServer: string;
-    checkInterval: number;
-    libraries: LibraryOption[];
-    defaultLibraryIds: string[];
-    hideStreamUsers: string;
-    requestUrl: string;
-    contactUrl: string;
     onMediaServerTypeChange: (value: MediaServerType) => void;
     onTokenChange: (value: string) => void;
     onPlexServerUrlChange: (value: string) => void;
     onJellyfinUrlChange: (value: string) => void;
     onJellyfinApiKeyChange: (value: string) => void;
     onSelectedServerChange: (value: string) => void;
-    onCheckIntervalChange: (value: number) => void;
-    onDefaultLibraryIdsChange: (value: string[]) => void;
-    onHideStreamUsersChange: (value: string) => void;
-    onRequestUrlChange: (value: string) => void;
-    onContactUrlChange: (value: string) => void;
     onFetchServers: () => void;
     addToast: (message: string, type?: 'success' | 'error') => void;
 };
@@ -52,23 +35,12 @@ export const MediaServerSettingsTab: React.FC<MediaServerSettingsTabProps> = ({
     jellyfinApiKey,
     servers,
     selectedServer,
-    checkInterval,
-    libraries,
-    defaultLibraryIds,
-    hideStreamUsers,
-    requestUrl,
-    contactUrl,
     onMediaServerTypeChange,
     onTokenChange,
     onPlexServerUrlChange,
     onJellyfinUrlChange,
     onJellyfinApiKeyChange,
     onSelectedServerChange,
-    onCheckIntervalChange,
-    onDefaultLibraryIdsChange,
-    onHideStreamUsersChange,
-    onRequestUrlChange,
-    onContactUrlChange,
     onFetchServers,
     addToast,
 }) => {
@@ -184,76 +156,9 @@ export const MediaServerSettingsTab: React.FC<MediaServerSettingsTabProps> = ({
                             </SettingHint>
                         </div>
                     </div>
-                    <div className="mb-4" style={{ marginTop: '1rem' }}>
-                        <label htmlFor="checkInterval">Check Interval (minutes)</label>
-                        <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="checkInterval" type="number" value={checkInterval} onChange={e => onCheckIntervalChange(Number(e.target.value))} min="1" />
-                        <div className="mt-2">
-                            <SettingHint>How often to check for expired users in the background.</SettingHint>
-                        </div>
-                    </div>
-
-                    {libraries.length > 0 && (
-                        <div className="mb-4 mt-4">
-                            <label className="block mb-2 font-medium">Default Temporary Access/Automated Libraries</label>
-                            <div className="mb-2">
-                                <SettingHint>Libraries to share automatically when users request temporary access or link their account. Leave empty to share ALL libraries.</SettingHint>
-                            </div>
-                            <div className="flex flex-wrap gap-3">
-                                {libraries.map(lib => {
-                                    const isSelected = defaultLibraryIds.includes(lib.id);
-                                    return (
-                                        <label key={lib.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all border shadow-sm select-none ${isSelected ? 'bg-plex/10 border-plex text-plex font-bold' : 'bg-background border-border/50 text-muted hover:border-white/20 hover:text-text font-medium'}`}>
-                                            <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) onDefaultLibraryIdsChange([...defaultLibraryIds, lib.id]);
-                                                    else onDefaultLibraryIdsChange(defaultLibraryIds.filter(id => id !== lib.id));
-                                                }}
-                                                className="hidden"
-                                            />
-                                            {isSelected && <Check className="w-3.5 h-3.5" />}
-                                            <span className="text-sm">{lib.title}</span>
-                                        </label>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
                 </>
             )}
 
-            <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
-                <div>
-                    <h4 className="font-bold text-text">Stream User Privacy</h4>
-                    <p className="text-sm text-muted">Choose whether non-admins see anonymous activity or no viewer label. Admins always see the account name.</p>
-                </div>
-                <div className="w-56 ml-4 flex-shrink-0">
-                    <CustomSelect
-                        value={String(hideStreamUsers)}
-                        onChange={onHideStreamUsersChange}
-                        options={[
-                            { label: 'Show as Anonymous', value: 'anonymous' },
-                            { label: 'Hide Completely', value: 'hidden' }
-                        ]}
-                    />
-                </div>
-            </div>
-
-            <div className="mb-4" style={{ marginTop: '1rem' }}>
-                <label htmlFor="requestUrl">Request URL</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="requestUrl" type="text" value={requestUrl} onChange={e => onRequestUrlChange(e.target.value)} placeholder="https://yourdomain.com" />
-                <div className="mt-2">
-                    <SettingHint>The URL users are redirected to when they click the Request Content button.</SettingHint>
-                </div>
-            </div>
-            <div className="mb-4" style={{ marginTop: '1rem' }}>
-                <label htmlFor="contactUrl">Contact URL / Email</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactUrl" type="text" value={contactUrl} onChange={e => onContactUrlChange(e.target.value)} placeholder="mailto:youremail@example.com OR https://wa.me/123456" />
-                <div className="mt-2">
-                    <SettingHint>Used for the "Request Extension" button in expiry emails. Defaults to sending an email to the SMTP User.</SettingHint>
-                </div>
-            </div>
         </div>
     );
 };

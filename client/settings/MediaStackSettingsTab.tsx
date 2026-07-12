@@ -7,6 +7,7 @@ import { SettingHint } from './SettingHint';
 
 type MediaStackSettingsTabProps = {
     initialSettings: any;
+    mediaServerType: 'plex' | 'jellyfin';
     sonarrUrl: string;
     sonarrApiKey: string;
     radarrUrl: string;
@@ -36,6 +37,7 @@ type MediaStackSettingsTabProps = {
 
 export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     initialSettings,
+    mediaServerType,
     sonarrUrl,
     sonarrApiKey,
     radarrUrl,
@@ -103,15 +105,16 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
         />
 
-        <IntegrationHeading app="tmdb" title="TMDB Integration" subtitle="Worldwide trending backgrounds" className="mt-8" />
+        <IntegrationHeading app="tmdb" title="TMDB Integration" subtitle="Request discovery and trending artwork" className="mt-8" />
         <div className="mb-4">
             <label htmlFor="tmdbApiKey">TMDB API Key</label>
             <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tmdbApiKey" type="password" value={tmdbApiKey} onChange={(e) => onTmdbApiKeyChange(e.target.value)} placeholder="Enter TMDB API Key" />
             <div className="mt-2">
-                <SettingHint>Used to fetch worldwide trending media backgrounds for the portal slideshow. Get one for free at themoviedb.org.</SettingHint>
+                <SettingHint>Provides request discovery metadata and optional trending portal artwork.</SettingHint>
             </div>
         </div>
 
+        {mediaServerType === 'plex' && <>
         <IntegrationHeading app="tautulli" title="Tautulli Integration" subtitle="Plex activity and analytics" className="mt-8" />
         <div className="mb-4">
             <label htmlFor="tautulliUrl">Tautulli URL</label>
@@ -128,7 +131,9 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             className="mb-6"
             onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
         />
+        </>}
 
+        {mediaServerType === 'jellyfin' && <>
         <IntegrationHeading app="jellystat" title="Jellystat Integration" subtitle="Jellyfin activity and analytics" className="mt-8" />
         <div className="mb-4">
             <label htmlFor="jellystatUrl">Jellystat URL</label>
@@ -148,6 +153,7 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             className="mb-6"
             onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
         />
+        </>}
 
         <IntegrationHeading
             app={requestAppType === 'none' ? 'seerr' : requestAppType}
@@ -169,7 +175,7 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
                 ]}
             />
             <div className="mt-2">
-                <SettingHint>Used by Library Maintenance rules for request-age/status filtering and cleanup workflows.</SettingHint>
+                <SettingHint>Powers the embedded Request tab, request status, issue reporting, and maintenance request history.</SettingHint>
             </div>
         </div>
         <div className="mb-4">

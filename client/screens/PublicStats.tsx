@@ -5,24 +5,25 @@ import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
 
-export const PublicUptimeBanner: React.FC = () => {
+export const PublicUptimeBanner: React.FC<{ enabled?: boolean }> = ({ enabled = true }) => {
     const [healthData, setHealthData] = useState<Record<string, any>>({});
     const [config, setConfig] = useState<any>({});
 
     const fetchStatus = useCallback(async () => {
+        if (!enabled) return;
         try {
             const res = await apiFetch('/api/status');
             setConfig(res.config);
             setHealthData(res.healthData);
         } catch (e) { }
-    }, []);
+    }, [enabled]);
 
     useEffect(() => {
         fetchStatus();
     }, [fetchStatus]);
     useVisibleInterval(fetchStatus, 15000);
 
-    if (!config.services?.length) return null;
+    if (!enabled || !config.services?.length) return null;
 
     const visibleServices = config.services.filter((service: any) => healthData[service.id]);
     if (visibleServices.length === 0) return null;
@@ -57,10 +58,11 @@ export const PublicUptimeBanner: React.FC = () => {
     );
 };
 
-export const LivePlexStats: React.FC = () => {
+export const LivePlexStats: React.FC<{ enabled?: boolean }> = ({ enabled = true }) => {
     const [stats, setStats] = useState<{ movies: number, shows: number, music: number, fourKPercent?: number } | null>(null);
 
     const fetchStats = useCallback(async () => {
+        if (!enabled) return;
         const endpoints = ['/api/public/plex/stats', '/api/plex/stats'];
 
         for (const endpoint of endpoints) {
@@ -74,13 +76,14 @@ export const LivePlexStats: React.FC = () => {
                 // Try next endpoint
             }
         }
-    }, []);
+    }, [enabled]);
 
     useEffect(() => {
         fetchStats();
     }, [fetchStats]);
     useVisibleInterval(fetchStats, 30000);
 
+    if (!enabled) return null;
     if (!stats) return (
         <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[

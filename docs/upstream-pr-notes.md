@@ -86,6 +86,10 @@ Beta image branch: `beta`
   - Remove the unnecessary dark overlay from request posters and give members a stable Preferences route for their local theme and persisted newsletter subscription, independent of dashboard widget visibility.
   - Upstream PR fit: split into request-card visual cleanup and member preference navigation.
 
+- Pending: settings architecture and public exposure hardening
+  - Reorganize admin settings by ownership; move access, privacy, cleanup, support, and announcement controls out of connection/appearance forms; remove the obsolete external Request URL UI; add member-local time, poster, motion, and request defaults; fix masked-token Plex discovery; require explicit opt-in for public status and library totals; protect diagnostics; minimize public branding data; and enforce a route-classification regression test.
+  - Upstream PR fit: split into Plex discovery correctness, settings information architecture, member preferences, and public API hardening.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.
