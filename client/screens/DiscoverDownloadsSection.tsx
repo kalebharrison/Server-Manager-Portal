@@ -67,7 +67,7 @@ export const DiscoverDownloadsSection: React.FC<{ useScrollRevealAnimations?: bo
             const next = [
                 ...mapQueueRecords(queueRecords(summary?.sonarr?.queue), 'Sonarr'),
                 ...mapQueueRecords(queueRecords(summary?.radarr?.queue), 'Radarr'),
-            ].filter((item) => item.title && item.progress >= 0);
+            ].filter((item) => item.hasMediaTitle && item.progress >= 0);
             setDownloads(next);
         } catch {
             setDownloads([]);

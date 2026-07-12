@@ -7,23 +7,35 @@ import { RequestMediaCard } from './RequestMediaCard';
 import { RequestMediaModal } from './RequestMediaModal';
 import type { RequestAppStatus, RequestListResponse, RequestMediaItem } from './types';
 
-type RequestTab = 'trending' | 'popular' | 'upcoming' | 'movies' | 'tv' | 'search' | 'queue';
+type RequestView = 'browse' | 'search' | 'queue';
+type BrowseCategory = 'trending' | 'popular' | 'upcoming';
+type MediaFilter = 'all' | 'movie' | 'tv';
 
-const tabs = [
+const browseCategories = [
     { id: 'trending' as const, label: 'Trending' },
     { id: 'popular' as const, label: 'Popular' },
     { id: 'upcoming' as const, label: 'Upcoming' },
-    { id: 'movies' as const, label: 'Movies' },
+];
+
+const mediaFilters = [
+    { id: 'all' as const, label: 'All' },
+    { id: 'movie' as const, label: 'Movies' },
     { id: 'tv' as const, label: 'TV' },
-    { id: 'search' as const, label: 'Search' },
 ];
 
 const cardSkeletons = Array.from({ length: 12 }, (_, index) => index);
 
+const isExistingOrInProgress = (item: RequestMediaItem) => (
+    !!(item.available || item.processing || item.pending || item.approved)
+);
+
 export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [status, setStatus] = useState<RequestAppStatus | null>(null);
-    const [activeTab, setActiveTab] = useState<RequestTab>('trending');
+    const [activeView, setActiveView] = useState<RequestView>('browse');
+    const [browseCategory, setBrowseCategory] = useState<BrowseCategory>('trending');
+    const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
+    const [includeExisting, setIncludeExisting] = useState(false);
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [items, setItems] = useState<RequestMediaItem[]>([]);
@@ -55,13 +67,13 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
     }, []);
 
     const endpoint = useMemo(() => {
-        if (activeTab === 'queue') return '';
-        if (activeTab === 'search') {
+        if (activeView === 'queue') return '';
+        if (activeView === 'search') {
             if (debouncedQuery.length < 2) return '';
             return `/api/request-app/search?query=${encodeURIComponent(debouncedQuery)}`;
         }
-        return `/api/request-app/discover?category=${encodeURIComponent(activeTab)}`;
-    }, [activeTab, debouncedQuery]);
+        return `/api/request-app/discover?category=${encodeURIComponent(browseCategory)}&type=${encodeURIComponent(mediaFilter)}`;
+    }, [activeView, browseCategory, debouncedQuery, mediaFilter]);
 
     const loadItems = useCallback(async (silent = false) => {
         if (!endpoint || status?.ready === false) {
@@ -73,12 +85,15 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         else setLoading(true);
         setError(null);
         try {
-            const ttl = activeTab === 'search' ? 15_000 : 60_000;
+            const ttl = activeView === 'search' ? 15_000 : 60_000;
             const data: RequestListResponse = await apiFetch(endpoint, { cacheTtlMs: ttl });
-            const requestableResults = Array.isArray(data?.results)
-                ? data.results.filter((item) => !item.available)
+            const includeBlocked = includeExisting || activeView === 'search';
+            const nextItems = Array.isArray(data?.results)
+                ? data.results
+                    .filter((item) => mediaFilter === 'all' || item.mediaType === mediaFilter)
+                    .filter((item) => includeBlocked || !isExistingOrInProgress(item))
                 : [];
-            setItems(requestableResults);
+            setItems(nextItems);
         } catch (err: any) {
             setError(err?.message || 'Failed to load request content');
             if (!silent) setItems([]);
@@ -86,16 +101,16 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
             setLoading(false);
             setRefreshing(false);
         }
-    }, [activeTab, endpoint, status?.ready]);
+    }, [activeView, endpoint, includeExisting, mediaFilter, status?.ready]);
 
     useEffect(() => {
         if (!status) return;
-        if (activeTab === 'queue') {
+        if (activeView === 'queue') {
             setLoading(false);
             return;
         }
         loadItems(false);
-    }, [activeTab, loadItems, status]);
+    }, [activeView, loadItems, status]);
 
     const markRequested = (target: RequestMediaItem) => {
         setItems((prev) => prev.map((item) => (
@@ -127,8 +142,15 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
 
     const statusLoading = status === null;
     const ready = status?.ready === true;
-    const showSearchHint = activeTab === 'search' && debouncedQuery.length < 2;
-    const showSkeleton = loading && items.length === 0 && !showSearchHint && activeTab !== 'queue';
+    const showSearchHint = activeView === 'search' && debouncedQuery.length < 2;
+    const showSkeleton = loading && items.length === 0 && !showSearchHint && activeView !== 'queue';
+    const activeCategoryLabel = browseCategories.find((entry) => entry.id === browseCategory)?.label || 'Trending';
+    const activeMediaLabel = mediaFilters.find((entry) => entry.id === mediaFilter)?.label || 'All';
+    const contentTitle = activeView === 'search'
+        ? 'Search Results'
+        : mediaFilter === 'all'
+            ? activeCategoryLabel
+            : `${activeCategoryLabel} ${activeMediaLabel}`;
 
     return (
         <div className="w-full animate-fade-in space-y-6">
@@ -151,7 +173,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
                         <input
                             value={query}
-                            onChange={(event) => { setQuery(event.target.value); setActiveTab('search'); }}
+                            onChange={(event) => { setQuery(event.target.value); setActiveView('search'); }}
                             placeholder="Search movies and shows"
                             className="w-full h-12 pl-12 pr-4 rounded-xl border border-border bg-background/80 text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
                         />
@@ -176,39 +198,72 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                 </div>
             ) : (
                 <>
-                    <div className="flex flex-wrap gap-2">
-                        {tabs.map((tab) => (
+                    <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-card/60 p-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted mr-1">Category</span>
+                            {browseCategories.map((category) => (
+                                <button
+                                    key={category.id}
+                                    type="button"
+                                    onClick={() => { setActiveView('browse'); setBrowseCategory(category.id); }}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'browse' && browseCategory === category.id ? 'bg-plex text-background shadow-lg shadow-plex/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
+                                >
+                                    {category.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted mr-1">Type</span>
+                            {mediaFilters.map((filter) => (
+                                <button
+                                    key={filter.id}
+                                    type="button"
+                                    onClick={() => { setActiveView(activeView === 'queue' ? 'browse' : activeView); setMediaFilter(filter.id); }}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mediaFilter === filter.id ? 'bg-plex text-background shadow-lg shadow-plex/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
+                                >
+                                    {filter.label}
+                                </button>
+                            ))}
                             <button
-                                key={tab.id}
                                 type="button"
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-plex text-background shadow-lg shadow-plex/20' : 'bg-card border border-border text-muted hover:text-text hover:bg-white/5'}`}
+                                onClick={() => setIncludeExisting((value) => !value)}
+                                className={`ml-0 sm:ml-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${includeExisting ? 'bg-amber-400 text-background shadow-lg shadow-amber-400/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
+                                title="Search always includes existing and in-progress content."
                             >
-                                {tab.label}
+                                {includeExisting ? 'Showing Existing' : 'Show Existing'}
                             </button>
-                        ))}
-                        {isAdmin && (
                             <button
                                 type="button"
-                                onClick={() => setActiveTab('queue')}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'queue' ? 'bg-plex text-background shadow-lg shadow-plex/20' : 'bg-card border border-border text-muted hover:text-text hover:bg-white/5'}`}
+                                onClick={() => setActiveView('search')}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'search' ? 'bg-plex text-background shadow-lg shadow-plex/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
                             >
-                                Queue
+                                Search
                             </button>
-                        )}
+                            {isAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveView('queue')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'queue' ? 'bg-plex text-background shadow-lg shadow-plex/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
+                                >
+                                    Queue
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    {activeTab === 'queue' ? (
+                    {activeView === 'queue' ? (
                         <AdminRequestQueue />
                     ) : (
                         <section className="glass-card p-4 md:p-5 shadow-xl">
                             <div className="flex items-center justify-between gap-3 mb-4">
                                 <div>
                                     <h2 className="text-xl font-black text-plex">
-                                        {activeTab === 'search' ? 'Search Results' : tabs.find((tab) => tab.id === activeTab)?.label}
+                                        {contentTitle}
                                     </h2>
                                     <p className="text-xs text-muted mt-1">
-                                        {refreshing ? 'Refreshing...' : `${items.length} title${items.length === 1 ? '' : 's'}`}
+                                        {refreshing
+                                            ? 'Refreshing...'
+                                            : `${items.length} title${items.length === 1 ? '' : 's'}${activeView === 'search' ? ' · search includes existing content' : includeExisting ? ' · includes existing content' : ''}`}
                                     </p>
                                 </div>
                                 {endpoint && (

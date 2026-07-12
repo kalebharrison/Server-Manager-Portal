@@ -69,6 +69,7 @@ const queuePhase = (item: any, progress: number) => {
 export const mapQueueRecords = (records: any[] = [], service: string) => records.map((item: any, index: number) => {
     const isTv = service === 'Sonarr';
     const subject = isTv ? item.series : item.movie;
+    const title = subject?.title || '';
     const total = Number(item.size || 0);
     const remaining = Number(item.sizeleft || 0);
     const downloaded = Math.max(0, total - remaining);
@@ -83,7 +84,8 @@ export const mapQueueRecords = (records: any[] = [], service: string) => records
         service,
         type: isTv ? 'tv' : 'movie',
         kindLabel: isTv ? 'TV Show' : 'Movie',
-        title: subject?.title || (isTv ? 'TV Show' : 'Movie'),
+        title,
+        hasMediaTitle: !!title,
         subtitle: isTv
             ? [seasonEpisode, episode.title].filter(Boolean).join(' - ')
             : subject?.year ? String(subject.year) : '',

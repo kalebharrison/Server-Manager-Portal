@@ -34,9 +34,13 @@ Beta image branch: `beta`
   - Move active TV/movie download progress to Discover as an `On The Way` poster section, keep file/release names hidden, remove download UI from Media Stack, hide app-brand labels from normal user-facing calendar/status surfaces, add list/month calendar modes, and hide already available request content.
   - Upstream PR fit: split into Discover download widget, release calendar view, and request browsing cleanup.
 
-- Pending: request browse and issue parity
+- `894fd97 feat: extend request browsing and issues`
   - Add embedded request browse categories for trending, popular, upcoming, movies, and TV; show genre chips from Seerr/TMDB data; and submit basic media issue reports through the request app when the title is tracked there.
   - Upstream PR fit: request-app frontend/backend follow-up after the base embedded workflow.
+
+- Pending: request filter polish
+  - Replace mutually exclusive request tabs with independent category and type toggles, make search include available/in-progress titles, add a browse toggle for existing titles, and hide generic Arr queue download cards that lack real media metadata.
+  - Upstream PR fit: follow-up UX polish for embedded requests and Discover download status.
 
 ## Split Candidates
 
