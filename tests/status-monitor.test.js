@@ -6,6 +6,27 @@ import path from 'node:path';
 
 import { createDefaultStatusConfig, reconcileBuiltInStatusConfig } from '../lib/status-monitor.js';
 import { createStatusRuntime, STATUS_HEALTH_SCHEMA_VERSION } from '../lib/status-runtime.js';
+import { resolvePlexDiscoveryToken } from '../lib/invite-routes.js';
+import { canExposePublicServerStats, canExposePublicStatus } from '../lib/public-status-routes.js';
+
+test('masked Plex discovery credentials resolve to the stored owner token', () => {
+    const normalize = (value) => String(value || '').trim();
+    assert.equal(resolvePlexDiscoveryToken('••••••••', 'owner-token', '••••••••', normalize), 'owner-token');
+    assert.equal(resolvePlexDiscoveryToken('new-token', 'owner-token', '••••••••', normalize), 'new-token');
+});
+
+test('login server statistics require explicit public opt-in', () => {
+    assert.equal(canExposePublicServerStats({}), false);
+    assert.equal(canExposePublicServerStats({ showLoginServerStats: false }), false);
+    assert.equal(canExposePublicServerStats({ showLoginServerStats: true }), true);
+});
+
+test('status access is private unless public access is explicitly enabled', () => {
+    assert.equal(canExposePublicStatus({}), false);
+    assert.equal(canExposePublicStatus({ publicStatusEnabled: false }), false);
+    assert.equal(canExposePublicStatus({ publicStatusEnabled: true }), false);
+    assert.equal(canExposePublicStatus({ publicStatusEnabled: true, publicStatusExplicitlyConfigured: true }), true);
+});
 
 test('default status config does not point Plex at the portal URL', () => {
     const config = createDefaultStatusConfig({ publicDomain: 'https://portal.example' });
