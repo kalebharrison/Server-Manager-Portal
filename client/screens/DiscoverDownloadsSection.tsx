@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { DownloadCloud, Film, Tv } from 'lucide-react';
+import { ArrowUpCircle, DownloadCloud, Film, Sparkles, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
 import { discoverPosterGridClass } from '../shared/portalLayout';
@@ -21,6 +21,7 @@ const phaseClass = (phase: string) => {
 
 const DownloadPosterCard: React.FC<{ item: any }> = ({ item }) => {
     const TypeIcon = item.type === 'tv' ? Tv : Film;
+    const AcquisitionIcon = item.acquisitionKind === 'upgrade' ? ArrowUpCircle : Sparkles;
 
     return (
         <article className="flex flex-col gap-2 group">
@@ -40,6 +41,10 @@ const DownloadPosterCard: React.FC<{ item: any }> = ({ item }) => {
                         {item.kindLabel}
                     </span>
                 </div>
+                <span className={`absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wide text-white border ${item.acquisitionKind === 'upgrade' ? 'bg-violet-700/85 border-violet-300/25' : 'bg-emerald-700/85 border-emerald-300/25'}`}>
+                    <AcquisitionIcon className="w-3 h-3" />
+                    {item.acquisitionLabel}
+                </span>
                 <div className="absolute bottom-0 left-0 right-0 bg-black/75 backdrop-blur-sm p-2">
                     <div className="flex items-center justify-between gap-2 text-[10px] font-bold mb-1">
                         <span className={`px-1.5 py-0.5 rounded border ${phaseClass(item.phase)}`}>{item.phase}</span>
