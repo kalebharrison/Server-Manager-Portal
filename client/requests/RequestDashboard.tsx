@@ -46,7 +46,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
     const [animeOnly, setAnimeOnly] = useState(false);
     const [foreignOnly, setForeignOnly] = useState(false);
     const [genreId, setGenreId] = useState<number | null>(null);
-    const [includeExisting, setIncludeExisting] = useState(false);
+    const [includeExisting, setIncludeExisting] = useState(true);
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [items, setItems] = useState<RequestMediaItem[]>([]);
@@ -107,7 +107,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
             const separator = endpointBase.includes('?') ? '&' : '?';
             const data: RequestListResponse = await apiFetch(`${endpointBase}${separator}page=${page}`, { cacheTtlMs: ttl });
             if (sequence !== loadSequence.current) return;
-            const includeBlocked = includeExisting || activeView === 'search';
+            const includeBlocked = includeExisting;
             const nextItems = Array.isArray(data?.results)
                 ? data.results
                     .filter((item) => mediaFilter === 'all' || item.mediaType === mediaFilter)
@@ -288,7 +288,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                 type="button"
                                 onClick={() => { setActiveView(activeView === 'queue' ? 'browse' : activeView); setAnimeOnly((value) => !value); }}
                                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${animeOnly ? 'bg-fuchsia-400 text-background shadow-lg shadow-fuchsia-400/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
-                                title="Japanese animation. Combine with Movies or TV to narrow it further."
+                                title="Show only Japanese animation. Combine with Movies, TV, or a genre."
                             >
                                 Anime
                             </button>
@@ -296,7 +296,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                 type="button"
                                 onClick={() => { setActiveView(activeView === 'queue' ? 'browse' : activeView); setForeignOnly((value) => !value); }}
                                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${foreignOnly ? 'bg-violet-400 text-background shadow-lg shadow-violet-400/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
-                                title="Titles whose original language is not English. Combine with Movies, TV, Anime, or a genre."
+                                title="Show only non-English, non-anime titles. Combine with Movies, TV, or a genre."
                             >
                                 Foreign
                             </button>
@@ -304,9 +304,9 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                 type="button"
                                 onClick={() => setIncludeExisting((value) => !value)}
                                 className={`ml-0 sm:ml-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${includeExisting ? 'bg-amber-400 text-background shadow-lg shadow-amber-400/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
-                                title="Search always includes existing and in-progress content."
+                                title="Existing and in-progress titles are shown by default."
                             >
-                                {includeExisting ? 'Showing Existing' : 'Show Existing'}
+                                {includeExisting ? 'Hide Existing' : 'Show Existing'}
                             </button>
                             <button
                                 type="button"
@@ -339,7 +339,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                                     <p className="text-xs text-muted mt-1">
                                         {refreshing
                                             ? 'Refreshing...'
-                                            : `${items.length} title${items.length === 1 ? '' : 's'}${activeView === 'search' ? ' · search includes existing content' : includeExisting ? ' · includes existing content' : ''}`}
+                                            : `${items.length} title${items.length === 1 ? '' : 's'}${includeExisting ? ' · includes existing content' : ''}`}
                                     </p>
                                 </div>
                                 {endpointBase && (
