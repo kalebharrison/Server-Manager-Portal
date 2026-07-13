@@ -76,6 +76,7 @@ export interface AppSettings {
     tmdbApiKey?: string;
     tvdbApiKey?: string;
     tvdbPin?: string;
+    cacheRefreshMinutes?: number;
     ombiUrl?: string;
     ombiApiKey?: string;
     tautulliUrl?: string;

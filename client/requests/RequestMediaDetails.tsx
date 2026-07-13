@@ -41,8 +41,7 @@ export const formatLanguage = (value?: string | null) => {
 export const requestStateLabel = (item: RequestMediaItem) => {
     if (item.available) return 'Available';
     if (item.processing) return 'Processing';
-    if (item.pending) return 'Pending';
-    if (item.approved) return 'Approved';
+    if (item.requested || item.pending || item.approved) return 'Requested';
     return 'Request';
 };
 

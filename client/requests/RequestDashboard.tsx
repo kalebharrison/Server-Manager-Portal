@@ -35,7 +35,7 @@ const genreFilters = [
 const cardSkeletons = Array.from({ length: 12 }, (_, index) => index);
 
 const isExistingOrInProgress = (item: RequestMediaItem) => (
-    !!(item.available || item.processing || item.pending || item.approved)
+    !!(item.available || item.processing || item.requested || item.pending || item.approved)
 );
 
 export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
@@ -176,7 +176,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
     const markRequested = (target: RequestMediaItem) => {
         setItems((prev) => prev.map((item) => (
             item.tmdbId === target.tmdbId && item.mediaType === target.mediaType
-                ? { ...item, pending: true, canRequest: false, requestStatusLabel: 'pending' }
+                ? { ...item, requested: true, pending: false, canRequest: false, requestStatusLabel: 'requested' }
                 : item
         )));
     };

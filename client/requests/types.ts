@@ -61,6 +61,7 @@ export type RequestMediaItem = {
     mediaStatusLabel?: string | null;
     available?: boolean;
     processing?: boolean;
+    requested?: boolean;
     pending?: boolean;
     approved?: boolean;
     canRequest?: boolean;

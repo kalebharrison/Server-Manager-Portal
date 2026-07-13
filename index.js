@@ -931,6 +931,8 @@ const requestAppService = createRequestAppService({
     fetchWithTimeout,
     resolveIntegrationUrlForFetch,
     tvdbService,
+    getActiveAcquisitionKeys: mediaStackRoutes.getActiveAcquisitionKeys,
+    withBasePath,
     requestAppInternalUrl: REQUEST_APP_INTERNAL_URL,
     log,
 });

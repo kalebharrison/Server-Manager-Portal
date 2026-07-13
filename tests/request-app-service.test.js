@@ -27,7 +27,7 @@ test('request discovery serves recent cached results during a transient outage',
         const config = { requestAppType: 'seerr', requestAppUrl: 'http://seerr', requestAppApiKey: 'secret' };
 
         const initial = await service.discover(config);
-        now += 61_000;
+        now += 301_000;
         const stale = await service.discover(config);
 
         assert.equal(calls, 2);
@@ -36,4 +36,25 @@ test('request discovery serves recent cached results during a transient outage',
     } finally {
         Date.now = originalNow;
     }
+});
+
+test('accepted requests are requested until an active download is matched', async () => {
+    const payload = {
+        pageInfo: { page: 1, pages: 1 },
+        results: [
+            { id: 1, mediaType: 'movie', title: 'Waiting', originalLanguage: 'en', mediaInfo: { status: 3 } },
+            { id: 2, mediaType: 'movie', title: 'Downloading', originalLanguage: 'en', mediaInfo: { status: 3 } },
+        ],
+    };
+    const service = createRequestAppService({
+        resolveIntegrationUrlForFetch: (value) => value,
+        fetchWithTimeout: async () => ({ ok: true, status: 200, json: async () => payload }),
+        getActiveAcquisitionKeys: async () => new Set(['tmdb:2']),
+    });
+    const result = await service.discover({ requestAppType: 'seerr', requestAppUrl: 'http://seerr', requestAppApiKey: 'key' });
+
+    assert.equal(result.results[0].requested, true);
+    assert.equal(result.results[0].processing, false);
+    assert.equal(result.results[1].requested, false);
+    assert.equal(result.results[1].processing, true);
 });

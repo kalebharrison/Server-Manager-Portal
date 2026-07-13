@@ -143,6 +143,7 @@ export const SettingsDashboard: React.FC = () => {
     const [tmdbApiKey, setTmdbApiKey] = useState('');
     const [tvdbApiKey, setTvdbApiKey] = useState('');
     const [tvdbPin, setTvdbPin] = useState('');
+    const [cacheRefreshMinutes, setCacheRefreshMinutes] = useState(5);
     const [brandingTheme, setBrandingTheme] = useState('plex');
     const [referralEnabled, setReferralEnabled] = useState(false);
     const [referralTrialDays, setReferralTrialDays] = useState(3);
@@ -286,6 +287,7 @@ export const SettingsDashboard: React.FC = () => {
                 setTmdbApiKey,
                 setTvdbApiKey,
                 setTvdbPin,
+                setCacheRefreshMinutes,
                 setReferralEnabled,
                 setReferralTrialDays,
                 setReferralRewardDays,
@@ -391,6 +393,7 @@ export const SettingsDashboard: React.FC = () => {
             tmdbApiKey,
             tvdbApiKey,
             tvdbPin,
+            cacheRefreshMinutes,
             referralEnabled,
             referralTrialDays,
             referralRewardDays,
@@ -423,9 +426,9 @@ export const SettingsDashboard: React.FC = () => {
         newsletterFrequency, newsletterDay, publicDomain, isTestingNewsletter, isSendingNewsletter,
         setNewsletterFrequency, setNewsletterDay, setPublicDomain, handleTestNewsletter, handleSendNewsletterNow,
         inactiveCleanupEnabled, inactiveCleanupDays, setInactiveCleanupEnabled, setInactiveCleanupDays,
-        arrInstances, tmdbApiKey, tvdbApiKey, tvdbPin, tautulliUrl, tautulliApiKey,
+        arrInstances, tmdbApiKey, tvdbApiKey, tvdbPin, cacheRefreshMinutes, tautulliUrl, tautulliApiKey,
         jellystatUrl, jellystatApiKey, requestAppType, requestAppUrl, requestAppApiKey, ombiUrl, ombiApiKey,
-        setArrInstances, setTmdbApiKey, setTvdbApiKey, setTvdbPin, setTautulliUrl,
+        setArrInstances, setTmdbApiKey, setTvdbApiKey, setTvdbPin, setCacheRefreshMinutes, setTautulliUrl,
         setTautulliApiKey, setJellystatUrl, setJellystatApiKey, setRequestAppType, setRequestAppUrl, setRequestAppApiKey, setOmbiUrl, setOmbiApiKey,
         dashboardLayout, updateDashboardLayout, navOrder, setNavOrder, users,
         statusConfig, publicStatusEnabled, setPublicStatusEnabled, setStatusDraft, fetchStatusConfig,

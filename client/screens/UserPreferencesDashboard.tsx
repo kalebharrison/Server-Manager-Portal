@@ -94,7 +94,7 @@ export const UserPreferencesDashboard: React.FC<{
                         <CustomSelect value={localPreferences.requestMediaType} onChange={(value) => updateLocalPreference('requestMediaType', value as LocalPortalPreferences['requestMediaType'])} options={[{ label: 'Movies & TV', value: 'all' }, { label: 'Movies', value: 'movie' }, { label: 'TV', value: 'tv' }]} compact className="w-full sm:w-52" />
                     </div>
                     <div className="flex items-center justify-between gap-4 pl-8">
-                        <span className="text-sm text-text">Include available and processing titles</span>
+                        <span className="text-sm text-text">Include available and requested titles</span>
                         <button type="button" role="switch" aria-checked={localPreferences.requestIncludeExisting} onClick={() => updateLocalPreference('requestIncludeExisting', !localPreferences.requestIncludeExisting)} className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 transition-colors ${localPreferences.requestIncludeExisting ? 'bg-plex border-plex' : 'bg-background border-border'}`}>
                             <span className={`mt-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${localPreferences.requestIncludeExisting ? 'translate-x-5' : 'translate-x-0.5'}`} />
                         </button>

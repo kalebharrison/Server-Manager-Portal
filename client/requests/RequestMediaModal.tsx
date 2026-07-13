@@ -130,7 +130,7 @@ export const RequestMediaModal: React.FC<{
     const releaseLabel = formatDate(detail.releaseDate || detail.firstAirDate);
     const runtimeLabel = formatRuntime(detail.runtime);
     const requestLabel = requestStateLabel(detail);
-    const statusTone = detail.available ? 'good' : detail.pending || detail.processing || detail.approved ? 'warn' : 'default';
+    const statusTone = detail.available ? 'good' : detail.requested || detail.pending || detail.processing || detail.approved ? 'warn' : 'default';
     const imdbUrl = detail.imdbId ? `https://www.imdb.com/title/${detail.imdbId}` : '';
 
     const facts = [

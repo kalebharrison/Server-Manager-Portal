@@ -5,15 +5,14 @@ import type { RequestMediaItem } from './types';
 const statusText = (item: RequestMediaItem) => {
     if (item.available) return 'Available';
     if (item.processing) return 'Processing';
-    if (item.pending) return 'Pending';
-    if (item.approved) return 'Approved';
+    if (item.requested || item.pending || item.approved) return 'Requested';
     return item.mediaType === 'tv' ? 'Request Show' : 'Request Movie';
 };
 
 const StatusIcon = ({ item, busy }: { item: RequestMediaItem; busy?: boolean }) => {
     if (busy) return <Loader2 className="w-4 h-4 animate-spin" />;
     if (item.available || item.approved) return <CheckCircle2 className="w-4 h-4" />;
-    if (item.pending || item.processing) return <Clock3 className="w-4 h-4" />;
+    if (item.requested || item.pending || item.processing || item.approved) return <Clock3 className="w-4 h-4" />;
     return item.mediaType === 'tv' ? <Tv className="w-4 h-4" /> : <Film className="w-4 h-4" />;
 };
 
@@ -26,7 +25,7 @@ export const RequestMediaCard: React.FC<{
     const disabled = busy || item.canRequest === false;
     const badgeClass = item.available
         ? 'bg-green-500/20 text-green-200 border-green-500/30'
-        : item.pending || item.processing || item.approved
+        : item.requested || item.pending || item.processing || item.approved
             ? 'bg-amber-500/20 text-amber-100 border-amber-500/30'
             : 'bg-plex/15 text-plex border-plex/30';
 

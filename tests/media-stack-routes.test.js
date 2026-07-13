@@ -92,3 +92,28 @@ test('media stack combines enabled instances and annotates their records', async
     await routeHandler({ query: {} }, { json(value) { result = value; }, status() { return this; } });
     assert.deepEqual(result.sonarr.calendar.map((item) => item.arrInstanceName), ['Main', 'Anime']);
 });
+
+test('media stack exposes only actively downloading acquisition keys', async () => {
+    const routes = registerMediaStackRoutes({
+        app: { get() {} },
+        requireAuth: (_req, _res, next) => next(),
+        requireMember: (_req, _res, next) => next(),
+        configPath: 'config.json',
+        loadFile: async () => ({ radarrUrl: 'http://radarr', radarrApiKey: 'key' }),
+        withCache: async (_key, _ttl, load) => load(),
+        fetch: async (url) => ({
+            ok: true,
+            json: async () => url.includes('/queue') ? {
+                records: [
+                    { movieId: 1, status: 'downloading', movie: { title: 'Active', tmdbId: 100 } },
+                    { movieId: 2, status: 'queued', movie: { title: 'Waiting', tmdbId: 200 } },
+                ],
+            } : {},
+        }),
+        normalizeExternalBaseUrl: (url) => `${url}/`,
+    });
+
+    const keys = await routes.getActiveAcquisitionKeys();
+    assert.equal(keys.has('tmdb:100'), true);
+    assert.equal(keys.has('tmdb:200'), false);
+});

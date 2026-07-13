@@ -46,6 +46,7 @@ type SettingsSavePayloadInput = {
     tmdbApiKey: string;
     tvdbApiKey: string;
     tvdbPin: string;
+    cacheRefreshMinutes: number;
     referralEnabled: boolean;
     referralTrialDays: number;
     referralRewardDays: number;

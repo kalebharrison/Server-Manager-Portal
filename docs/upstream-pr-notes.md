@@ -110,6 +110,10 @@ Beta image branch: `beta`
   - Separate TMDB/TVDB settings from application connections; monitor both APIs with cached authenticated probes; support named Sonarr, Radarr, and Lidarr instances while preserving legacy defaults; and allow Seerr/Jellyseerr to coexist with a secondary Ombi music-request connection.
   - Upstream PR fit: split metadata settings/status probes from the multi-instance Arr port and dual-requester configuration.
 
+- Pending: accurate request states and adaptive media caches
+  - Show accepted media as Requested until Sonarr/Radarr reports an active download; prefer TVDB show metadata with IMDb fallback matching; add a configurable background cache interval; and prewarm authenticated, bounded TMDB poster bytes with strict outbound host validation.
+  - Upstream PR fit: split request-state correlation, TVDB metadata priority, and generic cache scheduling/poster proxying into focused changes.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

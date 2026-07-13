@@ -48,6 +48,7 @@ type SettingsHydrationSetters = {
     setTmdbApiKey: (value: string) => void;
     setTvdbApiKey: (value: string) => void;
     setTvdbPin: (value: string) => void;
+    setCacheRefreshMinutes: (value: number) => void;
     setReferralEnabled: (value: boolean) => void;
     setReferralTrialDays: (value: number) => void;
     setReferralRewardDays: (value: number) => void;
@@ -115,6 +116,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setTmdbApiKey(initialSettings.tmdbApiKey || '');
     setters.setTvdbApiKey(initialSettings.tvdbApiKey || '');
     setters.setTvdbPin(initialSettings.tvdbPin || '');
+    setters.setCacheRefreshMinutes(Number(initialSettings.cacheRefreshMinutes) || 5);
     setters.setReferralEnabled(!!initialSettings.referralEnabled);
     setters.setReferralTrialDays(initialSettings.referralTrialDays || 3);
     setters.setReferralRewardDays(initialSettings.referralRewardDays || 7);
