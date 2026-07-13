@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CalendarDays, Check, Clock3, ExternalLink, Film, Globe2, Star, Tv, X } from 'lucide-react';
-import { apiFetch } from '../shared/api';
-import { CreditStrip, DetailPill, DetailSection, formatDate, formatLanguage, formatMoney, formatRuntime, NamedValueGrid, requestStateLabel } from './RequestMediaDetails';
-import type { RequestMediaItem } from './types';
+import { X } from 'lucide-react';
 
-const issueOptions = [
-    { id: 'video', label: 'Video' },
-    { id: 'audio', label: 'Audio' },
-    { id: 'subtitles', label: 'Subtitles' },
-    { id: 'other', label: 'Other' },
-] as const;
+import { apiFetch } from '../shared/api';
+import { RequestMediaIssueForm } from './RequestMediaIssueForm';
+import {
+    RequestMediaCredits,
+    RequestMediaFacts,
+    RequestMediaHero,
+    RequestMediaModalFooter,
+    RequestMediaSeasons,
+} from './RequestMediaModalSections';
+import type { RequestMediaItem } from './types';
 
 export const RequestMediaModal: React.FC<{
     item: RequestMediaItem;
@@ -22,12 +23,9 @@ export const RequestMediaModal: React.FC<{
     const [loadError, setLoadError] = useState<string | null>(null);
     const [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);
     const [showIssueForm, setShowIssueForm] = useState(false);
-    const [issueType, setIssueType] = useState<(typeof issueOptions)[number]['id']>('video');
-    const [issueMessage, setIssueMessage] = useState('');
-    const [issueStatus, setIssueStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-    const [issueError, setIssueError] = useState('');
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const isTv = detail.mediaType === 'tv';
+    const canRequest = detail.canRequest !== false;
 
     useEffect(() => {
         const previousOverflow = document.body.style.overflow;
@@ -42,10 +40,6 @@ export const RequestMediaModal: React.FC<{
         setDetail(item);
         setSelectedSeasons([]);
         setShowIssueForm(false);
-        setIssueType('video');
-        setIssueMessage('');
-        setIssueStatus('idle');
-        setIssueError('');
         scrollRef.current?.scrollTo({ top: 0 });
         setLoading(true);
         setLoadError(null);
@@ -88,28 +82,6 @@ export const RequestMediaModal: React.FC<{
         ));
     };
 
-    const submitIssue = async () => {
-        const message = issueMessage.trim();
-        if (!message) return;
-        setIssueStatus('submitting');
-        setIssueError('');
-        try {
-            await apiFetch(`/api/request-app/media/${detail.mediaType}/${detail.tmdbId}/issue`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    title: detail.title,
-                    issueType,
-                    message,
-                }),
-            });
-            setIssueStatus('success');
-            setIssueMessage('');
-        } catch (err: any) {
-            setIssueStatus('error');
-            setIssueError(err?.message || 'Failed to report issue');
-        }
-    };
-
     const toggleIssueForm = () => {
         setShowIssueForm((current) => {
             const next = !current;
@@ -122,32 +94,6 @@ export const RequestMediaModal: React.FC<{
             return next;
         });
     };
-
-    const TypeIcon = detail.mediaType === 'tv' ? Tv : Film;
-    const canRequest = detail.canRequest !== false;
-    const canSubmit = !saving && canRequest && (!isTv || selectedSeasons.length > 0);
-    const canReportIssue = !!detail.mediaId;
-    const releaseLabel = formatDate(detail.releaseDate || detail.firstAirDate);
-    const runtimeLabel = formatRuntime(detail.runtime);
-    const requestLabel = requestStateLabel(detail);
-    const statusTone = detail.available ? 'good' : detail.requested || detail.pending || detail.processing || detail.approved ? 'warn' : 'default';
-    const imdbUrl = detail.imdbId ? `https://www.imdb.com/title/${detail.imdbId}` : '';
-
-    const facts = [
-        detail.rating ? { label: 'Rating', value: `${detail.rating.toFixed(1)} / 10`, icon: Star } : null,
-        releaseLabel ? { label: 'Release', value: releaseLabel, icon: CalendarDays } : null,
-        runtimeLabel ? { label: isTv ? 'Episode Runtime' : 'Runtime', value: runtimeLabel, icon: Clock3 } : null,
-        detail.status ? { label: 'Status', value: detail.status, icon: Check } : null,
-        detail.originalLanguage ? { label: 'Language', value: formatLanguage(detail.originalLanguage), icon: Globe2 } : null,
-        detail.network ? { label: 'Network', value: detail.network, icon: Tv } : null,
-        detail.studio ? { label: 'Studio', value: detail.studio, icon: Film } : null,
-        detail.numberOfSeasons ? { label: 'Seasons', value: String(detail.numberOfSeasons), icon: Tv } : null,
-        detail.numberOfEpisodes ? { label: 'Episodes', value: String(detail.numberOfEpisodes), icon: Film } : null,
-        detail.lastAirDate ? { label: 'Last Aired', value: formatDate(detail.lastAirDate), icon: CalendarDays } : null,
-        detail.nextAirDate ? { label: 'Next Airs', value: formatDate(detail.nextAirDate), icon: CalendarDays } : null,
-        detail.budget ? { label: 'Budget', value: formatMoney(detail.budget), icon: Film } : null,
-        detail.revenue ? { label: 'Revenue', value: formatMoney(detail.revenue), icon: Film } : null,
-    ].filter(Boolean) as Array<{ label: string; value: string | null; icon: React.ElementType }>;
 
     return (
         <div
@@ -166,223 +112,37 @@ export const RequestMediaModal: React.FC<{
                 </button>
 
                 <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain custom-scrollbar">
-                    <div className="relative overflow-hidden p-5 pt-12 md:p-7 md:pt-7">
-                        {detail.backdropUrl || detail.posterUrl ? (
-                            <div
-                                className="absolute inset-0 bg-cover bg-center opacity-45"
-                                style={{ backgroundImage: `url(${detail.backdropUrl || detail.posterUrl})` }}
-                                aria-hidden
+                    <RequestMediaHero detail={detail} loading={loading} />
+                    <div className="p-5 md:p-7">
+                        {loadError ? (
+                            <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+                                Showing cached browse data. {loadError}
+                            </div>
+                        ) : null}
+                        <RequestMediaFacts detail={detail} />
+                        {isTv && detail.seasons?.length ? (
+                            <RequestMediaSeasons
+                                seasons={detail.seasons}
+                                requestableSeasons={requestableSeasons}
+                                selectedSeasons={selectedSeasons}
+                                canRequest={canRequest}
+                                onSelectAll={() => setSelectedSeasons(requestableSeasons.map((season) => season.seasonNumber))}
+                                onToggle={toggleSeason}
                             />
                         ) : null}
-                        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/90 to-card/25" aria-hidden />
-
-                        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-start">
-                            {detail.posterUrl ? (
-                                <img src={detail.posterUrl} alt={detail.title} className="hidden w-28 shrink-0 rounded-xl border border-white/10 object-cover shadow-2xl sm:block md:w-36" />
-                            ) : null}
-                            <div className="min-w-0 max-w-4xl">
-                                <div className="mb-3 flex flex-wrap items-center gap-2">
-                                    <DetailPill>
-                                        <TypeIcon className="h-3.5 w-3.5" />
-                                        {detail.mediaType === 'tv' ? 'TV' : 'Movie'}
-                                    </DetailPill>
-                                    {detail.year ? <DetailPill>{detail.year}</DetailPill> : null}
-                                    <DetailPill tone={statusTone}>{requestLabel}</DetailPill>
-                                    {loading ? <DetailPill>Loading details</DetailPill> : null}
-                                </div>
-                                <h2 className="text-3xl font-black leading-tight tracking-tight text-white md:text-4xl">{detail.title}</h2>
-                                {detail.tagline ? <p className="mt-2 text-base font-semibold italic text-white/80">{detail.tagline}</p> : null}
-                                {detail.overview ? <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/78 md:text-base">{detail.overview}</p> : null}
-                                {detail.genres?.length ? (
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        {detail.genres.map((genre) => (
-                                            <DetailPill key={`${genre.id || genre.name}`}>{genre.name}</DetailPill>
-                                        ))}
-                                    </div>
-                                ) : null}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-5 md:p-7">
-                    {loadError ? (
-                        <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
-                            Showing cached browse data. {loadError}
-                        </div>
-                    ) : null}
-
-                    {facts.length ? (
-                        <DetailSection title="Details" className="mb-7">
-                            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-                                {facts.map((fact) => {
-                                    const Icon = fact.icon;
-                                    return (
-                                        <div key={`${fact.label}-${fact.value}`} className="rounded-xl border border-white/10 bg-background/35 p-3">
-                                            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted">
-                                                <Icon className="h-3.5 w-3.5 text-plex" />
-                                                {fact.label}
-                                            </div>
-                                            <div className="text-sm font-bold text-text">{fact.value}</div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </DetailSection>
-                    ) : null}
-
-                    {isTv && detail.seasons?.length ? (
-                        <DetailSection title="Seasons" className="mb-7">
-                            {canRequest && requestableSeasons.length > 0 ? (
-                                <div className="mb-3 flex items-center justify-between gap-3">
-                                    <p className="text-sm text-muted">Choose which seasons to request.</p>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedSeasons(requestableSeasons.map((season) => season.seasonNumber))}
-                                        className="text-xs font-semibold text-plex hover:text-plex-hover"
-                                    >
-                                        Select all
-                                    </button>
-                                </div>
-                            ) : null}
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                {detail.seasons
-                                    .filter((season) => season.seasonNumber > 0)
-                                    .map((season) => {
-                                        const requestable = requestableSeasons.some((entry) => entry.seasonNumber === season.seasonNumber);
-                                        const checked = selectedSeasons.includes(season.seasonNumber);
-                                        return (
-                                            <button
-                                                key={season.seasonNumber}
-                                                type="button"
-                                                disabled={!canRequest || !requestable}
-                                                onClick={() => toggleSeason(season.seasonNumber)}
-                                                className={`flex items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors disabled:cursor-default disabled:opacity-70 ${checked ? 'border-plex bg-plex/10 text-text' : 'border-border bg-background/35 text-muted hover:text-text hover:bg-white/5'}`}
-                                            >
-                                                <span className="min-w-0">
-                                                    <span className="block text-sm font-bold line-clamp-1">{season.name}</span>
-                                                    <span className="block text-xs opacity-75">{season.episodeCount || 0} episodes{season.statusLabel ? ` - ${season.statusLabel}` : ''}</span>
-                                                </span>
-                                                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${checked ? 'border-plex bg-plex text-background' : 'border-border'}`}>
-                                                    {checked && <Check className="h-3 w-3" />}
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
-                            </div>
-                        </DetailSection>
-                    ) : null}
-
-                    <div className="grid grid-cols-1 gap-7 xl:grid-cols-2">
-                        <div className="space-y-7">
-                            <CreditStrip title="Created By" credits={detail.creators} />
-                            <CreditStrip title="Crew" credits={detail.crew} />
-                            <NamedValueGrid title="Production" items={detail.productionCompanies} />
-                        </div>
-                        <div className="space-y-7">
-                            <CreditStrip title="Cast" credits={detail.cast} />
-                            {(detail.homepage || imdbUrl) ? (
-                                <DetailSection title="Links">
-                                    <div className="flex flex-wrap gap-2">
-                                        {detail.homepage ? (
-                                            <a href={detail.homepage} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-border bg-background/35 px-3 py-2 text-sm font-bold text-text hover:border-plex hover:text-plex">
-                                                Homepage
-                                                <ExternalLink className="h-4 w-4" />
-                                            </a>
-                                        ) : null}
-                                        {imdbUrl ? (
-                                            <a href={imdbUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-border bg-background/35 px-3 py-2 text-sm font-bold text-text hover:border-plex hover:text-plex">
-                                                IMDb
-                                                <ExternalLink className="h-4 w-4" />
-                                            </a>
-                                        ) : null}
-                                    </div>
-                                </DetailSection>
-                            ) : null}
-                        </div>
-                    </div>
-                    {showIssueForm ? (
-                        <DetailSection title="Report Issue" className="mt-7">
-                            <div className="rounded-xl border border-white/10 bg-background/35 p-4">
-                                <div className="mb-3 flex flex-wrap gap-2">
-                                    {issueOptions.map((option) => (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            onClick={() => setIssueType(option.id)}
-                                            className={`rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors ${issueType === option.id ? 'border-plex bg-plex text-background' : 'border-border text-muted hover:text-text hover:bg-white/5'}`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                                <textarea
-                                    value={issueMessage}
-                                    onChange={(event) => {
-                                        setIssueMessage(event.target.value);
-                                        setIssueStatus('idle');
-                                        setIssueError('');
-                                    }}
-                                    placeholder="Describe what is wrong."
-                                    className="h-28 w-full resize-none rounded-xl border border-border bg-card p-3 text-sm text-text outline-none transition-colors focus:border-plex"
-                                />
-                                {issueStatus === 'success' ? (
-                                    <p className="mt-2 text-sm font-semibold text-green-300">Issue submitted.</p>
-                                ) : issueStatus === 'error' ? (
-                                    <p className="mt-2 text-sm font-semibold text-red-300">{issueError}</p>
-                                ) : null}
-                                <div className="mt-3 flex justify-end gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => { setShowIssueForm(false); setIssueMessage(''); setIssueStatus('idle'); setIssueError(''); }}
-                                        className="rounded-lg border border-border px-3 py-2 text-sm text-muted transition-colors hover:bg-white/5 hover:text-text"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled={issueStatus === 'submitting' || !issueMessage.trim()}
-                                        onClick={submitIssue}
-                                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-plex px-3 py-2 text-sm font-bold text-background transition-colors hover:bg-plex-hover disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        {issueStatus === 'submitting' ? <Clock3 className="h-4 w-4 animate-pulse" /> : <AlertTriangle className="h-4 w-4" />}
-                                        Submit Issue
-                                    </button>
-                                </div>
-                            </div>
-                        </DetailSection>
-                    ) : null}
+                        <RequestMediaCredits detail={detail} />
+                        {showIssueForm ? <RequestMediaIssueForm item={detail} onCancel={() => setShowIssueForm(false)} /> : null}
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-3 border-t border-white/10 p-4 md:flex-row md:items-center md:justify-between md:p-5">
-                    <div className="text-xs text-muted">
-                        {canRequest ? 'Requests are submitted to your configured request app.' : `${detail.title} is marked ${requestLabel.toLowerCase()}.`}
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                        {canReportIssue ? (
-                            <button
-                                type="button"
-                                onClick={toggleIssueForm}
-                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-500/30 px-4 py-2 font-bold text-amber-100 transition-colors hover:bg-amber-500/10"
-                            >
-                                <AlertTriangle className="h-4 w-4" />
-                                Report Issue
-                            </button>
-                        ) : null}
-                        <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-muted transition-colors hover:bg-white/5 hover:text-text">
-                            Close
-                        </button>
-                        <button
-                            type="button"
-                            disabled={!canSubmit}
-                            onClick={() => onSubmit(detail, selectedSeasons)}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-plex px-4 py-2 font-bold text-background transition-colors hover:bg-plex-hover disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {saving ? <Clock3 className="h-4 w-4 animate-pulse" /> : <Check className="h-4 w-4" />}
-                            {canRequest ? 'Request' : requestLabel}
-                        </button>
-                    </div>
-                </div>
+                <RequestMediaModalFooter
+                    detail={detail}
+                    saving={saving}
+                    selectedSeasonCount={selectedSeasons.length}
+                    onClose={onClose}
+                    onSubmit={() => onSubmit(detail, selectedSeasons)}
+                    onToggleIssueForm={toggleIssueForm}
+                />
             </div>
         </div>
     );

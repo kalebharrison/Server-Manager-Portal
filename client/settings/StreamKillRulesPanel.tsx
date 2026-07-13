@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, ChevronUp, ChevronDown } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { createClientId } from '../shared/id';
 import { CustomSelect } from '../shared/ui';

@@ -4,12 +4,12 @@ import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { ScrollReveal } from '../shared/ui';
 import { discoverPosterGridClass } from '../shared/portalLayout';
 
-export const PosterImage: React.FC<{
+export const PosterImage = React.memo<{
     src: string;
     alt: string;
     priority?: boolean;
     className?: string;
-}> = ({ src, alt, priority = false, className = '' }) => {
+}>(({ src, alt, priority = false, className = '' }) => {
     return (
         <>
             <div className="absolute inset-0 skeleton-base transition-opacity duration-150" aria-hidden="true" />
@@ -23,14 +23,18 @@ export const PosterImage: React.FC<{
                     event.currentTarget.classList.remove('opacity-0');
                     event.currentTarget.previousElementSibling?.classList.add('opacity-0');
                 }}
+                onError={(event) => {
+                    event.currentTarget.style.display = 'none';
+                    event.currentTarget.previousElementSibling?.classList.add('opacity-0');
+                }}
                 className={`absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-150 ${className}`}
             />
         </>
     );
-};
+});
 
-export const DiscoverPosterCard: React.FC<{
-    item: { ratingKey?: string; title: string; thumb?: string; thumbUrl?: string; plexUrl: string; tags?: string[]; year?: number | string; parentTitle?: string };
+export const DiscoverPosterCard = React.memo<{
+    item: { ratingKey?: string; title: string; thumb?: string; thumbUrl?: string; plexUrl?: string; tags?: string[]; year?: number | string; parentTitle?: string };
     aspect?: '2/3' | 'square';
     overlay?: React.ReactNode;
     variant?: 'discover' | 'home';
@@ -38,23 +42,23 @@ export const DiscoverPosterCard: React.FC<{
     footer?: React.ReactNode;
     showQualityBadges?: boolean;
     priority?: boolean;
-}> = ({ item, aspect = '2/3', overlay, variant = 'discover', className = 'w-full', footer, showQualityBadges = true, priority = false }) => {
+}>(({ item, aspect = '2/3', overlay, variant = 'discover', className = 'w-full', footer, showQualityBadges = true, priority = false }) => {
     const posterShell = variant === 'home'
         ? 'relative rounded-xl overflow-hidden bg-background border border-white/5 transition-[box-shadow,border-color] duration-300 group-hover:shadow-xl group-hover:border-plex/50'
         : 'relative rounded-lg overflow-hidden bg-background border border-border group-hover:border-plex transition-colors shadow-md';
 
     return (
         <a
-            href={item.plexUrl}
+            href={item.plexUrl || '#'}
             target="_blank"
             rel="noreferrer"
             className={`flex flex-col gap-2 group ${className}`}
             style={{ textDecoration: 'none', color: 'inherit' }}
         >
             <div className={`${posterShell} ${aspect === 'square' ? 'aspect-square' : 'aspect-[2/3]'} w-full`}>
-                {item.thumb ? (
+                {item.thumb || item.thumbUrl ? (
                     <PosterImage
-                        src={item.thumbUrl ? resolvePortalAssetUrl(item.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=300&height=${aspect === 'square' ? 300 : 450}`)}
+                        src={item.thumbUrl ? resolvePortalAssetUrl(item.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb || '')}&width=300&height=${aspect === 'square' ? 300 : 450}`)}
                         alt={item.title}
                         priority={priority}
                         className={variant === 'home' ? 'group-hover:opacity-80' : ''}
@@ -82,7 +86,7 @@ export const DiscoverPosterCard: React.FC<{
             )}
         </a>
     );
-};
+});
 
 const discoverViewsOverlay = (views: number) => (
     <div className="absolute top-2 right-2 bg-black/80 text-plex text-xs font-bold px-2 py-1 rounded backdrop-blur-md border border-plex/30 z-10 pointer-events-none">
@@ -92,7 +96,7 @@ const discoverViewsOverlay = (views: number) => (
 
 export const DISCOVER_DESKTOP_ITEM_LIMIT = 20;
 export const DISCOVER_MOBILE_ITEM_LIMIT = 12;
-export const RECENTLY_ADDED_ITEM_LIMIT = 100;
+export const RECENTLY_ADDED_ITEM_LIMIT = 30;
 export const DISCOVER_LIMIT_OPTIONS = [
     { value: '12', label: '12 Items' },
     { value: '20', label: '20 Items' },
@@ -109,7 +113,7 @@ export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; li
                 {items.slice(0, limit).map((item, i) => (
                     <DiscoverPosterCard
                         key={item.ratingKey || `${item.title}-${i}`}
-                        item={{ ...item, plexUrl: item.plexUrl || '#' }}
+                        item={item}
                         overlay={discoverViewsOverlay(item.views)}
                         showQualityBadges={showQualityBadges}
                         priority={preloadPosters && i < 8}

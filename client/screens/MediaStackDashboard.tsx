@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar, ChevronLeft, ChevronRight, Clock, Film, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
+import { cacheRefreshMs } from '../shared/cacheRefresh';
 import { formatTime } from '../shared/format';
 import { Loader } from '../shared/toast';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
@@ -17,13 +18,13 @@ type StackFilter = 'all' | 'sonarr' | 'radarr';
 type CalendarView = 'list' | 'month';
 
 const AUTO_MONTH_SCAN_TTL_MS = 10 * 60 * 1000;
-const MONTH_SUMMARY_CACHE_TTL_MS = 2 * 60 * 1000;
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const mediaTypeLabel = (type: string) => type === 'tv' ? 'TV Show' : 'Movie';
 const ymd = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = () => {
+export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cacheMinutes }) => {
+    const refreshMs = cacheRefreshMs({ cacheRefreshMinutes: cacheMinutes });
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -44,17 +45,18 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = () => {
     const fetchMonthSummary = useCallback(async (offset: number, { force = false } = {}) => {
         const safeOffset = clampMonthOffset(offset);
         const cached = monthSummaryCacheRef.current.get(safeOffset);
-        if (!force && cached && Date.now() - cached.at < MONTH_SUMMARY_CACHE_TTL_MS) return cached.data;
-        const res = await apiFetch('/api/media-stack/summary?monthOffset=' + safeOffset, { forceRefresh: force });
+        if (!force && cached && Date.now() - cached.at < refreshMs) return cached.data;
+        const res = await apiFetch('/api/media-stack/summary?monthOffset=' + safeOffset, { forceRefresh: force, cacheTtlMs: refreshMs });
         if (res.error) throw new Error(res.error);
         monthSummaryCacheRef.current.set(safeOffset, { at: Date.now(), data: res });
         return res;
-    }, []);
+    }, [refreshMs]);
 
     const fetchData = useCallback(async () => {
         try {
-            const res = await fetchMonthSummary(monthOffset, { force: true });
+            const res = await fetchMonthSummary(monthOffset);
             setData(res);
+            setError('');
         } catch (err: any) {
             setError(err.message || 'Failed to load release calendar.');
         } finally {
@@ -65,7 +67,7 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = () => {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-    useVisibleInterval(fetchData, 30000);
+    useVisibleInterval(fetchData, refreshMs);
 
     const sonarrCalendarItems = useMemo(() => mapSonarrCalendarItems(data?.sonarr?.calendar || []), [data?.sonarr?.calendar]);
     const radarrCalendarItems = useMemo(() => mapRadarrCalendarItems(data?.radarr?.calendar || []), [data?.radarr?.calendar]);

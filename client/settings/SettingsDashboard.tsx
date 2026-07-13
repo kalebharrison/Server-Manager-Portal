@@ -1,20 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { pushToast, type ToastMessage } from '../shared/toast';
-import type { ArrInstance, PlexServer } from '../shared/types';
-import { DEFAULT_DASHBOARD_LAYOUT, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { hasIntegrationCredentials } from './integrationDisplay';
-import { getDefaultSettingsNavOrder } from './settingsNavOrder';
-import { hydrateSettingsFromConfig } from './settingsInitializers';
-import { buildSettingsSavePayload } from './settingsSavePayload';
-import { buildSettingsTabPanelProps } from './settingsTabPanelProps';
 import { SettingsPageLayout } from './SettingsPageLayout';
+import { buildSettingsTabPanelProps } from './settingsTabPanelProps';
 import { usePlexServerDiscovery } from './usePlexServerDiscovery';
-import { useSettingsEmailActions } from './useSettingsEmailActions';
 import { useSettingsAdminPanel } from './useSettingsAdminPanel';
-import { useSettingsTabs } from './useSettingsTabs';
+import { useSettingsEmailActions } from './useSettingsEmailActions';
+import { useSettingsFormState } from './useSettingsFormState';
+import { useSettingsHydration } from './useSettingsHydration';
 import { useSettingsResources } from './useSettingsResources';
+import { useSettingsTabs } from './useSettingsTabs';
 
 export const SettingsDashboard: React.FC = () => {
     const [statusDraft, setStatusDraft] = useState<any>(null);
@@ -23,11 +21,32 @@ export const SettingsDashboard: React.FC = () => {
     const [initialSettings, setInitialSettings] = useState<any>({});
     const [isConfigLoaded, setIsConfigLoaded] = useState(false);
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
+    const [isPushingAnnouncement, setIsPushingAnnouncement] = useState(false);
+    const [maintenanceExperimentalEnabled, setMaintenanceExperimentalEnabled] = useState(false);
     const streamRulesSaveHandlerRef = useRef<(() => Promise<boolean>) | null>(null);
 
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-        setToasts(t => pushToast(t, message, type));
+        setToasts(current => pushToast(current, message, type));
     }, []);
+
+    const tabs = useSettingsTabs();
+    const resources = useSettingsResources({ activeTab: tabs.activeTab, addToast });
+    const form = useSettingsFormState();
+    const admin = useSettingsAdminPanel({
+        activeTab: tabs.activeTab,
+        addToast,
+        setLoading,
+        mediaServerType: form.values.mediaServerType,
+        maintenanceExperimentalEnabled,
+    });
+
+    useSettingsHydration({
+        initialSettings,
+        isConfigLoaded,
+        form,
+        admin,
+        setMaintenanceExperimentalEnabled,
+    });
 
     useEffect(() => {
         const fetchConfig = async () => {
@@ -60,281 +79,82 @@ export const SettingsDashboard: React.FC = () => {
             }
             window.dispatchEvent(new CustomEvent('portal-public-config-updated'));
             addToast('Settings Saved!');
-        } catch (e: any) {
-            addToast(e.message || 'Failed to save config', 'error');
+        } catch (error: any) {
+            addToast(error.message || 'Failed to save config', 'error');
         } finally {
             setLoading(false);
         }
     };
-    const [token, setToken] = useState('');
-    const [mediaServerType, setMediaServerType] = useState<'plex' | 'jellyfin'>('plex');
-    const [plexServerUrl, setPlexServerUrl] = useState('');
-    const [jellyfinUrl, setJellyfinUrl] = useState('');
-    const [jellyfinApiKey, setJellyfinApiKey] = useState('');
-    const [servers, setServers] = useState<PlexServer[]>([]);
-    const [selectedServer, setSelectedServer] = useState('');
-    const [checkInterval, setCheckInterval] = useState(60);
-    const [hideStreamUsers, setHideStreamUsers] = useState<string>('anonymous');
-    const [useTrendingSlideshowOnLogin, setUseTrendingSlideshowOnLogin] = useState(false);
-    const [showLoginServerStats, setShowLoginServerStats] = useState(false);
-    const [publicStatusEnabled, setPublicStatusEnabled] = useState(false);
-    const [defaultLibraryIds, setDefaultLibraryIds] = useState<string[]>([]);
-    const {
-        activeTab,
-        setActiveTab,
-        highlightMaintenanceToggle,
-        settingsSearch,
-        setSettingsSearch,
-        settingsTabsFlat,
-        visibleTabGroups,
-    } = useSettingsTabs();
-    const { statusConfig, setStatusConfig, users, libraries, setLibraries, fetchStatusConfig } = useSettingsResources({ activeTab, addToast });
-
-    // SMTP States
-    const [smtpHost, setSmtpHost] = useState('');
-    const [smtpPort, setSmtpPort] = useState(587);
-    const [smtpUser, setSmtpUser] = useState('');
-    const [smtpPass, setSmtpPass] = useState('');
-    const [smtpFrom, setSmtpFrom] = useState('');
-    const [smtpSecure, setSmtpSecure] = useState(false);
-    const [emailDaysBefore, setEmailDaysBefore] = useState(7);
-    const [testRecipient, setTestRecipient] = useState('');
-
-    // Newsletter States
-    const [newsletterFrequency, setNewsletterFrequency] = useState('disabled');
-    const [newsletterDay, setNewsletterDay] = useState(0);
-    const [publicDomain, setPublicDomain] = useState('https://yourdomain.com');
-    const [contactUrl, setContactUrl] = useState('');
-    const [contactWhatsApp, setContactWhatsApp] = useState('');
-    const [contactEmail, setContactEmail] = useState('');
-
-    // Cleanup States
-    const [inactiveCleanupEnabled, setInactiveCleanupEnabled] = useState(false);
-    const [inactiveCleanupDays, setInactiveCleanupDays] = useState(90);
-
-    // Media Stack States
-    const [arrInstances, setArrInstances] = useState<ArrInstance[]>([]);
-    const [tautulliUrl, setTautulliUrl] = useState('');
-    const [tautulliApiKey, setTautulliApiKey] = useState('');
-    const [jellystatUrl, setJellystatUrl] = useState('');
-    const [jellystatApiKey, setJellystatApiKey] = useState('');
-    const [requestAppType, setRequestAppType] = useState('none');
-    const [requestAppUrl, setRequestAppUrl] = useState('');
-    const [requestAppApiKey, setRequestAppApiKey] = useState('');
-    const [ombiUrl, setOmbiUrl] = useState('');
-    const [ombiApiKey, setOmbiApiKey] = useState('');
-    const [maintenanceExperimentalEnabled, setMaintenanceExperimentalEnabled] = useState(false);
-    const [dashboardLayout, setDashboardLayout] = useState<DashboardLayoutConfig>(DEFAULT_DASHBOARD_LAYOUT);
-    const dashboardLayoutRef = useRef<DashboardLayoutConfig>(DEFAULT_DASHBOARD_LAYOUT);
-
-    const updateDashboardLayout = useCallback((next: DashboardLayoutConfig) => {
-        dashboardLayoutRef.current = next;
-        setDashboardLayout(next);
-    }, []);
-
-    // Branding & UI States
-    const [customLogoUrl, setCustomLogoUrl] = useState('');
-    const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
-    const [useScrollRevealAnimations, setUseScrollRevealAnimations] = useState(false);
-    const [useCinematicLoading, setUseCinematicLoading] = useState(false);
-    const [useBrandedSkeleton, setUseBrandedSkeleton] = useState(true);
-    const [useTrendingSlideshow, setUseTrendingSlideshow] = useState(false);
-    const [trendingSlideshowInterval, setTrendingSlideshowInterval] = useState(30);
-    const [tmdbApiKey, setTmdbApiKey] = useState('');
-    const [tvdbApiKey, setTvdbApiKey] = useState('');
-    const [tvdbPin, setTvdbPin] = useState('');
-    const [cacheRefreshMinutes, setCacheRefreshMinutes] = useState(5);
-    const [brandingTheme, setBrandingTheme] = useState('plex');
-    const [referralEnabled, setReferralEnabled] = useState(false);
-    const [referralTrialDays, setReferralTrialDays] = useState(3);
-    const [referralRewardDays, setReferralRewardDays] = useState(7);
-    const [announcement, setAnnouncement] = useState('');
-    const [isPushingAnnouncement, setIsPushingAnnouncement] = useState(false);
-    const [use24HourClock, setUse24HourClock] = useState(initialSettings?.use24HourClock || false);
-    const [showPosterQualityBadges, setShowPosterQualityBadges] = useState(initialSettings?.showPosterQualityBadges !== false);
-    const [allowTemporaryAccess, setAllowTemporaryAccess] = useState(initialSettings?.allowTemporaryAccess || false);
-    const [navOrder, setNavOrder] = useState<string[]>(getDefaultSettingsNavOrder);
-    const [logoFile, setLogoFile] = useState<File | null>(null);
-    const {
-        tasks,
-        diagnostics,
-        isLoadingDiagnostics,
-        backupRestoreText,
-        setBackupRestoreText,
-        isRestoringBackup,
-        autoBackupEnabled,
-        setAutoBackupEnabled,
-        autoBackupIntervalDays,
-        setAutoBackupIntervalDays,
-        autoBackupRetentionCount,
-        setAutoBackupRetentionCount,
-        backupFiles,
-        isLoadingAuditLog,
-        auditLogPage,
-        setAuditLogPage,
-        deletedUsersLog,
-        emailLogPage,
-        setEmailLogPage,
-        fetchDiagnostics,
-        fetchAuditLog,
-        handleDownloadBackup,
-        handleCreateBackupFile,
-        handleRestoreBackup,
-        handleRestoreFromFile,
-        handleUnblockDeletedUser,
-        handleRunTask,
-        systemHealth,
-        totalAuditLogPages,
-        pagedAuditEntries,
-        totalEmailLogPages,
-        pagedEmailEntries,
-    } = useSettingsAdminPanel({
-        activeTab,
-        addToast,
-        setLoading,
-        mediaServerType,
-        maintenanceExperimentalEnabled,
-    });
 
     const handleFetchServers = usePlexServerDiscovery({
-        token,
-        plexServerUrl,
-        selectedServer,
+        token: form.values.token,
+        plexServerUrl: form.values.plexServerUrl,
+        selectedServer: form.values.selectedServer,
         addToast,
         setLoading,
-        setServers,
-        setSelectedServer,
+        setServers: servers => form.setField('servers', servers),
+        setSelectedServer: serverId => form.setField('selectedServer', serverId),
     });
 
-    const {
-        isTestingSmtp,
-        isTestingNewsletter,
-        isSendingNewsletter,
-        handleTestEmail,
-        handleTestNewsletter,
-        handleSendNewsletterNow,
-    } = useSettingsEmailActions({
+    const emailActions = useSettingsEmailActions({
         addToast,
-        smtpHost,
-        smtpPort,
-        smtpUser,
-        smtpPass,
-        smtpFrom,
-        smtpSecure,
-        testRecipient,
+        smtpHost: form.values.smtpHost,
+        smtpPort: form.values.smtpPort,
+        smtpUser: form.values.smtpUser,
+        smtpPass: form.values.smtpPass,
+        smtpFrom: form.values.smtpFrom,
+        smtpSecure: form.values.smtpSecure,
+        testRecipient: form.values.testRecipient,
     });
 
     const handlePushAnnouncement = async () => {
         setIsPushingAnnouncement(true);
         try {
-            const res = await apiFetch('/api/announcements/push', {
+            const response = await apiFetch('/api/announcements/push', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: announcement, sendEmail: true })
+                body: JSON.stringify({ text: form.values.announcement, sendEmail: true }),
             });
-            if (res.error) throw new Error(res.error);
+            if (response.error) throw new Error(response.error);
             addToast('Announcement saved and email push started (staggered over 30 mins).');
-        } catch (e: any) {
-            addToast(e.message || 'Failed to push announcement', 'error');
+        } catch (error: any) {
+            addToast(error.message || 'Failed to push announcement', 'error');
         } finally {
             setIsPushingAnnouncement(false);
         }
     };
 
-    useEffect(() => {
-        if (isConfigLoaded) {
-            hydrateSettingsFromConfig(initialSettings, {
-                setToken,
-                setMediaServerType,
-                setPlexServerUrl,
-                setJellyfinUrl,
-                setJellyfinApiKey,
-                setSelectedServer,
-                setCheckInterval,
-                setSmtpHost,
-                setSmtpPort,
-                setSmtpUser,
-                setSmtpPass,
-                setSmtpFrom,
-                setSmtpSecure,
-                setEmailDaysBefore,
-                setNewsletterFrequency,
-                setNewsletterDay,
-                setInactiveCleanupEnabled,
-                setInactiveCleanupDays,
-                setPublicDomain,
-                setContactUrl,
-                setContactWhatsApp,
-                setContactEmail,
-                setArrInstances,
-                setTautulliUrl,
-                setTautulliApiKey,
-                setJellystatUrl,
-                setJellystatApiKey,
-                setRequestAppType,
-                setRequestAppUrl,
-                setRequestAppApiKey,
-                setOmbiUrl,
-                setOmbiApiKey,
-                setBrandingTheme,
-                setCustomLogoUrl,
-                setBackgroundImageUrl,
-                setUseScrollRevealAnimations,
-                setUseCinematicLoading,
-                setUseBrandedSkeleton,
-                setUseTrendingSlideshow,
-                setTrendingSlideshowInterval,
-                setTmdbApiKey,
-                setTvdbApiKey,
-                setTvdbPin,
-                setCacheRefreshMinutes,
-                setReferralEnabled,
-                setReferralTrialDays,
-                setReferralRewardDays,
-                setAnnouncement,
-                setNavOrder,
-                setHideStreamUsers,
-                setUseTrendingSlideshowOnLogin,
-                setShowLoginServerStats,
-                setPublicStatusEnabled,
-                setDefaultLibraryIds,
-                setUse24HourClock,
-                setShowPosterQualityBadges,
-                setAllowTemporaryAccess,
-                setAutoBackupEnabled,
-                setAutoBackupIntervalDays,
-                setAutoBackupRetentionCount,
-                setMaintenanceExperimentalEnabled,
-                setDashboardLayout,
-                setTestRecipient,
-                setServers,
-                dashboardLayoutRef,
-            });
-        }
-    }, [initialSettings, isConfigLoaded]);
-
     const handleSave = async () => {
-        if (activeTab === 'stream-rules' && streamRulesSaveHandlerRef.current) {
+        const settings = form.values;
+        if (tabs.activeTab === 'stream-rules' && streamRulesSaveHandlerRef.current) {
             await streamRulesSaveHandlerRef.current();
             return;
         }
-        if (mediaServerType === 'plex' && (!token || !selectedServer)) {
+        if (settings.mediaServerType === 'plex' && (!settings.token || !settings.selectedServer)) {
             addToast('Token and server must be selected.', 'error');
             return;
         }
-        if (mediaServerType === 'jellyfin' && (!jellyfinUrl || !hasIntegrationCredentials(jellyfinUrl, jellyfinApiKey, initialSettings.jellyfinUrl, initialSettings.jellyfinApiKey))) {
+        if (settings.mediaServerType === 'jellyfin' && (
+            !settings.jellyfinUrl
+            || !hasIntegrationCredentials(
+                settings.jellyfinUrl,
+                settings.jellyfinApiKey,
+                initialSettings.jellyfinUrl,
+                initialSettings.jellyfinApiKey,
+            )
+        )) {
             addToast('Jellyfin URL and API key must be set.', 'error');
             return;
         }
 
-        let nextCustomLogoUrl = customLogoUrl;
-        if (logoFile) {
+        let nextCustomLogoUrl = settings.customLogoUrl;
+        if (settings.logoFile) {
             try {
-                await fetch(portalUrl('/api/config/logo'), { method: 'POST', body: logoFile });
+                await fetch(portalUrl('/api/config/logo'), { method: 'POST', body: settings.logoFile });
                 nextCustomLogoUrl = `/static/logo.png?v=${Date.now()}`;
-                setCustomLogoUrl(nextCustomLogoUrl);
-                setLogoFile(null);
-            } catch (e) {
+                form.setField('customLogoUrl', nextCustomLogoUrl);
+                form.setField('logoFile', null);
+            } catch (error) {
                 addToast('Failed to upload logo', 'error');
                 return;
             }
@@ -343,125 +163,50 @@ export const SettingsDashboard: React.FC = () => {
         if (statusDraft) {
             try {
                 await apiFetch('/api/status/config', { method: 'POST', body: JSON.stringify(statusDraft) });
-                setStatusConfig(statusDraft);
-            } catch (e: any) {
+                resources.setStatusConfig(statusDraft);
+            } catch (error: any) {
                 addToast('Failed to save status monitor configuration', 'error');
             }
         }
 
-        await handleSaveConfig(buildSettingsSavePayload({
-            token,
-            mediaServerType,
-            selectedServer,
-            plexServerUrl,
-            jellyfinUrl,
-            jellyfinApiKey,
-            checkInterval,
-            smtpHost,
-            smtpPort,
-            smtpUser,
-            smtpPass,
-            smtpFrom,
-            smtpSecure,
-            emailDaysBefore,
-            newsletterFrequency,
-            newsletterDay,
-            inactiveCleanupEnabled,
-            inactiveCleanupDays,
-            publicDomain,
-            contactUrl,
-            contactWhatsApp,
-            contactEmail,
-            arrInstances,
-            tautulliUrl,
-            tautulliApiKey,
-            jellystatUrl,
-            jellystatApiKey,
-            requestAppType,
-            requestAppUrl,
-            requestAppApiKey,
-            ombiUrl,
-            ombiApiKey,
+        await handleSaveConfig(form.createSavePayload({
             customLogoUrl: nextCustomLogoUrl,
-            brandingTheme,
-            backgroundImageUrl,
-            useScrollRevealAnimations,
-            useCinematicLoading,
-            useBrandedSkeleton,
-            useTrendingSlideshow,
-            trendingSlideshowInterval,
-            tmdbApiKey,
-            tvdbApiKey,
-            tvdbPin,
-            cacheRefreshMinutes,
-            referralEnabled,
-            referralTrialDays,
-            referralRewardDays,
-            announcement,
-            navOrder,
-            hideStreamUsers,
-            useTrendingSlideshowOnLogin,
-            showLoginServerStats,
-            publicStatusEnabled,
-            defaultLibraryIds,
-            use24HourClock,
-            allowTemporaryAccess,
-            showPosterQualityBadges,
-            autoBackupEnabled,
-            autoBackupIntervalDays,
-            autoBackupRetentionCount,
+            autoBackupEnabled: admin.autoBackupEnabled,
+            autoBackupIntervalDays: admin.autoBackupIntervalDays,
+            autoBackupRetentionCount: admin.autoBackupRetentionCount,
             maintenanceExperimentalEnabled,
-            dashboardLayout: dashboardLayoutRef.current,
         }));
     };
+
     const settingsTabPanelProps = buildSettingsTabPanelProps({
-        activeTab, addToast, streamRulesSaveHandlerRef, initialSettings,
-        mediaServerType, token, plexServerUrl, jellyfinUrl, jellyfinApiKey, servers, selectedServer,
-        checkInterval, libraries, defaultLibraryIds, hideStreamUsers, contactUrl,
-        setMediaServerType, setToken, setPlexServerUrl, setJellyfinUrl, setJellyfinApiKey, setSelectedServer,
-        setCheckInterval, setDefaultLibraryIds, setHideStreamUsers, setContactUrl, handleFetchServers,
-        smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, emailDaysBefore, testRecipient,
-        isTestingSmtp, setSmtpHost, setSmtpPort, setSmtpUser, setSmtpPass, setSmtpFrom, setSmtpSecure,
-        setEmailDaysBefore, setTestRecipient, handleTestEmail,
-        newsletterFrequency, newsletterDay, publicDomain, isTestingNewsletter, isSendingNewsletter,
-        setNewsletterFrequency, setNewsletterDay, setPublicDomain, handleTestNewsletter, handleSendNewsletterNow,
-        inactiveCleanupEnabled, inactiveCleanupDays, setInactiveCleanupEnabled, setInactiveCleanupDays,
-        arrInstances, tmdbApiKey, tvdbApiKey, tvdbPin, cacheRefreshMinutes, tautulliUrl, tautulliApiKey,
-        jellystatUrl, jellystatApiKey, requestAppType, requestAppUrl, requestAppApiKey, ombiUrl, ombiApiKey,
-        setArrInstances, setTmdbApiKey, setTvdbApiKey, setTvdbPin, setCacheRefreshMinutes, setTautulliUrl,
-        setTautulliApiKey, setJellystatUrl, setJellystatApiKey, setRequestAppType, setRequestAppUrl, setRequestAppApiKey, setOmbiUrl, setOmbiApiKey,
-        dashboardLayout, updateDashboardLayout, navOrder, setNavOrder, users,
-        statusConfig, publicStatusEnabled, setPublicStatusEnabled, setStatusDraft, fetchStatusConfig,
-        contactWhatsApp, contactEmail, setContactWhatsApp, setContactEmail,
-        customLogoUrl, brandingTheme, backgroundImageUrl, useScrollRevealAnimations, useCinematicLoading,
-        useBrandedSkeleton, useTrendingSlideshow, trendingSlideshowInterval, useTrendingSlideshowOnLogin, showLoginServerStats,
-        use24HourClock, showPosterQualityBadges, allowTemporaryAccess, announcement, isPushingAnnouncement,
-        referralEnabled, referralTrialDays, referralRewardDays, setCustomLogoUrl, setLogoFile, setBrandingTheme,
-        setBackgroundImageUrl, setUseScrollRevealAnimations, setUseCinematicLoading, setUseBrandedSkeleton,
-        setUseTrendingSlideshow, setTrendingSlideshowInterval, setUseTrendingSlideshowOnLogin, setShowLoginServerStats, setUse24HourClock,
-        setShowPosterQualityBadges, setAllowTemporaryAccess, setAnnouncement, handlePushAnnouncement,
-        setReferralEnabled, setReferralTrialDays, setReferralRewardDays,
-        tasks, handleRunTask, systemHealth, highlightMaintenanceToggle, maintenanceExperimentalEnabled,
-        autoBackupEnabled, autoBackupIntervalDays, autoBackupRetentionCount, backupRestoreText, backupFiles,
-        isRestoringBackup, diagnostics, isLoadingDiagnostics, pagedAuditEntries, auditLogPage, totalAuditLogPages,
-        isLoadingAuditLog, setMaintenanceExperimentalEnabled, setAutoBackupEnabled, setAutoBackupIntervalDays,
-        setAutoBackupRetentionCount, setBackupRestoreText, handleDownloadBackup, handleCreateBackupFile,
-        handleRestoreBackup, handleRestoreFromFile, fetchDiagnostics, fetchAuditLog, setAuditLogPage,
-        deletedUsersLog, pagedEmailEntries, emailLogPage, totalEmailLogPages, handleUnblockDeletedUser, setEmailLogPage,
+        addToast,
+        streamRulesSaveHandlerRef,
+        initialSettings,
+        form,
+        tabs,
+        resources,
+        emailActions,
+        admin,
+        handleFetchServers,
+        setStatusDraft,
+        handlePushAnnouncement,
+        isPushingAnnouncement,
+        maintenanceExperimentalEnabled,
+        setMaintenanceExperimentalEnabled,
     });
 
     return <SettingsPageLayout
-        activeTab={activeTab}
+        activeTab={tabs.activeTab}
         isLoading={isLoading}
         configLoadError={configLoadError}
         toasts={toasts}
         setToasts={setToasts}
-        settingsSearch={settingsSearch}
-        settingsTabs={settingsTabsFlat}
-        visibleTabGroups={visibleTabGroups}
+        settingsSearch={tabs.settingsSearch}
+        settingsTabs={tabs.settingsTabsFlat}
+        visibleTabGroups={tabs.visibleTabGroups}
         panelProps={settingsTabPanelProps}
-        onSearchChange={setSettingsSearch}
-        onTabChange={setActiveTab}
+        onSearchChange={tabs.setSettingsSearch}
+        onTabChange={tabs.setActiveTab}
         onSave={handleSave}
     />;
 };

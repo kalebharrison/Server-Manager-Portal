@@ -16,8 +16,10 @@ test('request poster cache accepts only bounded TMDB images and reuses bytes', a
         },
     });
 
+    assert.equal(cache.peek('https://image.tmdb.org/t/p/w342/poster.jpg').image, null);
     const first = await cache.load('https://image.tmdb.org/t/p/w342/poster.jpg');
     const second = await cache.load('https://image.tmdb.org/t/p/w342/poster.jpg');
+    assert.equal(cache.peek('https://image.tmdb.org/t/p/w342/poster.jpg').image?.contentType, 'image/webp');
     assert.equal(first.contentType, 'image/webp');
     assert.deepEqual(first.body, second.body);
     assert.equal(calls, 1);

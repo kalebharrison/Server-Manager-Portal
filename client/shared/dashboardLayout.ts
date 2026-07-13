@@ -48,12 +48,6 @@ export const MAIN_GRID_WIDGET_META: Record<MainGridWidgetId, { label: string; co
     analytics: { label: 'Your Analytics', column: 'right' },
 };
 
-export const RECENTLY_ADDED_WIDGET_META: Record<RecentlyAddedWidgetId, string> = {
-    recentMovies: 'Recently Added Movies',
-    recentShows: 'Recently Added TV Shows',
-    recentMusic: 'Recently Added Music',
-};
-
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutConfig = {
     version: 1,
     sections: ['wrapUp', 'mainGrid', 'weekCalendar', 'watchRow', 'recentlyAdded'],

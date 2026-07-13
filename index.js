@@ -27,8 +27,10 @@ import { isLoopbackAddress, normalizeExternalBaseUrl, resolveIntegrationUrlForFe
 import { enrichRecentItemsWithMediaTags } from './lib/plex-media-tags.js';
 import { createPlexStatsService } from './lib/plex-stats-service.js';
 import { createPlexDashboardService } from './lib/plex-dashboard-service.js';
+import { createPlexImageService } from './lib/plex-image-service.js';
 import { createPlexConnectionService } from './lib/plex-connection-service.js';
-import { registerAuthRoutes } from './lib/auth-routes.js';
+import { createRequireMember, registerAuthRoutes } from './lib/auth-routes.js';
+import { createJellyfinAdminResolver } from './lib/auth-jellyfin-routes.js';
 import { registerInviteRoutes } from './lib/invite-routes.js';
 import { registerAdminRoutes } from './lib/admin-routes.js';
 import { registerConfigRoutes } from './lib/config-routes.js';
@@ -309,8 +311,6 @@ const jellyfinHeaders = (token = '', extra = {}) => ({
     ...extra,
 });
 
-let cachedAdminId = null;
-
 const syncAdminPlexIdFromConfigToken = async (config, { persist = false } = {}) => {
     if (!config?.plexToken || config.plexToken === SECRET_MASK) return config;
     try {
@@ -322,10 +322,7 @@ const syncAdminPlexIdFromConfigToken = async (config, { persist = false } = {}) 
         if (String(config.adminPlexId || '') !== ownerId) {
             log(`Syncing adminPlexId -> ${ownerId} from configured Plex token (was ${config.adminPlexId || 'unset'})`);
             config.adminPlexId = ownerId;
-            cachedAdminId = ownerId;
             if (persist) await saveFile(CONFIG_PATH, config);
-        } else {
-            cachedAdminId = ownerId;
         }
     } catch (e) {
         log(`Admin Plex ID sync skipped: ${e.message}`);
@@ -404,25 +401,17 @@ const metadataHealthProbe = createMetadataHealthProbe({
     tvdbService,
 });
 
+const resolveJellyfinAdmin = createJellyfinAdminResolver({
+    fetchImpl: fetchWithTimeout,
+    resolveIntegrationUrlForFetch,
+    jellyfinHeaders,
+    log,
+});
+
 const resolveCurrentAdmin = async (sessionUser, config = null) => {
     const loadedConfig = config || await loadFile(CONFIG_PATH, {});
     if (String(loadedConfig?.mediaServerType || '').toLowerCase() === 'jellyfin') {
-        if (sessionUser?.authProvider !== 'jellyfin' || !sessionUser?.jellyfinId) return false;
-        if (loadedConfig?.jellyfinUrl && loadedConfig?.jellyfinApiKey) {
-            try {
-                const baseUrl = resolveIntegrationUrlForFetch(loadedConfig.jellyfinUrl);
-                const userRes = await fetch(`${baseUrl}/Users/${encodeURIComponent(sessionUser.jellyfinId)}`, {
-                    headers: jellyfinHeaders(loadedConfig.jellyfinApiKey),
-                });
-                if (userRes.ok) {
-                    const jellyfinUser = await userRes.json();
-                    return jellyfinUser?.Policy?.IsAdministrator === true;
-                }
-            } catch (e) {
-                log(`Jellyfin admin policy check failed for ${sessionUser.username || sessionUser.jellyfinId}: ${e.message}`);
-            }
-        }
-        return sessionUser?.jellyfinIsAdmin === true || sessionUser?.isAdmin === true;
+        return resolveJellyfinAdmin(sessionUser, loadedConfig);
     }
     if (!sessionUser?.plexId) return false;
     const adminId = await getAdminId(loadedConfig);
@@ -447,27 +436,16 @@ const requireAuth = (req, res, next) => {
     }
 };
 
-const requireMember = async (req, res, next) => {
-    try {
-        const config = await loadFile(CONFIG_PATH, {});
-        const isAdmin = await resolveCurrentAdmin(req.user, config);
-        req.user.isAdmin = isAdmin;
-        if (isAdmin) return next();
-
-        const users = await loadFile(USERS_PATH, []);
-        const localUser = findLocalUserForSession(users, req.user);
-        const deletedUsers = await loadFile(DELETED_USERS_PATH, []);
-        if (!localUser || isDeletedUser(deletedUsers, req.user)) {
-            await appendAuditLog('session_blocked_non_member', req.user, req.user);
-            clearSessionCookie(req, res);
-            return res.status(403).json({ error: 'Your account does not have active portal access.' });
-        }
-        req.localUser = localUser;
-        next();
-    } catch (e) {
-        res.status(500).json({ error: 'Membership verification failed' });
-    }
-};
+const requireMember = createRequireMember({
+    configPath: CONFIG_PATH,
+    usersPath: USERS_PATH,
+    deletedUsersPath: DELETED_USERS_PATH,
+    loadFile,
+    resolveCurrentAdmin,
+    findLocalUserForSession,
+    appendAuditLog,
+    clearSessionCookie,
+});
 
 const requireAdmin = async (req, res, next) => {
     const token = req.cookies.session;
@@ -574,6 +552,7 @@ registerAuthRoutes({
     resolveLocalPlexAccountId,
     fetchPlexServerAccounts,
     getAdminProfile,
+    fetchImpl: fetchWithTimeout,
     log,
 });
 
@@ -631,12 +610,15 @@ const plexStatsService = createPlexStatsService({
 });
 const { loadPlexStatsFromDisk, buildPlexStatsCache, startPlexStatsBackgroundTask } = plexStatsService;
 
+const plexImageService = createPlexImageService({ fetchWithTimeout });
+
 const plexDashboardService = createPlexDashboardService({
     configPath: CONFIG_PATH,
     cachePath: PLEX_DASHBOARD_CACHE_PATH,
     loadFile,
     saveFile,
     getPlexConnectionUri,
+    plexImageService,
     fetch,
     log,
 });
@@ -651,6 +633,7 @@ registerPlexRoutes({
     getPlexConnectionUri,
     fetch,
     fetchWithTimeout,
+    plexImageService,
     plexDashboardService,
     plexStatsService,
     loadPlexStatsFromDisk,
@@ -1001,6 +984,7 @@ const { monitorConcurrentSessions } = createStreamMonitor({
     loadFile,
     saveFile,
     getPlexConnectionUri,
+    fetchWithTimeout,
     appendAuditLog,
     log,
 });
@@ -1013,17 +997,19 @@ registerKillRuleRoutes({
     saveFile,
 });
 
+const preparePortalStorage = async () => {
+    await migrateConfigFiles((message) => log(`[config] ${message}`));
+    if (await secureConfigAtRest()) log('[config] Migrated stored credentials to encrypted values.');
+    const migratedBackups = await secureStoredBackups();
+    if (migratedBackups > 0) log(`[config] Encrypted ${migratedBackups} legacy backup file(s).`);
+};
+
 const startPortalService = async () => {
     log(`--- Server Manager Portal Service starting on http://${BIND_HOST}:${PORT} ---`);
     log(`Runtime: CONFIG_DIR=${CONFIG_DIR}, FORCE_SECURE_COOKIES=${FORCE_SECURE_COOKIES}, BASE_PATH=${BASE_PATH || '/'}, appVersion=${appVersion}`);
     if (FORCE_SECURE_COOKIES) {
         log('WARNING: FORCE_SECURE_COOKIES=true — plain HTTP logins (http://LAN-IP:2121) will fail until this is set to false.');
     }
-
-    await migrateConfigFiles((message) => log(`[config] ${message}`));
-    if (await secureConfigAtRest()) log('[config] Migrated stored credentials to encrypted values.');
-    const migratedBackups = await secureStoredBackups();
-    if (migratedBackups > 0) log(`[config] Encrypted ${migratedBackups} legacy backup file(s).`);
 
     // Ensure unique CLIENT_ID per installation to avoid Plex Auth blocking
     let config = await loadFile(CONFIG_PATH, {});
@@ -1085,15 +1071,25 @@ const startPortalService = async () => {
     }, 60 * 60 * 1000);
 };
 
-app.listen(PORT, BIND_HOST, async (error) => {
-    if (error) {
-        log(`Failed to bind server on ${BIND_HOST}:${PORT}: ${error.message}`);
-        process.exit(1);
-    }
+const startServer = async () => {
     try {
-        await startPortalService();
+        await preparePortalStorage();
+        app.listen(PORT, BIND_HOST, async (error) => {
+            if (error) {
+                log(`Failed to bind server on ${BIND_HOST}:${PORT}: ${error.message}`);
+                process.exit(1);
+            }
+            try {
+                await startPortalService();
+            } catch (startupError) {
+                log(`Startup failed: ${startupError.message}`);
+                process.exit(1);
+            }
+        });
     } catch (e) {
-        log(`Startup failed: ${e.message}`);
+        log(`Storage preparation failed: ${e.message}`);
         process.exit(1);
     }
-});
+};
+
+void startServer();

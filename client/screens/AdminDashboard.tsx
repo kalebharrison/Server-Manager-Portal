@@ -5,16 +5,15 @@ import { appConfirm } from '../shared/confirm';
 import { getDaysUntilExpiry } from '../shared/format';
 import { CustomSelect } from '../shared/ui';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
-import type { AppSettings, PlexConfig, ToastMessage, User } from '../shared/types';
+import type { AppSettings, ToastMessage, User } from '../shared/types';
 import { UserCard } from './admin/UserCard';
 import { UserModal } from './admin/UserModal';
 
-export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: () => void, onViewStatus: () => void, onViewDashboard: () => void, onViewAsUser: (userId: string) => Promise<void> }> = ({ onLogout, onViewUserPortal, onViewStatus, onViewDashboard, onViewAsUser }) => {
+export const AdminDashboard: React.FC<{ onViewAsUser: (userId: string) => Promise<void> }> = ({ onViewAsUser }) => {
     const [users, setUsers] = useState<User[]>([]);
     const [isConfigured, setConfigured] = useState(false);
     const [configSettings, setConfigSettings] = useState<AppSettings>({ checkIntervalMinutes: 60 });
     const [isUserModalOpen, setUserModalOpen] = useState(false);
-    const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isLoading, setLoading] = useState(true);
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -52,7 +51,6 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
                     await fetchUsers();
                 } else {
                     addToast('Welcome! Please configure your media server settings to begin.', 'success');
-                    setSettingsModalOpen(true);
                 }
             } catch (error) {
                 addToast(error instanceof Error ? error.message : 'Could not connect to backend.', 'error');
@@ -62,40 +60,6 @@ export const AdminDashboard: React.FC<{ onLogout: () => void, onViewUserPortal: 
         };
         checkConfigAndFetchData();
     }, [fetchUsers, addToast]);
-
-
-    const handleSaveConfig = async (config: PlexConfig) => {
-        setLoading(true);
-        try {
-            await apiFetch('/api/config', {
-                method: 'POST',
-                body: JSON.stringify(config)
-            });
-            setConfigured(true);
-            setConfigSettings({
-                token: config.token,
-                serverIdentifier: config.serverIdentifier,
-                checkIntervalMinutes: config.checkIntervalMinutes || 60,
-                smtpHost: config.smtpHost,
-                smtpPort: config.smtpPort,
-                smtpUser: config.smtpUser,
-                smtpPass: config.smtpPass,
-                smtpFrom: config.smtpFrom,
-                smtpSecure: config.smtpSecure,
-                emailDaysBefore: config.emailDaysBefore,
-                newsletterFrequency: config.newsletterFrequency,
-                newsletterDay: config.newsletterDay,
-                publicDomain: config.publicDomain
-            });
-            setSettingsModalOpen(false);
-            addToast('Settings saved successfully!');
-            await fetchUsers();
-        } catch (error) {
-            addToast(error instanceof Error ? error.message : 'Failed to save config.', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleImportUsers = async () => {
         if (!isConfigured) {

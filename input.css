@@ -249,6 +249,8 @@
   /* Isolate poster sections without triggering a large synchronous paint on entry. */
   .discover-deferred-section {
     contain: layout paint;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 700px;
   }
 
   .discover-poster-grid > * {

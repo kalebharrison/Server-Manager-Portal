@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 
 export const useVisibleInterval = (callback: () => void | Promise<void>, intervalMs: number | null) => {
     const callbackRef = useRef(callback);
+    const runningRef = useRef(false);
 
     useEffect(() => {
         callbackRef.current = callback;
@@ -10,9 +11,13 @@ export const useVisibleInterval = (callback: () => void | Promise<void>, interva
     useEffect(() => {
         if (!intervalMs) return;
 
-        const runIfVisible = () => {
-            if (document.visibilityState !== 'hidden') {
-                void callbackRef.current();
+        const runIfVisible = async () => {
+            if (document.visibilityState === 'hidden' || runningRef.current) return;
+            runningRef.current = true;
+            try {
+                await callbackRef.current();
+            } finally {
+                runningRef.current = false;
             }
         };
 

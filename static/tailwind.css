@@ -6660,6 +6660,8 @@
   }
   .discover-deferred-section {
     contain: layout paint;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 700px;
   }
   .discover-poster-grid > * {
     contain: layout paint style;

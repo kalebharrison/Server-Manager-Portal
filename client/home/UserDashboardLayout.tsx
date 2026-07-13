@@ -18,8 +18,6 @@ type Props = {
     renderWatchRow: () => React.ReactNode;
     renderWeekCalendar: () => React.ReactNode;
     renderRecentlyAddedWidget: (id: RecentlyAddedWidgetId) => React.ReactNode;
-    renderRecentlyAddedSkeleton: () => React.ReactNode;
-    recentlyAddedLoading: boolean;
     hasDashboardData: boolean;
 };
 
@@ -31,8 +29,6 @@ export const UserDashboardLayout: React.FC<Props> = ({
     renderWatchRow,
     renderWeekCalendar,
     renderRecentlyAddedWidget,
-    renderRecentlyAddedSkeleton,
-    recentlyAddedLoading,
     hasDashboardData,
 }) => {
     const layout = normalizeSectionLayout(layoutConfig);
@@ -70,9 +66,6 @@ export const UserDashboardLayout: React.FC<Props> = ({
                     case 'weekCalendar':
                         return <React.Fragment key="weekCalendar">{renderWeekCalendar()}</React.Fragment>;
                     case 'recentlyAdded':
-                        if (recentlyAddedLoading && !hasDashboardData) {
-                            return <React.Fragment key="recentlyAdded">{renderRecentlyAddedSkeleton()}</React.Fragment>;
-                        }
                         if (!hasDashboardData) return null;
                         return (
                             <div key="recentlyAdded" className="flex flex-col gap-3 md:gap-4 w-full">

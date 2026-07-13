@@ -114,6 +114,15 @@ Beta image branch: `beta`
   - Show accepted media as Requested until Sonarr/Radarr reports an active download; prefer TVDB show metadata with IMDb fallback matching; add a configurable background cache interval; and prewarm authenticated, bounded TMDB poster bytes with strict outbound host validation.
   - Upstream PR fit: split request-state correlation, TVDB metadata priority, and generic cache scheduling/poster proxying into focused changes.
 
+- Pending: fast poster delivery, cache isolation, and authorization lifecycle
+  - Redirect cold TMDB poster requests immediately while warming a bounded local cache; validate and cap Plex/Jellyfin image proxies; prewarm visible artwork; scope persisted caches by server and account; and prevent stale in-flight work from repopulating invalidated caches.
+  - Reject revoked and expired members on every login/session path, fail Jellyfin administrator checks closed, make user media caches private, serialize JSON mutations, and claim scheduled work atomically.
+  - Upstream PR fit: split into image proxy/cache hardening, member lifecycle enforcement, persistent-cache identity, and atomic storage/task changes.
+
+- Pending: targeted frontend/backend decomposition and strict validation
+  - Reduce the server entrypoint to route/service composition; extract maintenance and request-app route/service modules; split Settings, Setup, Maintenance, Analytics, Home, Wrap Up, and request-detail UI into focused components and hooks; remove dead UI and dependencies; and make unused TypeScript checks plus tests part of the standard validation command.
+  - Upstream PR fit: submit by subsystem so structural changes remain reviewable and behavior-preserving.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.

@@ -498,7 +498,7 @@ export const createRecentlyAddedWidgetRenderer = (deps: UserDashboardWidgetDeps)
                         <RecentlyAddedScrollRow title="Recently Added Movies">
                         {dashboardData.recentMovies.map((item: any, idx: number) => (
                             <DiscoverPosterCard
-                                key={idx}
+                                key={item.ratingKey || item.sourceRatingKey || `${item.title}-${idx}`}
                                 variant="home"
                                 className="snap-start shrink-0 w-32 md:w-40"
                                 item={item}
@@ -521,7 +521,7 @@ export const createRecentlyAddedWidgetRenderer = (deps: UserDashboardWidgetDeps)
                         <RecentlyAddedScrollRow title="Recently Added TV Shows">
                         {dashboardData.recentShows.map((item: any, idx: number) => (
                             <DiscoverPosterCard
-                                key={idx}
+                                key={item.ratingKey || item.sourceRatingKey || `${item.title}-${idx}`}
                                 variant="home"
                                 className="snap-start shrink-0 w-32 md:w-40"
                                 item={item}
@@ -544,7 +544,7 @@ export const createRecentlyAddedWidgetRenderer = (deps: UserDashboardWidgetDeps)
                         <RecentlyAddedScrollRow title="Recently Added Music">
                         {dashboardData.recentMusic.map((item: any, idx: number) => (
                             <DiscoverPosterCard
-                                key={idx}
+                                key={item.ratingKey || item.sourceRatingKey || `${item.title}-${idx}`}
                                 variant="home"
                                 aspect="square"
                                 className="snap-start shrink-0 w-32 md:w-40"

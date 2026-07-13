@@ -72,8 +72,9 @@ export const ActiveStreamsPanel: React.FC<{ isAdmin?: boolean; isJellyfinPortal:
     const fetchSessions = useCallback(async () => {
         try {
             const endpoint = isJellyfinPortal ? '/api/jellyfin/sessions' : '/api/plex/sessions';
-            const result = await apiFetch(endpoint, { cacheTtlMs: 8_000, staleIfErrorMs: 60_000, forceRefresh: true });
-            setActiveSessions(result?.activeSessions || []);
+            const result = await apiFetch(endpoint, { cacheTtlMs: 8_000, staleIfErrorMs: 60_000 });
+            const next = result?.activeSessions || [];
+            setActiveSessions((current) => JSON.stringify(current) === JSON.stringify(next) ? current : next);
         } catch {
             // Preserve the last live snapshot during short backend interruptions.
         }

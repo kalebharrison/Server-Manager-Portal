@@ -1,32 +1,27 @@
-import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ChevronDown, ChevronUp, Clock, Home, PlaySquare, Settings, Share2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { apiFetch } from '../shared/api';
-import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { getAccessProgressPct, getDaysUntilExpiry } from '../shared/format';
-import { PeriodDropdown } from '../shared/PeriodDropdown';
 import { Loader, Toast } from '../shared/toast';
-import { WrapUpCardGrid } from '../shared/WrapUpCards';
-import { SlideshowBackground } from '../shared/theme';
 import { UserDashboardLayout } from '../home/UserDashboardLayout';
 import { HomeWeekCalendar } from '../home/HomeWeekCalendar';
+import { cacheRefreshMs } from '../shared/cacheRefresh';
 import { createMainGridWidgetRenderer, createRecentlyAddedWidgetRenderer } from '../home/userDashboardWidgetRenderers';
 import { RebuildLibraryCacheButton } from './RebuildLibraryCacheButton';
 import { DiscoverPosterCard, RECENTLY_ADDED_ITEM_LIMIT } from './DiscoverContent';
 import { ActiveStreamsPanel } from './discover/ActiveStreamsPanel';
 import type { ToastMessage } from '../shared/types';
 
-import { buildHeroMovieColumns, buildJellyfinHomeAnalytics, resolveHomeImage, wrapUpDaysOptions } from './user/userDashboardUtils';
+import { HomeHero } from './user/HomeHero';
+import { HomeWatchActivity } from './user/HomeWatchActivity';
+import { HomeWrapUpSection } from './user/HomeWrapUpSection';
+import { buildJellyfinHomeAnalytics } from './user/userDashboardUtils';
 
-const ShareWrapUpModal = lazy(() => import('../shared/ShareWrapUp').then(module => ({ default: module.ShareWrapUpModal })));
-const WrapUpModal = lazy(() => import('./user/WrapUpModal').then(module => ({ default: module.WrapUpModal })));
-const ReportIssueModal = lazy(() => import('./ReportIssueModal').then(module => ({ default: module.ReportIssueModal })));
-
-const HOME_LIBRARY_CACHE_KEY = 'homeLibrarySnapshot';
+const homeLibraryCacheKey = (sessionInfo: any, publicConfig: any) => `homeLibrary:${sessionInfo?.session?.accountId || sessionInfo?.session?.username || 'member'}:${sessionInfo?.serverName || 'server'}:${publicConfig?.mediaServerType || 'plex'}`;
 const homeServerStatsCacheKey = (publicConfig: any) => `homeServerStats:${String(publicConfig?.mediaServerType || 'plex').toLowerCase()}`;
-const readCachedHomeLibrary = () => {
+const readCachedHomeLibrary = (key: string) => {
     try {
-        return JSON.parse(sessionStorage.getItem(HOME_LIBRARY_CACHE_KEY) || 'null');
+        return JSON.parse(sessionStorage.getItem(key) || 'null');
     } catch {
         return null;
     }
@@ -47,29 +42,23 @@ const readCachedHomeServerStats = (publicConfig: any) => {
     }
 };
 
-export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onLogout: () => void; refreshSession: () => void; onViewAdmin: () => void; onViewStatus: () => void; onViewDashboard: () => void; onViewSettings?: () => void; onViewLogs?: () => void }> = ({ sessionInfo, publicConfig, onLogout, refreshSession, onViewAdmin, onViewStatus, onViewDashboard, onViewSettings, onViewLogs }) => {
+export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; refreshSession: () => void; onViewAdmin: () => void; onViewSettings?: () => void; onViewLogs?: () => void }> = ({ sessionInfo, publicConfig, refreshSession, onViewAdmin, onViewSettings, onViewLogs }) => {
+    const libraryStorageKey = homeLibraryCacheKey(sessionInfo, publicConfig);
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState<ToastMessage | null>(null);
     const [analytics, setAnalytics] = useState<any>(() => readCachedHomeAnalytics(sessionInfo, 30));
     const [analyticsLoading, setAnalyticsLoading] = useState(() => !readCachedHomeAnalytics(sessionInfo, 30));
     const [serverStats, setServerStats] = useState<any>(() => readCachedHomeServerStats(publicConfig));
-    const [dashboardData, setDashboardData] = useState<any>(readCachedHomeLibrary);
+    const [dashboardData, setDashboardData] = useState<any>(() => readCachedHomeLibrary(libraryStorageKey));
     const [serverDataLoading, setServerDataLoading] = useState(() => !readCachedHomeServerStats(publicConfig));
-    const [topContentPage, setTopContentPage] = useState(0);
-    const topWatchedPageSize = (publicConfig?.dashboardLayout?.topWatchedRows || 2) * 6;
-    const [recentHistoryPage, setRecentHistoryPage] = useState(0);
-    const recentHistoryPageSize = (publicConfig?.dashboardLayout?.recentHistoryRows || 7) * 2;
     const [analyticsDays, setAnalyticsDays] = useState<number | 'all'>(30);
     const [analyticsDaysOpen, setAnalyticsDaysOpen] = useState(false);
-    const [wrapUpDaysOpen, setWrapUpDaysOpen] = useState(false);
     const [analyticsError, setAnalyticsError] = useState<string | null>(null);
-    const [reportItem, setReportItem] = useState<any>(null);
-    const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
-    const [shareWrapUpOpen, setShareWrapUpOpen] = useState(false);
 
     const user = sessionInfo.account;
     const showQualityBadges = publicConfig?.showPosterQualityBadges !== false;
     const isJellyfinPortal = String(publicConfig?.mediaServerType || 'plex').toLowerCase() === 'jellyfin';
+    const dashboardRefreshMs = cacheRefreshMs(publicConfig);
     const serverStatsStorageKey = homeServerStatsCacheKey(publicConfig);
     const [optOutNewsletter, setOptOutNewsletter] = useState(user?.optOutNewsletter || false);
 
@@ -138,8 +127,6 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                 if (cancelled) return;
                 setAnalytics(res);
                 sessionStorage.setItem(analyticsCacheKey(sessionInfo, analyticsDays), JSON.stringify(res));
-                setTopContentPage(0);
-                setRecentHistoryPage(0);
             } catch (e: any) {
                 if (!cancelled) {
                     const message = e?.message || 'Failed to load your analytics';
@@ -160,31 +147,17 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
     }, [user, sessionInfo.session.isAdmin, analyticsDays, isJellyfinPortal]);
 
     useEffect(() => {
-        if (!analytics?.topWatched?.length) return;
-        const maxPage = Math.max(0, Math.ceil(analytics.topWatched.length / topWatchedPageSize) - 1);
-        setTopContentPage((p) => Math.min(p, maxPage));
-    }, [topWatchedPageSize, analytics?.topWatched?.length]);
-
-    useEffect(() => {
-        if (!analytics?.recentHistory?.length) return;
-        const maxPage = Math.max(0, Math.ceil(analytics.recentHistory.length / recentHistoryPageSize) - 1);
-        setRecentHistoryPage((p) => Math.min(p, maxPage));
-    }, [recentHistoryPageSize, analytics?.recentHistory?.length]);
-
-    useEffect(() => {
         let pollTimer: ReturnType<typeof setTimeout> | null = null;
         let dashboardTimer: ReturnType<typeof setInterval> | null = null;
         let isMounted = true;
-        const DASHBOARD_REFRESH_MS = 5 * 60 * 1000;
-
         const fetchDashboard = async () => {
             if (!isMounted) return;
             try {
                 const endpoint = isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/library';
-                const res = await apiFetch(`${endpoint}?limit=${RECENTLY_ADDED_ITEM_LIMIT}`, { cacheTtlMs: 5 * 60_000, staleIfErrorMs: 60 * 60_000 });
+                const res = await apiFetch(`${endpoint}?limit=${RECENTLY_ADDED_ITEM_LIMIT}`, { cacheTtlMs: dashboardRefreshMs, staleIfErrorMs: 60 * 60_000 });
                 if (isMounted) {
                     setDashboardData(res);
-                    sessionStorage.setItem(HOME_LIBRARY_CACHE_KEY, JSON.stringify(res));
+                    sessionStorage.setItem(libraryStorageKey, JSON.stringify(res));
                 }
             } catch (e) {
                 console.error('Failed to refresh dashboard data', e);
@@ -213,13 +186,13 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
         };
         fetchServerStats();
         fetchDashboard();
-        dashboardTimer = setInterval(fetchDashboard, DASHBOARD_REFRESH_MS);
+        dashboardTimer = setInterval(fetchDashboard, dashboardRefreshMs);
         return () => {
             isMounted = false;
             if (pollTimer) clearTimeout(pollTimer);
             if (dashboardTimer) clearInterval(dashboardTimer);
         };
-    }, [isJellyfinPortal, serverStatsStorageKey]);
+    }, [dashboardRefreshMs, isJellyfinPortal, libraryStorageKey, serverStatsStorageKey]);
 
     useEffect(() => {
         if (!isJellyfinPortal || !analytics?.libraryHealth) return;
@@ -251,27 +224,6 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
     const progressPct = getAccessProgressPct(user?.expiryDate || null, user?.joiningDate || null);
     const isExpiringSoon = daysLeft !== null && daysLeft <= 7;
     const isRevoked = user?.plexAccessStatus === 'revoked';
-    const isPending = user?.plexAccessStatus?.toLowerCase() === 'pending';
-
-    const heroBgRaw = analytics?.recentHistory?.[0]?.thumbUrl || publicConfig?.customLogoUrl || '';
-    const heroBg = heroBgRaw
-        ? (heroBgRaw.startsWith('http') ? heroBgRaw : resolvePortalAssetUrl(heroBgRaw))
-        : '';
-    const heroMovieColumns = useMemo(() => {
-        return buildHeroMovieColumns(dashboardData?.recentMovies);
-    }, [dashboardData?.recentMovies]);
-    const recentHistoryCount = analytics?.recentHistory?.length || 0;
-    const topWatchedCount = analytics?.topWatched?.length || 0;
-    const recentHistoryPageCount = Math.max(1, Math.ceil(recentHistoryCount / recentHistoryPageSize));
-    const topWatchedPageCount = Math.max(1, Math.ceil(topWatchedCount / topWatchedPageSize));
-    const recentHistoryPageItems = useMemo(() => {
-        const items = analytics?.recentHistory || [];
-        return items.slice(recentHistoryPage * recentHistoryPageSize, (recentHistoryPage + 1) * recentHistoryPageSize);
-    }, [analytics?.recentHistory, recentHistoryPage, recentHistoryPageSize]);
-    const topWatchedPageItems = useMemo(() => {
-        const items = analytics?.topWatched || [];
-        return items.slice(topContentPage * topWatchedPageSize, (topContentPage + 1) * topWatchedPageSize);
-    }, [analytics?.topWatched, topContentPage, topWatchedPageSize]);
 
     const layoutCtx = useMemo(() => ({
         isAdmin: !!sessionInfo.session.isAdmin,
@@ -320,124 +272,16 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
             <Loader isLoading={isLoading} isCinematic={!!publicConfig?.useCinematicLoading} />
             {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
 
-            {/* Massive Hero Banner */}
-            <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl bg-card border border-border">
-                {/* Blurred Background */}
-                <div className="absolute inset-0 bg-background overflow-hidden">
-                    {publicConfig?.useTrendingSlideshow && publicConfig?.trendingBackgrounds?.length > 0 ? (
-                        <>
-                            <div className="absolute inset-0 opacity-100">
-                                <SlideshowBackground backgrounds={publicConfig.trendingBackgrounds} intervalSeconds={publicConfig.trendingSlideshowInterval} opacity={1} />
-                            </div>
-                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-card via-card/20 to-transparent" />
-                            <div className="absolute inset-0 bg-black/10" />
-                        </>
-                    ) : heroMovieColumns.length > 0 ? (
-                        <>
-                            <div className="absolute -inset-[50%] opacity-40 transform -rotate-12 scale-110 flex gap-4 overflow-hidden pointer-events-none justify-center">
-                                {heroMovieColumns.map((column, colIdx) => (
-                                    <div key={colIdx} className={`flex flex-col gap-4 ${colIdx % 2 === 0 ? 'animate-[scrollVertical_40s_linear_infinite]' : 'animate-[scrollVertical_50s_linear_infinite_reverse]'}`}>
-                                        {column.map((m: any, i: number) => (
-                                            <img key={`c${colIdx}-${m.ratingKey || m.sourceRatingKey || m.title || i}-${i}`} src={m.thumbUrl ? resolvePortalAssetUrl(m.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(m.thumb)}&width=200&height=300`)} className="w-32 md:w-48 rounded-xl object-cover" alt="" loading="lazy" decoding="async" />
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-card via-card/40 to-transparent" />
-                        </>
-                    ) : heroBg ? (
-                        <>
-                            <div
-                                className="absolute inset-0 bg-cover bg-center opacity-30 blur-2xl scale-110"
-                                style={{ backgroundImage: `url(${heroBg})` }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-card via-card/40 to-transparent" />
-                        </>
-                    ) : (
-                        <>
-                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-card via-card/40 to-transparent" />
-                        </>
-                    )}
-                </div>
-
-                <div className="relative pt-14 pb-5 px-4 md:pt-32 md:pb-12 md:px-12 flex flex-col items-center md:items-start text-center md:text-left z-10">
-                    <div className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6">
-                        {/* Avatar */}
-                        {(() => {
-                            const thumbUrl = user?.thumb || sessionInfo.session.thumb || (sessionInfo.session.isAdmin ? sessionInfo.adminThumb : null);
-                            if (thumbUrl) {
-                                return (
-                                    <div className="relative">
-                                        <img
-                                            src={resolveHomeImage(thumbUrl)}
-                                            alt={sessionInfo.session.username}
-                                            className="relative w-28 h-28 md:w-32 md:h-32 rounded-full object-cover border-4 border-plex shadow-2xl bg-card"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).style.display = 'none';
-                                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                                                (e.target as HTMLImageElement).nextElementSibling?.classList.add('flex');
-                                            }}
-                                        />
-                                        <div className={`hidden relative w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-plex/40 to-plex/10 border-4 border-plex items-center justify-center text-plex font-black text-5xl shadow-2xl overflow-hidden`}>
-                                            {sessionInfo.session.username?.[0]?.toUpperCase() || '?'}
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return (
-                                <div className="relative">
-                                    <div className={`relative w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-plex/40 to-plex/10 border-4 border-plex items-center justify-center text-plex font-black text-5xl flex shadow-2xl overflow-hidden`}>
-                                        {sessionInfo.session.username?.[0]?.toUpperCase() || '?'}
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        <div className="pb-2">
-                            <p className="text-plex text-sm uppercase tracking-[4px] font-bold mb-1 drop-shadow-md">
-                                {(() => {
-                                    const hour = new Date().getHours();
-                                    if (hour >= 5 && hour < 12) return 'Good Morning';
-                                    if (hour >= 12 && hour < 17) return 'Good Afternoon';
-                                    if (hour >= 17 && hour < 22) return 'Good Evening';
-                                    return 'Good Night';
-                                })()}
-                            </p>
-                            <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 leading-tight drop-shadow-lg" style={{ fontSize: 'clamp(1.6rem, 8vw, 3rem)', wordBreak: 'break-word' }}>
-                                {sessionInfo.session.username}
-                            </h1>
-                            {sessionInfo.session.isAdmin && (
-                                <span className="inline-block mt-3 px-3 py-1 rounded-full text-[10px] font-black bg-plex/20 text-plex border border-plex/40 uppercase tracking-widest">Server Admin</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <HomeHero
+                analytics={analytics}
+                dashboardData={dashboardData}
+                publicConfig={publicConfig}
+                sessionInfo={sessionInfo}
+                user={user}
+            />
 
             {sessionInfo.session.isAdmin && (
                 <ActiveStreamsPanel isAdmin isJellyfinPortal={isJellyfinPortal} />
-            )}
-
-            {selectedMetric && analytics && (
-                <Suspense fallback={null}>
-                    <WrapUpModal metric={selectedMetric} analytics={analytics} days={analyticsDays} onClose={() => setSelectedMetric(null)} />
-                </Suspense>
-            )}
-            {shareWrapUpOpen && analytics && (
-                <Suspense fallback={null}>
-                    <ShareWrapUpModal
-                        analytics={analytics}
-                        days={analyticsDays}
-                        serverName={sessionInfo?.serverName || 'Server Portal'}
-                        username={sessionInfo?.session?.username || user?.username}
-                        onClose={() => setShareWrapUpOpen(false)}
-                        onToast={(message, type) => setToast({ id: Date.now(), message, type })}
-                    />
-                </Suspense>
             )}
 
             <UserDashboardLayout
@@ -445,177 +289,31 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
                 layoutCtx={layoutCtx}
                 renderMainGridWidget={renderMainGridWidget}
                 renderRecentlyAddedWidget={renderRecentlyAddedWidget}
-                renderWeekCalendar={() => <HomeWeekCalendar />}
-                recentlyAddedLoading={false}
+                renderWeekCalendar={() => <HomeWeekCalendar cacheMinutes={publicConfig?.cacheRefreshMinutes} cacheScope={libraryStorageKey} />}
                 hasDashboardData={!!dashboardData}
-                renderRecentlyAddedSkeleton={() => null}
                 renderWrapUp={() => (
-                    <>
-                        {/* Personal Wrap-Up */}
-                        {(sessionInfo.session.isAdmin || user) && !analyticsLoading && analyticsError && (
-                            <div className="glass-card p-4 md:p-5 shadow-xl border border-red-500/30 bg-red-500/5">
-                                <p className="text-red-300 text-sm font-medium">{analyticsError}</p>
-                            </div>
-                        )}
-                        {(sessionInfo.session.isAdmin || user) && !analyticsLoading && analytics && (
-                            <div className="glass-card p-4 md:p-5 shadow-xl">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 md:mb-4">
-                                    <h3 className="text-xl font-bold text-text">Your Personal Wrap-Up</h3>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShareWrapUpOpen(true)}
-                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-plex/10 border border-plex/30 text-plex hover:bg-plex/20 transition-colors shadow-sm"
-                                        >
-                                            <Share2 className="w-4 h-4 flex-shrink-0" />
-                                            Share
-                                        </button>
-                                        <PeriodDropdown
-                                            value={analyticsDays}
-                                            open={wrapUpDaysOpen}
-                                            onToggle={() => setWrapUpDaysOpen(!wrapUpDaysOpen)}
-                                            onClose={() => setWrapUpDaysOpen(false)}
-                                            onChange={(value) => setAnalyticsDays(value as number | 'all')}
-                                            options={wrapUpDaysOptions}
-                                            buttonClassName="flex items-center gap-2 bg-background border border-border/50 rounded-lg px-3 py-1.5 text-sm font-medium text-text focus:outline-none hover:border-plex/50 transition-colors cursor-pointer shadow-sm"
-                                        />
-                                    </div>
-                                </div>
-                                <WrapUpCardGrid analytics={analytics} interactive onCardClick={setSelectedMetric} minCardHeight={112} />
-                            </div>
-                        )}
-                    </>
+                    <HomeWrapUpSection
+                        analytics={analytics}
+                        analyticsDays={analyticsDays}
+                        analyticsError={analyticsError}
+                        analyticsLoading={analyticsLoading}
+                        canShowAnalytics={!!(sessionInfo.session.isAdmin || user)}
+                        onAnalyticsDaysChange={setAnalyticsDays}
+                        onToast={setToast}
+                        serverName={sessionInfo?.serverName || 'Server Portal'}
+                        username={sessionInfo?.session?.username || user?.username}
+                    />
                 )}
                 renderWatchRow={() => (
-                    <>
-                        {/* Recently Watched + Most Watched */}
-                        {(sessionInfo.session.isAdmin || user) && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 items-stretch">
-                                {!analyticsLoading && recentHistoryCount > 0 && (
-                                    <div className="lg:col-span-1 flex min-h-0">
-                                        <div className="glass-card p-4 md:p-5 shadow-xl flex flex-col h-full w-full min-h-0">
-                                            <div className="flex items-center justify-between mb-3 md:mb-4 flex-shrink-0">
-                                                <h3 className="text-lg md:text-xl font-bold text-text">Recently Watched</h3>
-                                                {recentHistoryCount > recentHistoryPageSize && (
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => setRecentHistoryPage(p => Math.max(0, p - 1))}
-                                                            disabled={recentHistoryPage === 0}
-                                                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-text"
-                                                        >
-                                                            <ChevronUp className="w-4 h-4 -rotate-90" />
-                                                        </button>
-                                                        <span className="text-xs text-muted font-medium w-8 text-center">
-                                                            {recentHistoryPage + 1} / {recentHistoryPageCount}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => setRecentHistoryPage(p => Math.min(recentHistoryPageCount - 1, p + 1))}
-                                                            disabled={recentHistoryPage >= recentHistoryPageCount - 1}
-                                                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-text"
-                                                        >
-                                                            <ChevronDown className="w-4 h-4 -rotate-90" />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch flex-1 min-h-0 content-start">
-                                                {recentHistoryPageItems.map((item: any, idx: number) => (
-                                                    <div key={item.historyKey || `${item.type}-${item.title}-${idx}`} className="flex items-center self-stretch gap-3 p-2 bg-black/20 rounded-xl border border-white/5 hover:border-plex/50 hover:bg-black/40 hover:shadow-[0_0_15px_rgba(229,160,13,0.15)] transition-all group relative">
-                                                        <a href={item.plexUrl} target="_blank" rel="noreferrer" className="flex items-center flex-1 min-w-0 gap-3">
-                                                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-background flex-shrink-0 shadow-md">
-                                                                {item.thumbUrl ? (
-                                                                    <img src={resolvePortalAssetUrl(item.thumbUrl)} alt={item.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                                                                ) : (
-                                                                    <div className="w-full h-full flex items-center justify-center">
-                                                                        <PlaySquare className="w-5 h-5 text-muted/50" />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <h4 className="font-bold text-text text-sm truncate group-hover:text-plex transition-colors">{item.title}</h4>
-                                                                {item.episodeTitle && <p className="text-xs text-muted truncate mt-0.5">{item.episodeTitle}</p>}
-                                                                <div className="flex items-center gap-1 mt-1">
-                                                                    <Clock className="w-3 h-3 text-muted" />
-                                                                    <p className="text-[10px] text-muted">{new Date(item.viewedAt * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</p>
-                                                                </div>
-                                                            </div>
-                                                        </a>
-                                                        <button
-                                                            onClick={(e) => { e.preventDefault(); setReportItem(item); }}
-                                                            className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 text-muted hover:text-red-400 hover:bg-red-400/10 rounded-full transition-all focus:outline-none"
-                                                            title="Report a playback issue"
-                                                        >
-                                                            <AlertTriangle className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                {!analyticsLoading && analytics && analytics.totalPlays > 0 && topWatchedCount > 0 ? (
-                                    <div className={`flex min-h-0 ${analytics.recentHistory?.length ? 'lg:col-span-2' : 'lg:col-span-2 lg:col-start-2'}`}>
-                                        <div className="glass-card p-4 md:p-5 shadow-xl flex flex-col h-full w-full min-h-0">
-                                            <div className="flex items-center justify-between mb-3 md:mb-4 flex-shrink-0">
-                                                <div>
-                                                    <h3 className="text-lg md:text-xl font-bold text-text mb-0.5">Your Most Watched</h3>
-                                                    <p className="text-muted text-sm">Based on your {analytics.totalPlays} total plays</p>
-                                                </div>
-                                                {topWatchedCount > topWatchedPageSize && (
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => setTopContentPage(p => Math.max(0, p - 1))}
-                                                            disabled={topContentPage === 0}
-                                                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-text"
-                                                        >
-                                                            <ChevronUp className="w-4 h-4 -rotate-90" />
-                                                        </button>
-                                                        <span className="text-xs text-muted font-medium w-8 text-center">
-                                                            {topContentPage + 1} / {topWatchedPageCount}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => setTopContentPage(p => Math.min(topWatchedPageCount - 1, p + 1))}
-                                                            disabled={topContentPage >= topWatchedPageCount - 1}
-                                                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-text"
-                                                        >
-                                                            <ChevronDown className="w-4 h-4 -rotate-90" />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5 md:gap-3.5 flex-1 min-h-0 content-start">
-                                                {topWatchedPageItems.map((item: any) => (
-                                                    <a key={item.key} href={item.plexUrl} target="_blank" rel="noreferrer" className="group flex flex-col gap-1.5">
-                                                        <div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-background border border-white/5 transition-[box-shadow,border-color] duration-300 group-hover:shadow-xl group-hover:border-plex/50">
-                                                            {item.thumbUrl ? (
-                                                                <img src={resolvePortalAssetUrl(item.thumbUrl)} alt={item.title} className="w-full h-full object-cover transition-[transform,opacity] duration-300 group-hover:scale-105 group-hover:opacity-80" loading="lazy" decoding="async" />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center p-4 text-center bg-white/5">
-                                                                    <span className="text-xs font-bold text-muted line-clamp-3">{item.title}</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex flex-col px-0.5">
-                                                            <p className="text-xs sm:text-sm font-bold text-text truncate group-hover:text-plex transition-colors">{item.title}</p>
-                                                            <p className="text-[10px] sm:text-xs text-plex font-black mt-0.5 uppercase tracking-wider">{item.plays} plays</p>
-                                                        </div>
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : null}
-                            </div>
-                        )}
-                    </>
+                    <HomeWatchActivity
+                        analytics={analytics}
+                        analyticsLoading={analyticsLoading}
+                        canShowAnalytics={!!(sessionInfo.session.isAdmin || user)}
+                        recentHistoryRows={publicConfig?.dashboardLayout?.recentHistoryRows}
+                        topWatchedRows={publicConfig?.dashboardLayout?.topWatchedRows}
+                    />
                 )}
             />
-
-            {reportItem && (
-                <Suspense fallback={null}>
-                    <ReportIssueModal item={reportItem} onClose={() => setReportItem(null)} />
-                </Suspense>
-            )}
         </div>
     );
 };

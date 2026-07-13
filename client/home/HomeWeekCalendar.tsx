@@ -2,45 +2,47 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Film, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
+import { cacheRefreshMs } from '../shared/cacheRefresh';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { mapRadarrCalendarItems, mapSonarrCalendarItems, summarizeSeasonReleaseBatches } from '../screens/media-stack/mediaStackUtils';
 
-const cacheKey = (offset: number) => `homeWeekCalendar:${offset}`;
-const readCachedWeek = (offset: number) => {
+const cacheKey = (scope: string, offset: number) => `homeWeekCalendar:${scope}:${offset}`;
+const readCachedWeek = (scope: string, offset: number) => {
     try {
-        return JSON.parse(sessionStorage.getItem(cacheKey(offset)) || 'null');
+        return JSON.parse(sessionStorage.getItem(cacheKey(scope, offset)) || 'null');
     } catch {
         return null;
     }
 };
 const ymd = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-export const HomeWeekCalendar: React.FC = () => {
+export const HomeWeekCalendar: React.FC<{ cacheMinutes?: number; cacheScope?: string }> = ({ cacheMinutes, cacheScope = 'server' }) => {
+    const refreshMs = cacheRefreshMs({ cacheRefreshMinutes: cacheMinutes });
     const [weekOffset, setWeekOffset] = useState(0);
-    const [data, setData] = useState<any>(() => readCachedWeek(0));
+    const [data, setData] = useState<any>(() => readCachedWeek(cacheScope, 0));
     const selectWeek = (nextOffset: number) => {
         const next = Math.max(-4, Math.min(12, nextOffset));
         setWeekOffset(next);
-        setData(readCachedWeek(next));
+        setData(readCachedWeek(cacheScope, next));
     };
 
     const loadWeek = useCallback(async () => {
-        const cached = readCachedWeek(weekOffset);
+        const cached = readCachedWeek(cacheScope, weekOffset);
         if (cached) setData(cached);
         try {
             const next = await apiFetch(`/api/media-stack/calendar?weekOffset=${weekOffset}`, {
-                cacheTtlMs: 5 * 60_000,
+                cacheTtlMs: refreshMs,
                 staleIfErrorMs: 30 * 60_000,
             });
             setData(next);
-            sessionStorage.setItem(cacheKey(weekOffset), JSON.stringify(next));
+            sessionStorage.setItem(cacheKey(cacheScope, weekOffset), JSON.stringify(next));
         } catch {
             // Keep the most recent week visible if an integration is temporarily unavailable.
         }
-    }, [weekOffset]);
+    }, [cacheScope, refreshMs, weekOffset]);
 
     useEffect(() => { void loadWeek(); }, [loadWeek]);
-    useVisibleInterval(loadWeek, 5 * 60_000);
+    useVisibleInterval(loadWeek, refreshMs);
 
     const days = useMemo(() => {
         const start = data?.start ? new Date(`${data.start}T00:00:00`) : new Date();

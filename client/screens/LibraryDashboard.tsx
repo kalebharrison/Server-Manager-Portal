@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { apiFetch } from '../shared/api';
+import { cacheRefreshMs } from '../shared/cacheRefresh';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { ActiveStreamsPanel } from './discover/ActiveStreamsPanel';
 import { DiscoverCommunityView } from './discover/DiscoverCommunityView';
@@ -12,19 +13,20 @@ type LibraryData = { recentMovies: any[]; recentShows: any[]; recentMusic: any[]
 type TrendingStats = { trending7Days: any[]; movies30Days: any[]; shows30Days: any[] };
 
 const EMPTY_LIBRARY: LibraryData = { recentMovies: [], recentShows: [], recentMusic: [] };
-const LIBRARY_STORAGE_KEY = 'discoverLibrarySnapshot';
-const readCachedLibrary = (): LibraryData | null => {
+const libraryStorageKey = (scope?: string, provider?: string) => `discoverLibrary:${scope || 'server'}:${provider || 'plex'}`;
+const readCachedLibrary = (key: string): LibraryData | null => {
     try {
-        const value = JSON.parse(sessionStorage.getItem(LIBRARY_STORAGE_KEY) || 'null');
+        const value = JSON.parse(sessionStorage.getItem(key) || 'null');
         return value?.recentMovies && value?.recentShows && value?.recentMusic ? value : null;
     } catch {
         return null;
     }
 };
 
-export const LibraryDashboard: React.FC<{ onBack: () => void; isAdmin?: boolean; publicConfig?: any; mediaServerType?: string }> = ({ isAdmin, publicConfig, mediaServerType }) => {
+export const LibraryDashboard: React.FC<{ isAdmin?: boolean; publicConfig?: any; mediaServerType?: string; cacheScope?: string }> = ({ isAdmin, publicConfig, mediaServerType, cacheScope }) => {
+    const storageKey = libraryStorageKey(cacheScope, mediaServerType);
     const [activeView, setActiveView] = useState<DiscoverView>('library');
-    const [libraryData, setLibraryData] = useState<LibraryData | null>(readCachedLibrary);
+    const [libraryData, setLibraryData] = useState<LibraryData | null>(() => readCachedLibrary(storageKey));
     const [trendingStats, setTrendingStats] = useState<TrendingStats | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isDiscoverDesktop, setIsDiscoverDesktop] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
@@ -35,6 +37,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void; isAdmin?: boolean;
     const recentLimit = recentLimitOverride ?? (isDiscoverDesktop ? DISCOVER_DESKTOP_ITEM_LIMIT : DISCOVER_MOBILE_ITEM_LIMIT);
     const showQualityBadges = publicConfig?.showPosterQualityBadges !== false;
     const isJellyfinPortal = String(publicConfig?.mediaServerType || mediaServerType || 'plex').toLowerCase() === 'jellyfin';
+    const refreshMs = cacheRefreshMs(publicConfig);
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(min-width: 1024px)');
@@ -56,37 +59,37 @@ export const LibraryDashboard: React.FC<{ onBack: () => void; isAdmin?: boolean;
             recentMusic: result?.recentMusic || [],
         };
         setLibraryData(next);
-        sessionStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(next));
-    }, []);
+        sessionStorage.setItem(storageKey, JSON.stringify(next));
+    }, [storageKey]);
 
     const fetchLibrary = useCallback(async () => {
         try {
             const endpoint = isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/library';
-            const result = await apiFetch(`${endpoint}?limit=${recentLimit}`, { cacheTtlMs: 5 * 60_000, staleIfErrorMs: 60 * 60_000 });
+            const result = await apiFetch(`${endpoint}?limit=${recentLimit}`, { cacheTtlMs: refreshMs, staleIfErrorMs: 60 * 60_000 });
             updateLibrary(result);
             setError(null);
         } catch (fetchError: any) {
-            if (!readCachedLibrary()) setError(fetchError?.message || 'Discover is temporarily unavailable');
+            if (!readCachedLibrary(storageKey)) setError(fetchError?.message || 'Discover is temporarily unavailable');
         }
-    }, [isJellyfinPortal, recentLimit, updateLibrary]);
+    }, [isJellyfinPortal, recentLimit, refreshMs, storageKey, updateLibrary]);
 
     const fetchTrending = useCallback(async () => {
         if (isJellyfinPortal) return;
         try {
-            const result = await apiFetch('/api/plex/stats/trending', { cacheTtlMs: 5 * 60_000, staleIfErrorMs: 60 * 60_000 });
+            const result = await apiFetch('/api/plex/stats/trending', { cacheTtlMs: refreshMs, staleIfErrorMs: 60 * 60_000 });
             setTrendingStats(result);
         } catch {
             // Keep the last community snapshot visible during a short analytics interruption.
         }
-    }, [isJellyfinPortal]);
+    }, [isJellyfinPortal, refreshMs]);
 
     useEffect(() => { void fetchLibrary(); }, [fetchLibrary]);
     useEffect(() => {
         if (activeView !== 'community') return;
         void fetchTrending();
     }, [activeView, fetchTrending]);
-    useVisibleInterval(fetchLibrary, 5 * 60_000);
-    useVisibleInterval(activeView === 'community' ? fetchTrending : () => {}, activeView === 'community' ? 5 * 60_000 : null);
+    useVisibleInterval(fetchLibrary, refreshMs);
+    useVisibleInterval(activeView === 'community' ? fetchTrending : () => {}, activeView === 'community' ? refreshMs : null);
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -109,7 +112,7 @@ export const LibraryDashboard: React.FC<{ onBack: () => void; isAdmin?: boolean;
                 {activeView === 'library' ? (
                     <DiscoverLibraryView data={libraryData || EMPTY_LIBRARY} recentLimit={recentLimit} onRecentLimitChange={handleRecentLimitChange} isJellyfinPortal={isJellyfinPortal} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} />
                 ) : (
-                    <DiscoverCommunityView trendingStats={trendingStats} recentLimit={recentLimit} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} serverName={publicConfig?.serverIdentifier} isJellyfinPortal={isJellyfinPortal} />
+                    <DiscoverCommunityView trendingStats={trendingStats} recentLimit={recentLimit} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} serverName={cacheScope} isJellyfinPortal={isJellyfinPortal} />
                 )}
             </main>
         </div>

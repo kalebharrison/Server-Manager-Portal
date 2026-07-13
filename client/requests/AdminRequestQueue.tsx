@@ -100,9 +100,6 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
                         const busy = actionId === item.id;
                         return (
                             <article key={item.id} className="relative overflow-hidden rounded-xl border border-white/10 bg-background/50 p-3">
-                                {item.backdropUrl ? (
-                                    <div className="absolute inset-0 opacity-20 bg-cover bg-center" style={{ backgroundImage: `url(${item.backdropUrl})` }} aria-hidden />
-                                ) : null}
                                 <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40" aria-hidden />
                                 <div className="relative z-10 flex gap-3">
                                     {item.posterUrl ? (

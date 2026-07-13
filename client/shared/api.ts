@@ -59,7 +59,8 @@ export const apiFetch = async (url: string, options: ApiFetchOptions = {}) => {
 
     if (!isGet) clearApiCache();
 
-    const request = fetch(portalUrl(url), {
+    let request: Promise<any>;
+    request = fetch(portalUrl(url), {
         ...fetchOptions,
         credentials: 'same-origin',
         headers: {
@@ -94,7 +95,7 @@ export const apiFetch = async (url: string, options: ApiFetchOptions = {}) => {
         if (isGet && requestCacheVersion === cacheVersion && cached && cached.staleUntil > Date.now()) return cached.value;
         throw error;
     }).finally(() => {
-        inFlightRequests.delete(cacheKey);
+        if (inFlightRequests.get(cacheKey) === request) inFlightRequests.delete(cacheKey);
     });
 
     if (isGet && cacheTtlMs > 0) inFlightRequests.set(cacheKey, request);

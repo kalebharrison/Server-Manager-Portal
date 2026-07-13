@@ -100,24 +100,6 @@ export interface ToastMessage {
     type: 'success' | 'error';
 }
 
-export interface DeletedUser {
-    blockId: string;
-    id?: string;
-    plexId?: string;
-    username?: string;
-    email?: string;
-    deletedAt?: string;
-    deletedBy?: string;
-}
-
-export interface AuditEntry {
-    id: string;
-    timestamp: string;
-    event: string;
-    actor?: { username?: string; email?: string; isAdmin?: boolean } | null;
-    target?: { username?: string; email?: string } | null;
-    details?: Record<string, any>;
-}
 
 export type UserStatus = 'active' | 'expiring' | 'expired';
 

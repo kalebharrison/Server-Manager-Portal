@@ -16,12 +16,13 @@ const StatusIcon = ({ item, busy }: { item: RequestMediaItem; busy?: boolean }) 
     return item.mediaType === 'tv' ? <Tv className="w-4 h-4" /> : <Film className="w-4 h-4" />;
 };
 
-export const RequestMediaCard: React.FC<{
+export const RequestMediaCard = React.memo<{
     item: RequestMediaItem;
     busy?: boolean;
+    priority?: boolean;
     onOpen: (item: RequestMediaItem) => void;
     onRequest: (item: RequestMediaItem) => void;
-}> = ({ item, busy = false, onOpen, onRequest }) => {
+}>(({ item, busy = false, priority = false, onOpen, onRequest }) => {
     const disabled = busy || item.canRequest === false;
     const badgeClass = item.available
         ? 'bg-green-500/20 text-green-200 border-green-500/30'
@@ -37,7 +38,7 @@ export const RequestMediaCard: React.FC<{
                 className="relative block w-full aspect-[2/3] bg-background overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-plex/70"
             >
                 {item.posterUrl ? (
-                    <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
+                    <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading={priority ? 'eager' : 'lazy'} fetchPriority={priority ? 'high' : 'auto'} decoding="async" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted bg-background/70">
                         {item.mediaType === 'tv' ? <Tv className="w-10 h-10" /> : <Film className="w-10 h-10" />}
@@ -90,4 +91,4 @@ export const RequestMediaCard: React.FC<{
             </div>
         </article>
     );
-};
+});

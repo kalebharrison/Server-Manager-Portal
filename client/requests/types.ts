@@ -85,7 +85,6 @@ export type RequestAppStatus = {
     ready: boolean;
     connected?: boolean;
     type?: string;
-    publicUrl?: string;
     error?: string | null;
 };
 

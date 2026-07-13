@@ -16,7 +16,6 @@ export const StatusSettingsTab: React.FC<StatusSettingsTabProps> = ({
     statusConfig,
     publicStatusEnabled,
     appConfirm,
-    fetchStatusConfig,
     addToast,
     onPublicStatusEnabledChange,
     onStatusDraftChange,
@@ -29,7 +28,6 @@ export const StatusSettingsTab: React.FC<StatusSettingsTabProps> = ({
             onPublicStatusEnabledChange={onPublicStatusEnabledChange}
             onChange={onStatusDraftChange}
             appConfirm={appConfirm}
-            fetchConfig={fetchStatusConfig}
             addToast={addToast}
         />
     </div>

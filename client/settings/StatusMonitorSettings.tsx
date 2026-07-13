@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../shared/api';
 import { CustomSelect } from '../shared/ui';
-export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled: boolean; onPublicStatusEnabledChange: (enabled: boolean) => void; onChange: (cfg: any) => void; appConfirm: (msg: string, cb: () => void) => void; fetchConfig: () => void; addToast: (msg: string, type?: 'success' | 'error') => void }> = ({ config, publicStatusEnabled, onPublicStatusEnabledChange, onChange, appConfirm, fetchConfig, addToast }) => {
+export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled: boolean; onPublicStatusEnabledChange: (enabled: boolean) => void; onChange: (cfg: any) => void; appConfirm: (msg: string, cb: () => void) => void; addToast: (msg: string, type?: 'success' | 'error') => void }> = ({ config, publicStatusEnabled, onPublicStatusEnabledChange, onChange, appConfirm, addToast }) => {
     const [localConfig, setLocalConfig] = useState<any>({ groups: [], services: [] });
 
     useEffect(() => {

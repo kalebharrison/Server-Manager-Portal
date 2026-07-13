@@ -1,306 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Settings, Sparkles, ChevronRight, ChevronLeft, Check, PartyPopper,
-} from 'lucide-react';
-import { apiFetch } from '../shared/api';
-import { getPublicOrigin, logoUrl, portalUrl, stripBasePath } from '../shared/basePath';
-import { IntegrationTestButton } from '../shared/IntegrationTestButton';
-import { CustomSelect } from '../shared/ui';
-import { AuthPageBackground, themeClasses } from '../shared/theme';
-import { accentHoverRgb, hexToRgb } from '../shared/format';
-import type { PlexServer } from '../shared/types';
+import React from 'react';
+import { Check, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+
+import { AuthPageBackground } from '../shared/theme';
+import { BrandingStep } from './BrandingStep';
+import { EmailStep } from './EmailStep';
+import { FinishStep } from './FinishStep';
+import { IntegrationsStep } from './IntegrationsStep';
+import { MediaServerStep } from './MediaServerStep';
+import { SETUP_PRIMARY_BUTTON_CLASS } from './SetupStepLayout';
 import { SetupStepNavigation } from './SetupStepNavigation';
-import {
-    BRAND_THEME_COLORS,
-    BRAND_THEME_OPTIONS,
-    MEDIA_SERVER_OPTIONS,
-    ProgramIcon,
-    REQUEST_APP_OPTIONS,
-    SETUP_PLEX_STORAGE_KEY,
-    STEPS,
-    WELCOME_FEATURES,
-    readStoredSetupPlex,
-    type StepId,
-    type StoredSetupPlex,
-} from './setupWizardModel';
+import { STEPS } from './setupWizardModel';
+import { useSetupWizard } from './useSetupWizard';
+import { WelcomeStep } from './WelcomeStep';
 
 export const SetupWizard: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
-    const storedPlex = readStoredSetupPlex();
-    const isOAuthReturn = typeof window !== 'undefined' && stripBasePath(window.location.pathname).startsWith('/auth/setup/');
-
-    const [step, setStep] = useState<StepId>(() => {
-        if (isOAuthReturn) return 'plex';
-        if (storedPlex?.step) return storedPlex.step;
-        if (storedPlex?.token) return 'plex';
-        return 'welcome';
-    });
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const [token, setToken] = useState(storedPlex?.token || '');
-    const [mediaServerType, setMediaServerType] = useState(storedPlex?.mediaServerType || 'plex');
-    const [serverIdentifier, setServerIdentifier] = useState(storedPlex?.serverIdentifier || '');
-    const [plexServerUrl, setPlexServerUrl] = useState(storedPlex?.plexServerUrl || '');
-    const [jellyfinUrl, setJellyfinUrl] = useState(storedPlex?.jellyfinUrl || '');
-    const [jellyfinApiKey, setJellyfinApiKey] = useState(storedPlex?.jellyfinApiKey || '');
-    const [servers, setServers] = useState<PlexServer[]>(storedPlex?.servers || []);
-    const [plexUsername, setPlexUsername] = useState(storedPlex?.username || '');
-    const [showManualToken, setShowManualToken] = useState(false);
-
-    const [publicDomain, setPublicDomain] = useState(storedPlex?.publicDomain ?? (typeof window !== 'undefined' ? getPublicOrigin() : ''));
-    const [brandTheme, setBrandTheme] = useState(storedPlex?.brandTheme ?? 'plex');
-    const [primaryColor, setPrimaryColor] = useState(storedPlex?.primaryColor ?? BRAND_THEME_COLORS.plex);
-    const [customLogoUrl, setCustomLogoUrl] = useState(storedPlex?.customLogoUrl ?? '');
-
-    const [smtpHost, setSmtpHost] = useState(storedPlex?.smtpHost ?? '');
-    const [smtpPort, setSmtpPort] = useState(storedPlex?.smtpPort ?? 587);
-    const [smtpUser, setSmtpUser] = useState(storedPlex?.smtpUser ?? '');
-    const [smtpPass, setSmtpPass] = useState(storedPlex?.smtpPass ?? '');
-    const [smtpFrom, setSmtpFrom] = useState(storedPlex?.smtpFrom ?? '');
-    const [smtpSecure, setSmtpSecure] = useState(storedPlex?.smtpSecure ?? false);
-    const [testRecipient, setTestRecipient] = useState('');
-
-    const [sonarrUrl, setSonarrUrl] = useState(storedPlex?.sonarrUrl ?? '');
-    const [sonarrApiKey, setSonarrApiKey] = useState(storedPlex?.sonarrApiKey ?? '');
-    const [radarrUrl, setRadarrUrl] = useState(storedPlex?.radarrUrl ?? '');
-    const [radarrApiKey, setRadarrApiKey] = useState(storedPlex?.radarrApiKey ?? '');
-    const [tautulliUrl, setTautulliUrl] = useState(storedPlex?.tautulliUrl ?? '');
-    const [tautulliApiKey, setTautulliApiKey] = useState(storedPlex?.tautulliApiKey ?? '');
-    const [jellystatUrl, setJellystatUrl] = useState(storedPlex?.jellystatUrl ?? '');
-    const [jellystatApiKey, setJellystatApiKey] = useState(storedPlex?.jellystatApiKey ?? '');
-    const [requestAppType, setRequestAppType] = useState(storedPlex?.requestAppType === 'overseerr' ? 'seerr' : (storedPlex?.requestAppType ?? 'none'));
-    const [requestAppUrl, setRequestAppUrl] = useState(storedPlex?.requestAppUrl ?? '');
-    const [requestAppApiKey, setRequestAppApiKey] = useState(storedPlex?.requestAppApiKey ?? '');
-    const [integrationTab, setIntegrationTab] = useState<'arr' | 'requests' | 'analytics'>('arr');
-
-    const stepIndex = STEPS.findIndex((s) => s.id === step);
-    const canGoNext = step !== 'plex'
-        || (mediaServerType === 'jellyfin'
-            ? Boolean(jellyfinUrl && jellyfinApiKey)
-            : Boolean(token && serverIdentifier));
-
-    const applyBrandTheme = (theme: string) => {
-        setBrandTheme(theme);
-        if (theme === 'plex' || theme === 'jellyfin') {
-            setPrimaryColor(BRAND_THEME_COLORS[theme]);
-        }
-    };
-
-    const applyMediaServerType = (type: string) => {
-        const nextType = type === 'jellyfin' ? 'jellyfin' : 'plex';
-        setMediaServerType(nextType);
-        if (brandTheme === 'plex' || brandTheme === 'jellyfin') {
-            applyBrandTheme(nextType);
-        }
-        if (requestAppType === 'none' || requestAppType === 'seerr' || requestAppType === 'overseerr' || requestAppType === 'jellyseerr') {
-            setRequestAppType(nextType === 'jellyfin' ? 'jellyseerr' : 'seerr');
-        }
-    };
-
-    useEffect(() => {
-        document.documentElement.style.setProperty('--color-plex', hexToRgb(primaryColor));
-        document.documentElement.style.setProperty('--color-plex-hover', accentHoverRgb(primaryColor));
-    }, [primaryColor]);
-
-    const persistSetupPlex = (patch: Partial<StoredSetupPlex>) => {
-        const next = {
-            token,
-            mediaServerType,
-            servers,
-            serverIdentifier,
-            plexServerUrl,
-            jellyfinUrl,
-            jellyfinApiKey,
-            username: plexUsername,
-            step,
-            publicDomain,
-            brandTheme,
-            primaryColor,
-            customLogoUrl,
-            smtpHost,
-            smtpPort,
-            smtpUser,
-            smtpPass,
-            smtpFrom,
-            smtpSecure,
-            sonarrUrl,
-            sonarrApiKey,
-            radarrUrl,
-            radarrApiKey,
-            tautulliUrl,
-            tautulliApiKey,
-            jellystatUrl,
-            jellystatApiKey,
-            requestAppType,
-            requestAppUrl,
-            requestAppApiKey,
-            ...patch,
-        };
-        sessionStorage.setItem(SETUP_PLEX_STORAGE_KEY, JSON.stringify(next));
-    };
-
-    useEffect(() => {
-        const path = stripBasePath(window.location.pathname);
-        if (!path.startsWith('/auth/setup/')) return;
-
-        const pinId = path.split('/').filter(Boolean).pop();
-        if (!pinId || pinId === 'setup') return;
-
-        const returnPath = sessionStorage.getItem('setupReturnPath') || portalUrl('/');
-
-        setIsLoading(true);
-        setError('');
-        setStep('plex');
-
-        apiFetch('/api/setup/plex/callback', {
-            method: 'POST',
-            body: JSON.stringify({ pinId }),
-        }).then((data) => {
-            const next = {
-                token: data.token,
-                servers: data.servers || [],
-                serverIdentifier: data.servers?.[0]?.identifier || '',
-                username: data.username || '',
-                step: 'plex' as StepId,
-            };
-            sessionStorage.setItem(SETUP_PLEX_STORAGE_KEY, JSON.stringify(next));
-            setToken(next.token);
-            setServers(next.servers);
-            setPlexUsername(next.username);
-            setServerIdentifier(next.serverIdentifier);
-        }).catch((e) => {
-            setError(e instanceof Error ? e.message : 'Plex sign-in failed');
-        }).finally(() => {
-            sessionStorage.removeItem('setupReturnPath');
-            window.history.replaceState({}, '', returnPath);
-            setIsLoading(false);
-        });
-    }, []);
-
-    const handlePlexSignIn = async () => {
-        setIsLoading(true);
-        setError('');
-        try {
-            sessionStorage.setItem('setupReturnPath', window.location.pathname + window.location.search);
-            sessionStorage.setItem(SETUP_PLEX_STORAGE_KEY, JSON.stringify({ step: 'plex' }));
-            const data = await apiFetch('/api/auth/plex/login', { method: 'POST' });
-            const clientId = data.clientIdentifier || data.clientId || '';
-            const forwardUrl = `${window.location.origin}${portalUrl(`/auth/setup/${data.id}`)}`;
-            const authUrl = `https://app.plex.tv/auth#?clientID=${encodeURIComponent(clientId)}&code=${data.code}&context[device][product]=Server%20Manager%20Portal&forwardUrl=${encodeURIComponent(forwardUrl)}`;
-            window.location.href = authUrl;
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to start Plex sign-in');
-            setIsLoading(false);
-        }
-    };
-
-    const handleFetchServers = async () => {
-        if (!token) {
-            setError('Please enter a Plex token first.');
-            return;
-        }
-        setIsLoading(true);
-        setError('');
-        try {
-            const foundServers = await apiFetch('/api/plex/servers', {
-                method: 'POST',
-                body: JSON.stringify({ token: token.trim(), plexServerUrl: plexServerUrl || undefined }),
-            });
-            setServers(foundServers);
-            if (foundServers.length > 0) {
-                setServerIdentifier(foundServers[0].identifier);
-            } else {
-                setError('No owned servers found for this token.');
-                setServerIdentifier('');
-            }
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to fetch servers.');
-            setServers([]);
-            setServerIdentifier('');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleTestEmail = async () => {
-        if (!smtpHost || !smtpUser || !smtpPass || !testRecipient) {
-            setError('Fill in SMTP host, user, password, and test recipient.');
-            return;
-        }
-        setIsLoading(true);
-        setError('');
-        try {
-            await apiFetch('/api/config/test-email', {
-                method: 'POST',
-                body: JSON.stringify({ smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, testRecipient }),
-            });
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Test email failed.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleComplete = async () => {
-        setIsLoading(true);
-        setError('');
-        try {
-            await apiFetch('/api/config', {
-                method: 'POST',
-                body: JSON.stringify({
-                    token: token.trim(),
-                    mediaServerType,
-                    serverIdentifier: serverIdentifier.trim(),
-                    plexServerUrl: plexServerUrl || undefined,
-                    jellyfinUrl,
-                    jellyfinApiKey,
-                    publicDomain,
-                    primaryColor,
-                    customLogoUrl,
-                    smtpHost,
-                    smtpPort,
-                    smtpUser,
-                    smtpPass,
-                    smtpFrom,
-                    smtpSecure,
-                    sonarrUrl,
-                    sonarrApiKey,
-                    radarrUrl,
-                    radarrApiKey,
-                    tautulliUrl,
-                    tautulliApiKey,
-                    jellystatUrl,
-                    jellystatApiKey,
-                    requestAppType,
-                    requestAppUrl,
-                    requestAppApiKey,
-                }),
-            });
-            sessionStorage.removeItem(SETUP_PLEX_STORAGE_KEY);
-            sessionStorage.removeItem('setupReturnPath');
-            onComplete();
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to save configuration.');
-            setIsLoading(false);
-        }
-    };
-
-    const goNext = () => {
-        if (stepIndex < STEPS.length - 1) {
-            const nextStep = STEPS[stepIndex + 1].id;
-            setStep(nextStep);
-            if (token) persistSetupPlex({ step: nextStep });
-        }
-    };
-    const goBack = () => {
-        if (stepIndex > 0) setStep(STEPS[stepIndex - 1].id);
-    };
-
-    const progressPct = Math.round(((stepIndex + 1) / STEPS.length) * 100);
-    const inputClass = themeClasses.inputPremium;
-    const labelClass = themeClasses.labelPremium;
-    const primaryBtnClass = themeClasses.btnPrimary;
-    const sectionCardClass = `${themeClasses.sectionCard} p-5 md:p-6`;
+    const wizard = useSetupWizard(onComplete);
+    const {
+        step,
+        stepIndex,
+        form,
+        updateForm,
+        servers,
+        plexUsername,
+        showManualToken,
+        setShowManualToken,
+        testRecipient,
+        setTestRecipient,
+        integrationTab,
+        setIntegrationTab,
+        error,
+        isLoading,
+        canGoNext,
+        applyBrandTheme,
+        applyMediaServerType,
+        handlePlexSignIn,
+        handleFetchServers,
+        handlePlexSignOut,
+        handleTestEmail,
+        handleComplete,
+        goNext,
+        goBack,
+    } = wizard;
+    const stepNumber = stepIndex + 1;
+    const progressPct = Math.round((stepNumber / STEPS.length) * 100);
 
     return (
         <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10 overflow-hidden">
@@ -308,7 +50,6 @@ export const SetupWizard: React.FC<{ onComplete: () => void }> = ({ onComplete }
 
             <div className="relative z-10 w-full max-w-6xl">
                 <div className="glass-card-lg overflow-hidden flex flex-col lg:flex-row min-h-[min(720px,calc(100vh-3rem))]">
-                    {/* Sidebar stepper — desktop */}
                     <aside className="hidden lg:flex flex-col w-[320px] xl:w-[360px] flex-shrink-0 border-r border-white/10 bg-gradient-to-b from-plex/[0.08] via-plex/[0.03] to-transparent p-8">
                         <div className="mb-8">
                             <div className="w-12 h-12 rounded-2xl bg-plex/15 border border-plex/30 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(229,160,13,0.2)]">
@@ -333,13 +74,11 @@ export const SetupWizard: React.FC<{ onComplete: () => void }> = ({ onComplete }
                                     style={{ width: `${progressPct}%` }}
                                 />
                             </div>
-                            <p className="text-[11px] text-muted/70 mt-3">Step {stepIndex + 1} of {STEPS.length}</p>
+                            <p className="text-[11px] text-muted/70 mt-3">Step {stepNumber} of {STEPS.length}</p>
                         </div>
                     </aside>
 
-                    {/* Main panel */}
                     <div className="flex-1 flex flex-col min-h-0 min-w-0">
-                        {/* Mobile / tablet step strip */}
                         <div className="lg:hidden border-b border-white/10 bg-black/20 px-4 py-4 overflow-x-auto">
                             <div className="flex items-center gap-2 min-w-max">
                                 <SetupStepNavigation step={step} stepIndex={stepIndex} compact />
@@ -357,401 +96,72 @@ export const SetupWizard: React.FC<{ onComplete: () => void }> = ({ onComplete }
                                 </div>
                             )}
 
-                            {step === 'welcome' && (
-                                <div>
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-plex/10 border border-plex/25 text-plex text-[11px] font-bold uppercase tracking-widest mb-5">
-                                        <Sparkles className="w-3.5 h-3.5" /> First-time setup
-                                    </div>
-                                    <h2 className="text-3xl sm:text-4xl font-black text-text tracking-tight mb-3 leading-tight">
-                                        Welcome to your<br className="hidden sm:block" /> media portal
-                                    </h2>
-                                    <p className="text-muted text-base sm:text-lg leading-relaxed mb-8 max-w-xl">
-                                        A guided setup to connect Plex or Jellyfin, brand your portal, and optionally wire up email and your media stack. Takes about five minutes.
-                                    </p>
-                                    <div className="grid sm:grid-cols-2 gap-3 mb-2">
-                                        {WELCOME_FEATURES.map(({ icon: Icon, title, desc }) => (
-                                            <div key={title} className={`${sectionCardClass} flex gap-3.5 items-start hover:border-plex/20 transition-colors`}>
-                                                <div className="w-11 h-11 rounded-xl bg-plex/10 border border-plex/20 flex items-center justify-center flex-shrink-0">
-                                                    <Icon className="w-5 h-5 text-plex" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-text text-sm">{title}</p>
-                                                    <p className="text-xs text-muted mt-1 leading-relaxed">{desc}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                    {step === 'plex' && (
-                        <div className="flex flex-col gap-6 max-w-2xl">
-                            <div>
-                                <p className={labelClass + ' mb-2'}>Step {stepIndex + 1}</p>
-                                <h2 className="text-2xl sm:text-3xl font-black text-text tracking-tight mb-2">Media Server Connection</h2>
-                                <p className="text-muted text-sm sm:text-base leading-relaxed">Choose and connect the media server that will back this portal.</p>
-                            </div>
-
-                            <div className={`${sectionCardClass} flex flex-col gap-4`}>
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>Media Server Type</label>
-                                    <CustomSelect value={mediaServerType} onChange={applyMediaServerType} options={MEDIA_SERVER_OPTIONS} />
-                                </div>
-                                {mediaServerType === 'jellyfin' && (
-                                    <>
-                                        <div className="flex flex-col gap-2.5">
-                                            <label className={labelClass}>Jellyfin URL</label>
-                                            <input type="url" className={inputClass} value={jellyfinUrl} onChange={(e) => setJellyfinUrl(e.target.value)} placeholder="http://192.168.1.6:8096" />
-                                        </div>
-                                        <div className="flex flex-col gap-2.5">
-                                            <label className={labelClass}>Jellyfin API Key</label>
-                                            <input type="password" className={inputClass} value={jellyfinApiKey} onChange={(e) => setJellyfinApiKey(e.target.value)} placeholder="API key from Jellyfin dashboard" />
-                                        </div>
-                                        <IntegrationTestButton type="jellyfin" payload={{ jellyfinUrl, jellyfinApiKey }} disabled={!jellyfinUrl || !jellyfinApiKey} />
-                                    </>
-                                )}
-                            </div>
-
-                            {mediaServerType === 'plex' && (!token ? (
-                                <div className={`${sectionCardClass} flex flex-col gap-4`}>
-                                    <button
-                                        type="button"
-                                        onClick={handlePlexSignIn}
-                                        disabled={isLoading}
-                                        className={`${primaryBtnClass} w-full sm:w-auto text-base py-4`}
-                                    >
-                                        <img src={logoUrl()} alt="" className="w-5 h-5 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                                        {isLoading ? 'Redirecting to Plex…' : 'Sign in with Plex'}
-                                    </button>
-                                    <p className="text-xs text-muted leading-relaxed">Uses secure Plex OAuth — we&apos;ll fetch your owned servers automatically. No password stored.</p>
-                                </div>
-                            ) : (
-                                <div className="p-4 sm:p-5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-                                    <div className="w-11 h-11 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-                                        <Check className="w-5 h-5 text-emerald-400" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-emerald-400 font-bold">Signed in as {plexUsername || 'Plex User'}</p>
-                                        <p className="text-muted text-sm mt-0.5">{servers.length} owned server{servers.length !== 1 ? 's' : ''} found</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setToken('');
-                                            setServers([]);
-                                            setServerIdentifier('');
-                                            setPlexUsername('');
-                                            sessionStorage.removeItem(SETUP_PLEX_STORAGE_KEY);
-                                        }}
-                                        className="text-xs font-semibold text-muted hover:text-text px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
-                                    >
-                                        Sign out
-                                    </button>
-                                </div>
-                            ))}
-
-                            {mediaServerType === 'plex' && (servers.length > 0 ? (
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>Select Server</label>
-                                    <CustomSelect value={serverIdentifier} onChange={setServerIdentifier} options={servers.map((s) => ({ label: `${s.name} (${s.identifier})`, value: s.identifier }))} />
-                                </div>
-                            ) : token ? (
-                                <div className={`${sectionCardClass} flex flex-col gap-4`}>
-                                    <div className="flex flex-col gap-2.5">
-                                        <label className={labelClass}>Server Identifier</label>
-                                        <input type="text" className={inputClass} value={serverIdentifier} onChange={(e) => setServerIdentifier(e.target.value)} placeholder="No servers returned — enter identifier manually" />
-                                    </div>
-                                    <div className="text-xs text-muted p-4 rounded-xl bg-background/50 border border-white/5 space-y-1.5 leading-relaxed">
-                                        <p className="font-semibold text-text">How to find Server Identifier manually:</p>
-                                        <p>1) Open: <code className="bg-background px-1.5 py-0.5 rounded text-plex/90">http://YOUR_PLEX_IP:32400/identity?X-Plex-Token=YOUR_TOKEN</code></p>
-                                        <p>2) Copy <code className="bg-background px-1.5 py-0.5 rounded">machineIdentifier</code> from the response.</p>
-                                    </div>
-                                </div>
-                            ) : null)}
-
-                            {mediaServerType === 'plex' && <div className="flex flex-col gap-2.5">
-                                <label className={labelClass}>
-                                    Direct Plex URL <span className="text-muted/70 font-normal normal-case tracking-normal">(required in Docker)</span>
-                                </label>
-                                <input
-                                    type="url"
-                                    className={inputClass}
-                                    value={plexServerUrl}
-                                    onChange={(e) => setPlexServerUrl(e.target.value)}
-                                    placeholder="http://192.168.1.6:32400"
+                            {step === 'welcome' && <WelcomeStep />}
+                            {step === 'plex' && (
+                                <MediaServerStep
+                                    stepNumber={stepNumber}
+                                    form={form}
+                                    updateForm={updateForm}
+                                    servers={servers}
+                                    plexUsername={plexUsername}
+                                    showManualToken={showManualToken}
+                                    setShowManualToken={setShowManualToken}
+                                    isLoading={isLoading}
+                                    applyMediaServerType={applyMediaServerType}
+                                    onPlexSignIn={handlePlexSignIn}
+                                    onFetchServers={handleFetchServers}
+                                    onPlexSignOut={handlePlexSignOut}
                                 />
-                                <p className="text-xs text-muted leading-relaxed">Your Plex server&apos;s LAN address. Required when Plex.tv discovery fails from inside the container.</p>
-                            </div>}
-
-                            {mediaServerType === 'plex' && <IntegrationTestButton
-                                type="plex"
-                                payload={{ token, serverIdentifier, plexServerUrl: plexServerUrl || undefined }}
-                                disabled={!token || !serverIdentifier}
-                            />}
-
-                            {mediaServerType === 'plex' && <div className="border-t border-white/10 pt-5">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowManualToken(!showManualToken)}
-                                    className="text-sm font-semibold text-muted hover:text-plex transition-colors"
-                                >
-                                    {showManualToken ? '▾ Hide manual token entry' : '▸ Enter Plex token manually'}
-                                </button>
-                                {showManualToken && (
-                                    <div className={`${sectionCardClass} mt-4 flex flex-col gap-4`}>
-                                        <div className="p-4 bg-plex/5 border border-plex/20 rounded-xl text-sm text-muted leading-relaxed">
-                                            <strong className="text-plex">Tip:</strong> Log into Plex Web, open any library item XML, and find <code className="bg-background px-1.5 py-0.5 rounded">X-Plex-Token=...</code> in the URL.
-                                        </div>
-                                        <div className="flex flex-col gap-2.5">
-                                            <label className={labelClass}>Plex Token</label>
-                                            <div className="flex flex-col sm:flex-row gap-2">
-                                                <input type="password" className={inputClass} value={token} onChange={(e) => setToken(e.target.value)} placeholder="X-Plex-Token" />
-                                                <button type="button" onClick={handleFetchServers} disabled={isLoading || !token} className="px-5 py-3.5 bg-plex/15 text-plex border border-plex/30 rounded-xl font-bold hover:bg-plex/25 whitespace-nowrap transition-colors disabled:opacity-50">
-                                                    Fetch Servers
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>}
-                        </div>
-                    )}
-
-                    {step === 'branding' && (
-                        <div className="flex flex-col gap-6 max-w-2xl">
-                            <div>
-                                <p className={labelClass + ' mb-2'}>Step {stepIndex + 1}</p>
-                                <h2 className="text-2xl sm:text-3xl font-black text-text tracking-tight mb-2">Portal Branding</h2>
-                                <p className="text-muted text-sm sm:text-base">How your portal looks to users. You can change these anytime in Settings.</p>
-                            </div>
-                            <div className={`${sectionCardClass} flex flex-col gap-5`}>
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>Public Domain / URL</label>
-                                    <input type="text" className={inputClass} value={publicDomain} onChange={(e) => setPublicDomain(e.target.value)} placeholder="https://portal.yourdomain.com" />
-                                </div>
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>Theme</label>
-                                    <CustomSelect value={brandTheme} onChange={applyBrandTheme} options={BRAND_THEME_OPTIONS} />
-                                </div>
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>Primary Color</label>
-                                    <div className="flex gap-3 items-center">
-                                        <input
-                                            type="color"
-                                            value={primaryColor}
-                                            onChange={(e) => {
-                                                setBrandTheme('custom');
-                                                setPrimaryColor(e.target.value);
-                                            }}
-                                            className="w-14 h-14 rounded-xl border border-white/10 cursor-pointer bg-transparent flex-shrink-0"
-                                        />
-                                        <input
-                                            type="text"
-                                            className={inputClass}
-                                            value={primaryColor}
-                                            onChange={(e) => {
-                                                setBrandTheme('custom');
-                                                setPrimaryColor(e.target.value);
-                                            }}
-                                            placeholder="#F7C600"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>Custom Logo URL (optional)</label>
-                                    <input type="text" className={inputClass} value={customLogoUrl} onChange={(e) => setCustomLogoUrl(e.target.value)} placeholder="https://… or /static/logo.png" />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {step === 'email' && (
-                        <div className="flex flex-col gap-6 max-w-2xl">
-                            <div>
-                                <p className={labelClass + ' mb-2'}>Step {stepIndex + 1}</p>
-                                <h2 className="text-2xl sm:text-3xl font-black text-text tracking-tight mb-2">Email Notifications</h2>
-                                <p className="text-muted text-sm sm:text-base">Optional — send expiry reminders and newsletters. Skip if you&apos;ll configure later.</p>
-                            </div>
-                            <div className={`${sectionCardClass} grid grid-cols-1 md:grid-cols-2 gap-5`}>
-                                <div className="flex flex-col gap-2.5 md:col-span-2">
-                                    <label className={labelClass}>SMTP Host</label>
-                                    <input type="text" className={inputClass} value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} placeholder="smtp.mailgun.org" />
-                                </div>
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>Port</label>
-                                    <input type="number" className={inputClass} value={smtpPort} onChange={(e) => setSmtpPort(Number(e.target.value))} />
-                                </div>
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>Secure (TLS)</label>
-                                    <label className="flex items-center gap-3 cursor-pointer mt-1 p-3.5 rounded-xl bg-background/50 border border-white/5">
-                                        <input type="checkbox" checked={smtpSecure} onChange={(e) => setSmtpSecure(e.target.checked)} className="w-4 h-4 accent-plex" />
-                                        <span className="text-sm text-text font-medium">Use SSL/TLS</span>
-                                    </label>
-                                </div>
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>SMTP User</label>
-                                    <input type="text" className={inputClass} value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} />
-                                </div>
-                                <div className="flex flex-col gap-2.5">
-                                    <label className={labelClass}>SMTP Password</label>
-                                    <input type="password" className={inputClass} value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} />
-                                </div>
-                                <div className="flex flex-col gap-2.5 md:col-span-2">
-                                    <label className={labelClass}>From Address</label>
-                                    <input type="text" className={inputClass} value={smtpFrom} onChange={(e) => setSmtpFrom(e.target.value)} placeholder="Plex Server &lt;noreply@domain.com&gt;" />
-                                </div>
-                            </div>
-                            {smtpHost && smtpUser && smtpPass && (
-                                <div className={`${sectionCardClass} flex flex-col gap-3`}>
-                                    <label className={labelClass}>Send Test Email</label>
-                                    <div className="flex flex-col sm:flex-row gap-2">
-                                        <input type="email" className={inputClass} value={testRecipient} onChange={(e) => setTestRecipient(e.target.value)} placeholder="you@example.com" />
-                                        <button type="button" onClick={handleTestEmail} disabled={isLoading} className="px-5 py-3.5 bg-white/5 border border-white/10 text-text rounded-xl font-bold hover:bg-white/10 whitespace-nowrap transition-colors disabled:opacity-50">
-                                            Send Test
-                                        </button>
-                                    </div>
-                                </div>
                             )}
-                        </div>
-                    )}
-
-                    {step === 'integrations' && (
-                        <div className="flex flex-col gap-5 max-w-4xl">
-                            <div>
-                                <p className={labelClass + ' mb-2'}>Step {stepIndex + 1}</p>
-                                <h2 className="text-2xl sm:text-3xl font-black text-text tracking-tight mb-2">Media Stack</h2>
-                                <p className="text-muted text-sm sm:text-base">All optional. Connect the apps that manage requests, downloads, activity, and maintenance.</p>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/10 bg-background/50 p-1.5">
-                                {[
-                                    { id: 'arr' as const, label: 'Arr Apps' },
-                                    { id: 'requests' as const, label: 'Requests' },
-                                    { id: 'analytics' as const, label: mediaServerType === 'jellyfin' ? 'Jellystat' : 'Tautulli' },
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.id}
-                                        type="button"
-                                        onClick={() => setIntegrationTab(tab.id)}
-                                        className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${integrationTab === tab.id ? 'bg-plex text-background shadow-lg shadow-plex/20' : 'text-muted hover:text-text hover:bg-white/5'}`}
-                                    >
-                                        {tab.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {integrationTab === 'arr' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {[
-                                        { label: 'Sonarr', desc: 'TV series automation', url: sonarrUrl, setUrl: setSonarrUrl, key: sonarrApiKey, setKey: setSonarrApiKey, type: 'sonarr' as const, placeholder: 'http://localhost:8989' },
-                                        { label: 'Radarr', desc: 'Movie automation', url: radarrUrl, setUrl: setRadarrUrl, key: radarrApiKey, setKey: setRadarrApiKey, type: 'radarr' as const, placeholder: 'http://localhost:7878' },
-                                    ].map(({ label, desc, url, setUrl, key, setKey, type, placeholder }) => (
-                                        <div key={type} className={`${sectionCardClass} flex flex-col gap-3.5`}>
-                                            <div className="flex items-center gap-3">
-                                                <ProgramIcon app={type} label={label} />
-                                                <div>
-                                                    <h3 className="font-bold text-text text-base leading-tight">{label}</h3>
-                                                    <p className="text-xs text-muted mt-0.5">{desc}</p>
-                                                </div>
-                                            </div>
-                                            <input type="text" className={inputClass} value={url} onChange={(e) => setUrl(e.target.value)} placeholder={placeholder} />
-                                            <input type="password" className={inputClass} value={key} onChange={(e) => setKey(e.target.value)} placeholder="API Key" />
-                                            <IntegrationTestButton type={type} payload={{ [`${type}Url`]: url, [`${type}ApiKey`]: key }} disabled={!url || !key} />
-                                        </div>
-                                    ))}
-                                </div>
+                            {step === 'branding' && (
+                                <BrandingStep
+                                    stepNumber={stepNumber}
+                                    form={form}
+                                    updateForm={updateForm}
+                                    applyBrandTheme={applyBrandTheme}
+                                />
                             )}
-
-                            {integrationTab === 'requests' && (
-                                <div className={`${sectionCardClass} flex flex-col gap-3.5`}>
-                                    <div className="flex items-center gap-3">
-                                        <ProgramIcon app={requestAppType === 'none' ? (mediaServerType === 'jellyfin' ? 'jellyseerr' : 'seerr') : requestAppType} label="Request App" />
-                                        <div>
-                                            <h3 className="font-bold text-text text-base leading-tight">Request App</h3>
-                                            <p className="text-xs text-muted mt-0.5">Seerr, Jellyseerr, or Ombi for user requests.</p>
-                                        </div>
-                                    </div>
-                                    <CustomSelect value={requestAppType} onChange={setRequestAppType} options={REQUEST_APP_OPTIONS} />
-                                    {requestAppType !== 'none' && (
-                                        <>
-                                            <input type="text" className={inputClass} value={requestAppUrl} onChange={(e) => setRequestAppUrl(e.target.value)} placeholder="http://localhost:5055" />
-                                            <input type="password" className={inputClass} value={requestAppApiKey} onChange={(e) => setRequestAppApiKey(e.target.value)} placeholder="API Key" />
-                                            <IntegrationTestButton type="requestApp" payload={{ requestAppType, requestAppUrl, requestAppApiKey }} disabled={!requestAppUrl || !requestAppApiKey} />
-                                        </>
-                                    )}
-                                </div>
+                            {step === 'email' && (
+                                <EmailStep
+                                    stepNumber={stepNumber}
+                                    form={form}
+                                    updateForm={updateForm}
+                                    testRecipient={testRecipient}
+                                    setTestRecipient={setTestRecipient}
+                                    isLoading={isLoading}
+                                    onTestEmail={handleTestEmail}
+                                />
                             )}
-
-                            {integrationTab === 'analytics' && (
-                                <div className={`${sectionCardClass} flex flex-col gap-3.5`}>
-                                    {mediaServerType === 'jellyfin' ? (
-                                        <>
-                                            <div className="flex items-center gap-3">
-                                                <ProgramIcon app="jellystat" label="Jellystat" />
-                                                <div>
-                                                    <h3 className="font-bold text-text text-base leading-tight">Jellystat</h3>
-                                                    <p className="text-xs text-muted mt-0.5">Jellyfin activity and analytics.</p>
-                                                </div>
-                                            </div>
-                                            <input type="text" className={inputClass} value={jellystatUrl} onChange={(e) => setJellystatUrl(e.target.value)} placeholder="http://localhost:3000" />
-                                            <input type="password" className={inputClass} value={jellystatApiKey} onChange={(e) => setJellystatApiKey(e.target.value)} placeholder="API Key" />
-                                            <IntegrationTestButton type="jellystat" payload={{ jellystatUrl, jellystatApiKey }} disabled={!jellystatUrl || !jellystatApiKey} />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="flex items-center gap-3">
-                                                <ProgramIcon app="tautulli" label="Tautulli" />
-                                                <div>
-                                                    <h3 className="font-bold text-text text-base leading-tight">Tautulli</h3>
-                                                    <p className="text-xs text-muted mt-0.5">Plex activity and analytics.</p>
-                                                </div>
-                                            </div>
-                                            <input type="text" className={inputClass} value={tautulliUrl} onChange={(e) => setTautulliUrl(e.target.value)} placeholder="http://localhost:8181" />
-                                            <input type="password" className={inputClass} value={tautulliApiKey} onChange={(e) => setTautulliApiKey(e.target.value)} placeholder="API Key" />
-                                            <IntegrationTestButton type="tautulli" payload={{ tautulliUrl, tautulliApiKey }} disabled={!tautulliUrl || !tautulliApiKey} />
-                                        </>
-                                    )}
-                                </div>
+                            {step === 'integrations' && (
+                                <IntegrationsStep
+                                    stepNumber={stepNumber}
+                                    form={form}
+                                    updateForm={updateForm}
+                                    activeTab={integrationTab}
+                                    setActiveTab={setIntegrationTab}
+                                />
                             )}
-                        </div>
-                    )}
-
-                    {step === 'finish' && (
-                        <div className="max-w-lg mx-auto text-center py-4">
-                            <div className="w-20 h-20 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/30 shadow-[0_0_40px_rgba(52,211,153,0.15)]">
-                                <PartyPopper className="w-10 h-10 text-emerald-400" />
-                            </div>
-                            <p className={labelClass + ' mb-3'}>Step {stepIndex + 1}</p>
-                            <h2 className="text-3xl sm:text-4xl font-black text-text tracking-tight mb-4">Ready to launch</h2>
-                            <p className="text-muted text-base leading-relaxed mb-8">
-                                Your {mediaServerType === 'jellyfin' ? 'Jellyfin' : 'Plex'} server{sonarrUrl ? ', Sonarr' : ''}{radarrUrl ? ', Radarr' : ''}{tautulliUrl ? ', Tautulli' : ''}{jellystatUrl ? ', Jellystat' : ''} will be saved.
-                                {smtpHost ? ' Email notifications enabled.' : ' You can add email later in Settings.'}
-                            </p>
-                            <div className={`${sectionCardClass} text-left text-sm space-y-3`}>
-                                <p className="flex justify-between gap-4 border-b border-white/5 pb-3"><span className="text-muted">Server</span> <strong className="text-text truncate">{mediaServerType === 'jellyfin' ? (jellyfinUrl || '—') : (serverIdentifier || '—')}</strong></p>
-                                <p className="flex justify-between gap-4 border-b border-white/5 pb-3"><span className="text-muted">Portal URL</span> <strong className="text-text truncate">{publicDomain || '—'}</strong></p>
-                                <p className="flex justify-between gap-4 items-center"><span className="text-muted">Accent</span> <span className="flex items-center gap-2"><span className="inline-block w-5 h-5 rounded-md border border-white/20 shadow-inner" style={{ backgroundColor: primaryColor }} /><strong className="text-text">{primaryColor}</strong></span></p>
-                            </div>
-                        </div>
-                    )}
+                            {step === 'finish' && <FinishStep stepNumber={stepNumber} form={form} />}
                         </div>
 
-                        {/* Footer navigation */}
                         <div className="flex-shrink-0 border-t border-white/10 bg-black/25 backdrop-blur-md px-6 sm:px-8 lg:px-10 xl:px-12 py-5 flex items-center justify-between gap-4">
-                            <button type="button" onClick={goBack} disabled={stepIndex === 0 || isLoading}
-                                className="flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm text-muted hover:text-text hover:bg-white/5 border border-transparent hover:border-white/10 transition-all disabled:opacity-30 disabled:pointer-events-none">
+                            <button
+                                type="button"
+                                onClick={goBack}
+                                disabled={stepIndex === 0 || isLoading}
+                                className="flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm text-muted hover:text-text hover:bg-white/5 border border-transparent hover:border-white/10 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                            >
                                 <ChevronLeft className="w-4 h-4" /> Back
                             </button>
                             <span className="hidden sm:block text-xs font-semibold text-muted/70">
-                                {STEPS[stepIndex].label} · {stepIndex + 1}/{STEPS.length}
+                                {STEPS[stepIndex].label} · {stepNumber}/{STEPS.length}
                             </span>
                             {step === 'finish' ? (
-                                <button type="button" onClick={handleComplete} disabled={isLoading || !canGoNext}
-                                    className={primaryBtnClass}>
+                                <button type="button" onClick={handleComplete} disabled={isLoading || !canGoNext} className={SETUP_PRIMARY_BUTTON_CLASS}>
                                     {isLoading ? 'Saving…' : 'Complete Setup'} <Check className="w-4 h-4" />
                                 </button>
                             ) : (
-                                <button type="button" onClick={goNext} disabled={!canGoNext || isLoading}
-                                    className={primaryBtnClass}>
+                                <button type="button" onClick={goNext} disabled={!canGoNext || isLoading} className={SETUP_PRIMARY_BUTTON_CLASS}>
                                     Continue <ChevronRight className="w-4 h-4" />
                                 </button>
                             )}

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Search, Sparkles } from 'lucide-react';
 import { apiFetch } from '../shared/api';
+import { cacheRefreshMs } from '../shared/cacheRefresh';
+import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { pushToast, ToastContainer, type ToastMessage } from '../shared/toast';
 import { loadLocalPortalPreferences } from '../shared/userPreferences';
 import { AdminRequestQueue } from './AdminRequestQueue';
@@ -38,7 +40,8 @@ const isExistingOrInProgress = (item: RequestMediaItem) => (
     !!(item.available || item.processing || item.requested || item.pending || item.approved)
 );
 
-export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
+export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: number }> = ({ isAdmin, cacheMinutes }) => {
+    const refreshMs = cacheRefreshMs({ cacheRefreshMinutes: cacheMinutes });
     const initialPreferences = useMemo(loadLocalPortalPreferences, []);
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [status, setStatus] = useState<RequestAppStatus | null>(null);
@@ -122,7 +125,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         else setLoading(true);
         setError(null);
         try {
-            const ttl = activeView === 'search' ? 15_000 : 60_000;
+            const ttl = activeView === 'search' ? 15_000 : refreshMs;
             const separator = endpointBase.includes('?') ? '&' : '?';
             const data = await fetchRequestPage(`${endpointBase}${separator}page=${page}`, ttl);
             if (sequence !== loadSequence.current) return;
@@ -144,7 +147,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                 setLoadingMore(false);
             }
         }
-    }, [activeView, endpointBase, fetchRequestPage, includeExisting, mediaFilter, status?.ready]);
+    }, [activeView, endpointBase, fetchRequestPage, includeExisting, mediaFilter, refreshMs, status?.ready]);
 
     useEffect(() => {
         if (!status) return;
@@ -156,6 +159,10 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
         setPageInfo(undefined);
         loadItems();
     }, [activeView, loadItems, status]);
+    useVisibleInterval(
+        () => loadItems({ silent: true }),
+        activeView === 'browse' && status?.ready ? refreshMs : null,
+    );
 
     const hasMore = !!pageInfo && (pageInfo.hasNextPage === true || Number(pageInfo.pages) > Number(pageInfo.page || 1));
     const loadMore = useCallback(() => {
@@ -180,6 +187,10 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                 : item
         )));
     };
+
+    const openRequest = useCallback((item: RequestMediaItem) => {
+        if (item.canRequest !== false) setSelectedItem(item);
+    }, []);
 
     const submitRequest = async (item: RequestMediaItem, seasons: number[]) => {
         setRequestingId(item.tmdbId);
@@ -233,7 +244,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                         </div>
                         <h1 className="text-3xl md:text-5xl font-black text-text tracking-tight">Request Content</h1>
                         <p className="text-sm text-muted mt-2 max-w-2xl">
-                            Browse and request movies or shows through {status?.type === 'jellyseerr' ? 'Jellyseerr' : 'Seerr'} without leaving the portal.
+                            Browse and request movies or shows without leaving the portal.
                         </p>
                     </div>
                     <div className="relative w-full lg:w-[28rem]">
@@ -389,16 +400,14 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) =>
                             ) : items.length ? (
                                 <>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
-                                        {items.map((item) => (
+                                        {items.map((item, index) => (
                                             <RequestMediaCard
                                                 key={`${item.mediaType}-${item.tmdbId}`}
                                                 item={item}
                                                 busy={requestingId === item.tmdbId}
+                                                priority={index < 4}
                                                 onOpen={setSelectedItem}
-                                                onRequest={(nextItem) => {
-                                                    if (nextItem.canRequest === false) return;
-                                                    setSelectedItem(nextItem);
-                                                }}
+                                                onRequest={openRequest}
                                             />
                                         ))}
                                     </div>

@@ -67,7 +67,6 @@ export const DiscoverLibraryView: React.FC<{
             emptyLabel="No recent movies"
             showQualityBadges={showQualityBadges}
             reveal={useScrollRevealAnimations}
-            preload
         />
         <RecentSection
             title={isJellyfinPortal ? 'Recently Added Episodes' : 'Recently Added TV Shows'}

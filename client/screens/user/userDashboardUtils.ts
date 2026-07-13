@@ -1,6 +1,6 @@
 import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../../shared/basePath';
 
-const HERO_MOVIE_SOURCE_LIMIT = 18;
+const HERO_MOVIE_SOURCE_LIMIT = 10;
 
 export const wrapUpDaysOptions = [
     { value: 7, label: 'Last 7 Days' },
@@ -64,7 +64,7 @@ export const buildHeroMovieColumns = (recentMovies: any[] | undefined) => {
         ? recentMovies.filter((movie: any) => movie.thumb || movie.thumbUrl).slice(0, HERO_MOVIE_SOURCE_LIMIT)
         : [];
     if (movies.length === 0) return [];
-    return Array.from({ length: 6 }, (_, colIdx) => {
+    return Array.from({ length: 4 }, (_, colIdx) => {
         const shift = (colIdx * Math.max(1, Math.ceil(movies.length / 3))) % movies.length;
         const ordered = [...movies.slice(shift), ...movies.slice(0, shift)];
         return [...ordered, ...ordered];
