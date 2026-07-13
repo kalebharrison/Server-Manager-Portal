@@ -281,7 +281,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
             />
 
             {sessionInfo.session.isAdmin && (
-                <ActiveStreamsPanel isAdmin isJellyfinPortal={isJellyfinPortal} />
+                <ActiveStreamsPanel isAdmin isJellyfinPortal={isJellyfinPortal} variant="compact" />
             )}
 
             <UserDashboardLayout

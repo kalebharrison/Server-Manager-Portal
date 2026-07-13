@@ -123,6 +123,10 @@ Beta image branch: `beta`
   - Reduce the server entrypoint to route/service composition; extract maintenance and request-app route/service modules; split Settings, Setup, Maintenance, Analytics, Home, Wrap Up, and request-detail UI into focused components and hooks; remove dead UI and dependencies; and make unused TypeScript checks plus tests part of the standard validation command.
   - Upstream PR fit: submit by subsystem so structural changes remain reviewable and behavior-preserving.
 
+- Pending: compact admin stream summary
+  - Replace the detailed, full-width stream cards on admin Home with compact two-column summaries while preserving the detailed Discover presentation and click-through stream controls.
+  - Upstream PR fit: focused Home dashboard density improvement.
+
 ## Split Candidates
 
 - Reliability/security fixes: low-risk upstream PR.
