@@ -26,6 +26,7 @@ const ymd = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1)
 export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cacheMinutes }) => {
     const refreshMs = cacheRefreshMs({ cacheRefreshMinutes: cacheMinutes });
     const [data, setData] = useState<any>(null);
+    const [listData, setListData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [monthOffset, setMonthOffset] = useState(0);
@@ -54,23 +55,36 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
 
     const fetchData = useCallback(async () => {
         try {
-            const res = await fetchMonthSummary(monthOffset);
-            setData(res);
+            if (calendarView === 'list') {
+                const res = await apiFetch('/api/media-stack/calendar?horizon=quarter', { cacheTtlMs: refreshMs, staleIfErrorMs: 60 * 60_000 });
+                if (res.error) throw new Error(res.error);
+                setListData(res);
+                void fetchMonthSummary(monthOffset).then(setData).catch(() => {});
+            } else {
+                setData(await fetchMonthSummary(monthOffset));
+            }
             setError('');
         } catch (err: any) {
             setError(err.message || 'Failed to load release calendar.');
         } finally {
             setIsLoading(false);
         }
-    }, [fetchMonthSummary, monthOffset]);
+    }, [calendarView, fetchMonthSummary, monthOffset, refreshMs]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
     useVisibleInterval(fetchData, refreshMs);
 
-    const sonarrCalendarItems = useMemo(() => mapSonarrCalendarItems(data?.sonarr?.calendar || []), [data?.sonarr?.calendar]);
-    const radarrCalendarItems = useMemo(() => mapRadarrCalendarItems(data?.radarr?.calendar || []), [data?.radarr?.calendar]);
+    const calendarData = calendarView === 'list' ? listData : data;
+    const inListWindow = useCallback((item: any) => {
+        if (calendarView !== 'list' || !calendarData?.start || !calendarData?.end) return true;
+        const time = item.date.getTime();
+        return time >= new Date(`${calendarData.start}T00:00:00`).getTime()
+            && time < new Date(`${calendarData.end}T00:00:00`).getTime();
+    }, [calendarData?.end, calendarData?.start, calendarView]);
+    const sonarrCalendarItems = useMemo(() => mapSonarrCalendarItems(calendarData?.sonarr?.calendar || []).filter(inListWindow), [calendarData?.sonarr?.calendar, inListWindow]);
+    const radarrCalendarItems = useMemo(() => mapRadarrCalendarItems(calendarData?.radarr?.calendar || []).filter(inListWindow), [calendarData?.radarr?.calendar, inListWindow]);
     const summarizedSonarrCalendarItems = useMemo(() => summarizeSeasonReleaseBatches(sonarrCalendarItems), [sonarrCalendarItems]);
     const allCalendarItems = useMemo(() => [...summarizedSonarrCalendarItems, ...radarrCalendarItems].sort((a, b) => a.date.getTime() - b.date.getTime()), [radarrCalendarItems, summarizedSonarrCalendarItems]);
 
@@ -81,10 +95,10 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
     }, [allCalendarItems, calendarFilter, summarizedSonarrCalendarItems, radarrCalendarItems]);
 
     const calendarConfigured = calendarFilter === 'sonarr'
-        ? !!data?.sonarr?.configured
+        ? !!calendarData?.sonarr?.configured
         : calendarFilter === 'radarr'
-            ? !!data?.radarr?.configured
-            : !!(data?.sonarr?.configured || data?.radarr?.configured);
+            ? !!calendarData?.radarr?.configured
+            : !!(calendarData?.sonarr?.configured || calendarData?.radarr?.configured);
 
     const calendarFilterLabel = calendarFilter === 'sonarr'
         ? 'TV releases'
@@ -95,7 +109,7 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
     useEffect(() => {
         let cancelled = false;
         const maybeAutoSelectMonthWithReleases = async () => {
-            if (!calendarConfigured || !data || monthOffset !== 0 || filteredCalendar.length > 0) {
+            if (calendarView !== 'month' || !calendarConfigured || !data || monthOffset !== 0 || filteredCalendar.length > 0) {
                 if (!cancelled && monthOffset === 0) setAutoMonthNotice('');
                 return;
             }
@@ -126,7 +140,7 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
         return () => {
             cancelled = true;
         };
-    }, [calendarConfigured, calendarFilter, calendarFilterLabel, fetchMonthSummary, filteredCalendar.length, data, monthOffset]);
+    }, [calendarConfigured, calendarFilter, calendarFilterLabel, calendarView, fetchMonthSummary, filteredCalendar.length, data, monthOffset]);
 
     const groupedCalendar = useMemo(() => groupCalendarItemsByDate(filteredCalendar), [filteredCalendar]);
     const calendarByDay = useMemo(() => {
@@ -152,7 +166,7 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
 
     if (isLoading) return <Loader isLoading={true} />;
     if (error) return <div className="text-center p-8 text-status-expiring">{error}</div>;
-    if (!data) return null;
+    if (!calendarData) return null;
 
     const renderCalendarItem = (item: any) => (
         <article
@@ -216,7 +230,7 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
                             <Calendar className="w-5 h-5 text-plex flex-shrink-0" />
                             Releases
                         </h2>
-                        <p className="text-xs text-muted mt-1">{filteredCalendar.length} {calendarFilterLabel} in the selected month.</p>
+                        <p className="text-xs text-muted mt-1">{filteredCalendar.length} {calendarFilterLabel} {calendarView === 'list' ? 'from this week through the next three months.' : 'in the selected month.'}</p>
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -251,7 +265,7 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
                                 </button>
                             ))}
                         </div>
-                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-fit flex-shrink-0 items-center gap-2">
+                        {calendarView === 'month' ? <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-fit flex-shrink-0 items-center gap-2">
                             <button type="button" onClick={() => { setAutoMonthNotice(''); setMonthOffset(m => clampMonthOffset(m - 1)); }} className="p-1.5 hover:bg-white/10 rounded-lg text-muted hover:text-text transition-colors">
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
@@ -261,11 +275,11 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
                             <button type="button" onClick={() => { setAutoMonthNotice(''); setMonthOffset(m => clampMonthOffset(m + 1)); }} className="p-1.5 hover:bg-white/10 rounded-lg text-muted hover:text-text transition-colors">
                                 <ChevronRight className="w-4 h-4" />
                             </button>
-                        </div>
+                        </div> : <span className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted">This week + 3 months</span>}
                     </div>
                 </div>
 
-                {autoMonthNotice && <p className="text-xs text-plex/90 mb-3">{autoMonthNotice}</p>}
+                {calendarView === 'month' && autoMonthNotice && <p className="text-xs text-plex/90 mb-3">{autoMonthNotice}</p>}
 
                 {filteredCalendar.length === 0 ? (
                     <div className="text-center py-12 bg-background/30 rounded-xl border border-white/5 text-muted text-sm">
@@ -276,7 +290,7 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
                                 <p className="text-xs mt-2">Add TV or movie automation in Settings → Integrations.</p>
                             </>
                         ) : (
-                            <p>No upcoming {calendarFilterLabel} for this month.</p>
+                            <p>No upcoming {calendarFilterLabel} {calendarView === 'list' ? 'in the next three months.' : 'for this month.'}</p>
                         )}
                     </div>
                 ) : calendarView === 'month' ? (

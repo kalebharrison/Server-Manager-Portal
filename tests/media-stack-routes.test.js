@@ -70,6 +70,27 @@ test('media stack calendar returns a bounded cached week', async () => {
     assert.equal((new Date(`${result.end}T00:00:00`) - new Date(`${result.start}T00:00:00`)) / 86400000, 7);
 });
 
+test('media stack calendar returns a quarter beginning with the current week', async () => {
+    let routeHandler;
+    const app = { get(path, ...handlers) { if (path === '/api/media-stack/calendar') routeHandler = handlers.at(-1); } };
+    registerMediaStackRoutes({
+        app,
+        requireAuth: (_req, _res, next) => next(),
+        requireMember: (_req, _res, next) => next(),
+        configPath: 'config.json',
+        loadFile: async () => ({ sonarrUrl: 'http://sonarr', sonarrApiKey: 'key' }),
+        withCache: async (_key, _ttl, load) => load(),
+        fetch: async () => ({ ok: true, json: async () => [] }),
+        normalizeExternalBaseUrl: (url) => `${url}/`,
+    });
+    let result;
+    await routeHandler({ query: { horizon: 'quarter' } }, { json(value) { result = value; }, status() { return this; } });
+    const start = new Date(`${result.start}T00:00:00`);
+    const end = new Date(`${result.end}T00:00:00`);
+    assert.equal(start.getDay(), 0);
+    assert.equal(end.getMonth(), (start.getMonth() + 3) % 12);
+});
+
 test('media stack combines enabled instances and annotates their records', async () => {
     let routeHandler;
     const app = { get(path, ...handlers) { if (path === '/api/media-stack/calendar') routeHandler = handlers.at(-1); } };
