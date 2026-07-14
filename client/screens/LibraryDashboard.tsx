@@ -14,20 +14,31 @@ type TrendingStats = { trending7Days: any[]; movies30Days: any[]; shows30Days: a
 
 const EMPTY_LIBRARY: LibraryData = { recentMovies: [], recentShows: [], recentMusic: [] };
 const libraryStorageKey = (scope?: string, provider?: string) => `discoverLibrary:${scope || 'server'}:${provider || 'plex'}`;
-const readCachedLibrary = (key: string): LibraryData | null => {
+const communityStorageKey = (scope?: string) => `discoverCommunity:${scope || 'server'}`;
+const readSessionValue = <T,>(key: string, isValid: (value: any) => boolean): T | null => {
     try {
         const value = JSON.parse(sessionStorage.getItem(key) || 'null');
-        return value?.recentMovies && value?.recentShows && value?.recentMusic ? value : null;
+        return isValid(value) ? value : null;
     } catch {
         return null;
     }
 };
+const readCachedLibrary = (key: string): LibraryData | null => {
+    return readSessionValue<LibraryData>(key, (value) =>
+        Array.isArray(value?.recentMovies) && Array.isArray(value?.recentShows) && Array.isArray(value?.recentMusic)
+    );
+};
+const readCachedCommunity = (key: string): TrendingStats | null =>
+    readSessionValue<TrendingStats>(key, (value) =>
+        Array.isArray(value?.trending7Days) && Array.isArray(value?.movies30Days) && Array.isArray(value?.shows30Days)
+    );
 
 export const LibraryDashboard: React.FC<{ isAdmin?: boolean; publicConfig?: any; mediaServerType?: string; cacheScope?: string }> = ({ isAdmin, publicConfig, mediaServerType, cacheScope }) => {
     const storageKey = libraryStorageKey(cacheScope, mediaServerType);
+    const trendingStorageKey = communityStorageKey(cacheScope);
     const [activeView, setActiveView] = useState<DiscoverView>('library');
     const [libraryData, setLibraryData] = useState<LibraryData | null>(() => readCachedLibrary(storageKey));
-    const [trendingStats, setTrendingStats] = useState<TrendingStats | null>(null);
+    const [trendingStats, setTrendingStats] = useState<TrendingStats | null>(() => readCachedCommunity(trendingStorageKey));
     const [error, setError] = useState<string | null>(null);
     const [isDiscoverDesktop, setIsDiscoverDesktop] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
     const [recentLimitOverride, setRecentLimitOverride] = useState<number | null>(() => {
@@ -78,10 +89,11 @@ export const LibraryDashboard: React.FC<{ isAdmin?: boolean; publicConfig?: any;
         try {
             const result = await apiFetch('/api/plex/stats/trending', { cacheTtlMs: refreshMs, staleIfErrorMs: 60 * 60_000 });
             setTrendingStats(result);
+            sessionStorage.setItem(trendingStorageKey, JSON.stringify(result));
         } catch {
             // Keep the last community snapshot visible during a short analytics interruption.
         }
-    }, [isJellyfinPortal, refreshMs]);
+    }, [isJellyfinPortal, refreshMs, trendingStorageKey]);
 
     useEffect(() => { void fetchLibrary(); }, [fetchLibrary]);
     useEffect(() => {
@@ -112,7 +124,7 @@ export const LibraryDashboard: React.FC<{ isAdmin?: boolean; publicConfig?: any;
                 {activeView === 'library' ? (
                     <DiscoverLibraryView data={libraryData || EMPTY_LIBRARY} recentLimit={recentLimit} onRecentLimitChange={handleRecentLimitChange} isJellyfinPortal={isJellyfinPortal} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} />
                 ) : (
-                    <DiscoverCommunityView trendingStats={trendingStats} recentLimit={recentLimit} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} serverName={cacheScope} isJellyfinPortal={isJellyfinPortal} />
+                    <DiscoverCommunityView trendingStats={trendingStats} recentLimit={recentLimit} showQualityBadges={showQualityBadges} serverName={cacheScope} isJellyfinPortal={isJellyfinPortal} />
                 )}
             </main>
         </div>

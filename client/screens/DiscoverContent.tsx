@@ -89,7 +89,7 @@ export const DiscoverPosterCard = React.memo<{
 });
 
 const discoverViewsOverlay = (views: number) => (
-    <div className="absolute top-2 right-2 bg-black/80 text-plex text-xs font-bold px-2 py-1 rounded backdrop-blur-md border border-plex/30 z-10 pointer-events-none">
+    <div className="absolute top-2 right-2 bg-black/90 text-plex text-xs font-bold px-2 py-1 rounded border border-plex/30 z-10 pointer-events-none">
         {views} Views
     </div>
 );
@@ -105,12 +105,16 @@ export const DISCOVER_LIMIT_OPTIONS = [
 ];
 
 export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; limit: number; showQualityBadges?: boolean; useScrollRevealAnimations?: boolean; preloadPosters?: boolean }> = ({ title, items, limit, showQualityBadges = true, useScrollRevealAnimations, preloadPosters = false }) => {
+    const initialCount = Math.min(20, limit);
+    const [visibleCount, setVisibleCount] = React.useState(initialCount);
+    React.useEffect(() => setVisibleCount(initialCount), [initialCount]);
     if (!items?.length) return null;
+    const availableCount = Math.min(limit, items.length);
     return (
         <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col discover-deferred-section">
             <h3 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">{title}</h3>
             <div className={discoverPosterGridClass}>
-                {items.slice(0, limit).map((item, i) => (
+                {items.slice(0, visibleCount).map((item, i) => (
                     <DiscoverPosterCard
                         key={item.ratingKey || `${item.title}-${i}`}
                         item={item}
@@ -120,6 +124,11 @@ export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; li
                     />
                 ))}
             </div>
+            {visibleCount < availableCount && (
+                <button type="button" className="self-center rounded-lg border border-border px-4 py-2 text-sm font-semibold text-muted hover:border-plex/50 hover:text-text" onClick={() => setVisibleCount((count) => Math.min(count + 10, availableCount))}>
+                    Show more
+                </button>
+            )}
         </ScrollReveal>
     );
 };
