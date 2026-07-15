@@ -97,10 +97,21 @@ test('request normalization and discovery filters retain request-app semantics',
 
     const items = [
         { title: 'English', mediaType: 'movie', originalLanguage: 'en', genres: [] },
+        { title: 'Adult', mediaType: 'movie', originalLanguage: 'en', genres: [], adult: true },
         { title: 'Anime', mediaType: 'tv', originalLanguage: 'ja', genres: [{ id: 16 }] },
         { title: 'Foreign', mediaType: 'movie', originalLanguage: 'fr', genres: [{ id: 18 }] },
     ];
     assert.deepEqual(filterMediaItems(items, 'all', false, false).map((item) => item.title), ['English']);
     assert.deepEqual(filterMediaItems(items, 'all', true, true).map((item) => item.title), ['Anime', 'Foreign']);
     assert.deepEqual(filterMediaItems(items, 'movie', false, true, 18).map((item) => item.title), ['Foreign']);
+});
+
+test('adult media is excluded regardless of source flag representation', () => {
+    const items = [
+        { title: 'Safe', mediaType: 'movie', originalLanguage: 'en', genres: [] },
+        { title: 'Boolean', mediaType: 'movie', originalLanguage: 'en', genres: [], adult: true },
+        { title: 'Numeric', mediaType: 'movie', originalLanguage: 'en', genres: [], adult: 1 },
+        { title: 'Nested', mediaType: 'movie', originalLanguage: 'en', genres: [], mediaInfo: { adult: 'true' } },
+    ];
+    assert.deepEqual(filterMediaItems(items, 'all', false, false).map((item) => item.title), ['Safe']);
 });
