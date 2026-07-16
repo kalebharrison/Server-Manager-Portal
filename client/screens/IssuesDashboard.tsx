@@ -38,11 +38,10 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
 
     useEffect(() => { void load(); }, [load]);
 
-    const sourceSummary = useMemo(() => [
-        sources.portal && 'Portal',
-        sources.seerr && 'Request service',
-        sources.plex && 'Plex',
-    ].filter(Boolean).join(' + '), [sources]);
+    const sourceSummary = useMemo(() => [sources.plex && 'Plex', sources.seerr && 'Request service'].filter(Boolean).join(' · '), [sources]);
+    const sourceLabel = (source: string) => source === 'plex'
+        ? 'Reported in Plex'
+        : source === 'seerr' ? 'Reported in Request service' : 'Reported here';
 
     const submit = async () => {
         if (!selected || message.trim().length < 3) return;
@@ -82,7 +81,7 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
         <div className="space-y-8 pb-12">
             <header className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-5">
                 <div><h1 className="text-2xl font-bold text-text">Media Issues</h1><p className="mt-1 text-sm text-muted">Report playback problems and follow their resolution.</p></div>
-                <div className="text-xs text-muted">Sources: {sourceSummary || 'Portal'}</div>
+                <div className="text-xs text-muted">{sourceSummary ? `Connected: ${sourceSummary}` : 'Portal reports only'}</div>
             </header>
 
             <section>
@@ -112,8 +111,8 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
                 {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
                 <div className="space-y-3">
                     {issues.map((issue) => <article key={issue.id} className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 md:flex-row md:items-center">
-                        <div className="flex h-10 w-10 flex-none items-center justify-center rounded bg-background">{issue.mediaType === 'show' || issue.mediaType === 'tv' ? <Tv className="h-5 w-5 text-plex" /> : <Film className="h-5 w-5 text-plex" />}</div>
-                        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-text">{issue.title}</h3><span className="rounded border border-border px-2 py-0.5 text-[10px] uppercase text-muted">{issue.source === 'seerr' ? 'Request service' : 'Portal'}</span></div><p className="mt-1 line-clamp-2 text-sm text-muted">{issue.message || 'No description provided.'}</p>{isAdmin && issue.reporter && <p className="mt-1 text-xs text-muted">Reported by {issue.reporter}</p>}</div>
+                        {issue.thumbUrl ? <img src={resolvePortalAssetUrl(issue.thumbUrl)} alt="" className="h-20 w-14 flex-none rounded object-cover bg-background" loading="lazy" /> : <div className="flex h-20 w-14 flex-none items-center justify-center rounded bg-background">{issue.mediaType === 'show' || issue.mediaType === 'tv' ? <Tv className="h-5 w-5 text-plex" /> : <Film className="h-5 w-5 text-plex" />}</div>}
+                        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-text">{issue.title}</h3>{issue.year && <span className="text-xs text-muted">{issue.year}</span>}<span className="rounded border border-border px-2 py-0.5 text-[10px] uppercase text-muted">{sourceLabel(issue.source)}</span></div>{issue.subtitle && <p className="mt-1 text-xs font-medium text-muted">{issue.subtitle}</p>}<p className="mt-2 line-clamp-2 text-sm text-text/80">{issue.message || 'No description provided.'}</p>{isAdmin && issue.reporter && <p className="mt-1 text-xs text-muted">Reported by {issue.reporter}</p>}</div>
                         {isAdmin && <div className="flex flex-wrap gap-2"><button type="button" disabled={busy || issue.source === 'seerr'} title={issue.source === 'seerr' ? 'This issue is already managed by the request service.' : undefined} onClick={() => runAction(issue, 'approve-search')} className="flex items-center gap-2 rounded-lg border border-plex/40 px-3 py-2 text-sm font-bold text-plex disabled:opacity-40"><Search className="h-4 w-4" />Accept</button>{issue.source !== 'seerr' && !issue.syncedToSeerrAt && <button type="button" disabled={busy} onClick={() => runAction(issue, 'send-to-seerr')} className="rounded-lg border border-border px-3 py-2 text-sm text-text">Send to requests</button>}<button type="button" disabled={busy} onClick={() => runAction(issue, 'resolve')} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text"><Check className="h-4 w-4" />Resolve</button></div>}
                     </article>)}
                     {!issues.length && !error && <p className="text-sm text-muted">No open issues.</p>}
