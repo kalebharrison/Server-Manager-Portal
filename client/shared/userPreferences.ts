@@ -4,6 +4,8 @@ export type LocalPortalPreferences = {
     motion: 'server' | 'full' | 'reduced';
     requestMediaType: 'all' | 'movie' | 'tv';
     requestIncludeExisting: boolean;
+    calendarMediaType: 'all' | 'tv' | 'movie';
+    calendarView: 'list' | 'month';
 };
 
 const STORAGE_KEY = 'portal-user-preferences';
@@ -15,6 +17,8 @@ const defaults: LocalPortalPreferences = {
     motion: 'server',
     requestMediaType: 'all',
     requestIncludeExisting: true,
+    calendarMediaType: 'all',
+    calendarView: 'list',
 };
 
 const oneOf = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T => (
@@ -31,6 +35,8 @@ export const loadLocalPortalPreferences = (): LocalPortalPreferences => {
             motion: oneOf(stored.motion, ['server', 'full', 'reduced'] as const, defaults.motion),
             requestMediaType: oneOf(stored.requestMediaType, ['all', 'movie', 'tv'] as const, defaults.requestMediaType),
             requestIncludeExisting: stored.requestIncludeExisting !== false,
+            calendarMediaType: oneOf(stored.calendarMediaType, ['all', 'tv', 'movie'] as const, defaults.calendarMediaType),
+            calendarView: oneOf(stored.calendarView, ['list', 'month'] as const, defaults.calendarView),
         };
     } catch {
         return { ...defaults };

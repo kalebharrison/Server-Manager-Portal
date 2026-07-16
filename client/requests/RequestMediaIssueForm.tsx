@@ -27,14 +27,23 @@ export const RequestMediaIssueForm: React.FC<{
         setIssueStatus('submitting');
         setIssueError('');
         try {
-            await apiFetch(`/api/request-app/media/${item.mediaType}/${item.tmdbId}/issue`, {
+            const reportToPortal = () => apiFetch('/api/plex/report-issue', {
                 method: 'POST',
-                body: JSON.stringify({
-                    title: item.title,
-                    issueType,
-                    message,
-                }),
+                body: JSON.stringify({ title: item.title, key: item.ratingKey, issue: `[${issueType}] ${message}` }),
             });
+            if (!item.tmdbId) {
+                await reportToPortal();
+            } else {
+                try {
+                    await apiFetch(`/api/request-app/media/${item.mediaType}/${item.tmdbId}/issue`, {
+                        method: 'POST',
+                        body: JSON.stringify({ title: item.title, issueType, message }),
+                    });
+                } catch (error: any) {
+                    if (!item.ratingKey || !/not tracked/i.test(String(error?.message || ''))) throw error;
+                    await reportToPortal();
+                }
+            }
             setIssueStatus('success');
             setIssueMessage('');
         } catch (err: any) {

@@ -17,12 +17,13 @@ export const RequestMediaModal: React.FC<{
     saving: boolean;
     onClose: () => void;
     onSubmit: (item: RequestMediaItem, seasons: number[]) => void;
-}> = ({ item, saving, onClose, onSubmit }) => {
+    initialIssueForm?: boolean;
+}> = ({ item, saving, onClose, onSubmit, initialIssueForm = false }) => {
     const [detail, setDetail] = useState<RequestMediaItem>(item);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);
-    const [showIssueForm, setShowIssueForm] = useState(false);
+    const [showIssueForm, setShowIssueForm] = useState(initialIssueForm);
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const isTv = detail.mediaType === 'tv';
     const canRequest = detail.canRequest !== false;
@@ -39,7 +40,7 @@ export const RequestMediaModal: React.FC<{
         let cancelled = false;
         setDetail(item);
         setSelectedSeasons([]);
-        setShowIssueForm(false);
+        setShowIssueForm(initialIssueForm);
         scrollRef.current?.scrollTo({ top: 0 });
         setLoading(true);
         setLoadError(null);
@@ -59,7 +60,7 @@ export const RequestMediaModal: React.FC<{
             });
 
         return () => { cancelled = true; };
-    }, [item]);
+    }, [initialIssueForm, item]);
 
     const requestableSeasons = useMemo(() => (
         (detail.seasons || [])

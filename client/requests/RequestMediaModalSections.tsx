@@ -193,7 +193,7 @@ export const RequestMediaModalFooter: React.FC<{
 }> = ({ detail, saving, selectedSeasonCount, onClose, onSubmit, onToggleIssueForm }) => {
     const canRequest = detail.canRequest !== false;
     const canSubmit = !saving && canRequest && (detail.mediaType !== 'tv' || selectedSeasonCount > 0);
-    const canReportIssue = !!detail.mediaId;
+    const canReportIssue = !!(detail.mediaId || detail.ratingKey);
     const requestLabel = requestStateLabel(detail);
 
     return (
@@ -202,6 +202,11 @@ export const RequestMediaModalFooter: React.FC<{
                 {canRequest ? 'Requests are submitted to your configured request app.' : `${detail.title} is marked ${requestLabel.toLowerCase()}.`}
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                {detail.plexUrl ? (
+                    <a href={detail.plexUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-lg border border-green-500/30 bg-green-500/15 px-4 py-2 font-bold text-green-100 transition-colors hover:bg-green-500/25">
+                        <ExternalLink className="h-4 w-4" /> Open in Plex
+                    </a>
+                ) : null}
                 {canReportIssue ? (
                     <button
                         type="button"

@@ -4,7 +4,7 @@ import { apiFetch } from '../shared/api';
 import { cacheRefreshMs } from '../shared/cacheRefresh';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { pushToast, ToastContainer, type ToastMessage } from '../shared/toast';
-import { loadLocalPortalPreferences } from '../shared/userPreferences';
+import { loadLocalPortalPreferences, saveLocalPortalPreferences } from '../shared/userPreferences';
 import { AdminRequestQueue } from './AdminRequestQueue';
 import { RequestMediaCard } from './RequestMediaCard';
 import { RequestMediaModal } from './RequestMediaModal';
@@ -61,6 +61,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<RequestMediaItem | null>(null);
+    const [openIssueOnSelect, setOpenIssueOnSelect] = useState(false);
     const [requestingId, setRequestingId] = useState<number | null>(null);
     const loadSequence = useRef(0);
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -84,6 +85,9 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
 
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         setToasts((prev) => pushToast(prev, message, type));
+    }, []);
+    const saveRequestDefault = useCallback((values: Partial<ReturnType<typeof loadLocalPortalPreferences>>) => {
+        saveLocalPortalPreferences({ ...loadLocalPortalPreferences(), ...values });
     }, []);
 
     useEffect(() => {
@@ -127,7 +131,23 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
         try {
             const ttl = activeView === 'search' ? 15_000 : refreshMs;
             const separator = endpointBase.includes('?') ? '&' : '?';
-            const data = await fetchRequestPage(`${endpointBase}${separator}page=${page}`, ttl);
+            let data = await fetchRequestPage(`${endpointBase}${separator}page=${page}`, ttl);
+            if (activeView === 'search' && page === 1) {
+                const plex = await apiFetch(`/api/plex/search?query=${encodeURIComponent(debouncedQuery)}`, { cacheTtlMs: 30_000, staleIfErrorMs: 120_000 }).catch(() => ({ results: [] }));
+                const plexResults = Array.isArray(plex?.results) ? plex.results as RequestMediaItem[] : [];
+                const requestResults = Array.isArray(data?.results) ? data.results : [];
+                const remainingPlex = [...plexResults];
+                const merged = requestResults.map((item) => {
+                    const index = remainingPlex.findIndex((plexItem) => (
+                        (item.tmdbId && plexItem.tmdbId === item.tmdbId)
+                        || (plexItem.title.toLowerCase() === item.title.toLowerCase() && (!plexItem.year || !item.year || plexItem.year === item.year))
+                    ));
+                    if (index < 0) return item;
+                    const [plexItem] = remainingPlex.splice(index, 1);
+                    return { ...item, ratingKey: plexItem.ratingKey, plexUrl: plexItem.plexUrl, available: true, canRequest: false };
+                });
+                data = { ...data, results: [...merged, ...remainingPlex] };
+            }
             if (sequence !== loadSequence.current) return;
             const includeBlocked = includeExisting;
             const nextItems = Array.isArray(data?.results)
@@ -147,7 +167,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
                 setLoadingMore(false);
             }
         }
-    }, [activeView, endpointBase, fetchRequestPage, includeExisting, mediaFilter, refreshMs, status?.ready]);
+    }, [activeView, debouncedQuery, endpointBase, fetchRequestPage, includeExisting, mediaFilter, refreshMs, status?.ready]);
 
     useEffect(() => {
         if (!status) return;
@@ -190,6 +210,17 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
 
     const openRequest = useCallback((item: RequestMediaItem) => {
         if (item.canRequest !== false) setSelectedItem(item);
+    }, []);
+
+    const openDetails = useCallback((item: RequestMediaItem) => {
+        setOpenIssueOnSelect(false);
+        if (!item.tmdbId && item.plexUrl) window.open(item.plexUrl, '_blank', 'noopener,noreferrer');
+        else setSelectedItem(item);
+    }, []);
+
+    const openIssue = useCallback((item: RequestMediaItem) => {
+        setOpenIssueOnSelect(true);
+        setSelectedItem(item);
     }, []);
 
     const submitRequest = async (item: RequestMediaItem, seasons: number[]) => {
@@ -307,7 +338,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
                                 <button
                                     key={filter.id}
                                     type="button"
-                                    onClick={() => { setActiveView(activeView === 'queue' ? 'browse' : activeView); setMediaFilter(filter.id); }}
+                                    onClick={() => { setActiveView(activeView === 'queue' ? 'browse' : activeView); setMediaFilter(filter.id); saveRequestDefault({ requestMediaType: filter.id }); }}
                                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mediaFilter === filter.id ? 'bg-plex text-background shadow-lg shadow-plex/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
                                 >
                                     {filter.label}
@@ -331,7 +362,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setIncludeExisting((value) => !value)}
+                                onClick={() => setIncludeExisting((value) => { const next = !value; saveRequestDefault({ requestIncludeExisting: next }); return next; })}
                                 className={`ml-0 sm:ml-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${includeExisting ? 'bg-amber-400 text-background shadow-lg shadow-amber-400/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
                                 title="Existing and in-progress titles are shown by default."
                             >
@@ -406,8 +437,9 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
                                                 item={item}
                                                 busy={requestingId === item.tmdbId}
                                                 priority={index < 4}
-                                                onOpen={setSelectedItem}
+                                                onOpen={openDetails}
                                                 onRequest={openRequest}
+                                                onReportIssue={openIssue}
                                             />
                                         ))}
                                     </div>
@@ -425,8 +457,9 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
                 <RequestMediaModal
                     item={selectedItem}
                     saving={requestingId === selectedItem.tmdbId}
-                    onClose={() => setSelectedItem(null)}
+                    onClose={() => { setSelectedItem(null); setOpenIssueOnSelect(false); }}
                     onSubmit={submitRequest}
+                    initialIssueForm={openIssueOnSelect}
                 />
             )}
         </div>

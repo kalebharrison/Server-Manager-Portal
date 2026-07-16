@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock3, Film, Loader2, Tv } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock3, ExternalLink, Film, Loader2, Tv } from 'lucide-react';
 import type { RequestMediaItem } from './types';
 
 const statusText = (item: RequestMediaItem) => {
@@ -22,7 +22,8 @@ export const RequestMediaCard = React.memo<{
     priority?: boolean;
     onOpen: (item: RequestMediaItem) => void;
     onRequest: (item: RequestMediaItem) => void;
-}>(({ item, busy = false, priority = false, onOpen, onRequest }) => {
+    onReportIssue: (item: RequestMediaItem) => void;
+}>(({ item, busy = false, priority = false, onOpen, onRequest, onReportIssue }) => {
     const disabled = busy || item.canRequest === false;
     const badgeClass = item.available
         ? 'bg-green-500/20 text-green-200 border-green-500/30'
@@ -79,15 +80,28 @@ export const RequestMediaCard = React.memo<{
                         </div>
                     ) : null}
                 </button>
-                <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => onRequest(item)}
-                    className={`mt-auto inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-80 ${badgeClass} ${disabled ? '' : 'hover:bg-plex hover:text-background hover:border-plex'}`}
-                >
-                    <StatusIcon item={item} busy={busy} />
-                    {statusText(item)}
-                </button>
+                <div className="mt-auto flex flex-col gap-2">
+                    {item.available && (item.mediaId || item.ratingKey) ? (
+                        <button type="button" onClick={() => onReportIssue(item)} className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-500/30 px-3 py-2 text-xs font-bold text-amber-100 transition-colors hover:bg-amber-500/10">
+                            <AlertTriangle className="h-4 w-4" /> Report Issue
+                        </button>
+                    ) : null}
+                    {item.available && item.plexUrl ? (
+                        <a href={item.plexUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-lg border border-green-500/30 bg-green-500/20 px-3 py-2 text-xs font-bold text-green-100 transition-colors hover:bg-green-500/30">
+                            <ExternalLink className="h-4 w-4" /> Open in Plex
+                        </a>
+                    ) : (
+                        <button
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => onRequest(item)}
+                            className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-80 ${badgeClass} ${disabled ? '' : 'hover:bg-plex hover:text-background hover:border-plex'}`}
+                        >
+                            <StatusIcon item={item} busy={busy} />
+                            {statusText(item)}
+                        </button>
+                    )}
+                </div>
             </div>
         </article>
     );

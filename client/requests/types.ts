@@ -65,6 +65,9 @@ export type RequestMediaItem = {
     pending?: boolean;
     approved?: boolean;
     canRequest?: boolean;
+    ratingKey?: string;
+    plexUrl?: string;
+    source?: 'request' | 'plex';
 };
 
 export type RequestListResponse = {

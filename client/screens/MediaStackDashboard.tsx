@@ -6,6 +6,7 @@ import { cacheRefreshMs } from '../shared/cacheRefresh';
 import { formatTime } from '../shared/format';
 import { Loader } from '../shared/toast';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
+import { loadLocalPortalPreferences, saveLocalPortalPreferences } from '../shared/userPreferences';
 import {
     clampMonthOffset,
     groupCalendarItemsByDate,
@@ -24,14 +25,15 @@ const mediaTypeLabel = (type: string) => type === 'tv' ? 'TV Show' : 'Movie';
 const ymd = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cacheMinutes }) => {
+    const initialPreferences = useMemo(loadLocalPortalPreferences, []);
     const refreshMs = cacheRefreshMs({ cacheRefreshMinutes: cacheMinutes });
     const [data, setData] = useState<any>(null);
     const [listData, setListData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [monthOffset, setMonthOffset] = useState(0);
-    const [calendarFilter, setCalendarFilter] = useState<StackFilter>('all');
-    const [calendarView, setCalendarView] = useState<CalendarView>('list');
+    const [calendarFilter, setCalendarFilter] = useState<StackFilter>(() => initialPreferences.calendarMediaType === 'tv' ? 'sonarr' : initialPreferences.calendarMediaType === 'movie' ? 'radarr' : 'all');
+    const [calendarView, setCalendarView] = useState<CalendarView>(initialPreferences.calendarView);
     const [autoMonthNotice, setAutoMonthNotice] = useState('');
     const autoMonthScanRef = useRef(new Map<string, number>());
     const monthSummaryCacheRef = useRef(new Map<number, { at: number; data: any }>());
@@ -243,7 +245,7 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
                                 <button
                                     key={option.id}
                                     type="button"
-                                    onClick={() => { setAutoMonthNotice(''); setCalendarFilter(option.id); }}
+                                    onClick={() => { setAutoMonthNotice(''); setCalendarFilter(option.id); saveLocalPortalPreferences({ ...loadLocalPortalPreferences(), calendarMediaType: option.id === 'sonarr' ? 'tv' : option.id === 'radarr' ? 'movie' : 'all' }); }}
                                     className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors ${calendarFilter === option.id ? 'bg-plex text-background' : 'text-muted hover:text-text hover:bg-white/5'}`}
                                 >
                                     {option.label}
@@ -258,7 +260,7 @@ export const MediaStackDashboard: React.FC<{ cacheMinutes?: number }> = ({ cache
                                 <button
                                     key={option.id}
                                     type="button"
-                                    onClick={() => setCalendarView(option.id)}
+                                    onClick={() => { setCalendarView(option.id); saveLocalPortalPreferences({ ...loadLocalPortalPreferences(), calendarView: option.id }); }}
                                     className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors ${calendarView === option.id ? 'bg-plex text-background' : 'text-muted hover:text-text hover:bg-white/5'}`}
                                 >
                                     {option.label}

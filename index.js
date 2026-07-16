@@ -638,6 +638,7 @@ registerPlexRoutes({
     plexStatsService,
     loadPlexStatsFromDisk,
     buildPlexStatsCache,
+    withBasePath,
     log,
 });
 
