@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Activity, BarChart3, FileText, Film, Home, Layers, LogOut, Palette, Settings, Shield, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, FileText, Film, Home, Layers, LogOut, Palette, Settings, Shield, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
 
 import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { updateFavicon } from '../shared/favicon';
@@ -8,7 +8,7 @@ import { CustomSelect } from '../shared/ui';
 
 interface NavigationProps {
     currentRoute: string;
-    onNavigate: (route: 'admin' | 'user' | 'status' | 'dashboard' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request') => void;
+    onNavigate: (route: 'admin' | 'user' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request') => void;
     onLogout: () => void;
     isAdmin: boolean;
     serverName: string;
@@ -57,6 +57,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
         'home': { label: 'Home', icon: Home, route: 'user', adminOnly: false },
         'users': { label: 'Users', icon: Users, route: 'users', adminOnly: true },
         'discover': { label: 'Discover', icon: Film, route: 'dashboard', adminOnly: false },
+        'issues': { label: 'Issues', icon: AlertTriangle, route: 'issues', adminOnly: false },
         'status': { label: 'Status', icon: Activity, route: 'status', adminOnly: false },
         'logs': { label: 'Logs', icon: FileText, route: 'logs', adminOnly: true },
         'analytics': { label: 'Analytics', icon: BarChart3, route: 'analytics', adminOnly: false },
@@ -78,6 +79,10 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
             const logoutIndex = order.indexOf('logout');
             if (logoutIndex >= 0) order.splice(logoutIndex, 0, 'preferences');
             else order.push('preferences');
+        }
+        if (!order.includes('issues')) {
+            const discoverIndex = order.indexOf('discover');
+            order.splice(discoverIndex >= 0 ? discoverIndex + 1 : 1, 0, 'issues');
         }
         return order.filter((key) => {
             const item = navItemsConfig[key];

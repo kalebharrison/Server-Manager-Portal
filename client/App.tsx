@@ -17,6 +17,7 @@ import {
     MediaStackDashboard,
     AnalyticsDashboard,
     RequestDashboard,
+    IssuesDashboard,
     AdminDashboard,
     UserDashboard,
     UserPreferencesDashboard,
@@ -26,7 +27,7 @@ import {
 
 const ConfirmModal = React.lazy(() => import('./shared/ConfirmModal').then(module => ({ default: module.ConfirmModal })));
 
-type AppRoute = 'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request' | 'invite' | 'loading';
+type AppRoute = 'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request' | 'invite' | 'loading';
 
 const RouteFallback: React.FC = () => (
     <div className="min-h-[60vh]" aria-hidden="true" />
@@ -172,6 +173,7 @@ export const MainApp: React.FC = () => {
             if (route === 'mediastack') path = '/mediastack';
             if (route === 'maintenance') path = '/maintenance';
             if (route === 'request') path = '/request';
+            if (route === 'issues') path = '/issues';
             window.history.pushState({}, '', portalUrl(path));
         }
     }, [updateRoute]);
@@ -209,6 +211,7 @@ export const MainApp: React.FC = () => {
             else if (path === '/mediastack') updateRoute('mediastack');
             else if (path === '/maintenance' && data.session.isAdmin) updateRoute('maintenance');
             else if (path === '/request' || path === '/requests') updateRoute('request');
+            else if (path === '/issues') updateRoute('issues');
             else if (path === '/analytics') updateRoute('analytics');
             else if (path === '/settings' && !data.session.isAdmin) updateRoute('user');
             else if (path === '/portal') updateRoute('user');
@@ -297,6 +300,7 @@ export const MainApp: React.FC = () => {
         if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
         if (currentRoute === 'analytics') return <AnalyticsDashboard isAdmin={isAdmin} sessionInfo={sessionInfo} />;
         if (currentRoute === 'request') return <RequestDashboard isAdmin={isAdmin} cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
+        if (currentRoute === 'issues') return <IssuesDashboard isAdmin={isAdmin} />;
         if (currentRoute === 'admin' || currentRoute === 'users') return <AdminDashboard onViewAsUser={handleViewAsUser} />;
         return <UserDashboard sessionInfo={sessionInfo} publicConfig={effectivePublicConfig} refreshSession={checkSession} onViewAdmin={() => setRoute('users')} onViewSettings={() => setRoute('settings')} onViewLogs={() => setRoute('logs')} />;
     };
@@ -310,7 +314,7 @@ export const MainApp: React.FC = () => {
                 </React.Suspense>
             )}
             <React.Suspense fallback={null}>
-                {!isPublicView && <Navigation currentRoute={currentRoute} onNavigate={setRoute as any} onLogout={handleLogout} isAdmin={isAdmin} serverName={sessionInfo?.serverName || 'Server Portal'} adminThumb={sessionInfo?.adminThumb} customLogoUrl={publicConfig?.customLogoUrl} navOrder={sessionInfo?.navOrder || ['home', 'discover', 'status', 'analytics', 'mediastack', 'maintenance', 'request', 'settings', 'logout']} navFeatures={sessionInfo?.navFeatures} appVersion={publicConfig.appVersion} activeTheme={activeTheme} setActiveTheme={setActiveTheme} />}
+                {!isPublicView && <Navigation currentRoute={currentRoute} onNavigate={setRoute as any} onLogout={handleLogout} isAdmin={isAdmin} serverName={sessionInfo?.serverName || 'Server Portal'} adminThumb={sessionInfo?.adminThumb} customLogoUrl={publicConfig?.customLogoUrl} navOrder={sessionInfo?.navOrder || ['home', 'discover', 'issues', 'status', 'analytics', 'mediastack', 'maintenance', 'request', 'settings', 'logout']} navFeatures={sessionInfo?.navFeatures} appVersion={publicConfig.appVersion} activeTheme={activeTheme} setActiveTheme={setActiveTheme} />}
             </React.Suspense>
             <div className={`relative z-10 flex-1 min-w-0 flex flex-col items-center px-4 pt-20 pb-[80px] md:p-8 md:pt-8 md:pb-8 overflow-x-visible ${isPublicView ? '!pt-8 !pb-8' : ''}`}>
                 {isImpersonating && (

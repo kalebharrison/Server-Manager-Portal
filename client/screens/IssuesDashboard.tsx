@@ -1,0 +1,124 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Check, Film, RefreshCw, Search, Tv } from 'lucide-react';
+
+import { apiFetch } from '../shared/api';
+import { resolvePortalAssetUrl } from '../shared/basePath';
+
+const ISSUE_TYPES = [
+    { value: 1, label: 'Video' },
+    { value: 2, label: 'Audio' },
+    { value: 3, label: 'Subtitles' },
+    { value: 4, label: 'Other' },
+];
+
+export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
+    const [issues, setIssues] = useState<any[]>([]);
+    const [sources, setSources] = useState<any>({});
+    const [recent, setRecent] = useState<any[]>([]);
+    const [selected, setSelected] = useState<any>(null);
+    const [message, setMessage] = useState('');
+    const [issueType, setIssueType] = useState(4);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+
+    const load = useCallback(async () => {
+        setError('');
+        try {
+            const [issueData, analytics] = await Promise.all([
+                apiFetch('/api/media-issues?filter=open', { forceRefresh: true }),
+                apiFetch('/api/plex/analytics/me?days=30').catch(() => ({ recentHistory: [] })),
+            ]);
+            setIssues(issueData.issues || []);
+            setSources(issueData.sources || {});
+            setRecent((analytics.recentHistory || []).filter((item: any) => item.type !== 'track').slice(0, 3));
+        } catch (loadError: any) {
+            setError(loadError?.message || 'Issues are temporarily unavailable.');
+        }
+    }, []);
+
+    useEffect(() => { void load(); }, [load]);
+
+    const sourceSummary = useMemo(() => [
+        sources.portal && 'Portal',
+        sources.seerr && 'Request service',
+        sources.plex && 'Plex',
+    ].filter(Boolean).join(' + '), [sources]);
+
+    const submit = async () => {
+        if (!selected || message.trim().length < 3) return;
+        setBusy(true);
+        try {
+            await apiFetch('/api/media-issues', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: selected.title,
+                    mediaType: selected.type === 'episode' || selected.type === 'show' ? 'show' : 'movie',
+                    ratingKey: selected.ratingKey || selected.key,
+                    thumbUrl: selected.thumbUrl,
+                    issueType,
+                    message,
+                }),
+            });
+            setSelected(null);
+            setMessage('');
+            await load();
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const runAction = async (issue: any, action: 'approve-search' | 'send-to-seerr' | 'resolve') => {
+        setBusy(true);
+        try {
+            await apiFetch(`/api/media-issues/${encodeURIComponent(issue.id)}/${action}`, { method: 'POST' });
+            await load();
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className="space-y-8 pb-12">
+            <header className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-5">
+                <div><h1 className="text-2xl font-bold text-text">Media Issues</h1><p className="mt-1 text-sm text-muted">Report playback problems and follow their resolution.</p></div>
+                <div className="text-xs text-muted">Sources: {sourceSummary || 'Portal'}</div>
+            </header>
+
+            <section>
+                <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-plex">Recently Played</h2>
+                <div className="grid gap-3 sm:grid-cols-3">
+                    {recent.map((item) => (
+                        <button key={item.historyKey || item.key} type="button" onClick={() => setSelected(item)} className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-card p-3 text-left hover:border-plex/50">
+                            {item.thumbUrl ? <img src={resolvePortalAssetUrl(item.thumbUrl)} alt="" className="h-16 w-12 rounded object-cover" /> : <div className="flex h-16 w-12 items-center justify-center rounded bg-background"><Film className="h-5 w-5 text-muted" /></div>}
+                            <div className="min-w-0"><p className="truncate font-bold text-text">{item.title}</p><p className="mt-1 text-xs text-muted">Report a problem</p></div>
+                        </button>
+                    ))}
+                    {!recent.length && <p className="text-sm text-muted">No recent playback history is available.</p>}
+                </div>
+            </section>
+
+            {selected && <section className="rounded-lg border border-plex/30 bg-card p-4">
+                <div className="mb-4 flex items-center gap-3"><AlertTriangle className="h-5 w-5 text-plex" /><h2 className="font-bold text-text">Report: {selected.title}</h2></div>
+                <div className="grid gap-3 md:grid-cols-[12rem_1fr_auto]">
+                    <select value={issueType} onChange={(event) => setIssueType(Number(event.target.value))} className="rounded-lg border border-border bg-background px-3 py-2 text-text">{ISSUE_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select>
+                    <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="What is wrong?" maxLength={2000} className="rounded-lg border border-border bg-background px-3 py-2 text-text" />
+                    <button type="button" disabled={busy || message.trim().length < 3} onClick={submit} className="rounded-lg bg-plex px-5 py-2 font-bold text-black disabled:opacity-50">Submit</button>
+                </div>
+            </section>}
+
+            <section>
+                <div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-bold uppercase tracking-widest text-plex">Open Issues</h2><button type="button" title="Refresh" onClick={load} className="p-2 text-muted hover:text-text"><RefreshCw className="h-4 w-4" /></button></div>
+                {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
+                <div className="space-y-3">
+                    {issues.map((issue) => <article key={issue.id} className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 md:flex-row md:items-center">
+                        <div className="flex h-10 w-10 flex-none items-center justify-center rounded bg-background">{issue.mediaType === 'show' || issue.mediaType === 'tv' ? <Tv className="h-5 w-5 text-plex" /> : <Film className="h-5 w-5 text-plex" />}</div>
+                        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-text">{issue.title}</h3><span className="rounded border border-border px-2 py-0.5 text-[10px] uppercase text-muted">{issue.source === 'seerr' ? 'Request service' : 'Portal'}</span></div><p className="mt-1 line-clamp-2 text-sm text-muted">{issue.message || 'No description provided.'}</p>{isAdmin && issue.reporter && <p className="mt-1 text-xs text-muted">Reported by {issue.reporter}</p>}</div>
+                        {isAdmin && <div className="flex flex-wrap gap-2"><button type="button" disabled={busy || issue.source === 'seerr'} title={issue.source === 'seerr' ? 'This issue is already managed by the request service.' : undefined} onClick={() => runAction(issue, 'approve-search')} className="flex items-center gap-2 rounded-lg border border-plex/40 px-3 py-2 text-sm font-bold text-plex disabled:opacity-40"><Search className="h-4 w-4" />Accept</button>{issue.source !== 'seerr' && !issue.syncedToSeerrAt && <button type="button" disabled={busy} onClick={() => runAction(issue, 'send-to-seerr')} className="rounded-lg border border-border px-3 py-2 text-sm text-text">Send to requests</button>}<button type="button" disabled={busy} onClick={() => runAction(issue, 'resolve')} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text"><Check className="h-4 w-4" />Resolve</button></div>}
+                    </article>)}
+                    {!issues.length && !error && <p className="text-sm text-muted">No open issues.</p>}
+                </div>
+            </section>
+        </div>
+    );
+};

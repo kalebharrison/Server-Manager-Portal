@@ -44,6 +44,7 @@ import { createRequestAppService } from './lib/request-app-service.js';
 import { createTvdbService } from './lib/tvdb-service.js';
 import { createMetadataHealthProbe } from './lib/metadata-health.js';
 import { registerRequestAppRoutes } from './lib/request-app-routes.js';
+import { registerMediaIssueRoutes } from './lib/media-issue-routes.js';
 import { registerStaticShellRoutes } from './lib/static-shell-routes.js';
 import { createBackgroundService } from './lib/background-service.js';
 import { registerCommunicationRoutes } from './lib/communication-routes.js';
@@ -222,6 +223,7 @@ import {
     MAINTENANCE_PREFS_PATH,
     PLEX_STATS_CACHE_PATH,
     PLEX_DASHBOARD_CACHE_PATH,
+    MEDIA_ISSUES_PATH,
     migrateConfigFiles,
 } from './lib/data-paths.js';
 import { createBackupService } from './lib/backup.js';
@@ -929,6 +931,23 @@ registerRequestAppRoutes({
     configPath: CONFIG_PATH,
     loadFile,
     requestAppService,
+    appendAuditLog,
+    log,
+});
+
+registerMediaIssueRoutes({
+    app,
+    requireAuth,
+    requireMember,
+    requireAdmin,
+    configPath: CONFIG_PATH,
+    issuePath: MEDIA_ISSUES_PATH,
+    loadFile,
+    saveFile,
+    requestAppService,
+    fetch,
+    resolveIntegrationUrlForFetch,
+    getPlexConnectionUri,
     appendAuditLog,
     log,
 });

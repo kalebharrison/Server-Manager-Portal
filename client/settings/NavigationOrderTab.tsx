@@ -5,6 +5,7 @@ const NAV_LABELS: Record<string, string> = {
     home: 'Home',
     users: 'Users (Admin Only)',
     discover: 'Discover',
+    issues: 'Issues',
     status: 'Status',
     logs: 'Logs (Admin Only)',
     analytics: 'Analytics',
