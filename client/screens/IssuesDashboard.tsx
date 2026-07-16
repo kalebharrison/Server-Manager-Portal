@@ -20,12 +20,13 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
     const [issueType, setIssueType] = useState(4);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'open' | 'resolved'>('open');
 
     const load = useCallback(async () => {
         setError('');
         try {
             const [issueData, analytics] = await Promise.all([
-                apiFetch('/api/media-issues?filter=open', { forceRefresh: true }),
+                apiFetch('/api/media-issues?filter=all', { forceRefresh: true }),
                 apiFetch('/api/plex/analytics/me?days=30').catch(() => ({ recentHistory: [] })),
             ]);
             setIssues(issueData.issues || []);
@@ -42,6 +43,16 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
     const sourceLabel = (source: string) => source === 'plex'
         ? 'Reported in Plex'
         : source === 'seerr' ? 'Reported in Request service' : 'Reported here';
+    const formatReportDate = (value: string | null) => {
+        if (!value) return 'Date unavailable';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? 'Date unavailable' : new Intl.DateTimeFormat(undefined, {
+            month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+        }).format(date);
+    };
+    const visibleIssues = useMemo(() => issues.filter((issue) => issue.status === statusFilter), [issues, statusFilter]);
+    const openCount = useMemo(() => issues.filter((issue) => issue.status === 'open').length, [issues]);
+    const resolvedCount = issues.length - openCount;
 
     const submit = async () => {
         if (!selected || message.trim().length < 3) return;
@@ -107,15 +118,15 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
             </section>}
 
             <section>
-                <div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-bold uppercase tracking-widest text-plex">Open Issues</h2><button type="button" title="Refresh" onClick={load} className="p-2 text-muted hover:text-text"><RefreshCw className="h-4 w-4" /></button></div>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><button type="button" onClick={() => setStatusFilter('open')} className={`rounded-lg px-3 py-2 text-sm font-bold ${statusFilter === 'open' ? 'bg-plex text-black' : 'border border-border text-muted'}`}>Open {openCount}</button><button type="button" onClick={() => setStatusFilter('resolved')} className={`rounded-lg px-3 py-2 text-sm font-bold ${statusFilter === 'resolved' ? 'bg-plex text-black' : 'border border-border text-muted'}`}>Resolved {resolvedCount}</button></div><button type="button" title="Refresh" onClick={load} className="p-2 text-muted hover:text-text"><RefreshCw className="h-4 w-4" /></button></div>
                 {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
                 <div className="space-y-3">
-                    {issues.map((issue) => <article key={issue.id} className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 md:flex-row md:items-center">
+                    {visibleIssues.map((issue) => <article key={issue.id} className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 md:flex-row md:items-center">
                         {issue.thumbUrl ? <img src={resolvePortalAssetUrl(issue.thumbUrl)} alt="" className="h-20 w-14 flex-none rounded object-cover bg-background" loading="lazy" /> : <div className="flex h-20 w-14 flex-none items-center justify-center rounded bg-background">{issue.mediaType === 'show' || issue.mediaType === 'tv' ? <Tv className="h-5 w-5 text-plex" /> : <Film className="h-5 w-5 text-plex" />}</div>}
-                        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-text">{issue.title}</h3>{issue.year && <span className="text-xs text-muted">{issue.year}</span>}<span className="rounded border border-border px-2 py-0.5 text-[10px] uppercase text-muted">{sourceLabel(issue.source)}</span></div>{issue.subtitle && <p className="mt-1 text-xs font-medium text-muted">{issue.subtitle}</p>}<p className="mt-2 line-clamp-2 text-sm text-text/80">{issue.message || 'No description provided.'}</p>{isAdmin && issue.reporter && <p className="mt-1 text-xs text-muted">Reported by {issue.reporter}</p>}</div>
-                        {isAdmin && <div className="flex flex-wrap gap-2"><button type="button" disabled={busy || issue.source === 'seerr'} title={issue.source === 'seerr' ? 'This issue is already managed by the request service.' : undefined} onClick={() => runAction(issue, 'approve-search')} className="flex items-center gap-2 rounded-lg border border-plex/40 px-3 py-2 text-sm font-bold text-plex disabled:opacity-40"><Search className="h-4 w-4" />Accept</button>{issue.source !== 'seerr' && !issue.syncedToSeerrAt && <button type="button" disabled={busy} onClick={() => runAction(issue, 'send-to-seerr')} className="rounded-lg border border-border px-3 py-2 text-sm text-text">Send to requests</button>}<button type="button" disabled={busy} onClick={() => runAction(issue, 'resolve')} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text"><Check className="h-4 w-4" />Resolve</button></div>}
+                        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-text">{issue.title}</h3>{issue.year && <span className="text-xs text-muted">{issue.year}</span>}<span className="rounded border border-border px-2 py-0.5 text-[10px] uppercase text-muted">{sourceLabel(issue.source)}</span></div>{issue.subtitle && <p className="mt-1 text-xs font-medium text-muted">{issue.subtitle}</p>}<p className="mt-2 line-clamp-2 text-sm text-text/80">{issue.message || 'No description provided.'}</p><p className="mt-1 text-xs text-muted">Reported {formatReportDate(issue.createdAt)}{isAdmin && issue.reporter ? ` by ${issue.reporter}` : ''}</p></div>
+                        {isAdmin && issue.status === 'open' && <div className="flex flex-wrap gap-2"><button type="button" disabled={busy || issue.source === 'seerr'} title={issue.source === 'seerr' ? 'This issue is already managed by the request service.' : undefined} onClick={() => runAction(issue, 'approve-search')} className="flex items-center gap-2 rounded-lg border border-plex/40 px-3 py-2 text-sm font-bold text-plex disabled:opacity-40"><Search className="h-4 w-4" />Accept</button>{issue.source !== 'seerr' && !issue.syncedToSeerrAt && <button type="button" disabled={busy} onClick={() => runAction(issue, 'send-to-seerr')} className="rounded-lg border border-border px-3 py-2 text-sm text-text">Send to requests</button>}<button type="button" disabled={busy} title={issue.source === 'plex' ? 'Marks this report resolved in the portal. Plex does not expose a supported resolve action.' : 'Marks this issue resolved.'} onClick={() => runAction(issue, 'resolve')} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text"><Check className="h-4 w-4" />Resolve</button></div>}
                     </article>)}
-                    {!issues.length && !error && <p className="text-sm text-muted">No open issues.</p>}
+                    {!visibleIssues.length && !error && <p className="text-sm text-muted">No {statusFilter} issues.</p>}
                 </div>
             </section>
         </div>
