@@ -98,7 +98,7 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'");
     if (req.secure || FORCE_SECURE_COOKIES) {
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
@@ -6730,9 +6730,16 @@ app.post('/api/speedtest/upload', requireAuth, requireMember, speedtestRateLimit
 
 // --- Static File Serving ---
 const staticDir = path.join(process.cwd(), 'static');
-app.use('/static', express.static(staticDir));
+const staticAssetOptions = {
+    setHeaders: (res, filePath) => {
+        if (/\.(?:woff2|webp|png|jpg|jpeg|gif|svg|ico)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    },
+};
+app.use('/static', express.static(staticDir, staticAssetOptions));
 if (BASE_PATH) {
-    app.use(`${BASE_PATH}/static`, express.static(staticDir));
+    app.use(`${BASE_PATH}/static`, express.static(staticDir, staticAssetOptions));
 }
 
 // Serve optional legacy stylesheet from the root directory

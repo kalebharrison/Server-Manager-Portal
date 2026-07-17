@@ -27,6 +27,7 @@ import { WrapUpCardGrid } from './shared/WrapUpCards';
 import { SetupWizard } from './setup/SetupWizard';
 import { AuthPageBackground, themeClasses, SlideshowBackground } from './shared/theme';
 import { activityStreamColumnCount, activityStreamGridClass, discoverPosterGridClass, usePortalWideContentLayout } from './shared/portalLayout';
+import { useVisibleInterval } from './shared/useVisibleInterval';
 import { UserDashboardLayout } from './home/UserDashboardLayout';
 import { createMainGridWidgetRenderer, createRecentlyAddedWidgetRenderer } from './home/userDashboardWidgetRenderers';
 
@@ -930,9 +931,8 @@ export const MediaStackDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
 
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 30000);
-        return () => clearInterval(interval);
     }, [fetchData]);
+    useVisibleInterval(fetchData, 30_000);
 
     const formatRelativeAirDate = (date: Date) => {
         const now = new Date();
@@ -3336,18 +3336,18 @@ const PublicUptimeBanner: React.FC = () => {
     const [healthData, setHealthData] = useState<Record<string, any>>({});
     const [config, setConfig] = useState<any>({});
 
-    useEffect(() => {
-        const fetchStatus = async () => {
-            try {
-                const res = await apiFetch('/api/status');
-                setConfig(res.config);
-                setHealthData(res.healthData);
-            } catch (e) { }
-        };
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 15000);
-        return () => clearInterval(interval);
+    const fetchStatus = useCallback(async () => {
+        try {
+            const res = await apiFetch('/api/status');
+            setConfig(res.config);
+            setHealthData(res.healthData);
+        } catch (e) { }
     }, []);
+
+    useEffect(() => {
+        void fetchStatus();
+    }, [fetchStatus]);
+    useVisibleInterval(fetchStatus, 15_000);
 
     if (!config.services?.length) return null;
 
@@ -3387,29 +3387,28 @@ const PublicUptimeBanner: React.FC = () => {
 const LivePlexStats: React.FC = () => {
     const [stats, setStats] = useState<{ movies: number, shows: number, music: number, fourKPercent?: number } | null>(null);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            const endpoints = [portalUrl('/api/public/plex/stats'), portalUrl('/api/plex/stats')];
+    const fetchStats = useCallback(async () => {
+        const endpoints = [portalUrl('/api/public/plex/stats'), portalUrl('/api/plex/stats')];
 
-            for (const endpoint of endpoints) {
-                try {
-                    const response = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
-                    if (!response.ok) continue;
-                    const res = await response.json();
-                    if (res && typeof res.movies === 'number' && typeof res.shows === 'number' && typeof res.music === 'number') {
-                        setStats(res);
-                        return;
-                    }
-                } catch (e) {
-                    // Try next endpoint
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
+                if (!response.ok) continue;
+                const res = await response.json();
+                if (res && typeof res.movies === 'number' && typeof res.shows === 'number' && typeof res.music === 'number') {
+                    setStats(res);
+                    return;
                 }
+            } catch (e) {
+                // Try next endpoint
             }
-        };
-
-        fetchStats();
-        const interval = setInterval(fetchStats, 30000);
-        return () => clearInterval(interval);
+        }
     }, []);
+
+    useEffect(() => {
+        void fetchStats();
+    }, [fetchStats]);
+    useVisibleInterval(fetchStats, 30_000);
 
     if (!stats) return (
         <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -4734,9 +4733,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
 
     useEffect(() => {
         let pollTimer: ReturnType<typeof setTimeout> | null = null;
-        let dashboardTimer: ReturnType<typeof setInterval> | null = null;
         let isMounted = true;
-        const DASHBOARD_REFRESH_MS = 5 * 60 * 1000;
 
         const fetchDashboard = async () => {
             if (!isMounted) return;
@@ -4769,13 +4766,21 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; onL
             }
         };
         fetchServerData();
-        dashboardTimer = setInterval(fetchDashboard, DASHBOARD_REFRESH_MS);
         return () => {
             isMounted = false;
             if (pollTimer) clearTimeout(pollTimer);
-            if (dashboardTimer) clearInterval(dashboardTimer);
         };
     }, [isJellyfinPortal]);
+
+    const refreshHomeDashboard = useCallback(async () => {
+        try {
+            const res = await apiFetch(`${isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/dashboard'}?limit=${RECENTLY_ADDED_ITEM_LIMIT}`);
+            setDashboardData(res);
+        } catch (e) {
+            console.error('Failed to refresh dashboard data', e);
+        }
+    }, [isJellyfinPortal]);
+    useVisibleInterval(refreshHomeDashboard, 5 * 60 * 1000);
 
     useEffect(() => {
         if (!isJellyfinPortal || !analytics?.libraryHealth) return;
@@ -5221,9 +5226,8 @@ export const StatusDashboard: React.FC<{ onBack: () => void, isAdmin: boolean, i
 
     useEffect(() => {
         fetchStatus();
-        const interval = setInterval(fetchStatus, 15000);
-        return () => clearInterval(interval);
     }, [fetchStatus]);
+    useVisibleInterval(fetchStatus, 15_000);
 
     useEffect(() => {
         if (statusData && !selectedServiceId) {
@@ -5709,10 +5713,9 @@ export const LibraryDashboard: React.FC<{ onBack: () => void, isAdmin?: boolean,
     }, [recentLimit, isJellyfinPortal]);
 
     useEffect(() => {
-        fetchData();
-        const liveInterval = setInterval(fetchDashboardOnly, 10000);
-        return () => clearInterval(liveInterval);
-    }, [fetchDashboardOnly, fetchData]);
+        void fetchData();
+    }, [fetchData]);
+    useVisibleInterval(fetchDashboardOnly, 10_000);
 
     if (dashboardLoading && !dashboardData) {
         return <DiscoverPageSkeleton recentLimit={recentLimit} wideLayout={isWidePortalLayout} />;
