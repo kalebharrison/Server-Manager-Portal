@@ -28,8 +28,10 @@ test('configuration encryption fails closed for a wrong key or modified cipherte
     const wrongKeyProtector = createConfigSecretProtector('different-test-encryption-key-0123456789abcdef');
 
     assert.throws(() => wrongKeyProtector.unprotectConfig(protectedConfig), /could not be authenticated/);
-    const replacement = protectedConfig.plexToken.endsWith('A') ? 'B' : 'A';
-    const tampered = { ...protectedConfig, plexToken: `${protectedConfig.plexToken.slice(0, -1)}${replacement}` };
+    const tamperIndex = Math.floor(protectedConfig.plexToken.length / 2);
+    const replacement = protectedConfig.plexToken[tamperIndex] === 'A' ? 'B' : 'A';
+    const tamperedToken = `${protectedConfig.plexToken.slice(0, tamperIndex)}${replacement}${protectedConfig.plexToken.slice(tamperIndex + 1)}`;
+    const tampered = { ...protectedConfig, plexToken: tamperedToken };
     assert.throws(() => protector.unprotectConfig(tampered), /could not be authenticated/);
 });
 

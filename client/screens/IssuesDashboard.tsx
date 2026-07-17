@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Film, RefreshCw, Search, Tv } from 'lucide-react'
 
 import { apiFetch } from '../shared/api';
 import { resolvePortalAssetUrl } from '../shared/basePath';
+import { IssueConversation } from '../issues/IssueConversation';
 
 const ISSUE_TYPES = [
     { value: 1, label: 'Video' },
@@ -38,6 +39,10 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
     }, []);
 
     useEffect(() => { void load(); }, [load]);
+    useEffect(() => {
+        const timer = window.setInterval(() => { void load(); }, 60_000);
+        return () => window.clearInterval(timer);
+    }, [load]);
 
     const sourceSummary = useMemo(() => [sources.plex && 'Plex', sources.seerr && 'Request service'].filter(Boolean).join(' · '), [sources]);
     const sourceLabel = (source: string) => source === 'plex'
@@ -78,7 +83,7 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
         }
     };
 
-    const runAction = async (issue: any, action: 'approve-search' | 'send-to-seerr' | 'resolve') => {
+    const runAction = async (issue: any, action: 'approve-search' | 'resolve') => {
         setBusy(true);
         try {
             await apiFetch(`/api/media-issues/${encodeURIComponent(issue.id)}/${action}`, { method: 'POST' });
@@ -87,6 +92,12 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
             setBusy(false);
         }
     };
+    const remediationLabel = (value: string) => ({
+        'pending-review': 'Awaiting approval',
+        replacing: 'Replacement downloading',
+        searching: 'Search started',
+        'approved-unmatched': 'Needs attention',
+    }[value] || null);
 
     return (
         <div className="space-y-8 pb-12">
@@ -121,10 +132,11 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><button type="button" onClick={() => setStatusFilter('open')} className={`rounded-lg px-3 py-2 text-sm font-bold ${statusFilter === 'open' ? 'bg-plex text-black' : 'border border-border text-muted'}`}>Open {openCount}</button><button type="button" onClick={() => setStatusFilter('resolved')} className={`rounded-lg px-3 py-2 text-sm font-bold ${statusFilter === 'resolved' ? 'bg-plex text-black' : 'border border-border text-muted'}`}>Resolved {resolvedCount}</button></div><button type="button" title="Refresh" onClick={load} className="p-2 text-muted hover:text-text"><RefreshCw className="h-4 w-4" /></button></div>
                 {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
                 <div className="space-y-3">
-                    {visibleIssues.map((issue) => <article key={issue.id} className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 md:flex-row md:items-center">
+                    {visibleIssues.map((issue) => <article key={issue.id} className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 md:flex-row md:flex-wrap md:items-center">
                         {issue.thumbUrl ? <img src={resolvePortalAssetUrl(issue.thumbUrl)} alt="" className="h-20 w-14 flex-none rounded object-cover bg-background" loading="lazy" /> : <div className="flex h-20 w-14 flex-none items-center justify-center rounded bg-background">{issue.mediaType === 'show' || issue.mediaType === 'tv' ? <Tv className="h-5 w-5 text-plex" /> : <Film className="h-5 w-5 text-plex" />}</div>}
-                        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-text">{issue.title}</h3>{issue.year && <span className="text-xs text-muted">{issue.year}</span>}<span className="rounded border border-border px-2 py-0.5 text-[10px] uppercase text-muted">{sourceLabel(issue.source)}</span></div>{issue.subtitle && <p className="mt-1 text-xs font-medium text-muted">{issue.subtitle}</p>}<p className="mt-2 line-clamp-2 text-sm text-text/80">{issue.message || 'No description provided.'}</p><p className="mt-1 text-xs text-muted">Reported {formatReportDate(issue.createdAt)}{isAdmin && issue.reporter ? ` by ${issue.reporter}` : ''}</p></div>
-                        {isAdmin && issue.status === 'open' && <div className="flex flex-wrap gap-2"><button type="button" disabled={busy || issue.source === 'seerr'} title={issue.source === 'seerr' ? 'This issue is already managed by the request service.' : undefined} onClick={() => runAction(issue, 'approve-search')} className="flex items-center gap-2 rounded-lg border border-plex/40 px-3 py-2 text-sm font-bold text-plex disabled:opacity-40"><Search className="h-4 w-4" />Accept</button>{issue.source !== 'seerr' && !issue.syncedToSeerrAt && <button type="button" disabled={busy} onClick={() => runAction(issue, 'send-to-seerr')} className="rounded-lg border border-border px-3 py-2 text-sm text-text">Send to requests</button>}<button type="button" disabled={busy} title={issue.source === 'plex' ? 'Marks this report resolved in the portal. Plex does not expose a supported resolve action.' : 'Marks this issue resolved.'} onClick={() => runAction(issue, 'resolve')} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text"><Check className="h-4 w-4" />Resolve</button></div>}
+                        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-text">{issue.title}</h3>{issue.year && <span className="text-xs text-muted">{issue.year}</span>}<span className="rounded border border-border px-2 py-0.5 text-[10px] uppercase text-muted">{sourceLabel(issue.source)}</span>{remediationLabel(issue.remediationStatus) && <span className="rounded border border-plex/30 bg-plex/10 px-2 py-0.5 text-[10px] uppercase text-plex">{remediationLabel(issue.remediationStatus)}</span>}</div>{issue.subtitle && <p className="mt-1 text-xs font-medium text-muted">{issue.subtitle}</p>}<p className="mt-2 line-clamp-2 text-sm text-text/80">{issue.message || 'No description provided.'}</p><p className="mt-1 text-xs text-muted">Reported {formatReportDate(issue.createdAt)}{isAdmin && issue.reporter ? ` by ${issue.reporter}` : ''}</p></div>
+                        {isAdmin && issue.status === 'open' && <div className="flex flex-wrap gap-2"><button type="button" disabled={busy || !['pending-review', 'approved-unmatched'].includes(issue.remediationStatus)} title="Approve and download the highest-ranked acceptable replacement." onClick={() => runAction(issue, 'approve-search')} className="flex items-center gap-2 rounded-lg border border-plex/40 px-3 py-2 text-sm font-bold text-plex disabled:opacity-40"><Search className="h-4 w-4" />Approve</button><button type="button" disabled={busy} title={issue.source === 'plex' ? 'Marks this report resolved in the portal. Plex does not expose a supported resolve action.' : 'Marks this issue resolved.'} onClick={() => runAction(issue, 'resolve')} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text"><Check className="h-4 w-4" />Resolve</button></div>}
+                        <IssueConversation issueId={issue.id} count={issue.commentCount || 0} canComment={issue.canComment === true} />
                     </article>)}
                     {!visibleIssues.length && !error && <p className="text-sm text-muted">No {statusFilter} issues.</p>}
                 </div>
