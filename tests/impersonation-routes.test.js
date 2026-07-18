@@ -8,8 +8,20 @@ test('impersonation uses a short-lived user token and restores the admin actor',
     const routes = new Map();
     const app = { post(path, ...handlers) { routes.set(path, handlers.at(-1)); } };
     const secret = 'test-secret-test-secret-test-secret';
-    const actor = { id: 'admin', plexId: 'admin', username: 'Admin', isAdmin: true };
-    const target = { id: 'user-1', plexId: 'user-1', username: 'Viewer', email: 'viewer@example.com' };
+    const actor = {
+        id: 'admin',
+        plexId: 'admin',
+        username: 'Admin',
+        isAdmin: true,
+        thumb: 'https://example.com/very-long-admin-avatar-url-that-must-not-bloat-the-cookie',
+    };
+    const target = {
+        id: 'user-1',
+        plexId: 'user-1',
+        username: 'Viewer',
+        email: 'viewer@example.com',
+        thumb: 'https://example.com/very-long-user-avatar-url-that-must-not-bloat-the-cookie',
+    };
     let cookieToken = '';
     const auditEvents = [];
     const loadFile = async (path) => {
@@ -40,6 +52,8 @@ test('impersonation uses a short-lived user token and restores the admin actor',
     assert.equal(impersonated.isAdmin, false);
     assert.equal(impersonated.impersonatingUserId, target.id);
     assert.equal(impersonated.actor.id, actor.id);
+    assert.equal(impersonated.thumb, undefined);
+    assert.equal(impersonated.actor.thumb, undefined);
     assert.ok(impersonated.exp - impersonated.iat <= 3600);
 
     await routes.get('/api/admin/stop-impersonation')({ user: impersonated }, response);

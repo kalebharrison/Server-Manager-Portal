@@ -175,6 +175,11 @@ export const MainApp: React.FC = () => {
         }
     }, [updateRoute]);
 
+    // Ignore stale /api/users/me responses so overlapping checks cannot wipe the exit banner.
+    const sessionCheckSeq = useRef(0);
+    const publicStatusEnabledRef = useRef(publicConfig?.publicStatusEnabled);
+    publicStatusEnabledRef.current = publicConfig?.publicStatusEnabled;
+
     const checkSession = useCallback(async () => {
         const path = stripBasePath(window.location.pathname);
         if (path.startsWith('/invite/')) {
@@ -184,19 +189,23 @@ export const MainApp: React.FC = () => {
         const params = new URLSearchParams(window.location.search);
         const loginError = params.get('loginError');
         if (loginError) {
+            setSessionInfo(null);
             updateRoute('login');
             return;
         }
 
         if (path.startsWith('/auth/')) {
+            setSessionInfo(null);
             updateRoute('login');
             return;
         }
 
+        const seq = ++sessionCheckSeq.current;
         try {
             // Identity endpoints must never reuse another session's cached GET payload.
             clearApiCache();
             const data = await apiFetch('/api/users/me', { forceRefresh: true, cacheTtlMs: 0 });
+            if (seq !== sessionCheckSeq.current) return;
             setSessionInfo(data);
             if (data.serverName) document.title = `${data.serverName} Portal`;
             if (path === '/status') updateRoute('status');
@@ -226,11 +235,17 @@ export const MainApp: React.FC = () => {
                 updateRoute('user');
             }
         } catch {
-            if (path === '/status' && publicConfig?.publicStatusEnabled !== false) updateRoute('status');
-            else if (path === '/dashboard') updateRoute('dashboard');
-            else updateRoute('login');
+            if (seq !== sessionCheckSeq.current) return;
+            if (path === '/status' && publicStatusEnabledRef.current !== false) {
+                updateRoute('status');
+            } else if (path === '/dashboard') {
+                updateRoute('dashboard');
+            } else {
+                setSessionInfo(null);
+                updateRoute('login');
+            }
         }
-    }, [publicConfig?.publicStatusEnabled, updateRoute]);
+    }, [updateRoute]);
 
     useEffect(() => {
         // Initial session check
