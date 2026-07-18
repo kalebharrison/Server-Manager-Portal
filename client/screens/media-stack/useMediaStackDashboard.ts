@@ -10,14 +10,13 @@ import {
     mapRadarrCalendarItems,
     mapSonarrCalendarItems,
     summarizeSeasonReleaseBatches,
+    ymd,
 } from './mediaStackUtils';
 
 export type StackFilter = 'all' | 'sonarr' | 'radarr';
 export type CalendarView = 'list' | 'month';
 
 const AUTO_MONTH_SCAN_TTL_MS = 10 * 60 * 1000;
-
-export const ymd = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 export const useMediaStackDashboard = ({ cacheMinutes }: { cacheMinutes?: number }) => {
     const initialPreferences = useMemo(loadLocalPortalPreferences, []);

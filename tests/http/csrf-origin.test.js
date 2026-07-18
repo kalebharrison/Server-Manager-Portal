@@ -58,3 +58,32 @@ test('csrf origin middleware ignores safe methods', async () => {
     });
     assert.equal(result.next, true);
 });
+
+test('csrf origin middleware blocks cookie sessions without Origin/Referer', async () => {
+    const middleware = createCsrfOriginMiddleware({});
+    const result = await run(middleware, {
+        method: 'POST',
+        path: '/api/users/preferences',
+        headers: {
+            host: 'portal.example.com',
+        },
+        cookies: {
+            session: 'signed-session-token',
+        },
+    });
+    assert.equal(result.next, false);
+    assert.equal(result.statusCode, 403);
+});
+
+test('csrf origin middleware allows unauthenticated mutations without Origin', async () => {
+    const middleware = createCsrfOriginMiddleware({});
+    const result = await run(middleware, {
+        method: 'POST',
+        path: '/api/auth/plex/login',
+        headers: {
+            host: 'portal.example.com',
+        },
+        cookies: {},
+    });
+    assert.equal(result.next, true);
+});

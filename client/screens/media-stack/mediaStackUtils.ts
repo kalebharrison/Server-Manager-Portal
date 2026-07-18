@@ -1,5 +1,7 @@
 export const clampMonthOffset = (offset: number) => Math.max(-24, Math.min(offset, 24));
 
+export const ymd = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 export const mapSonarrCalendarItems = (calendar: any[] = []) => calendar
     .map((ep: any) => {
         const poster = ep.series?.images?.find((img: any) => img.coverType === 'poster');

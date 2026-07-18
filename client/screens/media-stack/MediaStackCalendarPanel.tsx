@@ -2,8 +2,8 @@ import React from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { CalendarReleaseItem } from './CalendarReleaseItem';
+import { ymd } from './mediaStackUtils';
 import type { MediaStackDashboardState } from './useMediaStackDashboard';
-import { ymd } from './useMediaStackDashboard';
 
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
