@@ -40,14 +40,24 @@ test('media stack summary hydrates hasFile state for queue classification', asyn
         normalizeExternalBaseUrl: (url) => `${url.replace(/\/+$/, '')}/`,
     });
 
-    let result;
-    await routeHandler({ query: { monthOffset: '0' } }, {
-        json(value) { result = value; },
+    let memberResult;
+    await routeHandler({ query: { monthOffset: '0' }, user: { isAdmin: false } }, {
+        json(value) { memberResult = value; },
         status() { return this; },
     });
+    assert.equal(memberResult.sonarr.queue.records[0].episode.hasFile, true);
+    assert.equal(memberResult.radarr.queue.records[0].movie.hasFile, true);
+    assert.equal(memberResult.sonarr.disk, undefined);
+    assert.equal(memberResult.sonarr.history, undefined);
+    assert.equal(memberResult.sonarr.status, undefined);
 
-    assert.equal(result.sonarr.queue.records[0].episode.hasFile, true);
-    assert.equal(result.radarr.queue.records[0].movie.hasFile, true);
+    let adminResult;
+    await routeHandler({ query: { monthOffset: '0' }, user: { isAdmin: true } }, {
+        json(value) { adminResult = value; },
+        status() { return this; },
+    });
+    assert.ok(adminResult.sonarr.history);
+    assert.ok(Array.isArray(adminResult.sonarr.disk));
 });
 
 test('media stack calendar returns a bounded cached week', async () => {

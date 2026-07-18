@@ -28,7 +28,7 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
         setError('');
         try {
             const [issueData, analytics] = await Promise.all([
-                apiFetch('/api/media-issues?filter=all', forceRefresh
+                apiFetch(forceRefresh ? '/api/media-issues?filter=all&sync=1' : '/api/media-issues?filter=all', forceRefresh
                     ? { forceRefresh: true }
                     : { cacheTtlMs: 30_000 }),
                 apiFetch('/api/plex/analytics/me?days=30').catch(() => ({ recentHistory: [] })),

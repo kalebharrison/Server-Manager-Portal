@@ -47,7 +47,6 @@ import { registerMediaIssueRoutes } from './lib/media-issue-routes.js';
 import { registerStaticShellRoutes } from './lib/static-shell-routes.js';
 import { createBackgroundService } from './lib/background-service.js';
 import { registerCommunicationRoutes } from './lib/communication-routes.js';
-import { registerSpeedtestRoutes } from './lib/speedtest-routes.js';
 import { registerKillRuleRoutes } from './lib/kill-rule-routes.js';
 import { createAnalyticsService } from './lib/analytics-service.js';
 import { createRateLimiter } from './lib/rate-limit.js';
@@ -144,7 +143,6 @@ const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests:
 const authCallbackRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 40 });
 const jellyfinQuickConnectPollRateLimit = createRateLimiter({ windowMs: 5 * 60 * 1000, maxRequests: 140 });
 const publicReadRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 120 });
-const speedtestRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 12 });
 const setupRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 30 });
 
 const hasValidSetupToken = (req) => {
@@ -164,22 +162,22 @@ const sanitizeIntegrationUrl = (rawUrl) => {
     return normalizeExternalBaseUrl(rawUrl, { allowPrivate: ALLOW_PRIVATE_INTEGRATION_URLS, allowHttp: true });
 };
 
-// Only mark cookies Secure when explicitly enabled. Auto-detecting HTTPS breaks plain
-// HTTP LAN access (e.g. http://192.168.x.x:2121) when FORCE_SECURE_COOKIES was left on.
-const sessionCookieBase = () => ({
+// Prefer FORCE_SECURE_COOKIES, otherwise mark Secure only when the request itself is HTTPS
+// (via trust proxy). Plain HTTP LAN logins keep non-Secure cookies.
+const sessionCookieBase = (req) => ({
     httpOnly: true,
-    secure: FORCE_SECURE_COOKIES,
+    secure: FORCE_SECURE_COOKIES || !!req?.secure,
     sameSite: 'lax',
     path: BASE_PATH || '/',
 });
 
 const clearSessionCookie = (req, res) => {
-    res.clearCookie('session', sessionCookieBase());
+    res.clearCookie('session', sessionCookieBase(req));
 };
 
 const setSessionCookie = (req, res, token, { maxAgeMs = 7 * 24 * 60 * 60 * 1000 } = {}) => {
     res.cookie('session', token, {
-        ...sessionCookieBase(),
+        ...sessionCookieBase(req),
         maxAge: maxAgeMs,
     });
 };
@@ -356,20 +354,17 @@ const findLocalUserForSession = (users, sessionUser) => {
     const sessionPlexId = normalized(sessionUser.plexId);
     const sessionJellyfinId = normalized(sessionUser.jellyfinId);
     const sessionEmail = normalized(sessionUser.email);
-    const sessionUsername = normalized(sessionUser.username);
     return users.find((user) => {
         const userId = normalized(user.id);
         const userPlexId = normalized(user.plexId);
         const userJellyfinId = normalized(user.jellyfinId);
         const userEmail = normalized(user.email);
-        const userUsername = normalized(user.username);
         return (
             (sessionPlexId && (sessionPlexId === userPlexId || sessionPlexId === userId)) ||
             (sessionJellyfinId && (sessionJellyfinId === userJellyfinId || sessionJellyfinId === userId)) ||
             (sessionId && (sessionId === userId || sessionId === userPlexId)) ||
             (sessionId && (sessionId === userJellyfinId || sessionId === `jellyfin:${userJellyfinId}`)) ||
-            (sessionEmail && sessionEmail === userEmail) ||
-            (sessionUsername && sessionUsername === userUsername)
+            (sessionEmail && sessionEmail === userEmail)
         );
     }) || null;
 };
@@ -856,13 +851,6 @@ const {
     startAnalyticsStatsBackgroundTask,
     startPersonalAnalyticsCacheWarmer,
 } = analyticsService;
-
-registerSpeedtestRoutes({
-    app,
-    requireAuth,
-    requireMember,
-    speedtestRateLimit,
-});
 
 registerStaticShellRoutes({
     app,

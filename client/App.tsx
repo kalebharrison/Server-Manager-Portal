@@ -13,7 +13,6 @@ import {
     StatusDashboard,
     LibraryDashboard,
     MaintenanceDashboard,
-    LogsDashboard,
     MediaStackDashboard,
     AnalyticsDashboard,
     RequestDashboard,
@@ -298,13 +297,12 @@ export const MainApp: React.FC = () => {
         if (currentRoute === 'settings' && isAdmin) return <SettingsDashboard />;
         if (currentRoute === 'preferences') return <UserPreferencesDashboard account={sessionInfo?.account} activeTheme={activeTheme} setActiveTheme={setActiveTheme} refreshSession={checkSession} readOnly={isImpersonating} />;
         if (currentRoute === 'maintenance' && isAdmin) return <MaintenanceDashboard />;
-        if (currentRoute === 'logs' && isAdmin) return <LogsDashboard onLogout={handleLogout} />;
         if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
         if (currentRoute === 'analytics') return <AnalyticsDashboard isAdmin={isAdmin} sessionInfo={sessionInfo} />;
         if (currentRoute === 'request') return <RequestDashboard isAdmin={isAdmin} cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
         if (currentRoute === 'issues') return <IssuesDashboard isAdmin={isAdmin} />;
         if (currentRoute === 'admin' || currentRoute === 'users') return <AdminDashboard onViewAsUser={handleViewAsUser} />;
-        return <UserDashboard sessionInfo={sessionInfo} publicConfig={effectivePublicConfig} refreshSession={checkSession} onViewAdmin={() => setRoute('users')} onViewSettings={() => setRoute('settings')} onViewLogs={() => setRoute('logs')} />;
+        return <UserDashboard sessionInfo={sessionInfo} publicConfig={effectivePublicConfig} refreshSession={checkSession} onViewAdmin={() => setRoute('users')} onViewSettings={() => setRoute('settings')} onViewLogs={() => { window.history.replaceState({}, '', portalUrl('/settings#logs')); setRoute('settings'); }} />;
     };
 
     return (
