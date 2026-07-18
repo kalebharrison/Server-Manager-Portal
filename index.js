@@ -1,7 +1,6 @@
 
 
 import express from 'express';
-import fetch from 'node-fetch';
 import { randomUUID } from 'crypto';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
@@ -214,6 +213,7 @@ import {
     HEALTH_PATH,
     TRENDING_CACHE_PATH,
     ANALYTICS_CACHE_PATH,
+    ANALYTICS_HISTORY_CACHE_PATH,
     PERSONAL_ANALYTICS_CACHE_PATH,
     KILL_RULES_PATH,
     MAINTENANCE_RULES_PATH,
@@ -821,6 +821,7 @@ const analyticsService = createAnalyticsService({
     configPath: CONFIG_PATH,
     usersPath: USERS_PATH,
     analyticsCachePath: ANALYTICS_CACHE_PATH,
+    analyticsHistoryCachePath: ANALYTICS_HISTORY_CACHE_PATH,
     personalAnalyticsCachePath: PERSONAL_ANALYTICS_CACHE_PATH,
     trendingCachePath: TRENDING_CACHE_PATH,
     plexStatsCachePath: PLEX_STATS_CACHE_PATH,

@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Film, RefreshCw, Search, Tv } from 'lucide-react'
 
 import { apiFetch } from '../shared/api';
 import { resolvePortalAssetUrl } from '../shared/basePath';
+import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { IssueConversation } from '../issues/IssueConversation';
 
 const ISSUE_TYPES = [
@@ -39,10 +40,7 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
     }, []);
 
     useEffect(() => { void load(); }, [load]);
-    useEffect(() => {
-        const timer = window.setInterval(() => { void load(); }, 60_000);
-        return () => window.clearInterval(timer);
-    }, [load]);
+    useVisibleInterval(load, 60_000);
 
     const sourceSummary = useMemo(() => [sources.plex && 'Plex', sources.seerr && 'Request service'].filter(Boolean).join(' · '), [sources]);
     const sourceLabel = (source: string) => source === 'plex'
