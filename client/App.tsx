@@ -1,36 +1,15 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, useTransition } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { bindAppConfirm } from './shared/confirm';
-import { apiFetch, clearApiCache } from './shared/api';
-import { portalUrl, stripBasePath } from './shared/basePath';
+import { apiFetch } from './shared/api';
 import { Loader } from './shared/toast';
 import { AppAmbientBackground } from './shared/theme';
 import { PORTAL_WIDE_LAYOUT_THRESHOLD } from './shared/portalLayout';
 import { applyLocalPortalPreferences, loadLocalPortalPreferences, USER_PREFERENCES_EVENT } from './shared/userPreferences';
-import { resolveHomeLanding, resolveLocale } from './shared/userProfile';
-import {
-    updateFavicon,
-    Login,
-    PublicInviteClaim,
-    StatusDashboard,
-    LibraryDashboard,
-    MediaStackDashboard,
-    AnalyticsDashboard,
-    RequestDashboard,
-    IssuesDashboard,
-    AdminDashboard,
-    UserDashboard,
-    UserPreferencesDashboard,
-    Navigation,
-    SettingsDashboard,
-} from './lazyScreens';
+import { updateFavicon, Navigation } from './lazyScreens';
+import { AppRouteRenderer, RouteFallback } from './app/AppRouteRenderer';
+import { useAppRouting, useAppSession } from './app/useAppSession';
 
 const ConfirmModal = React.lazy(() => import('./shared/ConfirmModal').then(module => ({ default: module.ConfirmModal })));
-
-type AppRoute = 'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'request' | 'invite' | 'loading';
-
-const RouteFallback: React.FC = () => (
-    <div className="min-h-[60vh]" aria-hidden="true" />
-);
 
 export const MainApp: React.FC = () => {
     const [confirmState, setConfirmState] = useState<{ isOpen: boolean, message: string, onConfirm: () => void }>({ isOpen: false, message: '', onConfirm: () => { } });
@@ -71,19 +50,17 @@ export const MainApp: React.FC = () => {
         closeConfirm();
     };
 
-    const [currentRoute, setCurrentRoute] = useState<AppRoute>('loading');
-    const [sessionInfo, setSessionInfo] = useState<any>(null);
     const [publicConfig, setPublicConfig] = useState<any>({});
     const [localPreferences, setLocalPreferences] = useState(loadLocalPortalPreferences);
     const effectivePublicConfig = useMemo(() => applyLocalPortalPreferences(publicConfig, localPreferences), [localPreferences, publicConfig]);
-    const [, startRouteTransition] = useTransition();
-    const updateRoute = useCallback((route: AppRoute) => {
-        if (route === 'loading') {
-            setCurrentRoute(route);
-            return;
-        }
-        startRouteTransition(() => setCurrentRoute(route));
-    }, []);
+    const { currentRoute, updateRoute, setRoute } = useAppRouting();
+    const {
+        sessionInfo,
+        checkSession,
+        handleLogout,
+        handleViewAsUser,
+        handleStopImpersonation,
+    } = useAppSession(publicConfig, updateRoute);
 
     const fetchPublicConfig = useCallback(async (forceRefresh = false) => {
         try {
@@ -115,12 +92,10 @@ export const MainApp: React.FC = () => {
         if (!publicConfig.brandingTheme) return;
 
         if (lastBrandingTheme.current === null) {
-            // First time config loads - respect user's localStorage choice if any
             const theme = localStorage.getItem('portal-theme') || publicConfig.brandingTheme || 'plex';
             setActiveTheme(theme);
             lastBrandingTheme.current = publicConfig.brandingTheme;
         } else if (publicConfig.brandingTheme !== lastBrandingTheme.current) {
-            // Default theme setting was changed (e.g. saved in Settings) - override local theme
             setActiveTheme(publicConfig.brandingTheme);
             localStorage.setItem('portal-theme', publicConfig.brandingTheme);
             lastBrandingTheme.current = publicConfig.brandingTheme;
@@ -152,193 +127,28 @@ export const MainApp: React.FC = () => {
         return () => window.removeEventListener('portal-public-config-updated', onPublicConfigUpdated);
     }, [fetchPublicConfig]);
 
-    const setRoute = useCallback((route: AppRoute) => {
-        if (route === 'logs') {
-            updateRoute('settings');
-            window.history.pushState({}, '', portalUrl('/settings#logs'));
-            return;
-        }
-        updateRoute(route);
-        if (route !== 'loading' && route !== 'invite') {
-            let path = '/';
-            if (route === 'admin') path = '/admin';
-            if (route === 'users') path = '/users';
-            if (route === 'user') path = '/portal';
-            if (route === 'status') path = '/status';
-            if (route === 'dashboard') path = '/dashboard';
-            if (route === 'settings') path = '/settings#branding';
-            if (route === 'preferences') path = '/preferences';
-            if (route === 'analytics') path = '/analytics';
-            if (route === 'mediastack') path = '/mediastack';
-            if (route === 'request') path = '/request';
-            if (route === 'issues') path = '/issues';
-            window.history.pushState({}, '', portalUrl(path));
-        }
-    }, [updateRoute]);
-
-    // Ignore stale /api/users/me responses so overlapping checks cannot wipe the exit banner.
-    const sessionCheckSeq = useRef(0);
-    const publicStatusEnabledRef = useRef(publicConfig?.publicStatusEnabled);
-    publicStatusEnabledRef.current = publicConfig?.publicStatusEnabled;
-
-    const checkSession = useCallback(async () => {
-        const path = stripBasePath(window.location.pathname);
-        if (path.startsWith('/invite/')) {
-            updateRoute('invite');
-            return;
-        }
-        const params = new URLSearchParams(window.location.search);
-        const loginError = params.get('loginError');
-        if (loginError) {
-            setSessionInfo(null);
-            updateRoute('login');
-            return;
-        }
-
-        if (path.startsWith('/auth/')) {
-            setSessionInfo(null);
-            updateRoute('login');
-            return;
-        }
-
-        const seq = ++sessionCheckSeq.current;
-        try {
-            // Identity endpoints must never reuse another session's cached GET payload.
-            clearApiCache();
-            const data = await apiFetch('/api/users/me', { forceRefresh: true, cacheTtlMs: 0 });
-            if (seq !== sessionCheckSeq.current) return;
-            setSessionInfo(data);
-            if (data.serverName) document.title = `${data.serverName} Portal`;
-            const locale = resolveLocale(data.account);
-            if (typeof window !== 'undefined') {
-                (window as any).__PORTAL_LOCALE__ = locale || undefined;
-                if (locale) document.documentElement.lang = locale;
-            }
-            const preferredLanding = resolveHomeLanding(data.account);
-            const landingRoute = preferredLanding === 'portal'
-                ? 'user'
-                : preferredLanding === 'discover'
-                    ? 'dashboard'
-                    : preferredLanding;
-            const landingPath = preferredLanding === 'portal'
-                ? '/portal'
-                : preferredLanding === 'discover'
-                    ? '/dashboard'
-                    : `/${preferredLanding}`;
-            if (path === '/status') updateRoute('status');
-            else if (path === '/dashboard') updateRoute('dashboard');
-            else if (path === '/settings' && data.session.isAdmin) updateRoute('settings');
-            else if (path === '/preferences') updateRoute('preferences');
-            else if (path === '/logs' && data.session.isAdmin) {
-                window.history.replaceState({}, '', portalUrl('/settings#logs'));
-                updateRoute('settings');
-            }
-            else if (path === '/mediastack') updateRoute('mediastack');
-            else if (path === '/maintenance') updateRoute(data.session.isAdmin ? 'settings' : 'user');
-            else if (path === '/request' || path === '/requests') updateRoute('request');
-            else if (path === '/issues') updateRoute('issues');
-            else if (path === '/analytics') updateRoute('analytics');
-            else if (path === '/settings' && !data.session.isAdmin) updateRoute('user');
-            else if (path === '/portal') updateRoute('user');
-            else if (path === '/admin' || path === '/users') {
-                if (data.session.isAdmin && !data.impersonation?.active) updateRoute('users');
-                else {
-                    window.history.replaceState({}, '', portalUrl('/portal'));
-                    updateRoute('user');
-                }
-            }
-            else {
-                // Root/login success: honor member home landing preference.
-                if (!data.session.isAdmin || data.impersonation?.active) {
-                    window.history.replaceState({}, '', portalUrl(landingPath));
-                    updateRoute(landingRoute as any);
-                } else {
-                    window.history.replaceState({}, '', portalUrl('/portal'));
-                    updateRoute('user');
-                }
-            }
-        } catch {
-            if (seq !== sessionCheckSeq.current) return;
-            if (path === '/status' && publicStatusEnabledRef.current !== false) {
-                updateRoute('status');
-            } else if (path === '/dashboard') {
-                updateRoute('dashboard');
-            } else {
-                setSessionInfo(null);
-                updateRoute('login');
-            }
-        }
-    }, [updateRoute]);
-
-    useEffect(() => {
-        // Initial session check
-        checkSession();
-    }, [checkSession]);
-
-    useEffect(() => {
-        const onPopState = () => {
-            checkSession();
-        };
-        window.addEventListener('popstate', onPopState);
-        return () => window.removeEventListener('popstate', onPopState);
-    }, [checkSession]);
-
-    const handleLogout = async () => {
-        await apiFetch('/api/auth/logout', { method: 'POST' });
-        clearApiCache();
-        setSessionInfo(null);
+    const onLogout = async () => {
+        await handleLogout();
         setRoute('login');
     };
 
-    const handleViewAsUser = async (userId: string) => {
-        await apiFetch(`/api/admin/impersonate/${encodeURIComponent(userId)}`, { method: 'POST' });
-        clearApiCache();
-        await checkSession();
+    const onViewAsUser = async (userId: string) => {
+        await handleViewAsUser(userId);
         setRoute('user');
     };
 
-    const handleStopImpersonation = async () => {
-        await apiFetch('/api/admin/stop-impersonation', { method: 'POST' });
-        clearApiCache();
-        await checkSession();
+    const onStopImpersonation = async () => {
+        await handleStopImpersonation();
         setRoute('users');
     };
 
     if (currentRoute === 'loading') return <Loader isLoading={true} isCinematic={!!effectivePublicConfig?.useCinematicLoading} />;
-    if (currentRoute === 'login') {
-        const initialLoginError = typeof window !== 'undefined'
-            ? new URLSearchParams(window.location.search).get('loginError')
-            : null;
-        return (
-            <React.Suspense fallback={<RouteFallback />}>
-                <Login onLoginSuccess={checkSession} publicConfig={effectivePublicConfig} initialError={initialLoginError || undefined} />
-            </React.Suspense>
-        );
-    }
 
     const isAdmin = !!sessionInfo?.session?.isAdmin;
     const isImpersonating = !!sessionInfo?.impersonation?.active;
-
     const isPublicStatus = currentRoute === 'status' && !sessionInfo;
     const isPublicInvite = currentRoute === 'invite';
     const isPublicView = isPublicStatus || isPublicInvite;
-
-    const renderView = () => {
-        if (currentRoute === 'invite') {
-            const code = stripBasePath(window.location.pathname).split('/')[2];
-            return <PublicInviteClaim code={code} showServerStats={effectivePublicConfig?.showLoginServerStats === true} />;
-        }
-        if (currentRoute === 'status') return <StatusDashboard onBack={() => isPublicStatus ? setRoute('login') : setRoute('user')} isAdmin={isAdmin} isPublic={isPublicStatus} />;
-        if (currentRoute === 'dashboard') return <LibraryDashboard isAdmin={isAdmin} publicConfig={effectivePublicConfig} mediaServerType={sessionInfo?.mediaServerType} cacheScope={sessionInfo?.serverName} />;
-        if (currentRoute === 'settings' && isAdmin) return <SettingsDashboard />;
-        if (currentRoute === 'preferences') return <UserPreferencesDashboard account={sessionInfo?.account} activeTheme={activeTheme} setActiveTheme={setActiveTheme} refreshSession={checkSession} readOnly={isImpersonating} />;
-        if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
-        if (currentRoute === 'analytics') return <AnalyticsDashboard isAdmin={isAdmin} sessionInfo={sessionInfo} />;
-        if (currentRoute === 'request') return <RequestDashboard isAdmin={isAdmin} cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
-        if (currentRoute === 'issues') return <IssuesDashboard isAdmin={isAdmin} />;
-        if (currentRoute === 'admin' || currentRoute === 'users') return <AdminDashboard onViewAsUser={handleViewAsUser} />;
-        return <UserDashboard sessionInfo={sessionInfo} publicConfig={effectivePublicConfig} refreshSession={checkSession} onViewAdmin={() => setRoute('users')} onViewSettings={() => setRoute('settings')} onViewLogs={() => { window.history.replaceState({}, '', portalUrl('/settings#logs')); setRoute('settings'); }} />;
-    };
 
     return (
         <div className="relative flex w-full min-h-screen overflow-x-clip">
@@ -349,24 +159,35 @@ export const MainApp: React.FC = () => {
                 </React.Suspense>
             )}
             <React.Suspense fallback={null}>
-                {!isPublicView && <Navigation currentRoute={currentRoute} onNavigate={setRoute as any} onLogout={handleLogout} isAdmin={isAdmin} serverName={sessionInfo?.serverName || 'Server Portal'} adminThumb={sessionInfo?.adminThumb} customLogoUrl={publicConfig?.customLogoUrl} navOrder={sessionInfo?.navOrder || ['home', 'discover', 'issues', 'status', 'analytics', 'mediastack', 'request', 'settings', 'logout']} navFeatures={sessionInfo?.navFeatures} appVersion={publicConfig.appVersion} activeTheme={activeTheme} setActiveTheme={setActiveTheme} />}
+                {!isPublicView && <Navigation currentRoute={currentRoute} onNavigate={setRoute as any} onLogout={onLogout} isAdmin={isAdmin} serverName={sessionInfo?.serverName || 'Server Portal'} adminThumb={sessionInfo?.adminThumb} customLogoUrl={publicConfig?.customLogoUrl} navOrder={sessionInfo?.navOrder || ['home', 'discover', 'issues', 'status', 'analytics', 'mediastack', 'request', 'settings', 'logout']} navFeatures={sessionInfo?.navFeatures} appVersion={publicConfig.appVersion} activeTheme={activeTheme} setActiveTheme={setActiveTheme} />}
             </React.Suspense>
             <div className={`relative z-10 flex-1 min-w-0 flex flex-col items-center px-4 pt-20 pb-[80px] md:p-8 md:pt-8 md:pb-8 overflow-x-visible ${isPublicView ? '!pt-8 !pb-8' : ''}`}>
                 {isImpersonating && (
                     <div className="w-full mb-4" style={{ maxWidth: contentMaxWidth }}>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-100 shadow-lg">
                             <p className="text-sm font-medium">Viewing as <strong className="text-white">{sessionInfo?.impersonation?.targetUsername || sessionInfo?.session?.username}</strong>. Changes and requests are disabled.</p>
-                            <button type="button" onClick={handleStopImpersonation} className="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-sm font-bold hover:bg-amber-500/30 whitespace-nowrap">Exit view</button>
+                            <button type="button" onClick={onStopImpersonation} className="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-sm font-bold hover:bg-amber-500/30 whitespace-nowrap">Exit view</button>
                         </div>
                     </div>
                 )}
                 <div className="w-full min-w-0" style={{ maxWidth: contentMaxWidth }}>
                     <React.Suspense fallback={<RouteFallback />}>
-                        {renderView()}
+                        <AppRouteRenderer
+                            currentRoute={currentRoute}
+                            sessionInfo={sessionInfo}
+                            effectivePublicConfig={effectivePublicConfig}
+                            activeTheme={activeTheme}
+                            setActiveTheme={setActiveTheme}
+                            checkSession={checkSession}
+                            setRoute={setRoute}
+                            handleViewAsUser={onViewAsUser}
+                            isAdmin={isAdmin}
+                            isImpersonating={isImpersonating}
+                            isPublicStatus={isPublicStatus}
+                        />
                     </React.Suspense>
                 </div>
 
-                {/* Mobile Bottom Version */}
                 {!isPublicView && publicConfig?.appVersion && (
                     <div className="md:hidden mt-auto pt-12 pb-4 w-full text-center text-[10px] text-white/30 font-mono tracking-widest pointer-events-none">
                         {publicConfig.appVersion}

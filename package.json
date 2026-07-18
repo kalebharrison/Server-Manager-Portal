@@ -11,7 +11,8 @@
     "build": "npm run build:css && npm run build:js && npm run build:version",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test 'tests/**/*.test.js'",
-    "check": "npm run build && npm run typecheck && npm test",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "check": "npm run build && npm run typecheck && npm test && npm run audit:prod",
     "start": "npm run build && node --env-file=.env index.js",
     "start:prod": "node index.js",
     "docker:local": "sh scripts/local-container.sh"

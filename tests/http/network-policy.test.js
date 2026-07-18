@@ -13,6 +13,11 @@ test('private and blocked hosts are detected for SSRF guards', () => {
     assert.equal(isPrivateIp('192.168.1.20'), true);
     assert.equal(isPrivateIp('172.16.4.2'), true);
     assert.equal(isPrivateIp('8.8.8.8'), false);
+    assert.equal(isPrivateIp('::1'), true);
+    assert.equal(isPrivateIp('fc00::1'), true);
+    assert.equal(isPrivateIp('fd12:3456:789a::1'), true);
+    assert.equal(isPrivateIp('fe80::1'), true);
+    assert.equal(isPrivateIp('2001:4860:4860::8888'), false);
     assert.equal(isBlockedHostName('localhost'), true);
     assert.equal(isBlockedHostName('seerr.local'), true);
     assert.equal(isBlockedHostName('seerr.example.com'), false);

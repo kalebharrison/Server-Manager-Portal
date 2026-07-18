@@ -18,13 +18,29 @@ const intentionallyPublic = [
     /^GET \/api\/jellyfin\/branding\/(splash|icon|favicon)$/,
 ];
 
+const walkJsFiles = async (dir) => {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    const files = [];
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            files.push(...await walkJsFiles(fullPath));
+            continue;
+        }
+        if (entry.isFile() && entry.name.endsWith('.js')) files.push(fullPath);
+    }
+    return files;
+};
+
 test('every API route is authenticated or explicitly classified as public', async () => {
     const libDir = path.resolve('lib');
-    const files = (await fs.readdir(libDir)).filter((file) => file.endsWith('.js'));
+    const files = await walkJsFiles(libDir);
+    assert.ok(files.length > 0, 'Expected to discover JS modules under lib/');
     const unclassified = [];
 
-    for (const file of files) {
-        const lines = (await fs.readFile(path.join(libDir, file), 'utf8')).split('\n');
+    for (const filePath of files) {
+        const rel = path.relative(libDir, filePath);
+        const lines = (await fs.readFile(filePath, 'utf8')).split('\n');
         lines.forEach((line, index) => {
             const match = line.match(/app\.(get|post|put|patch|delete)\('([^']+)'/);
             if (!match) return;
@@ -33,7 +49,7 @@ test('every API route is authenticated or explicitly classified as public', asyn
             if (!route.startsWith('/api/')) return;
             if (intentionallyPublic.some((pattern) => pattern.test(`${method} ${route}`))) return;
             if (/\brequire(?:Auth|Member|Admin)\b/.test(line)) return;
-            unclassified.push(`${file}:${index + 1} ${route}`);
+            unclassified.push(`${rel}:${index + 1} ${method} ${route}`);
         });
     }
 
