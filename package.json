@@ -9,6 +9,8 @@
     "build:js": "esbuild index.tsx --bundle --outfile=static/bundle.js --jsx=automatic --format=esm",
     "build:version": "node build-version.js",
     "build": "npm run build:css && npm run build:js && npm run build:version",
+    "test": "node --test tests/**/*.test.js",
+    "check": "npm run build && npm test",
     "start": "npm run build && node --env-file=.env index.js",
     "start:prod": "node index.js"
   },
@@ -20,7 +22,6 @@
     "html2canvas": "^1.4.1",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.21.0",
-    "node-fetch": "^3.3.2",
     "nodemailer": "^9.0.1",
     "recharts": "^3.9.0"
   },

@@ -3,7 +3,6 @@
 import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import fetch from 'node-fetch';
 import { randomUUID, randomBytes } from 'crypto';
 import nodemailer from 'nodemailer';
 import cookieParser from 'cookie-parser';
@@ -33,6 +32,11 @@ const SETUP_TOKEN = process.env.SETUP_TOKEN || '';
 const ALLOW_PRIVATE_INTEGRATION_URLS = String(process.env.ALLOW_PRIVATE_INTEGRATION_URLS || '').toLowerCase() === 'true';
 const FORCE_SECURE_COOKIES = String(process.env.FORCE_SECURE_COOKIES || '').toLowerCase() === 'true';
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || '';
+const IMAGE_CACHE_MAX_MB = Math.max(8, Math.min(512, Number.parseInt(process.env.IMAGE_CACHE_MAX_MB || '64', 10) || 64));
+const IMAGE_CACHE_MAX_BYTES = IMAGE_CACHE_MAX_MB * 1024 * 1024;
+const IMAGE_CACHE_MAX_ENTRY_BYTES = 5 * 1024 * 1024;
+const INACTIVE_CLEANUP_CONCURRENCY = 5;
+const PLEX_METADATA_FETCH_CONCURRENCY = 4;
 
 const normalizeBasePath = (raw = '') => {
     const value = String(raw || '').trim();
@@ -261,6 +265,7 @@ import {
     HEALTH_PATH,
     TRENDING_CACHE_PATH,
     ANALYTICS_CACHE_PATH,
+    ANALYTICS_HISTORY_CACHE_PATH,
     KILL_RULES_PATH,
     MAINTENANCE_RULES_PATH,
     MAINTENANCE_MEDIA_INDEX_PATH,
@@ -270,6 +275,12 @@ import {
     PLEX_STATS_CACHE_PATH,
     migrateConfigFiles,
 } from './lib/data-paths.js';
+import {
+    ANALYTICS_HISTORY_CACHE_VERSION,
+    compactAnalyticsHistoryItem,
+    mergeAnalyticsHistoryItems,
+    matchesAnalyticsHistoryCache,
+} from './lib/analytics-history.js';
 const PLEX_API = 'https://plex.tv/api';
 
 // --- Status App Global State ---
@@ -383,6 +394,156 @@ const withCache = async (key, ttlMs, fetcher) => {
         apiCache.set(key, { data, expiresAt: now + ttlMs });
     }
     return data;
+};
+
+const mapWithConcurrency = async (items, concurrency, worker) => {
+    const list = Array.isArray(items) ? items : [];
+    const limit = Math.max(1, Number(concurrency) || 1);
+    const results = new Array(list.length);
+    let nextIndex = 0;
+
+    const runners = Array.from({ length: Math.min(limit, list.length) }, async () => {
+        while (nextIndex < list.length) {
+            const index = nextIndex++;
+            results[index] = await worker(list[index], index);
+        }
+    });
+    await Promise.all(runners);
+    return results;
+};
+
+const createBoundedBufferCache = ({ maxBytes = IMAGE_CACHE_MAX_BYTES, maxEntryBytes = IMAGE_CACHE_MAX_ENTRY_BYTES } = {}) => {
+    const entries = new Map();
+    let totalBytes = 0;
+
+    const touch = (key) => {
+        const entry = entries.get(key);
+        if (!entry) return null;
+        entries.delete(key);
+        entries.set(key, entry);
+        return entry;
+    };
+
+    const evictToFit = (incomingBytes) => {
+        while (totalBytes + incomingBytes > maxBytes && entries.size > 0) {
+            const oldestKey = entries.keys().next().value;
+            const oldest = entries.get(oldestKey);
+            entries.delete(oldestKey);
+            totalBytes -= oldest?.bytes || 0;
+        }
+    };
+
+    return {
+        get(key) {
+            const entry = touch(key);
+            return entry ? entry.value : null;
+        },
+        set(key, value, bytes) {
+            const size = Number(bytes) || 0;
+            if (!key || size <= 0 || size > maxEntryBytes) return false;
+            if (entries.has(key)) {
+                totalBytes -= entries.get(key).bytes || 0;
+                entries.delete(key);
+            }
+            evictToFit(size);
+            if (size > maxBytes) return false;
+            entries.set(key, { value, bytes: size });
+            totalBytes += size;
+            return true;
+        },
+        stats: () => ({ entries: entries.size, totalBytes, maxBytes }),
+    };
+};
+
+const plexImageBufferCache = createBoundedBufferCache();
+const mediaTagCache = new Map(); // ratingKey -> { tags, cachedAt }
+
+const fetchPlexServerHistory = async (uri, config, {
+    maxItems = 250000,
+    pageSize = 5000,
+    stopBeforeTs = 0,
+    logFn = log,
+} = {}) => {
+    const safePageSize = Math.min(Math.max(Number(pageSize) || 5000, 1), 5000);
+    const cutoffTs = Number(stopBeforeTs || 0);
+    let historyItems = [];
+    let start = 0;
+
+    while (start < maxItems) {
+        const pageRes = await fetch(
+            `${uri}/status/sessions/history/all?X-Plex-Token=${config.plexToken}&sort=viewedAt:desc&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${safePageSize}`,
+            { headers: { Accept: 'application/json' } },
+        ).then((r) => r.json()).catch(() => null);
+
+        const pageContainer = pageRes?.MediaContainer;
+        const pageItems = Array.isArray(pageContainer?.Metadata) ? pageContainer.Metadata : [];
+        if (pageItems.length === 0) break;
+
+        const cutoffIndex = cutoffTs > 0
+            ? pageItems.findIndex((item) => Number(item.viewedAt || 0) <= cutoffTs)
+            : -1;
+        const slice = cutoffIndex >= 0 ? pageItems.slice(0, cutoffIndex) : pageItems;
+        historyItems = historyItems.concat(slice.map(compactAnalyticsHistoryItem));
+        start += pageItems.length;
+
+        const totalSize = Number(pageContainer.totalSize || 0);
+        if (cutoffIndex >= 0 || (totalSize > 0 && start >= totalSize) || pageItems.length < safePageSize) break;
+        if (historyItems.length >= maxItems) break;
+    }
+
+    if (historyItems.length >= maxItems) {
+        logFn(`Plex history fetch reached safety cap (${maxItems}).`);
+    }
+
+    return historyItems;
+};
+
+const loadAnalyticsHistoryCache = async (config) => {
+    const cached = await loadFile(ANALYTICS_HISTORY_CACHE_PATH, null);
+    return matchesAnalyticsHistoryCache(cached, config) ? cached : null;
+};
+
+const saveAnalyticsHistoryCache = async (config, items = []) => {
+    const newestViewedAt = items.reduce((max, item) => Math.max(max, Number(item.viewedAt || 0)), 0);
+    const oldestViewedAt = items.reduce((min, item) => {
+        const viewedAt = Number(item.viewedAt || 0);
+        if (!viewedAt) return min;
+        return min === 0 ? viewedAt : Math.min(min, viewedAt);
+    }, 0);
+    await saveFile(ANALYTICS_HISTORY_CACHE_PATH, {
+        version: ANALYTICS_HISTORY_CACHE_VERSION,
+        serverIdentifier: String(config.serverIdentifier || ''),
+        newestViewedAt,
+        oldestViewedAt,
+        itemCount: items.length,
+        updatedAt: Date.now(),
+        items,
+    });
+};
+
+const fetchAnalyticsHistoryItems = async (uri, config, { maxItems = 250000, forceFull = false } = {}) => {
+    const existing = forceFull ? null : await loadAnalyticsHistoryCache(config);
+    if (!existing) {
+        const full = await fetchPlexServerHistory(uri, config, { maxItems });
+        if (full.length) await saveAnalyticsHistoryCache(config, full);
+        return full;
+    }
+
+    const stopBeforeTs = Number(existing.newestViewedAt || 0);
+    const newer = await fetchPlexServerHistory(uri, config, {
+        maxItems,
+        stopBeforeTs: stopBeforeTs > 0 ? stopBeforeTs : 0,
+    });
+
+    if (!newer.length) {
+        log(`[AnalyticsHistory] Reusing cached history (${existing.items.length} items).`);
+        return existing.items;
+    }
+
+    const merged = mergeAnalyticsHistoryItems(newer, existing.items, maxItems);
+    log(`[AnalyticsHistory] Merged ${newer.length} new history item(s) into ${merged.length} total.`);
+    await saveAnalyticsHistoryCache(config, merged);
+    return merged;
 };
 
 const isDeletedUser = (deletedUsers, user) => {
@@ -3033,6 +3194,15 @@ app.get('/api/plex/image', requireAuth, requireMember, async (req, res) => {
         return res.status(400).send('Invalid path');
     }
     try {
+        const cacheKey = `${thumbPath}|${width || ''}|${height || ''}`;
+        const cached = plexImageBufferCache.get(cacheKey);
+        if (cached) {
+            res.setHeader('Content-Type', cached.contentType);
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            res.setHeader('X-Image-Cache', 'HIT');
+            return res.send(cached.buffer);
+        }
+
         const config = await loadFile(CONFIG_PATH, {});
         const uri = await getPlexConnectionUri(config);
 
@@ -3046,8 +3216,11 @@ app.get('/api/plex/image', requireAuth, requireMember, async (req, res) => {
         const response = await fetchWithTimeout(url, {}, 15000);
         if (!response.ok) throw new Error('fetch failed');
         const buffer = Buffer.from(await response.arrayBuffer());
-        res.setHeader('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        plexImageBufferCache.set(cacheKey, { buffer, contentType }, buffer.byteLength);
+        res.setHeader('Content-Type', contentType);
         res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('X-Image-Cache', 'MISS');
         res.send(buffer);
     } catch (e) {
         res.status(500).send('');
@@ -4875,8 +5048,12 @@ const fetchPlexMetadataMap = async (uri, config, ratingKeys = []) => {
     if (!unique.length) return map;
 
     const chunkSize = 25;
+    const chunks = [];
     for (let i = 0; i < unique.length; i += chunkSize) {
-        const chunk = unique.slice(i, i + chunkSize);
+        chunks.push(unique.slice(i, i + chunkSize));
+    }
+
+    await mapWithConcurrency(chunks, PLEX_METADATA_FETCH_CONCURRENCY, async (chunk) => {
         const res = await fetch(`${uri}/library/metadata/${chunk.join(',')}?X-Plex-Token=${config.plexToken}`, {
             headers: { Accept: 'application/json' }
         }).then((r) => r.json()).catch(() => null);
@@ -4884,8 +5061,19 @@ const fetchPlexMetadataMap = async (uri, config, ratingKeys = []) => {
         for (const meta of metas) {
             map.set(String(meta.ratingKey), meta);
         }
-    }
+    });
     return map;
+};
+
+const rememberMediaTags = (ratingKey, tags = []) => {
+    const key = String(ratingKey || '');
+    if (!key) return;
+    mediaTagCache.set(key, { tags: [...tags], cachedAt: Date.now() });
+};
+
+const getCachedMediaTags = (ratingKey) => {
+    const entry = mediaTagCache.get(String(ratingKey || ''));
+    return entry ? [...entry.tags] : null;
 };
 
 const enrichRecentItemsWithMediaTags = async (uri, config, items = []) => {
@@ -4893,23 +5081,38 @@ const enrichRecentItemsWithMediaTags = async (uri, config, items = []) => {
 
     const keysToFetch = [];
     for (const item of items) {
-        if (item.ratingKey) keysToFetch.push(item.ratingKey);
-        if (item.sourceRatingKey && item.sourceRatingKey !== item.ratingKey) keysToFetch.push(item.sourceRatingKey);
+        const keys = [item.ratingKey, item.sourceRatingKey].filter(Boolean).map(String);
+        for (const key of keys) {
+            if (!getCachedMediaTags(key)) keysToFetch.push(key);
+        }
     }
     const metaMap = await fetchPlexMetadataMap(uri, config, keysToFetch);
 
     return items.map((item) => {
-        const primaryMeta = item.ratingKey ? metaMap.get(String(item.ratingKey)) : null;
-        const sourceMeta = item.sourceRatingKey && item.sourceRatingKey !== item.ratingKey
-            ? metaMap.get(String(item.sourceRatingKey))
-            : null;
+        const primaryKey = item.ratingKey ? String(item.ratingKey) : '';
+        const sourceKey = item.sourceRatingKey && item.sourceRatingKey !== item.ratingKey
+            ? String(item.sourceRatingKey)
+            : '';
 
-        const primaryTags = primaryMeta ? extractMediaDisplayTags(primaryMeta) : [...(item.tags || [])];
-        const sourceTags = sourceMeta ? extractMediaDisplayTags(sourceMeta) : [];
+        const primaryMeta = primaryKey ? metaMap.get(primaryKey) : null;
+        const sourceMeta = sourceKey ? metaMap.get(sourceKey) : null;
+
+        let primaryTags = primaryMeta
+            ? extractMediaDisplayTags(primaryMeta)
+            : (getCachedMediaTags(primaryKey) || [...(item.tags || [])]);
+        let sourceTags = sourceMeta
+            ? extractMediaDisplayTags(sourceMeta)
+            : (getCachedMediaTags(sourceKey) || []);
+
+        if (primaryMeta) rememberMediaTags(primaryKey, primaryTags);
+        if (sourceMeta) rememberMediaTags(sourceKey, sourceTags);
+
         const tags = new Set([...primaryTags, ...sourceTags]);
         if (tags.has('AV1')) tags.delete('HEVC');
+        const finalTags = [...tags];
+        if (primaryKey) rememberMediaTags(primaryKey, finalTags);
 
-        return { ...item, tags: [...tags] };
+        return { ...item, tags: finalTags };
     });
 };
 
@@ -5114,6 +5317,15 @@ app.get('/api/jellyfin/image', requireAuth, requireMember, async (req, res) => {
     const height = Math.min(Math.max(parseInt(req.query.height, 10) || 450, 64), 1600);
     if (!itemId || !/^[A-Za-z0-9_-]+$/.test(itemId)) return res.status(400).send('Invalid itemId');
     try {
+        const cacheKey = `jf:${itemId}|${width}|${height}`;
+        const cached = plexImageBufferCache.get(cacheKey);
+        if (cached) {
+            res.setHeader('Content-Type', cached.contentType);
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            res.setHeader('X-Image-Cache', 'HIT');
+            return res.send(cached.buffer);
+        }
+
         const config = await loadFile(CONFIG_PATH, {});
         if (!isJellyfinConfigured(config)) return res.status(503).send('');
         const baseUrl = resolveIntegrationUrlForFetch(config.jellyfinUrl);
@@ -5123,8 +5335,11 @@ app.get('/api/jellyfin/image', requireAuth, requireMember, async (req, res) => {
         }, 15000);
         if (!response.ok) throw new Error(`image HTTP ${response.status}`);
         const buffer = Buffer.from(await response.arrayBuffer());
-        res.setHeader('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        plexImageBufferCache.set(cacheKey, { buffer, contentType }, buffer.byteLength);
+        res.setHeader('Content-Type', contentType);
         res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('X-Image-Cache', 'MISS');
         res.send(buffer);
     } catch (e) {
         res.status(500).send('');
@@ -6940,12 +7155,15 @@ const checkAndCleanupInactive = async (config) => {
     const uri = await getPlexConnectionUri(config);
     if (!uri) return;
 
-    for (const user of users) {
+    const eligibleUsers = users.filter((user) => {
         const plexUserId = user.plexId || user.id;
-        if (user.isAdmin || user.exemptFromCleanup || !plexUserId) continue;
+        if (user.isAdmin || user.exemptFromCleanup || !plexUserId) return false;
         // Only consider users with active access; pending/revoked users aren't relevant.
-        if (user.plexAccessStatus !== 'active') continue;
+        return user.plexAccessStatus === 'active';
+    });
 
+    await mapWithConcurrency(eligibleUsers, INACTIVE_CLEANUP_CONCURRENCY, async (user) => {
+        const plexUserId = user.plexId || user.id;
         try {
             // Get last session from Plex directly
             const historyRes = await fetch(`${uri}/status/sessions/history/all?X-Plex-Token=${config.plexToken}&accountID=${plexUserId}&sort=viewedAt:desc&limit=1`, { headers: { 'Accept': 'application/json' } }).then(r => r.json()).catch(() => null);
@@ -6975,7 +7193,7 @@ const checkAndCleanupInactive = async (config) => {
         } catch (e) {
             log(`Failed to check history for user ${user.email}: ${e.message}`);
         }
-    }
+    });
 
     if (usersUpdated) {
         await saveFile(USERS_PATH, users);
@@ -7466,27 +7684,8 @@ async function calculateAnalyticsStats() {
 
         log('Starting background calculation of Plex Analytics Stats...');
 
-        const pageSize = 5000;
         const maxHistoryItems = 250000;
-        let historyItems = [];
-        let start = 0;
-
-        while (start < maxHistoryItems) {
-            const pageRes = await fetch(
-                `${uri}/status/sessions/history/all?X-Plex-Token=${config.plexToken}&sort=viewedAt:desc&X-Plex-Container-Start=${start}&X-Plex-Container-Size=${pageSize}`,
-                { headers: { 'Accept': 'application/json' } }
-            ).then(r => r.json()).catch(() => null);
-
-            const pageContainer = pageRes && pageRes.MediaContainer ? pageRes.MediaContainer : null;
-            const pageItems = pageContainer && Array.isArray(pageContainer.Metadata) ? pageContainer.Metadata : [];
-            if (pageItems.length === 0) break;
-
-            historyItems = historyItems.concat(pageItems);
-            start += pageItems.length;
-
-            const totalSize = Number(pageContainer.totalSize || 0);
-            if ((totalSize > 0 && start >= totalSize) || pageItems.length < pageSize) break;
-        }
+        const historyItems = await fetchAnalyticsHistoryItems(uri, config, { maxItems: maxHistoryItems });
 
         if (historyItems.length >= maxHistoryItems) {
             log(`Analytics history fetch reached safety cap (${maxHistoryItems}). Results may be truncated.`);
