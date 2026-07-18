@@ -33,7 +33,7 @@ export const useSettingsAdminPanelBackups = ({
 
     const handleDownloadBackup = useCallback(async () => {
         try {
-            const response = await fetch(portalUrl('/api/admin/backup'));
+            const response = await fetch(portalUrl('/api/admin/backup'), { method: 'POST', credentials: 'same-origin' });
             if (!response.ok) throw new Error('Backup download failed');
             const text = await response.text();
             const blob = new Blob([text], { type: 'application/json' });

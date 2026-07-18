@@ -10,7 +10,11 @@ export const DiscoverCommunityView: React.FC<{
     isJellyfinPortal: boolean;
 }> = ({ trendingStats, recentLimit, showQualityBadges, serverName, isJellyfinPortal }) => (
     <div className="flex w-full flex-col gap-10">
-        {!isJellyfinPortal && trendingStats ? (
+        {isJellyfinPortal ? (
+            <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted">
+                Community trending is available when this portal is connected to Plex analytics.
+            </div>
+        ) : trendingStats ? (
             <section className="flex w-full flex-col gap-10">
                 <div className="text-center">
                     <h2 className="text-2xl font-extrabold text-white md:text-3xl">Community activity on {serverName || 'this server'}</h2>
@@ -20,6 +24,10 @@ export const DiscoverCommunityView: React.FC<{
                 <TrendingDiscoverSection title="Most Watched Movies This Month" items={trendingStats.movies30Days} limit={recentLimit} showQualityBadges={showQualityBadges} />
                 <TrendingDiscoverSection title="Most Watched Shows This Month" items={trendingStats.shows30Days} limit={recentLimit} showQualityBadges={showQualityBadges} />
             </section>
-        ) : null}
+        ) : (
+            <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted">
+                No community activity yet. Check back after people start watching.
+            </div>
+        )}
     </div>
 );

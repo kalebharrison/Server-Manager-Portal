@@ -31,6 +31,7 @@ const sessionKey = (session: any, index: number) => (
 export const ActiveStreamsPanel: React.FC<ActiveStreamsPanelProps> = ({ isAdmin, isJellyfinPortal, className = '', variant = 'detailed' }) => {
     const [activeSessions, setActiveSessions] = useState<any[]>([]);
     const [selectedSession, setSelectedSession] = useState<any | null>(null);
+    const [hasLoaded, setHasLoaded] = useState(false);
     const isWidePortalLayout = usePortalWideContentLayout();
 
     const fetchSessions = useCallback(async () => {
@@ -43,6 +44,8 @@ export const ActiveStreamsPanel: React.FC<ActiveStreamsPanelProps> = ({ isAdmin,
             ));
         } catch {
             // Preserve the last live snapshot during short backend interruptions.
+        } finally {
+            setHasLoaded(true);
         }
     }, [isJellyfinPortal]);
 
@@ -61,7 +64,9 @@ export const ActiveStreamsPanel: React.FC<ActiveStreamsPanelProps> = ({ isAdmin,
                 <h2 className="text-sm font-bold uppercase tracking-[2px] text-plex">Now Streaming</h2>
                 {totalStreams > 0 && <span className="text-xs text-muted">{totalStreams} active | {transcodingStreams} transcoding | {totalBandwidthMbps} Mbps</span>}
             </div>
-            {activeSessions.length ? (
+            {!hasLoaded ? (
+                <div className={`w-full rounded-lg border border-dashed border-border px-4 text-center text-sm text-muted ${isCompact ? 'py-3' : 'py-5'}`}>Checking active streams…</div>
+            ) : activeSessions.length ? (
                 <div className={isCompact ? 'grid grid-cols-1 gap-3 xl:grid-cols-2' : activityStreamGridClass(isWidePortalLayout, activeSessions.length)}>
                     {activeSessions.map((session, index) => isCompact
                         ? <CompactActiveStreamCard key={sessionKey(session, index)} session={session} onSelect={setSelectedSession} />

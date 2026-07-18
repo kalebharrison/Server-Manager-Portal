@@ -71,18 +71,21 @@ const DownloadPosterCard: React.FC<{ item: any }> = ({ item }) => {
 
 export const DiscoverDownloadsSection: React.FC<{ useScrollRevealAnimations?: boolean }> = ({ useScrollRevealAnimations }) => {
     const [downloads, setDownloads] = useState<any[]>([]);
+    const [loaded, setLoaded] = useState(false);
 
     const loadDownloads = useCallback(async () => {
         try {
-            const summary = await apiFetch('/api/media-stack/summary?monthOffset=0', { cacheTtlMs: 15_000 });
+            const queue = await apiFetch('/api/media-stack/queue', { cacheTtlMs: 15_000 });
             const next = [
-                ...mapQueueRecords(queueRecords(summary?.sonarr?.queue), 'Sonarr'),
-                ...mapQueueRecords(queueRecords(summary?.radarr?.queue), 'Radarr'),
-                ...mapQueueRecords(queueRecords(summary?.lidarr?.queue), 'Lidarr'),
+                ...mapQueueRecords(queueRecords(queue?.sonarr?.queue), 'Sonarr'),
+                ...mapQueueRecords(queueRecords(queue?.radarr?.queue), 'Radarr'),
+                ...mapQueueRecords(queueRecords(queue?.lidarr?.queue), 'Lidarr'),
             ].filter((item) => item.hasMediaTitle && item.progress >= 0);
             setDownloads(next);
         } catch {
             setDownloads([]);
+        } finally {
+            setLoaded(true);
         }
     }, []);
 
@@ -93,6 +96,14 @@ export const DiscoverDownloadsSection: React.FC<{ useScrollRevealAnimations?: bo
     useVisibleInterval(loadDownloads, 30000);
 
     const visibleDownloads = useMemo(() => downloads.slice(0, 20), [downloads]);
+    if (!loaded) {
+        return (
+            <div className="flex flex-col discover-deferred-section">
+                <h2 className="text-plex text-sm uppercase tracking-[2px] mb-5 font-bold border-b border-white/10 pb-2">ON THE WAY</h2>
+                <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted">Checking downloads…</div>
+            </div>
+        );
+    }
     if (!visibleDownloads.length) return null;
 
     return (

@@ -32,7 +32,7 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
 
         const seq = ++sessionCheckSeq.current;
         try {
-            clearApiCache();
+            // Refresh session only; keep other API cache warm across navigations.
             const data = await apiFetch('/api/users/me', { forceRefresh: true, cacheTtlMs: 0 });
             if (seq !== sessionCheckSeq.current) return;
             setSessionInfo(data);

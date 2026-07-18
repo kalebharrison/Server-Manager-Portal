@@ -65,9 +65,17 @@ export const useRequestDashboardCatalog = ({
         try {
             const ttl = activeView === 'search' ? 15_000 : refreshMs;
             const separator = endpointBase.includes('?') ? '&' : '?';
-            let data = await fetchRequestPage(`${endpointBase}${separator}page=${page}`, ttl);
+            const requestUrl = `${endpointBase}${separator}page=${page}`;
+            let data: RequestListResponse;
             if (activeView === 'search' && page === 1) {
-                const plex = await apiFetch(`/api/plex/search?query=${encodeURIComponent(debouncedQuery)}`, { cacheTtlMs: 30_000, staleIfErrorMs: 120_000 }).catch(() => ({ results: [] }));
+                const [requestPage, plex] = await Promise.all([
+                    fetchRequestPage(requestUrl, ttl),
+                    apiFetch(`/api/plex/search?query=${encodeURIComponent(debouncedQuery)}&limit=20`, {
+                        cacheTtlMs: 30_000,
+                        staleIfErrorMs: 120_000,
+                    }).catch(() => ({ results: [] })),
+                ]);
+                data = requestPage;
                 const plexResults = Array.isArray(plex?.results) ? plex.results as RequestMediaItem[] : [];
                 const requestResults = Array.isArray(data?.results) ? data.results : [];
                 const remainingPlex = [...plexResults];
@@ -81,6 +89,8 @@ export const useRequestDashboardCatalog = ({
                     return { ...item, ratingKey: plexItem.ratingKey, plexUrl: plexItem.plexUrl, available: true, canRequest: false };
                 });
                 data = { ...data, results: [...merged, ...remainingPlex] };
+            } else {
+                data = await fetchRequestPage(requestUrl, ttl);
             }
             if (sequence !== loadSequence.current) return;
             const includeBlocked = includeExisting;

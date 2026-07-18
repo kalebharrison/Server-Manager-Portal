@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
     createResolveIntegrationUrlForFetch,
+    isAlwaysBlockedIp,
     isBlockedHostName,
     isPrivateIp,
     normalizeExternalBaseUrl,
@@ -19,6 +20,9 @@ test('private and blocked hosts are detected for SSRF guards', () => {
     assert.equal(isPrivateIp('fd12:3456:789a::1'), true);
     assert.equal(isPrivateIp('fe80::1'), true);
     assert.equal(isPrivateIp('2001:4860:4860::8888'), false);
+    assert.equal(isAlwaysBlockedIp('169.254.169.254'), true);
+    assert.equal(isAlwaysBlockedIp('10.0.0.8'), false);
+    assert.equal(isAlwaysBlockedIp('fe80::1'), true);
     assert.equal(isBlockedHostName('localhost'), true);
     assert.equal(isBlockedHostName('seerr.local'), true);
     assert.equal(isBlockedHostName('seerr.example.com'), false);
@@ -32,6 +36,10 @@ test('normalizeExternalBaseUrl requires allowPrivate for LAN hosts', async () =>
     assert.equal(
         normalizeExternalBaseUrl('http://192.168.1.50:5055/', { allowPrivate: true }),
         'http://192.168.1.50:5055',
+    );
+    assert.throws(
+        () => normalizeExternalBaseUrl('http://169.254.169.254/latest', { allowPrivate: true }),
+        /Link-local and cloud metadata/,
     );
     assert.equal(
         await resolveIntegrationUrlForFetch('http://seerr:5055/'),

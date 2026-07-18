@@ -39,6 +39,8 @@ export const LibraryDashboard: React.FC<{ isAdmin?: boolean; publicConfig?: any;
     const [activeView, setActiveView] = useState<DiscoverView>('library');
     const [libraryData, setLibraryData] = useState<LibraryData | null>(() => readCachedLibrary(storageKey));
     const [trendingStats, setTrendingStats] = useState<TrendingStats | null>(() => readCachedCommunity(trendingStorageKey));
+    const [libraryLoading, setLibraryLoading] = useState(() => !readCachedLibrary(storageKey));
+    const [communityLoading, setCommunityLoading] = useState(() => !readCachedCommunity(trendingStorageKey));
     const [error, setError] = useState<string | null>(null);
     const [isDiscoverDesktop, setIsDiscoverDesktop] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
     const [recentLimitOverride, setRecentLimitOverride] = useState<number | null>(() => {
@@ -74,6 +76,7 @@ export const LibraryDashboard: React.FC<{ isAdmin?: boolean; publicConfig?: any;
     }, [storageKey]);
 
     const fetchLibrary = useCallback(async () => {
+        if (!readCachedLibrary(storageKey)) setLibraryLoading(true);
         try {
             const endpoint = isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/library';
             const result = await apiFetch(`${endpoint}?limit=${recentLimit}`, { cacheTtlMs: refreshMs, staleIfErrorMs: 60 * 60_000 });
@@ -81,17 +84,25 @@ export const LibraryDashboard: React.FC<{ isAdmin?: boolean; publicConfig?: any;
             setError(null);
         } catch (fetchError: any) {
             if (!readCachedLibrary(storageKey)) setError(fetchError?.message || 'Discover is temporarily unavailable');
+        } finally {
+            setLibraryLoading(false);
         }
     }, [isJellyfinPortal, recentLimit, refreshMs, storageKey, updateLibrary]);
 
     const fetchTrending = useCallback(async () => {
-        if (isJellyfinPortal) return;
+        if (isJellyfinPortal) {
+            setCommunityLoading(false);
+            return;
+        }
+        if (!readCachedCommunity(trendingStorageKey)) setCommunityLoading(true);
         try {
             const result = await apiFetch('/api/plex/stats/trending', { cacheTtlMs: refreshMs, staleIfErrorMs: 60 * 60_000 });
             setTrendingStats(result);
             sessionStorage.setItem(trendingStorageKey, JSON.stringify(result));
         } catch {
             // Keep the last community snapshot visible during a short analytics interruption.
+        } finally {
+            setCommunityLoading(false);
         }
     }, [isJellyfinPortal, refreshMs, trendingStorageKey]);
 
@@ -122,9 +133,17 @@ export const LibraryDashboard: React.FC<{ isAdmin?: boolean; publicConfig?: any;
                 <ActiveStreamsPanel isAdmin={isAdmin} isJellyfinPortal={isJellyfinPortal} className="mb-10" />
 
                 {activeView === 'library' ? (
-                    <DiscoverLibraryView data={libraryData || EMPTY_LIBRARY} recentLimit={recentLimit} onRecentLimitChange={handleRecentLimitChange} isJellyfinPortal={isJellyfinPortal} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} />
+                    libraryLoading && !libraryData ? (
+                        <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted">Loading your library…</div>
+                    ) : (
+                        <DiscoverLibraryView data={libraryData || EMPTY_LIBRARY} recentLimit={recentLimit} onRecentLimitChange={handleRecentLimitChange} isJellyfinPortal={isJellyfinPortal} showQualityBadges={showQualityBadges} useScrollRevealAnimations={publicConfig?.useScrollRevealAnimations} />
+                    )
                 ) : (
-                    <DiscoverCommunityView trendingStats={trendingStats} recentLimit={recentLimit} showQualityBadges={showQualityBadges} serverName={cacheScope} isJellyfinPortal={isJellyfinPortal} />
+                    communityLoading && !trendingStats && !isJellyfinPortal ? (
+                        <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted">Loading community activity…</div>
+                    ) : (
+                        <DiscoverCommunityView trendingStats={trendingStats} recentLimit={recentLimit} showQualityBadges={showQualityBadges} serverName={cacheScope} isJellyfinPortal={isJellyfinPortal} />
+                    )
                 )}
             </main>
         </div>
