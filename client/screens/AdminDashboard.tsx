@@ -116,7 +116,7 @@ export const AdminDashboard: React.FC<{ onViewAsUser: (userId: string) => Promis
         try {
             const updatedUser = await apiFetch(`/api/users/${userToSave.id}`, {
                 method: 'PUT',
-                body: JSON.stringify({ expiryDate: userToSave.expiryDate, exemptFromCleanup: userToSave.exemptFromCleanup, optOutNewsletter: userToSave.optOutNewsletter })
+                body: JSON.stringify({ expiryDate: userToSave.expiryDate, exemptFromCleanup: userToSave.exemptFromCleanup, newsletterOptIn: userToSave.newsletterOptIn === true })
             });
             setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
             handleCloseModal();
@@ -176,8 +176,9 @@ export const AdminDashboard: React.FC<{ onViewAsUser: (userId: string) => Promis
                 const query = searchQuery.toLowerCase().trim();
                 if (query) {
                     const matchesName = user.username.toLowerCase().includes(query);
+                    const matchesDisplay = user.displayName?.toLowerCase().includes(query) || false;
                     const matchesEmail = user.email?.toLowerCase().includes(query) || false;
-                    if (!matchesName && !matchesEmail) return false;
+                    if (!matchesName && !matchesDisplay && !matchesEmail) return false;
                 }
 
                 if (statusFilter === 'all') return true;
@@ -203,10 +204,10 @@ export const AdminDashboard: React.FC<{ onViewAsUser: (userId: string) => Promis
             })
             .sort((a, b) => {
                 if (sortBy === 'username-asc') {
-                    return a.username.localeCompare(b.username);
+                    return (a.displayName || a.username).localeCompare(b.displayName || b.username);
                 }
                 if (sortBy === 'username-desc') {
-                    return b.username.localeCompare(a.username);
+                    return (b.displayName || b.username).localeCompare(a.displayName || a.username);
                 }
                 if (sortBy === 'joined-desc') {
                     return new Date(b.joiningDate).getTime() - new Date(a.joiningDate).getTime();
@@ -254,7 +255,7 @@ export const AdminDashboard: React.FC<{ onViewAsUser: (userId: string) => Promis
                         <div className="relative w-full xl:w-auto xl:flex-1 min-w-[250px]">
                             <input
                                 type="text"
-                                placeholder="Search by username or email..."
+                                placeholder="Search by name, username, or email..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full py-3 pr-10 pl-4 rounded-lg border border-border bg-background text-text text-sm outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"

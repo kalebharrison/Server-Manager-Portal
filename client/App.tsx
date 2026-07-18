@@ -6,6 +6,7 @@ import { Loader } from './shared/toast';
 import { AppAmbientBackground } from './shared/theme';
 import { PORTAL_WIDE_LAYOUT_THRESHOLD } from './shared/portalLayout';
 import { applyLocalPortalPreferences, loadLocalPortalPreferences, USER_PREFERENCES_EVENT } from './shared/userPreferences';
+import { resolveHomeLanding, resolveLocale } from './shared/userProfile';
 import {
     updateFavicon,
     Login,
@@ -208,6 +209,22 @@ export const MainApp: React.FC = () => {
             if (seq !== sessionCheckSeq.current) return;
             setSessionInfo(data);
             if (data.serverName) document.title = `${data.serverName} Portal`;
+            const locale = resolveLocale(data.account);
+            if (typeof window !== 'undefined') {
+                (window as any).__PORTAL_LOCALE__ = locale || undefined;
+                if (locale) document.documentElement.lang = locale;
+            }
+            const preferredLanding = resolveHomeLanding(data.account);
+            const landingRoute = preferredLanding === 'portal'
+                ? 'user'
+                : preferredLanding === 'discover'
+                    ? 'dashboard'
+                    : preferredLanding;
+            const landingPath = preferredLanding === 'portal'
+                ? '/portal'
+                : preferredLanding === 'discover'
+                    ? '/dashboard'
+                    : `/${preferredLanding}`;
             if (path === '/status') updateRoute('status');
             else if (path === '/dashboard') updateRoute('dashboard');
             else if (path === '/settings' && data.session.isAdmin) updateRoute('settings');
@@ -231,8 +248,14 @@ export const MainApp: React.FC = () => {
                 }
             }
             else {
-                window.history.replaceState({}, '', portalUrl('/portal'));
-                updateRoute('user');
+                // Root/login success: honor member home landing preference.
+                if (!data.session.isAdmin || data.impersonation?.active) {
+                    window.history.replaceState({}, '', portalUrl(landingPath));
+                    updateRoute(landingRoute as any);
+                } else {
+                    window.history.replaceState({}, '', portalUrl('/portal'));
+                    updateRoute('user');
+                }
             }
         } catch {
             if (seq !== sessionCheckSeq.current) return;

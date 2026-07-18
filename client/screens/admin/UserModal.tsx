@@ -8,7 +8,7 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
     const [joiningDate, setJoiningDate] = useState(formatDate(new Date().toISOString()));
     const [expiryDate, setExpiryDate] = useState<string | null>(formatDate(addMonths(new Date(), 1).toISOString()));
     const [exemptFromCleanup, setExemptFromCleanup] = useState(false);
-    const [optOutNewsletter, setOptOutNewsletter] = useState(false);
+    const [newsletterOptIn, setNewsletterOptIn] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -16,13 +16,13 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
             setJoiningDate(formatDate(user.joiningDate));
             setExpiryDate(user.expiryDate ? formatDate(user.expiryDate) : null);
             setExemptFromCleanup(!!user.exemptFromCleanup);
-            setOptOutNewsletter(!!user.optOutNewsletter);
+            setNewsletterOptIn(user.newsletterOptIn === true);
         } else {
             setUsername('');
             setJoiningDate(formatDate(new Date().toISOString()));
             setExpiryDate(formatDate(addMonths(new Date(), 1).toISOString()));
             setExemptFromCleanup(false);
-            setOptOutNewsletter(false);
+            setNewsletterOptIn(false);
         }
     }, [user, isOpen]);
 
@@ -30,7 +30,7 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
 
     const handleSave = () => {
         if (!user) return;
-        onSave({ ...user, expiryDate, exemptFromCleanup, optOutNewsletter });
+        onSave({ ...user, expiryDate, exemptFromCleanup, newsletterOptIn });
     };
 
     const handleQuickAction = (action: 'addMonth' | 'addYear' | 'unlimited') => {
@@ -80,14 +80,14 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
                 <h3 className="text-xs uppercase tracking-wider font-bold text-muted mt-6 mb-2">User Preferences</h3>
                 <div className="mb-4 flex items-center justify-between bg-black/10 p-4 rounded-lg border border-border">
                     <div>
-                        <label className="font-bold block mb-1">Disable Newsletter</label>
-                        <span className="text-xs text-muted block">Stop automated emails for this user</span>
+                        <label className="font-bold block mb-1">Newsletter subscribed</label>
+                        <span className="text-xs text-muted block">Opt-in weekly library email (off by default)</span>
                     </div>
                     <button
-                        onClick={() => setOptOutNewsletter(!optOutNewsletter)}
-                        className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${optOutNewsletter ? 'bg-plex' : 'bg-border'}`}
+                        onClick={() => setNewsletterOptIn(!newsletterOptIn)}
+                        className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${newsletterOptIn ? 'bg-plex' : 'bg-border'}`}
                     >
-                        <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${optOutNewsletter ? 'translate-x-6' : 'translate-x-1'}`} />
+                        <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${newsletterOptIn ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                 </div>
                 <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-border">

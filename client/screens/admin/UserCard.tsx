@@ -4,6 +4,7 @@ import { Eye } from 'lucide-react';
 import { resolvePortalAssetUrl } from '../../shared/basePath';
 import { formatDate, getDaysUntilExpiry } from '../../shared/format';
 import type { User, UserStatus } from '../../shared/types';
+import { resolveDisplayName, wantsNewsletter } from '../../shared/userProfile';
 
 export const UserCard: React.FC<{
     user: User;
@@ -59,15 +60,22 @@ export const UserCard: React.FC<{
                         style={{ borderRadius: '50%' }}
                     />
                     {user.thumb ? (
-                        <img src={resolvePortalAssetUrl(user.thumb)} alt={user.username} className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0" />
+                        <img src={resolvePortalAssetUrl(user.thumb)} alt={resolveDisplayName(user)} className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0" />
                     ) : (
                         <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center text-text font-bold text-xs uppercase flex-shrink-0">
-                            {user.username.substring(0, 2)}
+                            {resolveDisplayName(user).substring(0, 2)}
                         </div>
                     )}
                     <div className="flex flex-col min-w-0 pr-1">
-                        <h3 className="text-sm font-bold truncate leading-tight" title={user.username}>{user.username}</h3>
-                        {user.email && <span className="text-[10px] text-muted truncate mt-0.5" title={user.email}>{user.email}</span>}
+                        <h3 className="text-sm font-bold truncate leading-tight" title={resolveDisplayName(user)}>{resolveDisplayName(user)}</h3>
+                        {(user.displayName || user.email) && (
+                            <span className="text-[10px] text-muted truncate mt-0.5" title={user.displayName ? user.username : user.email}>
+                                {user.displayName ? user.username : user.email}
+                            </span>
+                        )}
+                        {user.displayName && user.email && (
+                            <span className="text-[10px] text-muted truncate" title={user.email}>{user.email}</span>
+                        )}
                     </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider whitespace-nowrap ${pillClass}`}>{statusText}</span>
@@ -97,7 +105,7 @@ export const UserCard: React.FC<{
                 </div>
                 <div className="flex justify-between items-center text-xs pb-1.5 border-b border-white/5 last:border-0 last:pb-0">
                     <span className="text-muted text-[10px] uppercase tracking-wider font-bold">Newsletter</span>
-                    <span className={`font-medium ${user.optOutNewsletter ? 'text-muted' : 'text-green-300'}`}>{user.optOutNewsletter ? 'Disabled' : 'Enabled'}</span>
+                    <span className={`font-medium ${wantsNewsletter(user) ? 'text-green-300' : 'text-muted'}`}>{wantsNewsletter(user) ? 'Opted in' : 'Off'}</span>
                 </div>
             </div>
             <div className="flex flex-wrap gap-2 mt-auto pt-4" onClick={e => e.stopPropagation()}>

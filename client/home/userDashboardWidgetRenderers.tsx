@@ -35,7 +35,7 @@ export type UserDashboardWidgetDeps = {
     isExpiringSoon: boolean;
     daysLeft: number | null;
     progressPct: number;
-    optOutNewsletter: boolean;
+    newsletterOptIn: boolean;
     serverStats: any;
     serverDataLoading: boolean;
     analytics: any;
@@ -77,7 +77,7 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
         isExpiringSoon,
         daysLeft,
         progressPct,
-        optOutNewsletter,
+        newsletterOptIn,
         serverStats,
         serverDataLoading,
         analytics,
@@ -228,11 +228,11 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
                         <div className="flex items-center justify-between gap-4">
                             <div>
                                 <p className="text-text font-bold text-sm">Weekly Newsletter</p>
-                                <p className="text-muted text-xs mt-1 leading-relaxed">Automated library updates delivered to your inbox</p>
+                                <p className="text-muted text-xs mt-1 leading-relaxed">Opt in for library updates — more notice settings live in Preferences</p>
                             </div>
                             <button onClick={handleToggleNewsletter} aria-label="Toggle newsletter"
-                                className={`relative inline-flex items-center w-14 h-7 rounded-full transition-all flex-shrink-0 border-2 ${!optOutNewsletter ? 'bg-plex border-plex' : 'bg-background border-border'}`}>
-                                <span className={`inline-block w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${!optOutNewsletter ? 'translate-x-8' : 'translate-x-1'}`} />
+                                className={`relative inline-flex items-center w-14 h-7 rounded-full transition-all flex-shrink-0 border-2 ${newsletterOptIn ? 'bg-plex border-plex' : 'bg-background border-border'}`}>
+                                <span className={`inline-block w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${newsletterOptIn ? 'translate-x-8' : 'translate-x-1'}`} />
                             </button>
                         </div>
                     </div>

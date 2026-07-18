@@ -8,7 +8,22 @@ export interface User {
     plexAccessStatus: 'active' | 'pending' | 'revoked' | 'unknown';
     exemptFromCleanup?: boolean;
     isTrial?: boolean;
-    optOutNewsletter?: boolean;
+    /** Opt-in weekly newsletter. Default/undefined = off. */
+    newsletterOptIn?: boolean;
+    /** Custom portal display name; falls back to Plex/Jellyfin username. */
+    displayName?: string;
+    /** Optional delivery email override for portal notices. */
+    contactEmail?: string;
+    notifyAccessExpiry?: boolean;
+    notifyRequestUpdates?: boolean;
+    notifyIssueReplies?: boolean;
+    notifyWatchlistAvailable?: boolean;
+    hideFromLeaderboards?: boolean;
+    locale?: string;
+    homeLanding?: 'portal' | 'discover' | 'request' | 'status' | 'analytics' | 'issues';
+    homeAnalyticsDays?: 7 | 30 | 90 | 'all';
+    homeShowWrapUp?: boolean;
+    homeShowWeekCalendar?: boolean;
     lastLogin?: string;
 }
 
