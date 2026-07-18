@@ -22,8 +22,8 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean; sessionInfo: any }
     const { analyticsData, providerData, isLoading, error } = useAnalyticsData({ days, isAdmin, isJellyfinPortal });
 
     useEffect(() => {
-        if ((!isAdmin || isJellyfinPortal) && viewTab === 'graphs') setViewTab('overview');
-    }, [isAdmin, isJellyfinPortal, viewTab]);
+        if (isJellyfinPortal && viewTab === 'graphs') setViewTab('overview');
+    }, [isJellyfinPortal, viewTab]);
 
     if (isLoading) return <Loader isLoading={true} />;
     if (error) return <div className="text-red-500 font-bold p-8 text-center">{error}</div>;
@@ -33,13 +33,12 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean; sessionInfo: any }
         <div className="w-full min-w-0 animate-fade-in flex flex-col gap-6">
             <AnalyticsDashboardHeader
                 days={days}
-                isAdmin={isAdmin}
                 isJellyfinPortal={isJellyfinPortal}
                 viewTab={viewTab}
                 onDaysChange={setDays}
                 onTabChange={setViewTab}
             />
-            {isAdmin && viewTab === 'graphs' && (
+            {viewTab === 'graphs' && (
                 <Suspense fallback={<AnalyticsPanelFallback />}>
                     <TautulliGraphsTab />
                 </Suspense>

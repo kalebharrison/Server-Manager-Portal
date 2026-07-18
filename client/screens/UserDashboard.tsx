@@ -81,35 +81,6 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
         }
     };
 
-    const handleRequestInvite = async (): Promise<boolean> => {
-        setIsLoading(true);
-        try {
-            await apiFetch('/api/users/request-invite', { method: 'POST' });
-            setToast({ id: 1, message: 'Invite requested successfully! Check your email.', type: 'success' });
-            refreshSession();
-            return true;
-        } catch (e: any) {
-            setToast({ id: 1, message: e.message || 'Failed to request invite', type: 'error' });
-            return false;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Auto-request invite if user is totally new — retry if the first attempt fails.
-    useEffect(() => {
-        if (!user && !isLoading && !sessionInfo.session.isAdmin) {
-            if (sessionStorage.getItem('autoInviteSucceeded') === 'true') return;
-            if (sessionStorage.getItem('autoInviteRequested') === 'true') return;
-            sessionStorage.setItem('autoInviteRequested', 'true');
-            handleRequestInvite().then((ok) => {
-                if (ok) sessionStorage.setItem('autoInviteSucceeded', 'true');
-                else sessionStorage.removeItem('autoInviteRequested');
-            });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     useEffect(() => {
         let cancelled = false;
         const fetchAnalytics = async () => {

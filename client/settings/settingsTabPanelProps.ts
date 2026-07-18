@@ -173,7 +173,6 @@ export const buildSettingsTabPanelProps = ({
             onPushAnnouncement: handlePushAnnouncement,
         },
         publicAccess: {
-            allowTemporaryAccess: values.allowTemporaryAccess,
             showLoginServerStats: values.showLoginServerStats,
             useTrendingSlideshowOnLogin: values.useTrendingSlideshowOnLogin,
             referralEnabled: values.referralEnabled,
@@ -183,7 +182,6 @@ export const buildSettingsTabPanelProps = ({
             libraries: resources.libraries,
             defaultLibraryIds: values.defaultLibraryIds,
             hideStreamUsers: values.hideStreamUsers,
-            onAllowTemporaryAccessChange: onChange('allowTemporaryAccess'),
             onShowLoginServerStatsChange: onChange('showLoginServerStats'),
             onUseTrendingSlideshowOnLoginChange: onChange('useTrendingSlideshowOnLogin'),
             onReferralEnabledChange: onChange('referralEnabled'),

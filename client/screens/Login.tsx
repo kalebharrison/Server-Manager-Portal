@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Sparkles } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
 import { logoUrl, portalUrl, resolvePortalAssetUrl, stripBasePath } from '../shared/basePath';
@@ -33,7 +33,6 @@ const copyTextToClipboard = async (value: string) => {
     document.body.removeChild(textarea);
 };
 
-const loginPrimaryBtnClass = themeClasses.btnPrimaryLg;
 const loginSecondaryBtnClass = `${themeClasses.btnSecondary} w-full px-8 py-4 text-base`;
 
 export const Login: React.FC<{ onLoginSuccess: () => void, publicConfig?: any, initialError?: string }> = ({ onLoginSuccess, publicConfig, initialError }) => {
@@ -205,7 +204,6 @@ export const Login: React.FC<{ onLoginSuccess: () => void, publicConfig?: any, i
 
     const mediaServerType = String(publicConfig?.mediaServerType || publicInfo.mediaServerType || 'plex').toLowerCase();
     const isJellyfinAuth = mediaServerType === 'jellyfin';
-    const showTrialAccess = !isJellyfinAuth && publicConfig?.allowTemporaryAccess !== false;
     const logoSrc = publicConfig?.customLogoUrl
         ? resolvePortalAssetUrl(publicConfig.customLogoUrl)
         : (publicInfo.thumb ? resolvePortalAssetUrl(publicInfo.thumb) : '');
@@ -217,36 +215,8 @@ export const Login: React.FC<{ onLoginSuccess: () => void, publicConfig?: any, i
             <Loader isLoading={isLoading} isCinematic={!!publicConfig?.useCinematicLoading} />
 
             <div className="relative z-10 w-full max-w-6xl flex flex-col gap-6">
-                <div className={`glass-card-lg overflow-hidden flex flex-col ${showTrialAccess ? 'lg:flex-row min-h-[min(680px,calc(100vh-3rem))]' : 'max-w-xl mx-auto w-full'}`}>
-                    {showTrialAccess && (
-                        <div className="flex-1 flex flex-col justify-center p-6 sm:p-8 lg:p-10 xl:p-12 border-t lg:border-t-0 lg:border-r border-white/10 bg-gradient-to-br from-plex/[0.08] via-plex/[0.03] to-transparent min-w-0 order-last lg:order-none">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-plex/10 border border-plex/25 text-plex text-[11px] font-bold uppercase tracking-widest mb-5 w-fit">
-                                <Sparkles className="w-3.5 h-3.5" /> New here?
-                            </div>
-                            <h1 className="text-3xl sm:text-4xl font-black text-text tracking-tight leading-tight mb-3">
-                                Welcome to{' '}
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-plex to-amber-400">{publicInfo.serverName}</span>
-                            </h1>
-                            <p className="text-muted text-sm sm:text-base leading-relaxed mb-6 max-w-lg">
-                                The ultimate Plex experience. Get instant access to our entire library with a{' '}
-                                <strong className="text-text font-semibold">3-Day Temporary Access</strong> pass.
-                            </p>
-
-                            <div className="mb-6">
-                                <LivePlexStats enabled={publicConfig?.showLoginServerStats === true} />
-                            </div>
-
-                            <p className="text-xs text-muted/80 leading-relaxed mb-5">
-                                You&apos;ll need a free Plex account to continue. You can create one securely on the next screen.
-                            </p>
-                            <button type="button" className={loginPrimaryBtnClass} onClick={handlePlexLogin} disabled={isLoading}>
-                                <img src={logoUrl()} alt="" className="w-5 h-5 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                                Request Temporary Access
-                            </button>
-                        </div>
-                    )}
-
-                    <div className={`flex flex-col justify-center items-center text-center p-6 sm:p-8 lg:p-10 xl:p-12 min-w-0 ${showTrialAccess ? 'flex-1 order-first lg:order-none' : 'w-full py-10 sm:py-12'}`}>
+                <div className="glass-card-lg overflow-hidden flex flex-col max-w-xl mx-auto w-full">
+                    <div className="flex flex-col justify-center items-center text-center p-6 sm:p-8 lg:p-10 xl:p-12 min-w-0 w-full py-10 sm:py-12">
                         <div className="relative mb-8">
                             {!logoSrc && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 bg-plex/20 rounded-full blur-[60px] pointer-events-none" />}
                             {logoSrc ? (
@@ -264,28 +234,14 @@ export const Login: React.FC<{ onLoginSuccess: () => void, publicConfig?: any, i
                             )}
                         </div>
 
-                        {!showTrialAccess && (
-                            <>
-                                <h1 className="text-3xl sm:text-4xl font-black text-text tracking-tight mb-3">
-                                    {publicInfo.serverName}
-                                </h1>
-                                <p className="text-muted text-sm sm:text-base leading-relaxed mb-8 max-w-sm">
-                                    {isJellyfinAuth
-                                        ? 'Sign in with your Jellyfin account to access your portal and manage your subscription.'
-                                        : 'Sign in with Plex to access your portal and manage your subscription.'}
-                                </p>
-                            </>
-                        )}
-
-                        {showTrialAccess && (
-                            <>
-                                <p className="text-[11px] font-bold text-muted uppercase tracking-[0.16em] mb-2">Returning member</p>
-                                <h2 className="text-2xl sm:text-3xl font-black text-text tracking-tight mb-3">Already on our server?</h2>
-                                <p className="text-muted text-sm sm:text-base leading-relaxed mb-8 max-w-sm">
-                                    Manage your existing access or re-link your Plex account.
-                                </p>
-                            </>
-                        )}
+                        <h1 className="text-3xl sm:text-4xl font-black text-text tracking-tight mb-3">
+                            {publicInfo.serverName}
+                        </h1>
+                        <p className="text-muted text-sm sm:text-base leading-relaxed mb-8 max-w-sm">
+                            {isJellyfinAuth
+                                ? 'Sign in with your Jellyfin account to access your portal and manage your subscription.'
+                                : 'Sign in with Plex to access your portal and manage your subscription.'}
+                        </p>
 
                         {isJellyfinAuth ? (
                             <div className="w-full max-w-sm flex flex-col gap-4 text-left">
@@ -362,7 +318,7 @@ export const Login: React.FC<{ onLoginSuccess: () => void, publicConfig?: any, i
                             </button>
                         )}
 
-                        {!showTrialAccess && !isJellyfinAuth && publicConfig?.showLoginServerStats === true && (
+                        {!isJellyfinAuth && publicConfig?.showLoginServerStats === true && (
                             <div className="w-full mt-10 pt-8 border-t border-white/10">
                                 <LivePlexStats enabled />
                             </div>

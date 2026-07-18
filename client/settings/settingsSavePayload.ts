@@ -79,6 +79,7 @@ export const buildSettingsSavePayload = ({
     plexServerUrl: settings.plexServerUrl || '',
     checkIntervalMinutes: checkInterval,
     primaryColor: '',
+    allowTemporaryAccess: false,
     navOrder: ensureMaintenanceNavOrder(navOrder),
     dashboardLayout: normalizeSectionLayout(dashboardLayout),
 });

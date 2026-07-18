@@ -17,14 +17,12 @@ const PERIOD_OPTIONS = [
 
 export const AnalyticsDashboardHeader = memo(({
     days,
-    isAdmin = false,
     isJellyfinPortal,
     viewTab,
     onDaysChange,
     onTabChange,
 }: {
     days: string;
-    isAdmin?: boolean;
     isJellyfinPortal: boolean;
     viewTab: AnalyticsViewTab;
     onDaysChange: (days: string) => void;
@@ -40,7 +38,7 @@ export const AnalyticsDashboardHeader = memo(({
                 <button onClick={() => onTabChange('overview')} className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 md:gap-2 ${viewTab === 'overview' ? 'bg-plex text-white shadow-lg' : 'text-muted hover:text-white'}`}>
                     <Activity className="w-4 h-4 shrink-0" /> <span className="hidden sm:inline">Overview</span><span className="sm:hidden">Overview</span>
                 </button>
-                {isAdmin && !isJellyfinPortal && (
+                {!isJellyfinPortal && (
                     <button onClick={() => onTabChange('graphs')} className={`px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 md:gap-2 ${viewTab === 'graphs' ? 'bg-plex text-white shadow-lg' : 'text-muted hover:text-white'}`}>
                         <LucideLineChart className="w-4 h-4 shrink-0" /> <span className="hidden sm:inline">Graphs</span><span className="sm:hidden">Graphs</span>
                     </button>
