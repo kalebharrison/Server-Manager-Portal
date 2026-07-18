@@ -1,0 +1,22 @@
+export const JELLYFIN_ICON_URL = 'https://cdn.jsdelivr.net/gh/selfhst/icons/svg/jellyfin.svg';
+
+export const jellyfinQuickConnectUrl = (baseUrl: string) => {
+    const base = String(baseUrl || '').replace(/\/+$/, '');
+    return base ? `${base}/web/#/quickconnect` : '';
+};
+
+export const copyTextToClipboard = async (value: string) => {
+    if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        return;
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', 'true');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+};
