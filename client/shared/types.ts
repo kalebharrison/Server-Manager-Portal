@@ -8,7 +8,10 @@ export interface User {
     plexAccessStatus: 'active' | 'pending' | 'revoked' | 'unknown';
     exemptFromCleanup?: boolean;
     isTrial?: boolean;
-    optOutNewsletter?: boolean;
+    /** Opt-in weekly newsletter. Default/undefined = off. */
+    newsletterOptIn?: boolean;
+    /** Custom portal display name; falls back to Plex/Jellyfin username. */
+    displayName?: string;
     lastLogin?: string;
 }
 

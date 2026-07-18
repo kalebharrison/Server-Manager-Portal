@@ -61,18 +61,22 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
     const isJellyfinPortal = String(publicConfig?.mediaServerType || 'plex').toLowerCase() === 'jellyfin';
     const dashboardRefreshMs = cacheRefreshMs(publicConfig);
     const serverStatsStorageKey = homeServerStatsCacheKey(publicConfig);
-    const [optOutNewsletter, setOptOutNewsletter] = useState(user?.optOutNewsletter || false);
+    const [newsletterOptIn, setNewsletterOptIn] = useState(user?.newsletterOptIn === true);
+
+    useEffect(() => {
+        setNewsletterOptIn(user?.newsletterOptIn === true);
+    }, [user?.newsletterOptIn]);
 
     const handleToggleNewsletter = async () => {
         setIsLoading(true);
         try {
-            const newValue = !optOutNewsletter;
+            const newValue = !newsletterOptIn;
             await apiFetch('/api/users/preferences', {
                 method: 'POST',
-                body: JSON.stringify({ optOutNewsletter: newValue })
+                body: JSON.stringify({ newsletterOptIn: newValue })
             });
-            setOptOutNewsletter(newValue);
-            setToast({ id: 3, message: 'Newsletter preferences updated!', type: 'success' });
+            setNewsletterOptIn(newValue);
+            setToast({ id: 3, message: newValue ? 'Subscribed to the weekly newsletter.' : 'Unsubscribed from the weekly newsletter.', type: 'success' });
             refreshSession();
         } catch (e: any) {
             setToast({ id: 3, message: e.message || 'Failed to update preferences', type: 'error' });
@@ -208,7 +212,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
         isExpiringSoon,
         daysLeft,
         progressPct,
-        optOutNewsletter,
+        newsletterOptIn,
         serverStats,
         serverDataLoading,
         analytics,
@@ -228,7 +232,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
         DiscoverPosterCard,
         RebuildLibraryCacheButton,
     }), [
-        sessionInfo, publicConfig, user, isRevoked, isExpiringSoon, daysLeft, progressPct, optOutNewsletter,
+        sessionInfo, publicConfig, user, isRevoked, isExpiringSoon, daysLeft, progressPct, newsletterOptIn,
         serverStats, serverDataLoading, analytics, analyticsLoading, analyticsDays, analyticsDaysOpen,
         showQualityBadges, dashboardData, onViewAdmin, onViewSettings, onViewLogs,
     ]);

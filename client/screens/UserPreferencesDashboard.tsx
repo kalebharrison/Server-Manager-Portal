@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, CalendarDays, Clock3, Film, Gauge, Image, Palette } from 'lucide-react';
+import { Bell, CalendarDays, Clock3, Film, Gauge, Image, Palette, UserRound } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
 import { CustomSelect } from '../shared/ui';
 import { loadLocalPortalPreferences, saveLocalPortalPreferences, type LocalPortalPreferences } from '../shared/userPreferences';
+import { sanitizeDisplayName, wantsNewsletter } from '../shared/userProfile';
 
 const themeOptions = [
     { label: 'Plex Dark', value: 'plex' },
@@ -21,12 +22,15 @@ export const UserPreferencesDashboard: React.FC<{
     refreshSession: () => Promise<void> | void;
     readOnly?: boolean;
 }> = ({ account, activeTheme, setActiveTheme, refreshSession, readOnly = false }) => {
-    const [newsletterEnabled, setNewsletterEnabled] = useState(!account?.optOutNewsletter);
+    const [newsletterEnabled, setNewsletterEnabled] = useState(wantsNewsletter(account));
+    const [displayName, setDisplayName] = useState(sanitizeDisplayName(account?.displayName));
     const [localPreferences, setLocalPreferences] = useState(loadLocalPortalPreferences);
     const [saving, setSaving] = useState(false);
+    const [savingName, setSavingName] = useState(false);
     const [message, setMessage] = useState('');
 
-    useEffect(() => setNewsletterEnabled(!account?.optOutNewsletter), [account?.optOutNewsletter]);
+    useEffect(() => setNewsletterEnabled(wantsNewsletter(account)), [account?.newsletterOptIn]);
+    useEffect(() => setDisplayName(sanitizeDisplayName(account?.displayName)), [account?.displayName]);
 
     const updateLocalPreference = <K extends keyof LocalPortalPreferences>(key: K, value: LocalPortalPreferences[K]) => {
         setLocalPreferences((current) => {
@@ -44,10 +48,10 @@ export const UserPreferencesDashboard: React.FC<{
         try {
             await apiFetch('/api/users/preferences', {
                 method: 'POST',
-                body: JSON.stringify({ optOutNewsletter: !nextEnabled }),
+                body: JSON.stringify({ newsletterOptIn: nextEnabled }),
             });
             setNewsletterEnabled(nextEnabled);
-            setMessage('Preference saved.');
+            setMessage(nextEnabled ? 'Subscribed to the weekly newsletter.' : 'Unsubscribed from the weekly newsletter.');
             await refreshSession();
         } catch (error: any) {
             setMessage(error.message || 'Unable to save preference.');
@@ -55,6 +59,28 @@ export const UserPreferencesDashboard: React.FC<{
             setSaving(false);
         }
     };
+
+    const saveDisplayName = async () => {
+        if (!account || savingName || readOnly) return;
+        const nextName = sanitizeDisplayName(displayName);
+        setSavingName(true);
+        setMessage('');
+        try {
+            await apiFetch('/api/users/preferences', {
+                method: 'POST',
+                body: JSON.stringify({ displayName: nextName }),
+            });
+            setDisplayName(nextName);
+            setMessage(nextName ? 'Display name saved.' : 'Display name cleared. Showing your account username.');
+            await refreshSession();
+        } catch (error: any) {
+            setMessage(error.message || 'Unable to save display name.');
+        } finally {
+            setSavingName(false);
+        }
+    };
+
+    const accountUsername = String(account?.username || '').trim();
 
     return (
         <div className="w-full max-w-3xl">
@@ -64,6 +90,40 @@ export const UserPreferencesDashboard: React.FC<{
             </header>
 
             <div className="divide-y divide-border rounded-lg border border-border bg-card overflow-hidden">
+                {account && (
+                    <section className="p-5 flex flex-col gap-4">
+                        <div className="flex gap-3">
+                            <UserRound className="w-5 h-5 text-plex mt-0.5" />
+                            <div>
+                                <h2 className="font-bold text-text">Display name</h2>
+                                <p className="text-sm text-muted mt-1">
+                                    Shown on your home screen and in newsletters.
+                                    {accountUsername ? ` Leave blank to use ${accountUsername}.` : ''}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3 pl-8">
+                            <input
+                                type="text"
+                                value={displayName}
+                                maxLength={40}
+                                disabled={readOnly || savingName}
+                                onChange={(event) => setDisplayName(event.target.value)}
+                                placeholder={accountUsername || 'Display name'}
+                                className="w-full sm:flex-1 p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all disabled:opacity-50"
+                            />
+                            <button
+                                type="button"
+                                disabled={readOnly || savingName}
+                                onClick={saveDisplayName}
+                                className="px-5 py-3 bg-plex text-background rounded-md font-bold hover:bg-plex-hover transition-colors disabled:opacity-50"
+                            >
+                                {savingName ? 'Saving…' : 'Save'}
+                            </button>
+                        </div>
+                    </section>
+                )}
+
                 <section className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex gap-3">
                         <Palette className="w-5 h-5 text-plex mt-0.5" />
@@ -117,7 +177,10 @@ export const UserPreferencesDashboard: React.FC<{
                     <section className="p-5 flex items-center justify-between gap-4">
                         <div className="flex gap-3">
                             <Bell className="w-5 h-5 text-plex mt-0.5" />
-                            <div><h2 className="font-bold text-text">Weekly newsletter</h2><p className="text-sm text-muted mt-1">Receive library updates by email.</p></div>
+                            <div>
+                                <h2 className="font-bold text-text">Weekly newsletter</h2>
+                                <p className="text-sm text-muted mt-1">Opt in to receive library updates by email. Off by default.</p>
+                            </div>
                         </div>
                         <button type="button" role="switch" aria-checked={newsletterEnabled} aria-label="Weekly newsletter" disabled={saving || readOnly} onClick={toggleNewsletter} className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 transition-colors disabled:opacity-50 ${newsletterEnabled ? 'bg-plex border-plex' : 'bg-background border-border'}`}>
                             <span className={`mt-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${newsletterEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />

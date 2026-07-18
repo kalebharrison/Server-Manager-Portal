@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 
 import { portalUrl, resolvePortalAssetUrl } from '../../shared/basePath';
 import { SlideshowBackground } from '../../shared/theme';
+import { resolveDisplayName } from '../../shared/userProfile';
 import { buildHeroMovieColumns, resolveHomeImage } from './userDashboardUtils';
 
 type Props = {
@@ -30,7 +31,7 @@ export const HomeHero = memo<Props>(({ analytics, dashboardData, publicConfig, s
         ? (heroBgRaw.startsWith('http') ? heroBgRaw : resolvePortalAssetUrl(heroBgRaw))
         : '';
     const thumbUrl = user?.thumb || sessionInfo.session.thumb || (sessionInfo.session.isAdmin ? sessionInfo.adminThumb : null);
-    const username = sessionInfo.session.username;
+    const username = resolveDisplayName(user || sessionInfo.session);
 
     return (
         <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl bg-card border border-border">
