@@ -484,6 +484,12 @@ const getSessionUser = (req) => {
     }
 };
 
+// Filled after requestAppService is created — keeps membership sync out of the Plex/Jellyfin hot path.
+const membershipSync = {
+    ensure: async () => ({ ok: false, reason: 'not_ready' }),
+    remove: async () => ({ ok: false, reason: 'not_ready' }),
+};
+
 const { syncUsers, syncJellyfinUsers, revokePlexAccess, inviteUserToPlex, checkAndRevoke } = createMediaUserService({
     plexApi: PLEX_API,
     usersPath: USERS_PATH,
@@ -501,6 +507,7 @@ const { syncUsers, syncJellyfinUsers, revokePlexAccess, inviteUserToPlex, checkA
     getDaysUntilExpiry,
     sendExpiryEmail,
     appendAuditLog,
+    membershipSync,
     log,
 });
 
@@ -554,6 +561,7 @@ registerAuthRoutes({
     resolveLocalPlexAccountId,
     fetchPlexServerAccounts,
     getAdminProfile,
+    membershipSync,
     fetchImpl: fetchWithTimeout,
     log,
 });
@@ -701,6 +709,7 @@ registerInviteRoutes({
     inviteUserToPlex,
     getAdminId,
     setSessionCookie,
+    membershipSync,
     log,
 });
 
@@ -763,6 +772,7 @@ registerAdminRoutes({
     resolveCurrentAdmin,
     clearSessionCookie,
     setSessionCookie,
+    membershipSync,
     log,
 });
 
@@ -905,6 +915,8 @@ const requestAppService = createRequestAppService({
     log,
 });
 backgroundExtras.requestAppService = requestAppService;
+membershipSync.ensure = (user, config) => requestAppService.ensureRequestAppUser(config, user);
+membershipSync.remove = (user, config) => requestAppService.removeRequestAppUser(config, user);
 
 registerRequestAppRoutes({
     app,
