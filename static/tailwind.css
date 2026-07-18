@@ -1273,9 +1273,6 @@
   .grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .grid-cols-5 {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
   .grid-cols-7 {
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
@@ -3068,10 +3065,6 @@
   .leading-none {
     --tw-leading: 1;
     line-height: 1;
-  }
-  .leading-normal {
-    --tw-leading: var(--leading-normal);
-    line-height: var(--leading-normal);
   }
   .leading-relaxed {
     --tw-leading: var(--leading-relaxed);
