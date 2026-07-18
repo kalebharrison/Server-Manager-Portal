@@ -228,7 +228,7 @@ export const createMainGridWidgetRenderer = (deps: UserDashboardWidgetDeps) => {
                         <div className="flex items-center justify-between gap-4">
                             <div>
                                 <p className="text-text font-bold text-sm">Weekly Newsletter</p>
-                                <p className="text-muted text-xs mt-1 leading-relaxed">Opt in to get library updates by email (off by default)</p>
+                                <p className="text-muted text-xs mt-1 leading-relaxed">Opt in for library updates — more notice settings live in Preferences</p>
                             </div>
                             <button onClick={handleToggleNewsletter} aria-label="Toggle newsletter"
                                 className={`relative inline-flex items-center w-14 h-7 rounded-full transition-all flex-shrink-0 border-2 ${newsletterOptIn ? 'bg-plex border-plex' : 'bg-background border-border'}`}>

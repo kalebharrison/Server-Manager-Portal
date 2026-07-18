@@ -17,6 +17,11 @@ import { HomeHero } from './user/HomeHero';
 import { HomeWatchActivity } from './user/HomeWatchActivity';
 import { HomeWrapUpSection } from './user/HomeWrapUpSection';
 import { buildJellyfinHomeAnalytics } from './user/userDashboardUtils';
+import {
+    resolveHomeAnalyticsDays,
+    resolveHomeShowWeekCalendar,
+    resolveHomeShowWrapUp,
+} from '../shared/userProfile';
 
 const homeLibraryCacheKey = (sessionInfo: any, publicConfig: any) => `homeLibrary:${sessionInfo?.session?.accountId || sessionInfo?.session?.username || 'member'}:${sessionInfo?.serverName || 'server'}:${publicConfig?.mediaServerType || 'plex'}`;
 const homeServerStatsCacheKey = (publicConfig: any) => `homeServerStats:${String(publicConfig?.mediaServerType || 'plex').toLowerCase()}`;
@@ -52,7 +57,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
     const [serverStats, setServerStats] = useState<any>(() => readCachedHomeServerStats(publicConfig));
     const [dashboardData, setDashboardData] = useState<any>(() => readCachedHomeLibrary(libraryStorageKey));
     const [serverDataLoading, setServerDataLoading] = useState(() => !readCachedHomeServerStats(publicConfig));
-    const [analyticsDays, setAnalyticsDays] = useState<number | 'all'>(30);
+    const [analyticsDays, setAnalyticsDays] = useState<number | 'all'>(() => resolveHomeAnalyticsDays(sessionInfo?.account));
     const [analyticsDaysOpen, setAnalyticsDaysOpen] = useState(false);
     const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
@@ -66,6 +71,10 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
     useEffect(() => {
         setNewsletterOptIn(user?.newsletterOptIn === true);
     }, [user?.newsletterOptIn]);
+
+    useEffect(() => {
+        setAnalyticsDays(resolveHomeAnalyticsDays(user));
+    }, [user?.homeAnalyticsDays]);
 
     const handleToggleNewsletter = async () => {
         setIsLoading(true);
@@ -204,6 +213,14 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
         referralEnabled: !!publicConfig?.referralEnabled,
     }), [sessionInfo.session.isAdmin, user, publicConfig?.referralEnabled]);
 
+    const memberLayoutConfig = useMemo(() => {
+        const base = publicConfig?.dashboardLayout || {};
+        const hidden = new Set(Array.isArray(base.hiddenSections) ? base.hiddenSections : []);
+        if (!resolveHomeShowWrapUp(user)) hidden.add('wrapUp');
+        if (!resolveHomeShowWeekCalendar(user)) hidden.add('weekCalendar');
+        return { ...base, hiddenSections: Array.from(hidden) };
+    }, [publicConfig?.dashboardLayout, user?.homeShowWrapUp, user?.homeShowWeekCalendar]);
+
     const widgetDeps = useMemo(() => ({
         sessionInfo,
         publicConfig,
@@ -258,7 +275,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
             )}
 
             <UserDashboardLayout
-                layoutConfig={publicConfig?.dashboardLayout}
+                layoutConfig={memberLayoutConfig}
                 layoutCtx={layoutCtx}
                 renderMainGridWidget={renderMainGridWidget}
                 renderRecentlyAddedWidget={renderRecentlyAddedWidget}

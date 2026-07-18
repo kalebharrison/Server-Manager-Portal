@@ -13,6 +13,7 @@ import { createLruCache, createTtlCache } from './lib/cache.js';
 import { addDays, getDaysUntilExpiry } from './lib/date-utils.js';
 import { createDeletedUserRegistry, isDeletedUser, normalized } from './lib/deleted-users.js';
 import { createEmailService } from './lib/email-service.js';
+import { createMemberNotifications } from './lib/member-notifications.js';
 import { createMediaUserService } from './lib/media-user-service.js';
 import { createNewsletterService } from './lib/newsletter-service.js';
 import { escapeHtmlAttr } from './lib/html-shell.js';
@@ -256,7 +257,7 @@ const statusRuntime = createStatusRuntime({
     probeService: (service) => metadataHealthProbe(service),
 });
 
-const { sendEmail, checkAndSendNotifications, sendExpiryEmail, sendAdjustmentEmail } = createEmailService({
+const { sendEmail, sendMemberNotice, checkAndSendNotifications, sendExpiryEmail, sendAdjustmentEmail } = createEmailService({
     usersPath: USERS_PATH,
     emailLogPath: EMAIL_LOG_PATH,
     loadFile,
@@ -266,6 +267,17 @@ const { sendEmail, checkAndSendNotifications, sendExpiryEmail, sendAdjustmentEma
     escapeHtmlAttr,
     log,
 });
+const memberNotifications = createMemberNotifications({
+    usersPath: USERS_PATH,
+    loadFile,
+    sendMemberNotice,
+    escapeHtmlAttr,
+    log,
+});
+const backgroundExtras = {
+    checkWatchlistAvailability: memberNotifications.checkWatchlistAvailability,
+    requestAppService: null,
+};
 const { startBroadcast, sendTestBroadcast } = createBroadcastService({
     configPath: CONFIG_PATH,
     usersPath: USERS_PATH,
@@ -859,6 +871,7 @@ const { checkAndCleanupInactive, runAutoBackupCycle, startBackgroundService } = 
     checkAndSendNotifications,
     checkAndRevoke,
     checkAndSendNewsletter,
+    backgroundExtras,
     createBackupObject,
     writeBackupToFolder,
     enforceBackupRetention,
@@ -891,6 +904,7 @@ const requestAppService = createRequestAppService({
     requestAppInternalUrl: REQUEST_APP_INTERNAL_URL,
     log,
 });
+backgroundExtras.requestAppService = requestAppService;
 
 registerRequestAppRoutes({
     app,
@@ -901,6 +915,7 @@ registerRequestAppRoutes({
     loadFile,
     requestAppService,
     appendAuditLog,
+    notifyRequestUpdate: memberNotifications.notifyRequestUpdate,
     log,
 });
 
@@ -918,6 +933,7 @@ registerMediaIssueRoutes({
     resolveIntegrationUrlForFetch,
     getPlexConnectionUri,
     appendAuditLog,
+    notifyIssueReply: memberNotifications.notifyIssueReply,
     log,
 });
 

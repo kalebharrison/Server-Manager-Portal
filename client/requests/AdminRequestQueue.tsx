@@ -46,7 +46,7 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
                 : `/api/requests/${item.id}/${action}`;
             await apiFetch(endpoint, {
                 method: action === 'delete' ? 'DELETE' : 'POST',
-                body: JSON.stringify({ title: item.title }),
+                body: JSON.stringify({ title: item.title, requestedBy: item.requestedBy || null }),
             });
             await load(true);
         } finally {

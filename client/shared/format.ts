@@ -71,7 +71,8 @@ export const formatEventName = (event: string): string => {
 
 export const formatDateTime = (dateString?: string): string => {
     if (!dateString) return 'Unknown';
-    return new Date(dateString).toLocaleString('en-GB', {
+    const locale = (typeof window !== 'undefined' && (window as any).__PORTAL_LOCALE__) || 'en-GB';
+    return new Date(dateString).toLocaleString(locale, {
         day: '2-digit',
         month: 'short',
         hour: '2-digit',
