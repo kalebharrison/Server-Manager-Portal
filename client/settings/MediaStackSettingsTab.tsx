@@ -7,6 +7,32 @@ import { ArrInstancesPanel } from './ArrInstancesPanel';
 import { IntegrationHeading, hasIntegrationCredentials } from './integrationDisplay';
 import { SettingHint } from './SettingHint';
 
+const MembershipSyncSwitch: React.FC<{
+    checked: boolean;
+    onChange: (value: boolean) => void;
+}> = ({ checked, onChange }) => (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 mt-4 border-t border-border/40">
+        <div>
+            <h3 className="font-bold text-text">Sync membership with Seerr</h3>
+            <div className="mt-1">
+                <SettingHint>
+                    Import members into Seerr when access becomes active, and remove them on revoke. Discord media alerts stay tied to real members. Members never use the Seerr UI.
+                </SettingHint>
+            </div>
+        </div>
+        <button
+            type="button"
+            role="switch"
+            aria-checked={checked}
+            aria-label="Sync membership with Seerr"
+            onClick={() => onChange(!checked)}
+            className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-plex' : 'bg-border'}`}
+        >
+            <span className={`h-4 w-4 mt-1 rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
+    </div>
+);
+
 type MediaStackSettingsTabProps = {
     initialSettings: any;
     mediaServerType: 'plex' | 'jellyfin';
@@ -18,6 +44,7 @@ type MediaStackSettingsTabProps = {
     requestAppType: string;
     requestAppUrl: string;
     requestAppApiKey: string;
+    requestAppMembershipSync: boolean;
     ombiUrl: string;
     ombiApiKey: string;
     onArrInstancesChange: (value: ArrInstance[]) => void;
@@ -28,6 +55,7 @@ type MediaStackSettingsTabProps = {
     onRequestAppTypeChange: (value: string) => void;
     onRequestAppUrlChange: (value: string) => void;
     onRequestAppApiKeyChange: (value: string) => void;
+    onRequestAppMembershipSyncChange: (value: boolean) => void;
     onOmbiUrlChange: (value: string) => void;
     onOmbiApiKeyChange: (value: string) => void;
     addToast: (message: string, type?: 'success' | 'error') => void;
@@ -44,6 +72,7 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     requestAppType,
     requestAppUrl,
     requestAppApiKey,
+    requestAppMembershipSync,
     ombiUrl,
     ombiApiKey,
     onArrInstancesChange,
@@ -54,6 +83,7 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     onRequestAppTypeChange,
     onRequestAppUrlChange,
     onRequestAppApiKeyChange,
+    onRequestAppMembershipSyncChange,
     onOmbiUrlChange,
     onOmbiApiKeyChange,
     addToast,
@@ -155,6 +185,9 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             disabled={requestAppType === 'none' || !hasIntegrationCredentials(requestAppUrl, requestAppApiKey, initialSettings.requestAppUrl, initialSettings.requestAppApiKey)}
             onMessage={(msg, ok) => addToast(msg, ok ? 'success' : 'error')}
         />
+        {['seerr', 'jellyseerr', 'overseerr'].includes(requestAppType) && (
+            <MembershipSyncSwitch checked={requestAppMembershipSync} onChange={onRequestAppMembershipSyncChange} />
+        )}
 
         {requestAppType !== 'ombi' && <>
             <IntegrationHeading app="ombi" title="Ombi Music Requests" subtitle="Optional secondary requester for Lidarr workflows" className="mt-8" />

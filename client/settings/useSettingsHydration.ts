@@ -60,6 +60,7 @@ export const useSettingsHydration = ({
             setRequestAppType: set('requestAppType'),
             setRequestAppUrl: set('requestAppUrl'),
             setRequestAppApiKey: set('requestAppApiKey'),
+            setRequestAppMembershipSync: set('requestAppMembershipSync'),
             setOmbiUrl: set('ombiUrl'),
             setOmbiApiKey: set('ombiApiKey'),
             setBrandingTheme: set('brandingTheme'),

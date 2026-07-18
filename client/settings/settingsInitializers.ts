@@ -35,6 +35,7 @@ type SettingsHydrationSetters = {
     setRequestAppType: (value: string) => void;
     setRequestAppUrl: (value: string) => void;
     setRequestAppApiKey: (value: string) => void;
+    setRequestAppMembershipSync: (value: boolean) => void;
     setOmbiUrl: (value: string) => void;
     setOmbiApiKey: (value: string) => void;
     setBrandingTheme: (value: string) => void;
@@ -102,6 +103,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setRequestAppType(initialSettings.requestAppType === 'overseerr' ? 'seerr' : (initialSettings.requestAppType || 'none'));
     setters.setRequestAppUrl(initialSettings.requestAppUrl || '');
     setters.setRequestAppApiKey(initialSettings.requestAppApiKey || '');
+    setters.setRequestAppMembershipSync(initialSettings.requestAppMembershipSync !== false);
     setters.setOmbiUrl(initialSettings.ombiUrl || '');
     setters.setOmbiApiKey(initialSettings.ombiApiKey || '');
     setters.setBrandingTheme(initialSettings.brandingTheme || 'plex');
