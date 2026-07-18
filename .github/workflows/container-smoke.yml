@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -75,4 +75,7 @@ jobs:
         if: always()
         run: |
           docker rm -f server-manager-portal-smoke || true
-          rm -rf /tmp/server-manager-portal-smoke
+          # Container may create root-owned files under the bind mount; clean via Docker.
+          docker run --rm -v /tmp/server-manager-portal-smoke:/scratch alpine:3.20 \
+            rm -rf /scratch/config /scratch/backup || true
+          rm -rf /tmp/server-manager-portal-smoke || true

@@ -120,7 +120,7 @@ Beta image branch: `beta`
   - Upstream PR fit: split into image proxy/cache hardening, member lifecycle enforcement, persistent-cache identity, and atomic storage/task changes.
 
 - Pending: targeted frontend/backend decomposition and strict validation
-  - Reduce the server entrypoint to route/service composition; extract maintenance and request-app route/service modules; split Settings, Setup, Maintenance, Analytics, Home, Wrap Up, and request-detail UI into focused components and hooks; remove dead UI and dependencies; and make unused TypeScript checks plus tests part of the standard validation command.
+  - Reduce the server entrypoint to route/service composition; continue splitting Settings, Setup, Analytics, Home, Wrap Up, and request-detail UI into focused components and hooks; and keep unused TypeScript checks plus tests in the standard validation command.
   - Upstream PR fit: submit by subsystem so structural changes remain reviewable and behavior-preserving.
 
 - Pending: compact admin stream summary

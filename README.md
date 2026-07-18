@@ -47,12 +47,9 @@ Every user gets a rich, personalized dashboard packed with insights about their 
 | **Streaming Habit** | Weekday vs Weekend split bar chart, average plays per day, and habit label (Weekend Warrior, Weekday Streamer, Balanced) |
 | **Top Library** | Your most-used media library with a full ranked breakdown of all libraries |
 | **Top Day** | An animated bar chart showing your plays across all 7 days of the week, highlighting your peak day |
-| **Peak Hours** | An animated hourly distribution chart showing what time of day you stream the most |
-| **Time of Day** | Your streaming persona (Night Owl, Early Bird, Evening Streamer, Afternoon Watcher) with a contextual description |
+| **Time of Day** | Your streaming persona (Night Owl, Early Bird, Evening Streamer, Afternoon Watcher) with an hourly distribution chart and contextual description |
 
 All cards open into detailed modals loaded with contextual data, media artwork, and dynamic charts.
-
-**Shareable wrap-up** - Export your personal wrap-up as a PNG image from the home dashboard. The share modal previews the real card grid and supports native share on supported devices, with download as a fallback.
 
 **Paginated watch history** - Recently Watched and Your Most Watched use responsive pagination (18 items per page on desktop, 12 on mobile) so large libraries stay fast and readable.
 
@@ -67,8 +64,7 @@ A comprehensive control panel for the server owner:
 - **Server Leaderboard** - Server-wide play count rankings across all time periods, updated automatically in the background
 - **Audit Log** - Timestamped record of all system actions (access granted, revoked, extended, expired)
 - **Settings UI** - Configure every aspect of the portal from the browser without touching config files
-- **Customizable Home Layout** - Reorder home page sections and show or hide whole blocks (Personal Wrap-Up, Main grid, Recently / Most Watched, Recently Added) from **Settings → Home Layout**, with a live preview before saving. The main dashboard grid keeps a fixed balanced two-column layout so card heights stay aligned
-- **Library Maintenance** - Scan libraries for missing or empty media, manage exclusions, and run cleanup tasks from the Maintenance page
+- **Customizable Home Layout** - Reorder home page sections and show or hide whole blocks (Personal Wrap-Up, Main grid, Week Calendar, Recently / Most Watched, Recently Added) from **Settings → Home Layout**, with a live preview before saving. The main dashboard grid keeps a fixed balanced two-column layout so card heights stay aligned
 
 ---
 
@@ -78,7 +74,7 @@ Admins can tailor the home page for their community without editing code:
 
 | Control | What it does |
 |---|---|
-| **Section order** | Drag and drop the four major home sections into any order |
+| **Section order** | Drag and drop the five major home sections into any order |
 | **Section visibility** | Toggle each section Shown or Hidden with one click |
 | **Live preview** | See exactly how the layout will look before you save |
 | **Locked main grid** | Left and right dashboard columns stay balanced; individual widget order inside the grid is fixed to prevent uneven card heights |
@@ -126,7 +122,7 @@ Browse your Sonarr and Radarr activity directly inside the portal:
 - **Month Navigation** - Browse releases by month with auto-advance to the next month that has content
 - **Smart ID Matching** - Uses IMDb, TMDB, and TVDB IDs to accurately map and display metadata
 
-Configure named Sonarr, Radarr, and Lidarr instances in **Settings → Apps & Automation**. One default instance per type remains compatible with maintenance workflows, while calendars and active downloads combine every enabled instance.
+Configure named Sonarr, Radarr, and Lidarr instances in **Settings → Apps & Automation**. One default instance per type is preserved for settings compatibility, while calendars and active downloads combine every enabled instance.
 
 ---
 
@@ -328,6 +324,7 @@ On first startup, any legacy JSON files still in the project root are automatica
 
 - Change the published port: set `PORT=8080` in `.env` (maps host `8080` → container `2121`).
 - Integrations on your LAN (Sonarr, Radarr, Tautulli, Jellystat, Seerr/Jellyseerr/Ombi): set `ALLOW_PRIVATE_INTEGRATION_URLS=true` and use reachable URLs from inside the container (e.g. `http://host.docker.internal:8989` on Docker Desktop, or your host IP on Linux).
+- If the public Request App URL is not reachable from inside the container, set `REQUEST_APP_INTERNAL_URL` to a Docker/LAN URL (e.g. `http://seerr:5055`) for server-side request-app calls.
 - View logs: `docker compose logs -f portal`
 - Update: `git pull && docker compose up -d --build`
 
@@ -429,6 +426,7 @@ The template uses `ghcr.io/jl94x4/server-manager-portal:latest` by default.
 | `BASE_PATH` | No | URL prefix when hosted under a subpath (e.g. `/portal`). Leave empty for root hosting |
 | `FORCE_SECURE_COOKIES` | Recommended | Set `true` when behind HTTPS |
 | `ALLOW_PRIVATE_INTEGRATION_URLS` | No | Allow LAN/private URLs for Arr stack integrations |
+| `REQUEST_APP_INTERNAL_URL` | No | Internal Seerr/Jellyseerr/Ombi base URL used by the portal container when the public Request App URL is not reachable (e.g. `http://seerr:5055`) |
 | `SETUP_TOKEN` | No | Token for remote first-time setup |
 | `CLIENT_ID` | No | Fixed Plex OAuth client id (auto-generated if unset; Plex mode only) |
 
@@ -473,7 +471,6 @@ The **Settings → Background Tasks** page shows the active scheduler and lets a
 | Inactive cleanup | Revokes inactive users | Revokes inactive Jellyfin portal users |
 | Analytics cache | Uses Plex/Tautulli data where configured | Uses Jellyfin/Jellystat data where configured |
 | Library stats | Plex Stats Builder | Hidden in Jellyfin mode |
-| Maintenance index | Builds media/request index for cleanup rules | Same |
 | Auto rolling backup | Creates rolling config backups | Same |
 
 The **Settings → System** diagnostics page uses the same media-aware task list so Jellyfin portals are not penalized for Plex-only jobs.
@@ -492,12 +489,11 @@ Server-Manager-Portal/
 │   ├── home/           # User dashboard layout and widget renderers
 │   ├── settings/       # Settings UI (Media Player, Home Layout, System, Background Tasks)
 │   ├── shared/         # API helpers, types, theme, skeletons, wrap-up cards
-│   ├── setup/          # First-time setup wizard
-│   └── maintenance/    # Library maintenance panel
+│   └── setup/          # First-time setup wizard
 ├── input.css           # Tailwind CSS source
 ├── static/
-│   ├── bundle.js       # Built React frontend
-│   ├── tailwind.css    # Built Tailwind styles
+│   ├── bundle.js / chunks/   # Built React frontend (generated by `npm run build`)
+│   ├── tailwind.css          # Built Tailwind styles (generated by `npm run build`)
 │   ├── logo.png / logo.webp  # Server logo
 │   ├── favicon.png           # Small favicon
 │   └── fonts/                # Self-hosted Inter

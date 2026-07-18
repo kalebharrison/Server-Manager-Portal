@@ -250,13 +250,16 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- **IMDb Integration**: Added IMDb ID mapping for Sonarr and Radarr, improving media matching and metadata accuracy.
-- **JellyStat Integration**: Fully integrated JellyStat for Jellyfin analytics, bringing it on par with Tautulli for Plex. Added to README documentation.
+- **Week Calendar** home section for the current release week.
+- Documented `REQUEST_APP_INTERNAL_URL` for Docker/Unraid request-app networking.
 
 ### Changed
-- Split calendar page into separate Sonarr and Radarr tabs.
-- Scope Media Stack page content to the active Sonarr or Radarr tab.
-- Rename sidebar category back to Media Stack.
+- Unified Media Stack **Release Calendar** with All/TV/Movies filters (sidebar label: Calendar).
+- Docker publish now runs `npm run check` before pushing images.
+
+### Removed
+- Library Maintenance / Cleaner UI and background maintenance index task.
+- Shareable wrap-up PNG export.
 
 ## [v1.0] - 2026-07-03
 
