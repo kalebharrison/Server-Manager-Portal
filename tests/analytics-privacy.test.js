@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { obfuscateAnalyticsTopUser, shouldObfuscateAnalyticsViewers } from '../lib/analytics-shared.js';
 import { buildPrivateLeaderboardNeighbourhood } from '../lib/analytics-plex-personal-routes.js';
-import { presentStreamUser } from '../lib/stream-privacy.js';
+import { presentStreamAddress, presentStreamUser } from '../lib/stream-privacy.js';
 
 test('analytics identities are always hidden from non-admin users', () => {
     assert.equal(shouldObfuscateAnalyticsViewers({ isAdmin: false }, { showUsernamesInAnalytics: true }), true);
@@ -28,6 +28,12 @@ test('active stream identities are visible only to admins', () => {
     assert.deepEqual(presentStreamUser({ isAdmin: false, mode: 'false', username: 'Private User', thumb: '/avatar' }), { user: 'Anonymous', userThumb: null });
     assert.deepEqual(presentStreamUser({ isAdmin: false, mode: 'hidden', username: 'Private User', thumb: '/avatar' }), { user: null, userThumb: null });
     assert.deepEqual(presentStreamUser({ isAdmin: true, mode: 'hidden', username: 'Private User', thumb: '/avatar' }), { user: 'Private User', userThumb: '/avatar' });
+});
+
+test('active stream client addresses are visible only to admins', () => {
+    assert.equal(presentStreamAddress({ isAdmin: false, playerAddress: '1.2.3.4' }), null);
+    assert.equal(presentStreamAddress({ isAdmin: true, playerAddress: '1.2.3.4' }), '1.2.3.4');
+    assert.equal(presentStreamAddress({ isAdmin: true, playerAddress: null }), 'Unknown IP');
 });
 
 test('personal leaderboard exposes only the signed-in viewer identity', () => {

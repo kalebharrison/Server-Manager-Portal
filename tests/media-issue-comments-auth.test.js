@@ -52,11 +52,13 @@ test('members can only read comments on their own portal issues', async () => {
         id: 'portal:mine',
         source: 'portal',
         reporterId: 'user-1',
+        message: 'my report details',
         comments: [{ id: 'c1', message: 'secret thread', author: 'Admin', createdAt: '2026-01-01T00:00:00.000Z' }],
     }, {
         id: 'portal:other',
         source: 'portal',
         reporterId: 'user-2',
+        message: 'other report details',
         comments: [{ id: 'c2', message: 'other secret', author: 'Admin', createdAt: '2026-01-01T00:00:00.000Z' }],
     }];
 
@@ -70,6 +72,17 @@ test('members can only read comments on their own portal issues', async () => {
 
         const denied = await fetch(`http://127.0.0.1:${port}/api/media-issues/${encodeURIComponent('portal:other')}/comments`);
         assert.equal(denied.status, 403);
+
+        const list = await fetch(`http://127.0.0.1:${port}/api/media-issues?filter=all`);
+        assert.equal(list.status, 200);
+        const listBody = await list.json();
+        const mine = listBody.issues.find((issue) => issue.id === 'portal:mine');
+        const other = listBody.issues.find((issue) => issue.id === 'portal:other');
+        assert.equal(mine.message, 'my report details');
+        assert.ok(Array.isArray(mine.comments));
+        assert.equal(other.message, '');
+        assert.equal(other.comments, undefined);
+        assert.equal(other.commentCount, 1);
     });
 
     const adminApp = createApp({ issues, user: { id: 'admin', username: 'admin', isAdmin: true } });

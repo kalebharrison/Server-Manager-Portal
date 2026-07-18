@@ -24,11 +24,13 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
     const [error, setError] = useState('');
     const [statusFilter, setStatusFilter] = useState<'open' | 'resolved'>('open');
 
-    const load = useCallback(async () => {
+    const load = useCallback(async (forceRefresh = false) => {
         setError('');
         try {
             const [issueData, analytics] = await Promise.all([
-                apiFetch('/api/media-issues?filter=all', { forceRefresh: true }),
+                apiFetch('/api/media-issues?filter=all', forceRefresh
+                    ? { forceRefresh: true }
+                    : { cacheTtlMs: 30_000 }),
                 apiFetch('/api/plex/analytics/me?days=30').catch(() => ({ recentHistory: [] })),
             ]);
             setIssues(issueData.issues || []);
@@ -39,8 +41,8 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
         }
     }, []);
 
-    useEffect(() => { void load(); }, [load]);
-    useVisibleInterval(load, 60_000);
+    useEffect(() => { void load(true); }, [load]);
+    useVisibleInterval(() => { void load(false); }, 60_000);
 
     const sourceSummary = useMemo(() => [sources.plex && 'Plex', sources.seerr && 'Request service'].filter(Boolean).join(' · '), [sources]);
     const sourceLabel = (source: string) => source === 'plex'
@@ -75,7 +77,7 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
             });
             setSelected(null);
             setMessage('');
-            await load();
+            await load(true);
         } finally {
             setBusy(false);
         }
@@ -85,7 +87,7 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
         setBusy(true);
         try {
             await apiFetch(`/api/media-issues/${encodeURIComponent(issue.id)}/${action}`, { method: 'POST' });
-            await load();
+            await load(true);
         } finally {
             setBusy(false);
         }
@@ -127,7 +129,7 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
             </section>}
 
             <section>
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><button type="button" onClick={() => setStatusFilter('open')} className={`rounded-lg px-3 py-2 text-sm font-bold ${statusFilter === 'open' ? 'bg-plex text-black' : 'border border-border text-muted'}`}>Open {openCount}</button><button type="button" onClick={() => setStatusFilter('resolved')} className={`rounded-lg px-3 py-2 text-sm font-bold ${statusFilter === 'resolved' ? 'bg-plex text-black' : 'border border-border text-muted'}`}>Resolved {resolvedCount}</button></div><button type="button" title="Refresh" onClick={load} className="p-2 text-muted hover:text-text"><RefreshCw className="h-4 w-4" /></button></div>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><button type="button" onClick={() => setStatusFilter('open')} className={`rounded-lg px-3 py-2 text-sm font-bold ${statusFilter === 'open' ? 'bg-plex text-black' : 'border border-border text-muted'}`}>Open {openCount}</button><button type="button" onClick={() => setStatusFilter('resolved')} className={`rounded-lg px-3 py-2 text-sm font-bold ${statusFilter === 'resolved' ? 'bg-plex text-black' : 'border border-border text-muted'}`}>Resolved {resolvedCount}</button></div><button type="button" title="Refresh" onClick={() => { void load(true); }} className="p-2 text-muted hover:text-text"><RefreshCw className="h-4 w-4" /></button></div>
                 {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
                 <div className="space-y-3">
                     {visibleIssues.map((issue) => <article key={issue.id} className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 md:flex-row md:flex-wrap md:items-center">

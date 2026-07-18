@@ -959,6 +959,7 @@ const maintenanceService = createMaintenanceService({
     maintenancePrefsPath: MAINTENANCE_PREFS_PATH,
     maintenanceMediaIndexPath: MAINTENANCE_MEDIA_INDEX_PATH,
     maintenanceRequestIndexPath: MAINTENANCE_REQUEST_INDEX_PATH,
+    analyticsHistoryCachePath: ANALYTICS_HISTORY_CACHE_PATH,
     maintenanceRulesPath: MAINTENANCE_RULES_PATH,
     maintenanceRunsPath: MAINTENANCE_RUNS_PATH,
     loadFile,
