@@ -5,7 +5,7 @@ import { createRequestAppService } from '../../lib/request-app/request-app-servi
 
 const createService = ({ fetchImpl }) => createRequestAppService({
     fetchWithTimeout: fetchImpl,
-    resolveIntegrationUrlForFetch: (value) => String(value || '').replace(/\/+$/, ''),
+    resolveIntegrationUrlForFetch: async (value) => String(value || '').replace(/\/+$/, ''),
     log: () => {},
 });
 

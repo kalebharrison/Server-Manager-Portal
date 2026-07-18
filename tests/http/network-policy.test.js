@@ -24,7 +24,7 @@ test('private and blocked hosts are detected for SSRF guards', () => {
     assert.equal(isBlockedHostName('seerr.example.com'), false);
 });
 
-test('normalizeExternalBaseUrl requires allowPrivate for LAN hosts', () => {
+test('normalizeExternalBaseUrl requires allowPrivate for LAN hosts', async () => {
     assert.throws(
         () => normalizeExternalBaseUrl('http://192.168.1.50:5055'),
         /Private or local network hosts are not allowed/,
@@ -34,13 +34,14 @@ test('normalizeExternalBaseUrl requires allowPrivate for LAN hosts', () => {
         'http://192.168.1.50:5055',
     );
     assert.equal(
-        resolveIntegrationUrlForFetch('http://seerr:5055/'),
+        await resolveIntegrationUrlForFetch('http://seerr:5055/'),
         'http://seerr:5055',
     );
     const strictFetch = createResolveIntegrationUrlForFetch({ allowPrivate: false });
-    assert.throws(
+    await assert.rejects(
         () => strictFetch('http://192.168.1.50:5055'),
         /Private or local network hosts are not allowed/,
     );
-    assert.equal(strictFetch('http://seerr:5055/'), 'http://seerr:5055');
+    // Public hostnames are allowed after DNS validation; LAN literals stay blocked.
+    assert.equal(await strictFetch('https://example.com/'), 'https://example.com');
 });

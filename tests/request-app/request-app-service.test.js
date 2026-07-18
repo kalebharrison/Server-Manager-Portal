@@ -10,7 +10,7 @@ test('request discovery serves recent cached results during a transient outage',
     Date.now = () => now;
     try {
         const service = createRequestAppService({
-            resolveIntegrationUrlForFetch: (value) => value,
+            resolveIntegrationUrlForFetch: async (value) => value,
             fetchWithTimeout: async () => {
                 calls++;
                 if (calls > 1) throw new Error('temporary outage');
@@ -47,7 +47,7 @@ test('accepted requests are requested until an active download is matched', asyn
         ],
     };
     const service = createRequestAppService({
-        resolveIntegrationUrlForFetch: (value) => value,
+        resolveIntegrationUrlForFetch: async (value) => value,
         fetchWithTimeout: async () => ({ ok: true, status: 200, json: async () => payload }),
         getActiveAcquisitionKeys: async () => new Set(['tmdb:2']),
     });

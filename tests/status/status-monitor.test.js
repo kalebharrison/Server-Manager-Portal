@@ -138,7 +138,7 @@ test('legacy status history is cleared instead of treating portal downtime as ou
         healthPath,
         loadFile: async (file, fallback) => JSON.parse(await fs.readFile(file, 'utf8').catch(() => JSON.stringify(fallback))),
         saveFile: async (file, value) => fs.writeFile(file, JSON.stringify(value)),
-        normalizeExternalBaseUrl: (url) => url,
+        resolveIntegrationUrlForFetch: async (url) => url,
     });
     await runtime.loadStatusState();
     assert.equal(runtime.getHealthData().portal, undefined);

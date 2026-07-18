@@ -103,7 +103,7 @@ test('Plex callback login rejects an expired local member', async () => {
         jellyfinHeaders: () => ({}),
         isJellyfinConfigured: () => false,
         isPortalConfigured: () => true,
-        resolveIntegrationUrlForFetch: (value) => value,
+        resolveIntegrationUrlForFetch: async (value) => value,
         getClientId: () => 'client-id',
         withBasePath: (value) => value,
         clearSessionCookie: () => {},
@@ -155,7 +155,7 @@ test('Jellyfin login rejects revoked users and accepts pending unexpired users',
                 saveFile: async () => {},
                 jellyfinHeaders: () => ({}),
                 isJellyfinConfigured: () => true,
-                resolveIntegrationUrlForFetch: (value) => value,
+                resolveIntegrationUrlForFetch: async (value) => value,
                 withBasePath: (value) => value,
                 clearSessionCookie: () => {},
                 setSessionCookie: () => { cookieSet = true; },
@@ -185,7 +185,7 @@ test('Jellyfin admin resolution fails closed and coalesces live lookups', async 
     const config = { jellyfinUrl: 'http://jellyfin', jellyfinApiKey: 'api-key' };
     const failedResolver = createJellyfinAdminResolver({
         fetchImpl: async () => ({ ok: false, status: 503 }),
-        resolveIntegrationUrlForFetch: (value) => value,
+        resolveIntegrationUrlForFetch: async (value) => value,
         jellyfinHeaders: () => ({}),
         log: () => {},
     });
@@ -199,13 +199,13 @@ test('Jellyfin admin resolution fails closed and coalesces live lookups', async 
             await new Promise((resolve) => { releaseFetch = resolve; });
             return { ok: true, json: async () => ({ Policy: { IsAdministrator: true } }) };
         },
-        resolveIntegrationUrlForFetch: (value) => value,
+        resolveIntegrationUrlForFetch: async (value) => value,
         jellyfinHeaders: () => ({}),
         log: () => {},
     });
     const first = resolver(sessionUser, config);
     const second = resolver(sessionUser, config);
-    await Promise.resolve();
+    for (let i = 0; i < 20 && fetchCalls === 0; i += 1) await Promise.resolve();
     assert.equal(fetchCalls, 1);
     releaseFetch();
     assert.deepEqual(await Promise.all([first, second]), [true, true]);
