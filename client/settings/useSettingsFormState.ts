@@ -43,6 +43,7 @@ export type SettingsFormValues = {
     requestAppType: string;
     requestAppUrl: string;
     requestAppApiKey: string;
+    requestAppMembershipSync: boolean;
     ombiUrl: string;
     ombiApiKey: string;
     dashboardLayout: DashboardLayoutConfig;
@@ -114,6 +115,7 @@ const createInitialValues = (): SettingsFormValues => ({
     requestAppType: 'none',
     requestAppUrl: '',
     requestAppApiKey: '',
+    requestAppMembershipSync: true,
     ombiUrl: '',
     ombiApiKey: '',
     dashboardLayout: DEFAULT_DASHBOARD_LAYOUT,
@@ -184,6 +186,7 @@ export const useSettingsFormState = () => {
         requestAppType: values.requestAppType,
         requestAppUrl: values.requestAppUrl,
         requestAppApiKey: values.requestAppApiKey,
+        requestAppMembershipSync: values.requestAppMembershipSync,
         ombiUrl: values.ombiUrl,
         ombiApiKey: values.ombiApiKey,
         customLogoUrl: adminValues.customLogoUrl,

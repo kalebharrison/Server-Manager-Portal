@@ -33,6 +33,7 @@ type SettingsSavePayloadInput = {
     requestAppType: string;
     requestAppUrl: string;
     requestAppApiKey: string;
+    requestAppMembershipSync: boolean;
     ombiUrl: string;
     ombiApiKey: string;
     customLogoUrl: string;

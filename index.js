@@ -487,6 +487,7 @@ const getSessionUser = (req) => {
 // Filled after requestAppService is created — keeps membership sync out of the Plex/Jellyfin hot path.
 const membershipSync = {
     ensure: async () => ({ ok: false, reason: 'not_ready' }),
+    ensureActive: async () => ({ ok: false, reason: 'not_ready' }),
     remove: async () => ({ ok: false, reason: 'not_ready' }),
 };
 
@@ -916,6 +917,7 @@ const requestAppService = createRequestAppService({
 });
 backgroundExtras.requestAppService = requestAppService;
 membershipSync.ensure = (user, config) => requestAppService.ensureRequestAppUser(config, user);
+membershipSync.ensureActive = (users, config) => requestAppService.ensureRequestAppUsers(config, users);
 membershipSync.remove = (user, config) => requestAppService.removeRequestAppUser(config, user);
 
 registerRequestAppRoutes({

@@ -16,6 +16,57 @@ const seerrConfig = {
     mediaServerType: 'plex',
 };
 
+test('ensureRequestAppUser no-ops when membership sync is disabled', async () => {
+    const calls = [];
+    const service = createService({
+        fetchImpl: async (url) => {
+            calls.push(String(url));
+            throw new Error(`Unexpected URL ${url}`);
+        },
+    });
+    const result = await service.ensureRequestAppUser({
+        ...seerrConfig,
+        requestAppMembershipSync: false,
+    }, { plexId: '12345', username: 'Viewer' });
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'disabled');
+    assert.equal(calls.length, 0);
+});
+
+test('ensureRequestAppUsers backfills missing active members', async () => {
+    const calls = [];
+    const service = createService({
+        fetchImpl: async (url, options = {}) => {
+            calls.push({ url: String(url), method: options.method || 'GET', body: options.body || null });
+            if (String(url).includes('/api/v1/user?')) {
+                const imported = calls.some((call) => String(call.url).includes('import-from-plex'));
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        results: imported
+                            ? [{ id: 9, email: 'viewer@example.com', username: 'Viewer', plexId: 12345 }]
+                            : [],
+                    }),
+                };
+            }
+            if (String(url).includes('/import-from-plex')) {
+                return { ok: true, status: 201, json: async () => ([{ id: 9 }]) };
+            }
+            throw new Error(`Unexpected URL ${url}`);
+        },
+    });
+
+    const result = await service.ensureRequestAppUsers(seerrConfig, [
+        { plexId: '12345', username: 'Viewer', email: 'viewer@example.com', plexAccessStatus: 'active' },
+        { plexId: '999', username: 'Pending', plexAccessStatus: 'pending' },
+    ]);
+    assert.equal(result.ok, true);
+    assert.equal(result.created, 1);
+    assert.equal(result.existing, 0);
+    assert.ok(calls.some((call) => String(call.url).includes('/import-from-plex')));
+});
+
 test('ensureRequestAppUser imports from plex when no Seerr user exists', async () => {
     const calls = [];
     const service = createService({
