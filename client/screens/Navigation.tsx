@@ -97,7 +97,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
                     <img
                         src={serverIcon}
                         alt="Logo"
-                        className={`w-8 h-8 ${customLogoUrl ? 'object-contain' : 'rounded-full object-cover'}`}
+                        className={`w-10 h-10 ${customLogoUrl ? 'object-contain' : 'rounded-full object-cover'}`}
                         onError={(e) => {
                             (e.target as HTMLImageElement).src = logoUrl();
                         }}
@@ -177,12 +177,12 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
                 </div>
 
                 <div className="flex flex-col items-center w-full mt-auto pt-10 pb-4 group cursor-default">
-                    <div className={`relative mb-6 ${customLogoUrl ? 'w-32 flex items-center justify-center' : ''}`}>
+                    <div className={`relative mb-6 ${customLogoUrl ? 'w-48 flex items-center justify-center' : ''}`}>
                         {customLogoUrl ? (
                             <img
                                 src={serverIcon}
                                 alt="Server Logo"
-                                className="max-w-32 max-h-32 object-contain drop-shadow-[0_0_24px_rgba(0,0,0,0.75)] group-hover:scale-105 transition-transform duration-700 ease-out"
+                                className="w-44 h-44 object-contain drop-shadow-[0_0_24px_rgba(0,0,0,0.75)] group-hover:scale-105 transition-transform duration-700 ease-out"
                                 onError={(e) => {
                                     (e.target as HTMLImageElement).src = logoUrl();
                                 }}
