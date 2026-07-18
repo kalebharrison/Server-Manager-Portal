@@ -197,7 +197,9 @@ export const MainApp: React.FC = () => {
         }
 
         try {
-            const data = await apiFetch('/api/users/me');
+            // Identity endpoints must never reuse another session's cached GET payload.
+            clearApiCache();
+            const data = await apiFetch('/api/users/me', { forceRefresh: true, cacheTtlMs: 0 });
             setSessionInfo(data);
             if (data.serverName) document.title = `${data.serverName} Portal`;
             if (path === '/status') updateRoute('status');

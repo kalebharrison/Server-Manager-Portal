@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { apiFetch } from '../shared/api';
 import { getAccessProgressPct, getDaysUntilExpiry } from '../shared/format';
@@ -6,6 +6,7 @@ import { Loader, Toast } from '../shared/toast';
 import { UserDashboardLayout } from '../home/UserDashboardLayout';
 import { HomeWeekCalendar } from '../home/HomeWeekCalendar';
 import { cacheRefreshMs } from '../shared/cacheRefresh';
+import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { createMainGridWidgetRenderer, createRecentlyAddedWidgetRenderer } from '../home/userDashboardWidgetRenderers';
 import { RebuildLibraryCacheButton } from './RebuildLibraryCacheButton';
 import { DiscoverPosterCard, RECENTLY_ADDED_ITEM_LIMIT } from './DiscoverContent';
@@ -146,23 +147,20 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
         return () => { cancelled = true; };
     }, [user, sessionInfo.session.isAdmin, analyticsDays, isJellyfinPortal]);
 
+    const refreshHomeDashboard = useCallback(async () => {
+        try {
+            const endpoint = isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/library';
+            const res = await apiFetch(`${endpoint}?limit=${RECENTLY_ADDED_ITEM_LIMIT}`, { cacheTtlMs: dashboardRefreshMs, staleIfErrorMs: 60 * 60_000 });
+            setDashboardData(res);
+            sessionStorage.setItem(libraryStorageKey, JSON.stringify(res));
+        } catch (e) {
+            console.error('Failed to refresh dashboard data', e);
+        }
+    }, [dashboardRefreshMs, isJellyfinPortal, libraryStorageKey]);
+
     useEffect(() => {
         let pollTimer: ReturnType<typeof setTimeout> | null = null;
-        let dashboardTimer: ReturnType<typeof setInterval> | null = null;
         let isMounted = true;
-        const fetchDashboard = async () => {
-            if (!isMounted) return;
-            try {
-                const endpoint = isJellyfinPortal ? '/api/jellyfin/dashboard' : '/api/plex/library';
-                const res = await apiFetch(`${endpoint}?limit=${RECENTLY_ADDED_ITEM_LIMIT}`, { cacheTtlMs: dashboardRefreshMs, staleIfErrorMs: 60 * 60_000 });
-                if (isMounted) {
-                    setDashboardData(res);
-                    sessionStorage.setItem(libraryStorageKey, JSON.stringify(res));
-                }
-            } catch (e) {
-                console.error('Failed to refresh dashboard data', e);
-            }
-        };
 
         const fetchServerStats = async () => {
             if (!isMounted) return;
@@ -175,7 +173,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
                 if (!isMounted) return;
                 setServerStats(res);
                 sessionStorage.setItem(serverStatsStorageKey, JSON.stringify(res));
-                if (res?.isBuilding) {
+                if (res?.isBuilding && typeof document !== 'undefined' && document.visibilityState === 'visible') {
                     pollTimer = setTimeout(fetchServerStats, 5000);
                 }
             } catch (e) {
@@ -185,14 +183,14 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
             }
         };
         fetchServerStats();
-        fetchDashboard();
-        dashboardTimer = setInterval(fetchDashboard, dashboardRefreshMs);
+        void refreshHomeDashboard();
         return () => {
             isMounted = false;
             if (pollTimer) clearTimeout(pollTimer);
-            if (dashboardTimer) clearInterval(dashboardTimer);
         };
-    }, [dashboardRefreshMs, isJellyfinPortal, libraryStorageKey, serverStatsStorageKey]);
+    }, [isJellyfinPortal, refreshHomeDashboard, serverStatsStorageKey]);
+
+    useVisibleInterval(refreshHomeDashboard, dashboardRefreshMs);
 
     useEffect(() => {
         if (!isJellyfinPortal || !analytics?.libraryHealth) return;
