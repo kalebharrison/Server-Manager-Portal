@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    createResolveIntegrationUrlForFetch,
     isBlockedHostName,
     isPrivateIp,
     normalizeExternalBaseUrl,
@@ -36,4 +37,10 @@ test('normalizeExternalBaseUrl requires allowPrivate for LAN hosts', () => {
         resolveIntegrationUrlForFetch('http://seerr:5055/'),
         'http://seerr:5055',
     );
+    const strictFetch = createResolveIntegrationUrlForFetch({ allowPrivate: false });
+    assert.throws(
+        () => strictFetch('http://192.168.1.50:5055'),
+        /Private or local network hosts are not allowed/,
+    );
+    assert.equal(strictFetch('http://seerr:5055/'), 'http://seerr:5055');
 });
