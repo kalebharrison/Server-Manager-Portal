@@ -5,6 +5,7 @@ declare global {
 }
 
 export const LOGO_PATH = '/static/logo.png';
+export const LOGO_WEBP_PATH = '/static/logo.webp';
 
 const readBasePathFromBaseTag = (): string => {
     const baseEl = document.querySelector('base[href]');

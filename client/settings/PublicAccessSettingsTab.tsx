@@ -19,7 +19,6 @@ const SwitchRow: React.FC<{
 );
 
 export const PublicAccessSettingsTab: React.FC<{
-    allowTemporaryAccess: boolean;
     showLoginServerStats: boolean;
     useTrendingSlideshowOnLogin: boolean;
     referralEnabled: boolean;
@@ -29,7 +28,6 @@ export const PublicAccessSettingsTab: React.FC<{
     libraries: Array<{ id: string; title: string }>;
     defaultLibraryIds: string[];
     hideStreamUsers: string;
-    onAllowTemporaryAccessChange: (value: boolean) => void;
     onShowLoginServerStatsChange: (value: boolean) => void;
     onUseTrendingSlideshowOnLoginChange: (value: boolean) => void;
     onReferralEnabledChange: (value: boolean) => void;
@@ -38,7 +36,6 @@ export const PublicAccessSettingsTab: React.FC<{
     onDefaultLibraryIdsChange: (value: string[]) => void;
     onHideStreamUsersChange: (value: string) => void;
 }> = ({
-    allowTemporaryAccess,
     showLoginServerStats,
     useTrendingSlideshowOnLogin,
     referralEnabled,
@@ -48,7 +45,6 @@ export const PublicAccessSettingsTab: React.FC<{
     libraries,
     defaultLibraryIds,
     hideStreamUsers,
-    onAllowTemporaryAccessChange,
     onShowLoginServerStatsChange,
     onUseTrendingSlideshowOnLoginChange,
     onReferralEnabledChange,
@@ -59,11 +55,8 @@ export const PublicAccessSettingsTab: React.FC<{
 }) => (
     <div className="mb-8">
         <h2 className="text-xl font-bold text-plex mb-2">Access & Privacy</h2>
-        <p className="text-sm text-muted mb-4">Control public visibility, registration, and what members can see about one another.</p>
+        <p className="text-sm text-muted mb-4">Control public visibility, registration, and what members can see about one another. Timed access still comes from admin invites (and optional member referrals).</p>
 
-        <SwitchRow title="Temporary access registration" checked={allowTemporaryAccess} onChange={onAllowTemporaryAccessChange}>
-            <SettingHint>Allow Plex users to request temporary access from the login page.</SettingHint>
-        </SwitchRow>
         <SwitchRow title="Show library totals before login" checked={showLoginServerStats} onChange={onShowLoginServerStatsChange}>
             <SettingHint>Publicly expose movie, show, music, and 4K totals on login and invite pages. Disabled by default.</SettingHint>
         </SwitchRow>
@@ -82,7 +75,7 @@ export const PublicAccessSettingsTab: React.FC<{
         {mediaServerType === 'plex' && libraries.length > 0 && (
             <div className="pt-5">
                 <h3 className="font-bold text-text">Default shared libraries</h3>
-                <SettingHint>Applied to temporary access, invites without an override, and account relinking. Leave empty to share all libraries.</SettingHint>
+                <SettingHint>Applied to invites without an override, referral access, and account relinking. Leave empty to share all libraries.</SettingHint>
                 <div className="flex flex-wrap gap-2 mt-3">
                     {libraries.map((library) => {
                         const selected = defaultLibraryIds.includes(library.id);

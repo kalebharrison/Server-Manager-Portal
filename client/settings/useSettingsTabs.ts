@@ -7,7 +7,6 @@ export const useSettingsTabs = () => {
         const hash = window.location.hash.replace('#', '');
         return isSettingsTabId(hash) ? hash : 'branding';
     });
-    const [highlightMaintenanceToggle, setHighlightMaintenanceToggle] = useState(false);
     const [settingsSearch, setSettingsSearch] = useState('');
 
     const settingsTabsFlat = useMemo(() => SETTINGS_TAB_GROUPS.flatMap(group => group.tabs), []);
@@ -45,22 +44,9 @@ export const useSettingsTabs = () => {
         return () => window.removeEventListener('hashchange', syncTabFromHash);
     }, []);
 
-    useEffect(() => {
-        if (activeTab !== 'system') return;
-        const url = new URL(window.location.href);
-        if (url.searchParams.get('focus') !== 'maintenance-toggle') return;
-        setHighlightMaintenanceToggle(true);
-        const timer = window.setTimeout(() => setHighlightMaintenanceToggle(false), 4200);
-        url.searchParams.delete('focus');
-        const nextUrl = `${url.pathname}${url.search}${url.hash || ''}`;
-        window.history.replaceState({}, '', nextUrl);
-        return () => window.clearTimeout(timer);
-    }, [activeTab]);
-
     return {
         activeTab,
         setActiveTab,
-        highlightMaintenanceToggle,
         settingsSearch,
         setSettingsSearch,
         settingsTabsFlat,

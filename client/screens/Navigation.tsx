@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Activity, AlertTriangle, BarChart3, FileText, Film, Home, Layers, LogOut, Palette, Settings, Shield, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, FileText, Film, Home, Layers, LogOut, Palette, Settings, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
 
 import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { updateFavicon } from '../shared/favicon';
@@ -8,7 +8,7 @@ import { CustomSelect } from '../shared/ui';
 
 interface NavigationProps {
     currentRoute: string;
-    onNavigate: (route: 'admin' | 'user' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'maintenance' | 'request') => void;
+    onNavigate: (route: 'admin' | 'user' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'request') => void;
     onLogout: () => void;
     isAdmin: boolean;
     serverName: string;
@@ -16,7 +16,6 @@ interface NavigationProps {
     customLogoUrl?: string | null;
     navOrder: string[];
     navFeatures?: {
-        maintenance?: boolean;
         request?: boolean;
     };
     appVersion?: string;
@@ -62,19 +61,13 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
         'logs': { label: 'Logs', icon: FileText, route: 'logs', adminOnly: true },
         'analytics': { label: 'Analytics', icon: BarChart3, route: 'analytics', adminOnly: false },
         'mediastack': { label: 'Calendar', icon: Layers, route: 'mediastack', adminOnly: false },
-        'maintenance': { label: 'Cleaner', icon: Shield, route: 'maintenance', adminOnly: true },
         'request': { label: 'Request Content', icon: Sparkles, route: 'request', adminOnly: false },
         'preferences': { label: 'Preferences', icon: SlidersHorizontal, route: 'preferences', adminOnly: false },
         'settings': { label: 'Settings', icon: Settings, route: 'settings', adminOnly: true },
         'logout': { label: 'Logout', icon: LogOut, route: '', adminOnly: false, onClick: onLogout }
     };
     const normalizedNavOrder = useMemo(() => {
-        const order = Array.isArray(navOrder) ? [...navOrder] : [];
-        if (isAdmin && navFeatures?.maintenance !== false && !order.includes('maintenance')) {
-            const requestIndex = order.indexOf('request');
-            if (requestIndex >= 0) order.splice(requestIndex, 0, 'maintenance');
-            else order.push('maintenance');
-        }
+        const order = Array.isArray(navOrder) ? navOrder.filter((key) => key !== 'maintenance') : [];
         if (!isAdmin && !order.includes('preferences')) {
             const logoutIndex = order.indexOf('logout');
             if (logoutIndex >= 0) order.splice(logoutIndex, 0, 'preferences');
@@ -88,7 +81,6 @@ export const Navigation: React.FC<NavigationProps> = ({ currentRoute, onNavigate
             const item = navItemsConfig[key];
             if (!item) return false;
             if (item.adminOnly && !isAdmin) return false;
-            if (key === 'maintenance' && navFeatures?.maintenance === false) return false;
             if (key === 'request' && navFeatures?.request === false) return false;
             return true;
         });

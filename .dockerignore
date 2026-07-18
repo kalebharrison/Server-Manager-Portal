@@ -14,3 +14,16 @@ v2
 *.log
 npm-debug.log*
 .DS_Store
+tests
+docs
+*.md
+!README.md
+unraid
+ca_profile.xml
+CHANGELOG.md
+LICENSE
+.tsbuildinfo
+coverage
+**/*.test.js
+**/*.test.ts
+**/*.test.tsx

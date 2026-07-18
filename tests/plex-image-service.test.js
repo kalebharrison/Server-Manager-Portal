@@ -30,4 +30,12 @@ test('Plex image service validates, bounds, and coalesces image requests', async
     assert.deepEqual(first.body, second.body);
     assert.match(sourceUrl, /width=1200&height=1600/);
     await assert.rejects(() => service.request({ ...input, path: '/status/sessions' }), /Invalid Plex image path/);
+    await assert.rejects(
+        () => service.request({ ...input, path: '/library/metadata/1/../../status/sessions' }),
+        /Invalid Plex image path/,
+    );
+    await assert.rejects(
+        () => service.request({ ...input, path: '/library/metadata/%2e%2e/status/sessions' }),
+        /Invalid Plex image path/,
+    );
 });

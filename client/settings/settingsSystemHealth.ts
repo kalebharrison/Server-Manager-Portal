@@ -16,11 +16,9 @@ const trackedIntegrationKeys = (mediaServerType: string) => {
 
 export const calculateSystemHealth = ({
     diagnostics,
-    maintenanceExperimentalEnabled,
     mediaServerType,
 }: {
     diagnostics: any;
-    maintenanceExperimentalEnabled: boolean;
     mediaServerType: string;
 }) => {
     if (!diagnostics) {
@@ -42,7 +40,7 @@ export const calculateSystemHealth = ({
         .filter((key) => key !== 'requestAppConfigured' || integrations.requestAppEnabled)
         .map((key) => [key, !!integrations[key]] as const);
     const cacheEntries = Object.entries(diagnostics.caches || {}).filter(([key]) => {
-        if (!maintenanceExperimentalEnabled && key.startsWith('maintenance')) return false;
+        if (key.startsWith('maintenance')) return false;
         if (mediaServerType === 'jellyfin' && key === 'plexStats') return false;
         return true;
     });

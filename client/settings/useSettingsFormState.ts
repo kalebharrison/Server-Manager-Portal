@@ -74,7 +74,6 @@ type SaveAdminValues = {
     autoBackupEnabled: boolean;
     autoBackupIntervalDays: number;
     autoBackupRetentionCount: number;
-    maintenanceExperimentalEnabled: boolean;
 };
 
 const createInitialValues = (): SettingsFormValues => ({
@@ -215,7 +214,6 @@ export const useSettingsFormState = () => {
         autoBackupEnabled: adminValues.autoBackupEnabled,
         autoBackupIntervalDays: adminValues.autoBackupIntervalDays,
         autoBackupRetentionCount: adminValues.autoBackupRetentionCount,
-        maintenanceExperimentalEnabled: adminValues.maintenanceExperimentalEnabled,
         dashboardLayout: dashboardLayoutRef.current,
     }), [values]);
 

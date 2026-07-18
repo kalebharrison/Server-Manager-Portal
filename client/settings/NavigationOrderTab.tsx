@@ -10,7 +10,6 @@ const NAV_LABELS: Record<string, string> = {
     logs: 'Logs (Admin Only)',
     analytics: 'Analytics',
     mediastack: 'Calendar',
-    maintenance: 'Cleaner (Admin Only)',
     request: 'Request Content',
     settings: 'Settings (Admin Only)',
     logout: 'Logout',

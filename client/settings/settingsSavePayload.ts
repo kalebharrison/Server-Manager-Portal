@@ -1,5 +1,5 @@
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
-import { ensureMaintenanceNavOrder } from './settingsNavOrder';
+import { normalizeSettingsNavOrder } from './settingsNavOrder';
 import type { ArrInstance } from '../shared/types';
 
 type SettingsSavePayloadInput = {
@@ -63,7 +63,6 @@ type SettingsSavePayloadInput = {
     autoBackupEnabled: boolean;
     autoBackupIntervalDays: number;
     autoBackupRetentionCount: number;
-    maintenanceExperimentalEnabled: boolean;
     dashboardLayout: DashboardLayoutConfig;
 };
 
@@ -79,6 +78,7 @@ export const buildSettingsSavePayload = ({
     plexServerUrl: settings.plexServerUrl || '',
     checkIntervalMinutes: checkInterval,
     primaryColor: '',
-    navOrder: ensureMaintenanceNavOrder(navOrder),
+    allowTemporaryAccess: false,
+    navOrder: normalizeSettingsNavOrder(navOrder),
     dashboardLayout: normalizeSectionLayout(dashboardLayout),
 });

@@ -14,7 +14,6 @@ import { addDays, getDaysUntilExpiry } from './lib/date-utils.js';
 import { createDeletedUserRegistry, isDeletedUser, normalized } from './lib/deleted-users.js';
 import { createEmailService } from './lib/email-service.js';
 import { createMediaUserService } from './lib/media-user-service.js';
-import { createMaintenanceService } from './lib/maintenance-service.js';
 import { createNewsletterService } from './lib/newsletter-service.js';
 import { escapeHtmlAttr } from './lib/html-shell.js';
 import { createSecurityHeadersMiddleware, secureTokenEquals } from './lib/http-security.js';
@@ -37,7 +36,6 @@ import { createAdminProfileService } from './lib/admin-profile-service.js';
 import { registerPublicStatusRoutes } from './lib/public-status-routes.js';
 import { registerPlexRoutes } from './lib/plex-routes.js';
 import { registerJellyfinRoutes } from './lib/jellyfin-routes.js';
-import { registerMaintenanceRoutes } from './lib/maintenance-routes.js';
 import { registerMediaStackRoutes } from './lib/media-stack-routes.js';
 import { createRequestAppService } from './lib/request-app-service.js';
 import { createTvdbService } from './lib/tvdb-service.js';
@@ -47,7 +45,6 @@ import { registerMediaIssueRoutes } from './lib/media-issue-routes.js';
 import { registerStaticShellRoutes } from './lib/static-shell-routes.js';
 import { createBackgroundService } from './lib/background-service.js';
 import { registerCommunicationRoutes } from './lib/communication-routes.js';
-import { registerSpeedtestRoutes } from './lib/speedtest-routes.js';
 import { registerKillRuleRoutes } from './lib/kill-rule-routes.js';
 import { createAnalyticsService } from './lib/analytics-service.js';
 import { createRateLimiter } from './lib/rate-limit.js';
@@ -144,7 +141,6 @@ const authRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests:
 const authCallbackRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 40 });
 const jellyfinQuickConnectPollRateLimit = createRateLimiter({ windowMs: 5 * 60 * 1000, maxRequests: 140 });
 const publicReadRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 120 });
-const speedtestRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 12 });
 const setupRateLimit = createRateLimiter({ windowMs: 15 * 60 * 1000, maxRequests: 30 });
 
 const hasValidSetupToken = (req) => {
@@ -164,22 +160,22 @@ const sanitizeIntegrationUrl = (rawUrl) => {
     return normalizeExternalBaseUrl(rawUrl, { allowPrivate: ALLOW_PRIVATE_INTEGRATION_URLS, allowHttp: true });
 };
 
-// Only mark cookies Secure when explicitly enabled. Auto-detecting HTTPS breaks plain
-// HTTP LAN access (e.g. http://192.168.x.x:2121) when FORCE_SECURE_COOKIES was left on.
-const sessionCookieBase = () => ({
+// Prefer FORCE_SECURE_COOKIES, otherwise mark Secure only when the request itself is HTTPS
+// (via trust proxy). Plain HTTP LAN logins keep non-Secure cookies.
+const sessionCookieBase = (req) => ({
     httpOnly: true,
-    secure: FORCE_SECURE_COOKIES,
+    secure: FORCE_SECURE_COOKIES || !!req?.secure,
     sameSite: 'lax',
     path: BASE_PATH || '/',
 });
 
 const clearSessionCookie = (req, res) => {
-    res.clearCookie('session', sessionCookieBase());
+    res.clearCookie('session', sessionCookieBase(req));
 };
 
 const setSessionCookie = (req, res, token, { maxAgeMs = 7 * 24 * 60 * 60 * 1000 } = {}) => {
     res.cookie('session', token, {
-        ...sessionCookieBase(),
+        ...sessionCookieBase(req),
         maxAge: maxAgeMs,
     });
 };
@@ -216,11 +212,6 @@ import {
     ANALYTICS_HISTORY_CACHE_PATH,
     PERSONAL_ANALYTICS_CACHE_PATH,
     KILL_RULES_PATH,
-    MAINTENANCE_RULES_PATH,
-    MAINTENANCE_MEDIA_INDEX_PATH,
-    MAINTENANCE_RUNS_PATH,
-    MAINTENANCE_REQUEST_INDEX_PATH,
-    MAINTENANCE_PREFS_PATH,
     PLEX_STATS_CACHE_PATH,
     PLEX_DASHBOARD_CACHE_PATH,
     MEDIA_ISSUES_PATH,
@@ -356,20 +347,17 @@ const findLocalUserForSession = (users, sessionUser) => {
     const sessionPlexId = normalized(sessionUser.plexId);
     const sessionJellyfinId = normalized(sessionUser.jellyfinId);
     const sessionEmail = normalized(sessionUser.email);
-    const sessionUsername = normalized(sessionUser.username);
     return users.find((user) => {
         const userId = normalized(user.id);
         const userPlexId = normalized(user.plexId);
         const userJellyfinId = normalized(user.jellyfinId);
         const userEmail = normalized(user.email);
-        const userUsername = normalized(user.username);
         return (
             (sessionPlexId && (sessionPlexId === userPlexId || sessionPlexId === userId)) ||
             (sessionJellyfinId && (sessionJellyfinId === userJellyfinId || sessionJellyfinId === userId)) ||
             (sessionId && (sessionId === userId || sessionId === userPlexId)) ||
             (sessionId && (sessionId === userJellyfinId || sessionId === `jellyfin:${userJellyfinId}`)) ||
-            (sessionEmail && sessionEmail === userEmail) ||
-            (sessionUsername && sessionUsername === userUsername)
+            (sessionEmail && sessionEmail === userEmail)
         );
     }) || null;
 };
@@ -585,12 +573,10 @@ registerConfigRoutes({
     syncAdminPlexIdFromConfigToken,
     invalidatePlexConnectionCaches,
     invalidateAdminProfileCache,
-    invalidateArrCatalogCache: () => invalidateArrCatalogCache(),
     reconcileStatusConfig: () => statusRuntime.reconcileStatusConfig(),
     computeNextBackupRun,
     systemJobs,
     startBackgroundService: () => startBackgroundService(),
-    buildMaintenanceMediaIndex: (...args) => buildMaintenanceMediaIndex(...args),
     normalizeSectionLayout,
     sendEmail,
     resolveIntegrationUrlForFetch,
@@ -735,11 +721,6 @@ registerAdminRoutes({
     analyticsCachePath: ANALYTICS_CACHE_PATH,
     trendingCachePath: TRENDING_CACHE_PATH,
     plexStatsCachePath: PLEX_STATS_CACHE_PATH,
-    maintenanceMediaIndexPath: MAINTENANCE_MEDIA_INDEX_PATH,
-    maintenanceRulesPath: MAINTENANCE_RULES_PATH,
-    maintenanceRunsPath: MAINTENANCE_RUNS_PATH,
-    maintenanceRequestIndexPath: MAINTENANCE_REQUEST_INDEX_PATH,
-    maintenancePrefsPath: MAINTENANCE_PREFS_PATH,
     appVersion,
     loadFile,
     saveFile,
@@ -752,13 +733,10 @@ registerAdminRoutes({
     checkAndRevoke,
     checkAndSendNewsletter,
     checkAndCleanupInactive: (...args) => checkAndCleanupInactive(...args),
-    isMaintenanceExperimentalEnabled: (...args) => isMaintenanceExperimentalEnabled(...args),
-    executeMaintenanceRunBatch: (...args) => executeMaintenanceRunBatch(...args),
     calculateAnalyticsStats: (...args) => calculateAnalyticsStats(...args),
     calculateTrendingStats: (...args) => calculateTrendingStats(...args),
     buildPlexStatsCache,
     runAutoBackupCycle: (...args) => runAutoBackupCycle(...args),
-    buildMaintenanceMediaIndex: (...args) => buildMaintenanceMediaIndex(...args),
     applyBackupPayload,
     createBackupObject,
     enforceBackupRetention,
@@ -857,13 +835,6 @@ const {
     startPersonalAnalyticsCacheWarmer,
 } = analyticsService;
 
-registerSpeedtestRoutes({
-    app,
-    requireAuth,
-    requireMember,
-    speedtestRateLimit,
-});
-
 registerStaticShellRoutes({
     app,
     basePath: BASE_PATH,
@@ -880,7 +851,6 @@ registerStaticShellRoutes({
 const { checkAndCleanupInactive, runAutoBackupCycle, startBackgroundService } = createBackgroundService({
     configPath: CONFIG_PATH,
     usersPath: USERS_PATH,
-    maintenanceRulesPath: MAINTENANCE_RULES_PATH,
     loadFile,
     saveFile,
     fetch,
@@ -889,8 +859,6 @@ const { checkAndCleanupInactive, runAutoBackupCycle, startBackgroundService } = 
     checkAndSendNotifications,
     checkAndRevoke,
     checkAndSendNewsletter,
-    isMaintenanceExperimentalEnabled: (...args) => isMaintenanceExperimentalEnabled(...args),
-    executeMaintenanceRunBatch: (...args) => executeMaintenanceRunBatch(...args),
     createBackupObject,
     writeBackupToFolder,
     enforceBackupRetention,
@@ -953,51 +921,6 @@ registerMediaIssueRoutes({
     log,
 });
 
-// --- Library Maintenance (Maintainerr-style) ---
-const maintenanceService = createMaintenanceService({
-    configPath: CONFIG_PATH,
-    maintenancePrefsPath: MAINTENANCE_PREFS_PATH,
-    maintenanceMediaIndexPath: MAINTENANCE_MEDIA_INDEX_PATH,
-    maintenanceRequestIndexPath: MAINTENANCE_REQUEST_INDEX_PATH,
-    maintenanceRulesPath: MAINTENANCE_RULES_PATH,
-    maintenanceRunsPath: MAINTENANCE_RUNS_PATH,
-    loadFile,
-    saveFile,
-    getPlexConnectionUri,
-    resolveIntegrationUrlForFetch,
-    appendAuditLog,
-    markTaskStart,
-    markTaskEnd,
-    systemJobs,
-    runHeavyJob: heavyJobQueue.run,
-    log,
-});
-const {
-    isMaintenanceExperimentalEnabled,
-    invalidateArrCatalogCache,
-    buildMaintenanceMediaIndex,
-    executeMaintenanceRunBatch,
-} = maintenanceService;
-
-registerMaintenanceRoutes({
-    app,
-    requireAdmin,
-    configPath: CONFIG_PATH,
-    maintenanceRulesPath: MAINTENANCE_RULES_PATH,
-    maintenanceMediaIndexPath: MAINTENANCE_MEDIA_INDEX_PATH,
-    maintenanceRequestIndexPath: MAINTENANCE_REQUEST_INDEX_PATH,
-    maintenancePrefsPath: MAINTENANCE_PREFS_PATH,
-    maintenanceRunsPath: MAINTENANCE_RUNS_PATH,
-    loadFile,
-    saveFile,
-    appendAuditLog,
-    maintenanceService,
-    tasksInfo,
-    markTaskStart,
-    markTaskEnd,
-    withCache,
-});
-
 const { monitorConcurrentSessions } = createStreamMonitor({
     configPath: CONFIG_PATH,
     killRulesPath: KILL_RULES_PATH,
@@ -1058,22 +981,6 @@ const startPortalService = async () => {
     startTrendingStatsBackgroundTask();
     startAnalyticsStatsBackgroundTask();
     void startPersonalAnalyticsCacheWarmer().catch((error) => log(`[PersonalAnalyticsCache] Startup failed: ${error.message}`));
-    systemJobs.maintenanceIndex.nextRun = new Date(Date.now() + (20 * 1000)).toISOString();
-    setTimeout(async () => {
-        try {
-            await buildMaintenanceMediaIndex({ actor: { username: 'System', email: 'system@local' }, force: false });
-        } catch (e) {
-            log(`Initial maintenance index build failed: ${e.message}`);
-        }
-    }, 20000);
-    setInterval(async () => {
-        systemJobs.maintenanceIndex.nextRun = new Date(Date.now() + (6 * 60 * 60 * 1000)).toISOString();
-        try {
-            await buildMaintenanceMediaIndex({ actor: { username: 'System', email: 'system@local' }, force: false });
-        } catch (e) {
-            log(`Scheduled maintenance index build failed: ${e.message}`);
-        }
-    }, 6 * 60 * 60 * 1000);
 
     const backupConfig = await loadFile(CONFIG_PATH, {});
     systemJobs.autoBackup.nextRun = backupConfig.autoBackupEnabled ? computeNextBackupRun(backupConfig) : null;

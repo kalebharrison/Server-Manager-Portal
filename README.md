@@ -424,6 +424,7 @@ The template uses `ghcr.io/jl94x4/server-manager-portal:latest` by default.
 | `PORT` | No | Listen port inside the container (default `2121`) |
 | `BIND_HOST` | No | Bind address (default `0.0.0.0`) |
 | `CONFIG_DIR` | No | Runtime data directory (default `/app/config` in Docker) |
+| `IMAGE_CACHE_MAX_MB` | No | Max in-memory size per image proxy cache (Plex, Jellyfin, TMDB posters). Default `64` |
 | `PUBLIC_BASE_URL` | Recommended | Public HTTPS URL for links and emails. Include the subpath when using one, e.g. `https://media.example.com/portal` |
 | `BASE_PATH` | No | URL prefix when hosted under a subpath (e.g. `/portal`). Leave empty for root hosting |
 | `FORCE_SECURE_COOKIES` | Recommended | Set `true` when behind HTTPS |
@@ -497,7 +498,9 @@ Server-Manager-Portal/
 ├── static/
 │   ├── bundle.js       # Built React frontend
 │   ├── tailwind.css    # Built Tailwind styles
-│   └── logo.png        # Server logo
+│   ├── logo.png / logo.webp  # Server logo
+│   ├── favicon.png           # Small favicon
+│   └── fonts/                # Self-hosted Inter
 ├── lib/
 │   └── data-paths.js   # Data file locations + legacy migration
 ├── config/             # Runtime JSON data (gitignored, created on first run)
@@ -519,6 +522,11 @@ Runtime-generated files (stored in `config/`, not committed to git):
 - `config/users.json` - User records
 - `config/audit-log.json` - System action log
 - `config/trending-cache.json` - Cached leaderboard and trending data
+- `config/analytics-cache.json` / `analytics-history-cache.json` - Server analytics snapshots + incremental history
+- `config/personal-analytics-cache.json` - Per-user wrap-up snapshots
+- `config/plex-dashboard-cache.json` / `plex-stats.json` - Discover library + library size caches
+- `config/subzero-health.json` - Status monitor history
+- `config/media-issues.json` - Unified media issue reports
 
 On first startup after an upgrade, any legacy JSON files still in the project root are automatically moved into `config/`.
 

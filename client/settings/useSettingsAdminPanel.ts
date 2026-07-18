@@ -11,7 +11,6 @@ type UseSettingsAdminPanelOptions = {
     addToast: (message: string, type?: 'success' | 'error') => void;
     setLoading: (value: boolean) => void;
     mediaServerType: 'plex' | 'jellyfin';
-    maintenanceExperimentalEnabled: boolean;
 };
 
 export const useSettingsAdminPanel = ({
@@ -19,7 +18,6 @@ export const useSettingsAdminPanel = ({
     addToast,
     setLoading,
     mediaServerType,
-    maintenanceExperimentalEnabled,
 }: UseSettingsAdminPanelOptions) => {
     const [tasks, setTasks] = useState<any[]>([]);
     const [diagnostics, setDiagnostics] = useState<any>(null);
@@ -209,9 +207,8 @@ export const useSettingsAdminPanel = ({
 
     const systemHealth = useMemo(() => calculateSystemHealth({
         diagnostics,
-        maintenanceExperimentalEnabled,
         mediaServerType,
-    }), [diagnostics, maintenanceExperimentalEnabled, mediaServerType]);
+    }), [diagnostics, mediaServerType]);
 
     const auditEventsPerPage = 12;
     const totalAuditLogPages = Math.max(1, Math.ceil(auditLogEntries.length / auditEventsPerPage));

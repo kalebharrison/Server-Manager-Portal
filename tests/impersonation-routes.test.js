@@ -47,5 +47,38 @@ test('impersonation uses a short-lived user token and restores the admin actor',
     assert.equal(restored.isAdmin, true);
     assert.equal(restored.id, actor.id);
     assert.equal(restored.actor, undefined);
+    assert.ok(restored.exp - restored.iat <= 3600);
     assert.deepEqual(auditEvents, ['impersonation_start', 'impersonation_stop']);
+});
+
+test('stop-impersonation rejects a forged actor that is not an admin', async () => {
+    const routes = new Map();
+    const app = { post(path, ...handlers) { routes.set(path, handlers.at(-1)); } };
+    const secret = 'test-secret-test-secret-test-secret';
+    registerImpersonationRoutes({
+        app,
+        requireAuth: () => {},
+        requireAdmin: () => {},
+        configPath: 'config',
+        usersPath: 'users',
+        deletedUsersPath: 'deleted',
+        jwtSecret: secret,
+        loadFile: async () => ({ mediaServerType: 'plex' }),
+        setSessionCookie: () => {},
+        appendAuditLog: async () => {},
+        resolveCurrentAdmin: async () => false,
+        log: () => {},
+    });
+
+    const response = { statusCode: 200, body: null, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; } };
+    await routes.get('/api/admin/stop-impersonation')({
+        user: {
+            id: 'user-1',
+            username: 'Viewer',
+            impersonatingUserId: 'user-1',
+            actor: { id: 'forged', plexId: 'forged', username: 'Forged', isAdmin: true },
+            exp: Math.floor(Date.now() / 1000) + 3600,
+        },
+    }, response);
+    assert.equal(response.statusCode, 403);
 });

@@ -11,8 +11,6 @@ export const Login = lazyComponent(() => import('./screens/Login'), (module) => 
 export const PublicInviteClaim = lazyComponent(() => import('./screens/PublicInviteClaim'), (module) => module.PublicInviteClaim);
 export const StatusDashboard = lazyComponent(() => import('./screens/StatusDashboard'), (module) => module.StatusDashboard);
 export const LibraryDashboard = lazyComponent(() => import('./screens/LibraryDashboard'), (module) => module.LibraryDashboard);
-export const MaintenanceDashboard = lazyComponent(() => import('./screens/MaintenanceDashboard'), (module) => module.MaintenanceDashboard);
-export const LogsDashboard = lazyComponent(() => import('./screens/LogsDashboard'), (module) => module.LogsDashboard);
 export const MediaStackDashboard = lazyComponent(() => import('./screens/MediaStackDashboard'), (module) => module.MediaStackDashboard);
 export const AnalyticsDashboard = lazyComponent(() => import('./screens/AnalyticsDashboard'), (module) => module.AnalyticsDashboard);
 export const RequestDashboard = lazyComponent(() => import('./requests/RequestDashboard'), (module) => module.RequestDashboard);
