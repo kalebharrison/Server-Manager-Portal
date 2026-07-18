@@ -221,7 +221,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
         return { ...base, hiddenSections: Array.from(hidden) };
     }, [publicConfig?.dashboardLayout, user?.homeShowWrapUp, user?.homeShowWeekCalendar]);
 
-    const widgetDeps = useMemo(() => ({
+    const mainGridWidgetDeps = useMemo(() => ({
         sessionInfo,
         publicConfig,
         user,
@@ -238,24 +238,28 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
         analyticsDaysOpen,
         setAnalyticsDays,
         setAnalyticsDaysOpen,
-        showQualityBadges,
-        dashboardData,
         handleRelink,
         handleToggleNewsletter,
         onViewAdmin,
         onViewSettings,
         onViewLogs,
         setToast,
-        DiscoverPosterCard,
         RebuildLibraryCacheButton,
     }), [
         sessionInfo, publicConfig, user, isRevoked, isExpiringSoon, daysLeft, progressPct, newsletterOptIn,
         serverStats, serverDataLoading, analytics, analyticsLoading, analyticsDays, analyticsDaysOpen,
-        showQualityBadges, dashboardData, onViewAdmin, onViewSettings, onViewLogs,
+        onViewAdmin, onViewSettings, onViewLogs,
     ]);
 
-    const renderMainGridWidget = useMemo(() => createMainGridWidgetRenderer(widgetDeps), [widgetDeps]);
-    const renderRecentlyAddedWidget = useMemo(() => createRecentlyAddedWidgetRenderer(widgetDeps), [widgetDeps]);
+    const recentlyAddedWidgetDeps = useMemo(() => ({
+        publicConfig,
+        showQualityBadges,
+        dashboardData,
+        DiscoverPosterCard,
+    }), [publicConfig, showQualityBadges, dashboardData]);
+
+    const renderMainGridWidget = useMemo(() => createMainGridWidgetRenderer(mainGridWidgetDeps), [mainGridWidgetDeps]);
+    const renderRecentlyAddedWidget = useMemo(() => createRecentlyAddedWidgetRenderer(recentlyAddedWidgetDeps), [recentlyAddedWidgetDeps]);
 
     return (
         <div className="w-full flex flex-col gap-3 md:gap-4">

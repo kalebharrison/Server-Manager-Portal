@@ -5,13 +5,20 @@ import { randomUUID } from 'crypto';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import compression from 'compression';
-import { execSync } from 'child_process';
-import fsSync from 'fs';
 import { createBasePathHelpers, deriveBasePath } from './lib/http/base-path.js';
+import { resolveAppVersion } from './lib/core/app-version.js';
+import { findLocalUserForSession } from './lib/users/session-user.js';
+import { createPlexApiFetch } from './lib/plex/plex-api-fetch.js';
+import { createPlexSessionsSnapshot } from './lib/plex/plex-sessions-snapshot.js';
+import { createJellyfinHttp } from './lib/jellyfin/jellyfin-http.js';
+import { createSessionCookies } from './lib/auth/session-cookies.js';
+import { createAdminIdentity, isJellyfinConfigured, isPortalConfigured } from './lib/auth/admin-identity.js';
+import { createSessionMiddleware } from './lib/auth/session-middleware.js';
+import { createConfigFileAccess } from './lib/config/config-store.js';
 import { createBroadcastService } from './lib/comms/broadcast-service.js';
 import { createLruCache, createTtlCache } from './lib/cache/cache.js';
 import { addDays, getDaysUntilExpiry } from './lib/core/date-utils.js';
-import { createDeletedUserRegistry, isDeletedUser, normalized } from './lib/users/deleted-users.js';
+import { createDeletedUserRegistry, isDeletedUser } from './lib/users/deleted-users.js';
 import { createEmailService } from './lib/comms/email-service.js';
 import { createMemberNotifications } from './lib/users/member-notifications.js';
 import { createMediaUserService } from './lib/users/media-user-service.js';
@@ -50,38 +57,9 @@ import { registerKillRuleRoutes } from './lib/admin/kill-rule-routes.js';
 import { createAnalyticsService } from './lib/analytics/analytics-service.js';
 import { createRateLimiter } from './lib/http/rate-limit.js';
 import { createAuditLogger } from './lib/admin/audit-log.js';
-import { isImpersonatingSession } from './lib/auth/impersonation.js';
 import { createStatusRuntime } from './lib/status/status-runtime.js';
 import { createStreamMonitor } from './lib/status/stream-monitor.js';
 import { computeNextBackupRun, findRunnableTask, getTasksSnapshot, markTaskEnd, markTaskStart, systemJobs, tasksInfo } from './lib/admin/task-state.js';
-
-const resolveAppVersion = () => {
-    let pkgVersion = '1.0.0';
-    try {
-        const pkg = JSON.parse(fsSync.readFileSync('package.json', 'utf8'));
-        if (pkg?.version) pkgVersion = String(pkg.version);
-    } catch {
-        // package metadata may be absent in unusual deployments
-    }
-
-    try {
-        const stamped = fsSync.readFileSync('version.txt', 'utf8').trim();
-        const expectedPrefix = `v${pkgVersion}`;
-        if (stamped === expectedPrefix || stamped.startsWith(`${expectedPrefix}-`)) {
-            return stamped;
-        }
-    } catch {
-        // version.txt is optional; fall back to package.json plus commit hash
-    }
-
-    const isTagBuild = String(process.env.GITHUB_REF || '').startsWith('refs/tags/');
-    try {
-        const gitHash = execSync('git rev-parse --short HEAD', { stdio: 'pipe' }).toString().trim();
-        return isTagBuild ? `v${pkgVersion}` : `v${pkgVersion}-${gitHash}`;
-    } catch {
-        return `v${pkgVersion}`;
-    }
-};
 
 const appVersion = resolveAppVersion();
 
@@ -118,21 +96,6 @@ if (CONFIG_ENCRYPTION_KEY.length < 32) {
     process.exit(1);
 }
 const configSecretProtector = createConfigSecretProtector(CONFIG_ENCRYPTION_KEY);
-const loadFile = async (filePath, defaultContent) => {
-    const value = await loadJsonFile(filePath, defaultContent);
-    return filePath === CONFIG_PATH ? normalizeArrConfig(configSecretProtector.unprotectConfig(value)) : value;
-};
-const saveFile = async (filePath, value) => saveJsonFile(
-    filePath,
-    filePath === CONFIG_PATH ? configSecretProtector.protectConfig(normalizeArrConfig(value)) : value,
-);
-const secureConfigAtRest = async () => {
-    const stored = await loadJsonFile(CONFIG_PATH, {});
-    const hadPlaintextSecrets = configSecretProtector.hasPlaintextSecrets(stored);
-    const runtimeConfig = normalizeArrConfig(configSecretProtector.unprotectConfig(stored));
-    await saveJsonFile(CONFIG_PATH, configSecretProtector.protectConfig(runtimeConfig));
-    return hadPlaintextSecrets;
-};
 
 let CLIENT_ID = process.env.CLIENT_ID || 'plex-expiry-manager-client-id'; // Now dynamically generated if missing
 
@@ -161,25 +124,10 @@ const sanitizeIntegrationUrl = (rawUrl) => {
     return normalizeExternalBaseUrl(rawUrl, { allowPrivate: ALLOW_PRIVATE_INTEGRATION_URLS, allowHttp: true });
 };
 
-// Prefer FORCE_SECURE_COOKIES, otherwise mark Secure only when the request itself is HTTPS
-// (via trust proxy). Plain HTTP LAN logins keep non-Secure cookies.
-const sessionCookieBase = (req) => ({
-    httpOnly: true,
-    secure: FORCE_SECURE_COOKIES || !!req?.secure,
-    sameSite: 'lax',
-    path: BASE_PATH || '/',
+const { clearSessionCookie, setSessionCookie } = createSessionCookies({
+    basePath: BASE_PATH,
+    forceSecureCookies: FORCE_SECURE_COOKIES,
 });
-
-const clearSessionCookie = (req, res) => {
-    res.clearCookie('session', sessionCookieBase(req));
-};
-
-const setSessionCookie = (req, res, token, { maxAgeMs = 7 * 24 * 60 * 60 * 1000 } = {}) => {
-    res.cookie('session', token, {
-        ...sessionCookieBase(req),
-        maxAge: maxAgeMs,
-    });
-};
 
 app.use(express.json({ limit: '50kb' })); // Middleware to parse JSON bodies (with size limit)
 app.use(cookieParser()); // Middleware to parse cookies
@@ -220,6 +168,15 @@ import {
 } from './lib/config/data-paths.js';
 import { createBackupService } from './lib/admin/backup.js';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeSectionLayout } from './lib/config/dashboard-layout.js';
+
+const { loadFile, saveFile, secureConfigAtRest } = createConfigFileAccess({
+    configPath: CONFIG_PATH,
+    loadJsonFile,
+    saveJsonFile,
+    configSecretProtector,
+    normalizeArrConfig,
+});
+
 const PLEX_API = 'https://plex.tv/api';
 
 // --- Helper Functions ---
@@ -287,92 +244,11 @@ const { startBroadcast, sendTestBroadcast } = createBroadcastService({
 });
 
 
-// --- Plex API Functions (Server-side only) ---
-const apiFetch = (url, token, options = {}) => {
-    const headers = {
-        'Accept': 'application/json',
-        ...(options.headers || {}),
-        'X-Plex-Token': token,
-        'X-Plex-Client-Identifier': CLIENT_ID
-    };
-    return fetch(url, { ...options, headers });
-};
-
-const jellyfinAuthBase = [
-    'MediaBrowser Client="Server Manager Portal"',
-    'Device="Web"',
-    `DeviceId="${CLIENT_ID}"`,
-    `Version="${appVersion}"`,
-].join(', ');
-
-const jellyfinAuthorizationHeader = (token = '') => (
-    token ? `${jellyfinAuthBase}, Token="${token}"` : jellyfinAuthBase
-);
-
-const jellyfinHeaders = (token = '', extra = {}) => ({
-    Accept: 'application/json',
-    'X-Emby-Authorization': jellyfinAuthorizationHeader(token),
-    ...(token ? { 'X-Emby-Token': token } : {}),
-    ...extra,
+const apiFetch = createPlexApiFetch(() => CLIENT_ID);
+const { jellyfinHeaders, jellyfinItemUrl } = createJellyfinHttp({
+    getClientId: () => CLIENT_ID,
+    appVersion,
 });
-
-const syncAdminPlexIdFromConfigToken = async (config, { persist = false } = {}) => {
-    if (!config?.plexToken || config.plexToken === SECRET_MASK) return config;
-    try {
-        const ownerRes = await apiFetch('https://plex.tv/api/v2/user', config.plexToken);
-        if (!ownerRes.ok) return config;
-        const ownerData = await ownerRes.json();
-        const ownerId = ownerData?.id ? String(ownerData.id) : '';
-        if (!ownerId) return config;
-        if (String(config.adminPlexId || '') !== ownerId) {
-            log(`Syncing adminPlexId -> ${ownerId} from configured Plex token (was ${config.adminPlexId || 'unset'})`);
-            config.adminPlexId = ownerId;
-            if (persist) await saveFile(CONFIG_PATH, config);
-        }
-    } catch (e) {
-        log(`Admin Plex ID sync skipped: ${e.message}`);
-    }
-    return config;
-};
-
-const getAdminId = async (config) => {
-    if (config?.adminPlexId) return String(config.adminPlexId);
-    if (!config || !config.plexToken || config.plexToken === SECRET_MASK) return null;
-    try {
-        const res = await apiFetch('https://plex.tv/api/v2/user', config.plexToken);
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data?.id ? String(data.id) : null;
-    } catch (e) {
-        log('Failed to fetch admin info: ' + e.message);
-        return null;
-    }
-};
-
-const findLocalUserForSession = (users, sessionUser) => {
-    if (!sessionUser || !Array.isArray(users)) return null;
-    if (sessionUser.impersonatingUserId) {
-        const target = users.find((user) => normalized(user.id) === normalized(sessionUser.impersonatingUserId));
-        if (target) return target;
-    }
-    const sessionId = normalized(sessionUser.id);
-    const sessionPlexId = normalized(sessionUser.plexId);
-    const sessionJellyfinId = normalized(sessionUser.jellyfinId);
-    const sessionEmail = normalized(sessionUser.email);
-    return users.find((user) => {
-        const userId = normalized(user.id);
-        const userPlexId = normalized(user.plexId);
-        const userJellyfinId = normalized(user.jellyfinId);
-        const userEmail = normalized(user.email);
-        return (
-            (sessionPlexId && (sessionPlexId === userPlexId || sessionPlexId === userId)) ||
-            (sessionJellyfinId && (sessionJellyfinId === userJellyfinId || sessionJellyfinId === userId)) ||
-            (sessionId && (sessionId === userId || sessionId === userPlexId)) ||
-            (sessionId && (sessionId === userJellyfinId || sessionId === `jellyfin:${userJellyfinId}`)) ||
-            (sessionEmail && sessionEmail === userEmail)
-        );
-    }) || null;
-};
 
 const {
     fetchWithTimeout,
@@ -410,33 +286,27 @@ const resolveJellyfinAdmin = createJellyfinAdminResolver({
     log,
 });
 
-const resolveCurrentAdmin = async (sessionUser, config = null) => {
-    const loadedConfig = config || await loadFile(CONFIG_PATH, {});
-    if (String(loadedConfig?.mediaServerType || '').toLowerCase() === 'jellyfin') {
-        return resolveJellyfinAdmin(sessionUser, loadedConfig);
-    }
-    if (!sessionUser?.plexId) return false;
-    const adminId = await getAdminId(loadedConfig);
-    return !!(adminId && String(sessionUser.plexId) === String(adminId));
-};
+const {
+    syncAdminPlexIdFromConfigToken,
+    getAdminId,
+    resolveCurrentAdmin,
+} = createAdminIdentity({
+    apiFetch,
+    secretMask: SECRET_MASK,
+    loadFile,
+    saveFile,
+    configPath: CONFIG_PATH,
+    resolveJellyfinAdmin,
+    log,
+});
 
-const isPlexConfigured = (config = {}) => !!(config && config.plexToken && config.serverIdentifier);
-const isJellyfinConfigured = (config = {}) => (
-    String(config?.mediaServerType || '').toLowerCase() === 'jellyfin'
-    && !!(config?.jellyfinUrl && config?.jellyfinApiKey)
-);
-const isPortalConfigured = (config = {}) => isPlexConfigured(config) || isJellyfinConfigured(config);
-
-const requireAuth = (req, res, next) => {
-    const token = req.cookies.session;
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-    try {
-        req.user = jwt.verify(token, JWT_SECRET);
-        next();
-    } catch (e) {
-        return res.status(401).json({ error: 'Invalid session' });
-    }
-};
+const { requireAuth, requireAdmin, getSessionUser } = createSessionMiddleware({
+    jwt,
+    jwtSecret: JWT_SECRET,
+    loadFile,
+    configPath: CONFIG_PATH,
+    resolveCurrentAdmin,
+});
 
 const requireMember = createRequireMember({
     configPath: CONFIG_PATH,
@@ -449,43 +319,9 @@ const requireMember = createRequireMember({
     clearSessionCookie,
 });
 
-const requireAdmin = async (req, res, next) => {
-    // Reuse identity already verified by requireAuth when present.
-    if (!req.user) {
-        const token = req.cookies.session;
-        if (!token) return res.status(401).json({ error: 'Unauthorized' });
-        try {
-            req.user = jwt.verify(token, JWT_SECRET);
-        } catch (e) {
-            return res.status(401).json({ error: 'Invalid session' });
-        }
-    }
-    if (isImpersonatingSession(req.user)) {
-        return res.status(403).json({ error: 'Admin actions are disabled while viewing as another user.' });
-    }
-
-    const config = await loadFile(CONFIG_PATH, {});
-    if (!isPortalConfigured(config)) {
-        return res.status(403).json({ error: 'Forbidden: App not configured' });
-    }
-
-    const isAdmin = await resolveCurrentAdmin(req.user, config);
-    if (!isAdmin) {
-        return res.status(403).json({ error: 'Forbidden: Admins only' });
-    }
-    req.user.isAdmin = true;
-    next();
-};
-
-const getSessionUser = (req) => {
-    const token = req.cookies.session;
-    if (!token) return null;
-    try {
-        return jwt.verify(token, JWT_SECRET);
-    } catch (e) {
-        return null;
-    }
-};
+const plexSessionsSnapshot = createPlexSessionsSnapshot({
+    fetchImpl: (...args) => fetchWithTimeout(...args),
+});
 
 // Filled after requestAppService is created — keeps membership sync out of the Plex/Jellyfin hot path.
 const membershipSync = {
@@ -645,6 +481,7 @@ registerPlexRoutes({
     getPlexConnectionUri,
     fetch,
     fetchWithTimeout,
+    plexSessionsSnapshot,
     plexImageService,
     plexDashboardService,
     plexStatsService,
@@ -794,11 +631,6 @@ registerPublicStatusRoutes({
     getCachedPlexStats: () => plexStatsService.getCachedPlexStats(),
     loadPlexStatsFromDisk,
 });
-
-const jellyfinItemUrl = (config, itemId) => {
-    const baseUrl = String(config?.jellyfinUrl || '').replace(/\/+$/, '');
-    return baseUrl && itemId ? `${baseUrl}/web/#/details?id=${encodeURIComponent(itemId)}` : baseUrl;
-};
 
 registerJellyfinRoutes({
     app,
@@ -962,6 +794,7 @@ const { monitorConcurrentSessions } = createStreamMonitor({
     saveFile,
     getPlexConnectionUri,
     fetchWithTimeout,
+    plexSessionsSnapshot,
     appendAuditLog,
     log,
 });
