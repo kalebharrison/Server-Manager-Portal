@@ -251,15 +251,18 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - **Week Calendar** home section for the current release week.
-- Documented `REQUEST_APP_INTERNAL_URL` for Docker/Unraid request-app networking.
+- Documented `REQUEST_APP_INTERNAL_URL` for Docker request-app networking.
+- Domain-organized `lib/` and `tests/` folders plus expanded `docs/`.
 
 ### Changed
 - Unified Media Stack **Release Calendar** with All/TV/Movies filters (sidebar label: Calendar).
 - Docker publish now runs `npm run check` before pushing images.
+- README trimmed to a Docker-first quick start; detail moved under `docs/`.
 
 ### Removed
 - Library Maintenance / Cleaner UI and background maintenance index task.
 - Shareable wrap-up PNG export.
+- Unraid Community Applications template (`unraid/`, `ca_profile.xml`).
 
 ## [v1.0] - 2026-07-03
 

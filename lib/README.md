@@ -1,0 +1,22 @@
+# Server modules (`lib/`)
+
+Backend code is grouped by domain. `index.js` wires these modules together.
+
+| Folder | Responsibility |
+|---|---|
+| `admin/` | Admin routes, backups, background jobs, kill rules, audit log |
+| `analytics/` | Plex/Tautulli/Jellystat analytics, trending, personal wrap-up caches |
+| `auth/` | Login/session, Jellyfin auth, impersonation, admin profile |
+| `cache/` | TTL/LRU helpers and adaptive cache warmers |
+| `comms/` | SMTP email, newsletter, broadcast |
+| `config/` | Settings API, secrets, data paths, dashboard layout |
+| `core/` | Small shared primitives (dates, JSON store, concurrency) |
+| `http/` | Security headers, SSRF/network policy, rate limits, static shell |
+| `jellyfin/` | Jellyfin API routes |
+| `media-stack/` | Sonarr/Radarr/Lidarr calendar/queue and media issues |
+| `plex/` | Plex routes, stats, images, connections |
+| `request-app/` | Seerr/Jellyseerr/Overseerr request proxy + membership sync |
+| `status/` | Public/private status page and stream monitor helpers |
+| `users/` | Membership, invites, profiles, notifications, admin user ops |
+
+Prefer keeping new files in the matching domain folder. Cross-domain imports use relative paths (`../cache/cache.js`, etc.).
