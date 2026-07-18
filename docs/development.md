@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-`npm start` rebuilds frontend assets, then runs `index.js` with `.env` loaded.
+`npm start` rebuilds frontend assets, then runs `server/index.js` with `.env` loaded.
 
 Production-style (assets already built):
 
@@ -39,18 +39,17 @@ npm run start:prod
 
 ```
 .
-├── index.js                 # Express entry / composition root
+├── server/index.js          # Express entry / composition root
 ├── client/
 │   ├── main.tsx             # React entry
 │   ├── index.html           # SPA shell
 │   └── styles/              # Tailwind input + config
 ├── lib/                     # Backend domains (see lib/README.md)
+├── docker/                  # Dockerfile + Compose
 ├── static/                  # Built assets + logos/fonts
 ├── tests/                   # Mirrors lib domains
 ├── docs/                    # Human docs
 ├── scripts/                 # Build / docker-entrypoint / local helpers
-├── Dockerfile
-├── docker-compose.yml
 └── .env.example
 ```
 

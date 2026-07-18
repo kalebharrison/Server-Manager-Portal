@@ -30,7 +30,7 @@ RUN apk add --no-cache su-exec
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-COPY --from=builder /app/index.js ./
+COPY --from=builder /app/server ./server
 COPY --from=builder /app/client/index.html ./client/index.html
 COPY --from=builder /app/version.txt ./
 COPY --from=builder /app/lib ./lib
@@ -47,4 +47,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:2121/api/config/public').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["node", "index.js"]
+CMD ["node", "server/index.js"]

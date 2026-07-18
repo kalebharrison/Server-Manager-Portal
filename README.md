@@ -22,7 +22,8 @@ cd Server-Manager-Portal
 cp .env.example .env
 # set JWT_SECRET to at least 32 random characters
 
-docker compose up -d --build
+npm run docker:up
+# or: docker compose -f docker/compose.yml up -d --build
 ```
 
 Open **http://localhost:2121** and finish the setup wizard.
@@ -68,15 +69,14 @@ See **[docs/development.md](docs/development.md)**.
 
 ```
 .
-├── index.js               # Express entry
+├── server/                # Express entry (server/index.js)
 ├── client/                # React UI (main.tsx, screens, styles, index.html)
 ├── lib/                   # Backend by domain (auth, users, plex, request-app, …)
+├── docker/                # Dockerfile + Compose
 ├── tests/                 # Mirrors lib domains
 ├── docs/                  # Deployment & contributor docs
 ├── scripts/               # Build / entrypoint / local container helpers
 ├── static/                # Built assets + logos/fonts
-├── Dockerfile
-├── docker-compose.yml
 └── .env.example
 ```
 

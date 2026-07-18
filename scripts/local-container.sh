@@ -10,7 +10,7 @@ JWT_SECRET="${JWT_SECRET:-local-dev-secret-local-dev-secret-1234567890}"
 mkdir -p "$HOST_STORAGE/config" "$HOST_STORAGE/backup"
 
 docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-docker build --build-arg GIT_SHA=local -t "$IMAGE_NAME" .
+docker build -f docker/Dockerfile --build-arg GIT_SHA=local -t "$IMAGE_NAME" .
 docker run -d \
   --name "$CONTAINER_NAME" \
   -p "$PORT:2121" \

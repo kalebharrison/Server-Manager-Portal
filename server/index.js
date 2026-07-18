@@ -2,13 +2,13 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
-import { createBasePathHelpers, deriveBasePath } from './lib/http/base-path.js';
-import { resolveAppVersion } from './lib/core/app-version.js';
-import { loadPortalEnv } from './lib/core/portal-env.js';
-import { createSessionCookies } from './lib/auth/session-cookies.js';
-import { createSecurityHeadersMiddleware } from './lib/http/http-security.js';
-import { createCsrfOriginMiddleware } from './lib/http/csrf-origin.js';
-import { createPortalRuntime } from './lib/core/create-portal-app.js';
+import { createBasePathHelpers, deriveBasePath } from '../lib/http/base-path.js';
+import { resolveAppVersion } from '../lib/core/app-version.js';
+import { loadPortalEnv } from '../lib/core/portal-env.js';
+import { createSessionCookies } from '../lib/auth/session-cookies.js';
+import { createSecurityHeadersMiddleware } from '../lib/http/http-security.js';
+import { createCsrfOriginMiddleware } from '../lib/http/csrf-origin.js';
+import { createPortalRuntime } from '../lib/core/create-portal-app.js';
 
 const appVersion = resolveAppVersion();
 const env = loadPortalEnv();

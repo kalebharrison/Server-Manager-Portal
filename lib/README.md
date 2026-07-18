@@ -1,6 +1,6 @@
 # Server modules (`lib/`)
 
-Backend code is grouped by domain. `index.js` wires these modules together.
+Backend code is grouped by domain. `server/index.js` wires these modules together.
 
 | Folder | Responsibility |
 |---|---|

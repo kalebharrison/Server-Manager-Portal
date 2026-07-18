@@ -8,7 +8,7 @@ Server Portal is a single Node.js process that serves:
 
 ## Composition root
 
-[`index.js`](../index.js) creates shared services (cache, email, media-user sync, request-app, analytics, status) and registers route modules from `lib/`.
+[`server/index.js`](../server/index.js) creates shared services (cache, email, media-user sync, request-app, analytics, status) and registers route modules from `lib/`.
 
 There is no separate API microservice. Integrations (Plex, Jellyfin, Seerr, Arr, Tautulli/Jellystat) are called server-side with stored credentials.
 

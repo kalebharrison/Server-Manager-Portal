@@ -1,7 +1,8 @@
 services:
   portal:
     build:
-      context: .
+      context: ..
+      dockerfile: docker/Dockerfile
       args:
         GIT_SHA: ${GIT_SHA:-local}
     image: server-manager-portal:latest
@@ -10,7 +11,7 @@ services:
     ports:
       - "${PORT:-2121}:2121"
     env_file:
-      - .env
+      - ../.env
     environment:
       PORT: 2121
       BIND_HOST: 0.0.0.0
@@ -19,8 +20,8 @@ services:
       # When the public Request App URL is unreachable from this container, set
       # REQUEST_APP_INTERNAL_URL in .env (e.g. http://seerr:5055).
     volumes:
-      - ./config:/app/config
-      - ./backup:/app/backup
+      - ../config:/app/config
+      - ../backup:/app/backup
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:2121/api/config/public').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s

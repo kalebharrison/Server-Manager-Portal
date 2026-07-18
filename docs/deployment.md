@@ -1,13 +1,14 @@
 # Deployment
 
-Bog-standard Docker. Dockerfile and Compose live at the repo root.
+Bog-standard Docker. Dockerfile and Compose live under `docker/`.
 
 ## Quick start (Compose)
 
 ```bash
 cp .env.example .env
 # set JWT_SECRET to >= 32 random characters
-docker compose up -d --build
+npm run docker:up
+# or: docker compose -f docker/compose.yml up -d --build
 ```
 
 Open `http://localhost:2121` and complete the setup wizard.

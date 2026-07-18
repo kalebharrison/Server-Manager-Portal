@@ -30,7 +30,7 @@ jobs:
         run: npm run audit:prod
 
       - name: Build container
-        run: docker build --build-arg GIT_SHA=${{ github.sha }} -t server-manager-portal:smoke .
+        run: docker build -f docker/Dockerfile --build-arg GIT_SHA=${{ github.sha }} -t server-manager-portal:smoke .
 
       - name: Check production dependencies
         run: |
