@@ -43,7 +43,7 @@ export const NewsletterSettingsTab: React.FC<NewsletterSettingsTabProps> = ({
                 ]}
             />
             <div className="mt-2">
-                <SettingHint>How often should users receive the newsletter.</SettingHint>
+                <SettingHint>How often to send to users who have opted in. Newsletter is off for everyone by default.</SettingHint>
             </div>
         </div>
         {newsletterFrequency !== 'disabled' && (
