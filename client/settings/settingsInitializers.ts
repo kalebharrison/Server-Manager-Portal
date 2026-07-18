@@ -1,7 +1,7 @@
 import type React from 'react';
 
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
-import { ensureMaintenanceNavOrder } from './settingsNavOrder';
+import { normalizeSettingsNavOrder } from './settingsNavOrder';
 import type { ArrInstance } from '../shared/types';
 
 type SettingsHydrationSetters = {
@@ -65,7 +65,6 @@ type SettingsHydrationSetters = {
     setAutoBackupEnabled: (value: boolean) => void;
     setAutoBackupIntervalDays: (value: number) => void;
     setAutoBackupRetentionCount: (value: number) => void;
-    setMaintenanceExperimentalEnabled: (value: boolean) => void;
     setDashboardLayout: (value: DashboardLayoutConfig) => void;
     setTestRecipient: (value: string) => void;
     setServers: (value: any[]) => void;
@@ -121,7 +120,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setReferralTrialDays(initialSettings.referralTrialDays || 3);
     setters.setReferralRewardDays(initialSettings.referralRewardDays || 7);
     setters.setAnnouncement(initialSettings.announcement || '');
-    if (initialSettings.navOrder) setters.setNavOrder(ensureMaintenanceNavOrder(initialSettings.navOrder));
+    if (initialSettings.navOrder) setters.setNavOrder(normalizeSettingsNavOrder(initialSettings.navOrder));
     setters.setHideStreamUsers(initialSettings.hideStreamUsers === 'hidden' ? 'hidden' : 'anonymous');
     setters.setUseTrendingSlideshowOnLogin(initialSettings.useTrendingSlideshowOnLogin !== false);
     setters.setShowLoginServerStats(initialSettings.showLoginServerStats === true);
@@ -133,7 +132,6 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     if (initialSettings.autoBackupEnabled !== undefined) setters.setAutoBackupEnabled(!!initialSettings.autoBackupEnabled);
     if (initialSettings.autoBackupIntervalDays !== undefined) setters.setAutoBackupIntervalDays(Number(initialSettings.autoBackupIntervalDays) || 2);
     if (initialSettings.autoBackupRetentionCount !== undefined) setters.setAutoBackupRetentionCount(Number(initialSettings.autoBackupRetentionCount) || 10);
-    if (initialSettings.maintenanceExperimentalEnabled !== undefined) setters.setMaintenanceExperimentalEnabled(!!initialSettings.maintenanceExperimentalEnabled);
     const layout = normalizeSectionLayout(initialSettings.dashboardLayout);
     setters.dashboardLayoutRef.current = layout;
     setters.setDashboardLayout(layout);

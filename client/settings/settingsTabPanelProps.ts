@@ -20,8 +20,6 @@ type SettingsTabPanelPropsInput = {
     setStatusDraft: React.Dispatch<React.SetStateAction<any>>;
     handlePushAnnouncement: () => Promise<void>;
     isPushingAnnouncement: boolean;
-    maintenanceExperimentalEnabled: boolean;
-    setMaintenanceExperimentalEnabled: (value: boolean) => void;
 };
 
 export const buildSettingsTabPanelProps = ({
@@ -37,8 +35,6 @@ export const buildSettingsTabPanelProps = ({
     setStatusDraft,
     handlePushAnnouncement,
     isPushingAnnouncement,
-    maintenanceExperimentalEnabled,
-    setMaintenanceExperimentalEnabled,
 }: SettingsTabPanelPropsInput): SettingsTabPanelProps => {
     const { values } = form;
     const onChange = <K extends keyof SettingsFormValues>(key: K) => (value: SettingsFormValues[K]) => {
@@ -222,8 +218,6 @@ export const buildSettingsTabPanelProps = ({
         },
         system: {
             systemHealth: admin.systemHealth,
-            highlightMaintenanceToggle: tabs.highlightMaintenanceToggle,
-            maintenanceExperimentalEnabled,
             autoBackupEnabled: admin.autoBackupEnabled,
             autoBackupIntervalDays: admin.autoBackupIntervalDays,
             autoBackupRetentionCount: admin.autoBackupRetentionCount,
@@ -233,7 +227,6 @@ export const buildSettingsTabPanelProps = ({
             diagnostics: admin.diagnostics,
             mediaServerType: values.mediaServerType,
             isLoadingDiagnostics: admin.isLoadingDiagnostics,
-            onMaintenanceExperimentalEnabledChange: setMaintenanceExperimentalEnabled,
             onAutoBackupEnabledChange: admin.setAutoBackupEnabled,
             onAutoBackupIntervalDaysChange: admin.setAutoBackupIntervalDays,
             onAutoBackupRetentionCountChange: admin.setAutoBackupRetentionCount,

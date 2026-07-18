@@ -268,9 +268,6 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
                         analyticsLoading={analyticsLoading}
                         canShowAnalytics={!!(sessionInfo.session.isAdmin || user)}
                         onAnalyticsDaysChange={setAnalyticsDays}
-                        onToast={setToast}
-                        serverName={sessionInfo?.serverName || 'Server Portal'}
-                        username={sessionInfo?.session?.username || user?.username}
                     />
                 )}
                 renderWatchRow={() => (

@@ -1,5 +1,5 @@
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
-import { ensureMaintenanceNavOrder } from './settingsNavOrder';
+import { normalizeSettingsNavOrder } from './settingsNavOrder';
 import type { ArrInstance } from '../shared/types';
 
 type SettingsSavePayloadInput = {
@@ -63,7 +63,6 @@ type SettingsSavePayloadInput = {
     autoBackupEnabled: boolean;
     autoBackupIntervalDays: number;
     autoBackupRetentionCount: number;
-    maintenanceExperimentalEnabled: boolean;
     dashboardLayout: DashboardLayoutConfig;
 };
 
@@ -80,6 +79,6 @@ export const buildSettingsSavePayload = ({
     checkIntervalMinutes: checkInterval,
     primaryColor: '',
     allowTemporaryAccess: false,
-    navOrder: ensureMaintenanceNavOrder(navOrder),
+    navOrder: normalizeSettingsNavOrder(navOrder),
     dashboardLayout: normalizeSectionLayout(dashboardLayout),
 });

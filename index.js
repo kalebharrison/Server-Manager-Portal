@@ -14,7 +14,6 @@ import { addDays, getDaysUntilExpiry } from './lib/date-utils.js';
 import { createDeletedUserRegistry, isDeletedUser, normalized } from './lib/deleted-users.js';
 import { createEmailService } from './lib/email-service.js';
 import { createMediaUserService } from './lib/media-user-service.js';
-import { createMaintenanceService } from './lib/maintenance-service.js';
 import { createNewsletterService } from './lib/newsletter-service.js';
 import { escapeHtmlAttr } from './lib/html-shell.js';
 import { createSecurityHeadersMiddleware, secureTokenEquals } from './lib/http-security.js';
@@ -37,7 +36,6 @@ import { createAdminProfileService } from './lib/admin-profile-service.js';
 import { registerPublicStatusRoutes } from './lib/public-status-routes.js';
 import { registerPlexRoutes } from './lib/plex-routes.js';
 import { registerJellyfinRoutes } from './lib/jellyfin-routes.js';
-import { registerMaintenanceRoutes } from './lib/maintenance-routes.js';
 import { registerMediaStackRoutes } from './lib/media-stack-routes.js';
 import { createRequestAppService } from './lib/request-app-service.js';
 import { createTvdbService } from './lib/tvdb-service.js';
@@ -214,11 +212,6 @@ import {
     ANALYTICS_HISTORY_CACHE_PATH,
     PERSONAL_ANALYTICS_CACHE_PATH,
     KILL_RULES_PATH,
-    MAINTENANCE_RULES_PATH,
-    MAINTENANCE_MEDIA_INDEX_PATH,
-    MAINTENANCE_RUNS_PATH,
-    MAINTENANCE_REQUEST_INDEX_PATH,
-    MAINTENANCE_PREFS_PATH,
     PLEX_STATS_CACHE_PATH,
     PLEX_DASHBOARD_CACHE_PATH,
     MEDIA_ISSUES_PATH,
@@ -580,12 +573,10 @@ registerConfigRoutes({
     syncAdminPlexIdFromConfigToken,
     invalidatePlexConnectionCaches,
     invalidateAdminProfileCache,
-    invalidateArrCatalogCache: () => invalidateArrCatalogCache(),
     reconcileStatusConfig: () => statusRuntime.reconcileStatusConfig(),
     computeNextBackupRun,
     systemJobs,
     startBackgroundService: () => startBackgroundService(),
-    buildMaintenanceMediaIndex: (...args) => buildMaintenanceMediaIndex(...args),
     normalizeSectionLayout,
     sendEmail,
     resolveIntegrationUrlForFetch,
@@ -730,11 +721,6 @@ registerAdminRoutes({
     analyticsCachePath: ANALYTICS_CACHE_PATH,
     trendingCachePath: TRENDING_CACHE_PATH,
     plexStatsCachePath: PLEX_STATS_CACHE_PATH,
-    maintenanceMediaIndexPath: MAINTENANCE_MEDIA_INDEX_PATH,
-    maintenanceRulesPath: MAINTENANCE_RULES_PATH,
-    maintenanceRunsPath: MAINTENANCE_RUNS_PATH,
-    maintenanceRequestIndexPath: MAINTENANCE_REQUEST_INDEX_PATH,
-    maintenancePrefsPath: MAINTENANCE_PREFS_PATH,
     appVersion,
     loadFile,
     saveFile,
@@ -747,13 +733,10 @@ registerAdminRoutes({
     checkAndRevoke,
     checkAndSendNewsletter,
     checkAndCleanupInactive: (...args) => checkAndCleanupInactive(...args),
-    isMaintenanceExperimentalEnabled: (...args) => isMaintenanceExperimentalEnabled(...args),
-    executeMaintenanceRunBatch: (...args) => executeMaintenanceRunBatch(...args),
     calculateAnalyticsStats: (...args) => calculateAnalyticsStats(...args),
     calculateTrendingStats: (...args) => calculateTrendingStats(...args),
     buildPlexStatsCache,
     runAutoBackupCycle: (...args) => runAutoBackupCycle(...args),
-    buildMaintenanceMediaIndex: (...args) => buildMaintenanceMediaIndex(...args),
     applyBackupPayload,
     createBackupObject,
     enforceBackupRetention,
@@ -868,7 +851,6 @@ registerStaticShellRoutes({
 const { checkAndCleanupInactive, runAutoBackupCycle, startBackgroundService } = createBackgroundService({
     configPath: CONFIG_PATH,
     usersPath: USERS_PATH,
-    maintenanceRulesPath: MAINTENANCE_RULES_PATH,
     loadFile,
     saveFile,
     fetch,
@@ -877,8 +859,6 @@ const { checkAndCleanupInactive, runAutoBackupCycle, startBackgroundService } = 
     checkAndSendNotifications,
     checkAndRevoke,
     checkAndSendNewsletter,
-    isMaintenanceExperimentalEnabled: (...args) => isMaintenanceExperimentalEnabled(...args),
-    executeMaintenanceRunBatch: (...args) => executeMaintenanceRunBatch(...args),
     createBackupObject,
     writeBackupToFolder,
     enforceBackupRetention,
@@ -941,52 +921,6 @@ registerMediaIssueRoutes({
     log,
 });
 
-// --- Library Maintenance (Maintainerr-style) ---
-const maintenanceService = createMaintenanceService({
-    configPath: CONFIG_PATH,
-    maintenancePrefsPath: MAINTENANCE_PREFS_PATH,
-    maintenanceMediaIndexPath: MAINTENANCE_MEDIA_INDEX_PATH,
-    maintenanceRequestIndexPath: MAINTENANCE_REQUEST_INDEX_PATH,
-    analyticsHistoryCachePath: ANALYTICS_HISTORY_CACHE_PATH,
-    maintenanceRulesPath: MAINTENANCE_RULES_PATH,
-    maintenanceRunsPath: MAINTENANCE_RUNS_PATH,
-    loadFile,
-    saveFile,
-    getPlexConnectionUri,
-    resolveIntegrationUrlForFetch,
-    appendAuditLog,
-    markTaskStart,
-    markTaskEnd,
-    systemJobs,
-    runHeavyJob: heavyJobQueue.run,
-    log,
-});
-const {
-    isMaintenanceExperimentalEnabled,
-    invalidateArrCatalogCache,
-    buildMaintenanceMediaIndex,
-    executeMaintenanceRunBatch,
-} = maintenanceService;
-
-registerMaintenanceRoutes({
-    app,
-    requireAdmin,
-    configPath: CONFIG_PATH,
-    maintenanceRulesPath: MAINTENANCE_RULES_PATH,
-    maintenanceMediaIndexPath: MAINTENANCE_MEDIA_INDEX_PATH,
-    maintenanceRequestIndexPath: MAINTENANCE_REQUEST_INDEX_PATH,
-    maintenancePrefsPath: MAINTENANCE_PREFS_PATH,
-    maintenanceRunsPath: MAINTENANCE_RUNS_PATH,
-    loadFile,
-    saveFile,
-    appendAuditLog,
-    maintenanceService,
-    tasksInfo,
-    markTaskStart,
-    markTaskEnd,
-    withCache,
-});
-
 const { monitorConcurrentSessions } = createStreamMonitor({
     configPath: CONFIG_PATH,
     killRulesPath: KILL_RULES_PATH,
@@ -1047,22 +981,6 @@ const startPortalService = async () => {
     startTrendingStatsBackgroundTask();
     startAnalyticsStatsBackgroundTask();
     void startPersonalAnalyticsCacheWarmer().catch((error) => log(`[PersonalAnalyticsCache] Startup failed: ${error.message}`));
-    systemJobs.maintenanceIndex.nextRun = new Date(Date.now() + (20 * 1000)).toISOString();
-    setTimeout(async () => {
-        try {
-            await buildMaintenanceMediaIndex({ actor: { username: 'System', email: 'system@local' }, force: false });
-        } catch (e) {
-            log(`Initial maintenance index build failed: ${e.message}`);
-        }
-    }, 20000);
-    setInterval(async () => {
-        systemJobs.maintenanceIndex.nextRun = new Date(Date.now() + (6 * 60 * 60 * 1000)).toISOString();
-        try {
-            await buildMaintenanceMediaIndex({ actor: { username: 'System', email: 'system@local' }, force: false });
-        } catch (e) {
-            log(`Scheduled maintenance index build failed: ${e.message}`);
-        }
-    }, 6 * 60 * 60 * 1000);
 
     const backupConfig = await loadFile(CONFIG_PATH, {});
     systemJobs.autoBackup.nextRun = backupConfig.autoBackupEnabled ? computeNextBackupRun(backupConfig) : null;

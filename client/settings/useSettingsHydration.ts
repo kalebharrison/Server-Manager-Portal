@@ -14,7 +14,6 @@ type UseSettingsHydrationOptions = {
     isConfigLoaded: boolean;
     form: SettingsFormState;
     admin: SettingsAdminHydration;
-    setMaintenanceExperimentalEnabled: (value: boolean) => void;
 };
 
 export const useSettingsHydration = ({
@@ -22,7 +21,6 @@ export const useSettingsHydration = ({
     isConfigLoaded,
     form,
     admin,
-    setMaintenanceExperimentalEnabled,
 }: UseSettingsHydrationOptions) => {
     useEffect(() => {
         if (!isConfigLoaded) return;
@@ -92,7 +90,6 @@ export const useSettingsHydration = ({
             setAutoBackupEnabled: admin.setAutoBackupEnabled,
             setAutoBackupIntervalDays: admin.setAutoBackupIntervalDays,
             setAutoBackupRetentionCount: admin.setAutoBackupRetentionCount,
-            setMaintenanceExperimentalEnabled,
             setDashboardLayout: set('dashboardLayout'),
             setTestRecipient: set('testRecipient'),
             setServers: set('servers'),

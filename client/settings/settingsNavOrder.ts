@@ -1,7 +1,10 @@
 const DEFAULT_NAV_ORDER = ['home', 'users', 'discover', 'issues', 'status', 'analytics', 'mediastack', 'request', 'settings', 'logout'];
 
-export const ensureMaintenanceNavOrder = (order: string[]) => {
-    const base = Array.isArray(order) ? order.filter(Boolean) : [...DEFAULT_NAV_ORDER];
+/** Normalize nav order and drop retired entries such as `maintenance`. */
+export const normalizeSettingsNavOrder = (order: string[]) => {
+    const base = Array.isArray(order)
+        ? order.filter((key) => Boolean(key) && key !== 'maintenance')
+        : [...DEFAULT_NAV_ORDER];
     if (!base.includes('issues')) {
         const discoverIndex = base.indexOf('discover');
         base.splice(discoverIndex >= 0 ? discoverIndex + 1 : 1, 0, 'issues');
@@ -10,12 +13,10 @@ export const ensureMaintenanceNavOrder = (order: string[]) => {
         const homeIndex = base.indexOf('home');
         base.splice(homeIndex >= 0 ? homeIndex + 1 : 0, 0, 'users');
     }
-    if (!base.includes('maintenance')) {
-        const requestIndex = base.indexOf('request');
-        if (requestIndex >= 0) base.splice(requestIndex, 0, 'maintenance');
-        else base.push('maintenance');
-    }
     return base;
 };
 
-export const getDefaultSettingsNavOrder = () => ensureMaintenanceNavOrder(DEFAULT_NAV_ORDER);
+/** @deprecated Use normalizeSettingsNavOrder */
+export const ensureMaintenanceNavOrder = normalizeSettingsNavOrder;
+
+export const getDefaultSettingsNavOrder = () => normalizeSettingsNavOrder(DEFAULT_NAV_ORDER);

@@ -67,7 +67,7 @@ export const IntegrationsStep: React.FC<{
             <SetupStepHeader
                 stepNumber={stepNumber}
                 title="Media Stack"
-                description="All optional. Connect the apps that manage requests, downloads, activity, and maintenance."
+                description="All optional. Connect the apps that manage requests, downloads, and activity."
             />
             <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/10 bg-background/50 p-1.5">
                 {tabs.map((tab) => (

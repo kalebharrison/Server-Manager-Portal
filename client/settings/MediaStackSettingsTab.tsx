@@ -137,7 +137,7 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
                 <SettingHint>
                     {requestAppType === 'ombi'
                         ? 'This legacy configuration remains usable for connection testing and status. Choose Seerr or Jellyseerr for embedded browsing and requests.'
-                        : 'Powers the embedded Request tab, request status, issue reporting, and maintenance request history.'}
+                        : 'Powers the embedded Request tab, request status, and issue reporting.'}
                 </SettingHint>
             </div>
         </div>

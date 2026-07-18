@@ -22,7 +22,6 @@ export const SettingsDashboard: React.FC = () => {
     const [isConfigLoaded, setIsConfigLoaded] = useState(false);
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [isPushingAnnouncement, setIsPushingAnnouncement] = useState(false);
-    const [maintenanceExperimentalEnabled, setMaintenanceExperimentalEnabled] = useState(false);
     const streamRulesSaveHandlerRef = useRef<(() => Promise<boolean>) | null>(null);
 
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -37,7 +36,6 @@ export const SettingsDashboard: React.FC = () => {
         addToast,
         setLoading,
         mediaServerType: form.values.mediaServerType,
-        maintenanceExperimentalEnabled,
     });
 
     useSettingsHydration({
@@ -45,7 +43,6 @@ export const SettingsDashboard: React.FC = () => {
         isConfigLoaded,
         form,
         admin,
-        setMaintenanceExperimentalEnabled,
     });
 
     useEffect(() => {
@@ -174,7 +171,6 @@ export const SettingsDashboard: React.FC = () => {
             autoBackupEnabled: admin.autoBackupEnabled,
             autoBackupIntervalDays: admin.autoBackupIntervalDays,
             autoBackupRetentionCount: admin.autoBackupRetentionCount,
-            maintenanceExperimentalEnabled,
         }));
     };
 
@@ -191,8 +187,6 @@ export const SettingsDashboard: React.FC = () => {
         setStatusDraft,
         handlePushAnnouncement,
         isPushingAnnouncement,
-        maintenanceExperimentalEnabled,
-        setMaintenanceExperimentalEnabled,
     });
 
     return <SettingsPageLayout
