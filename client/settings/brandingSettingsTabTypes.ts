@@ -1,0 +1,25 @@
+export type BrandingSettingsTabProps = {
+    mediaServerType: 'plex' | 'jellyfin';
+    customLogoUrl: string;
+    brandingTheme: string;
+    backgroundImageUrl: string;
+    useScrollRevealAnimations: boolean;
+    useCinematicLoading: boolean;
+    useBrandedSkeleton: boolean;
+    useTrendingSlideshow: boolean;
+    trendingSlideshowInterval: number;
+    use24HourClock: boolean;
+    showPosterQualityBadges: boolean;
+    onCustomLogoUrlChange: (value: string) => void;
+    onLogoFileChange: (value: File | null) => void;
+    onBrandingThemeChange: (value: string) => void;
+    onBackgroundImageUrlChange: (value: string) => void;
+    onUseScrollRevealAnimationsChange: (value: boolean) => void;
+    onUseCinematicLoadingChange: (value: boolean) => void;
+    onUseBrandedSkeletonChange: (value: boolean) => void;
+    onUseTrendingSlideshowChange: (value: boolean) => void;
+    onTrendingSlideshowIntervalChange: (value: number) => void;
+    onUse24HourClockChange: (value: boolean) => void;
+    onShowPosterQualityBadgesChange: (value: boolean) => void;
+    addToast: (message: string, type?: 'success' | 'error') => void;
+};

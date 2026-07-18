@@ -1,26 +1,33 @@
-import type React from 'react';
-
+import {
+    buildLogsTabPanelProps,
+    buildSystemTabPanelProps,
+    buildTasksTabPanelProps,
+} from './settingsTabPanelPropsAdmin';
+import {
+    buildBrandingTabPanelProps,
+    buildBroadcastTabPanelProps,
+    buildContactTabPanelProps,
+    buildHomeLayoutTabPanelProps,
+    buildInvitesTabPanelProps,
+    buildNavigationTabPanelProps,
+    buildPublicAccessTabPanelProps,
+    buildStatusTabPanelProps,
+} from './settingsTabPanelPropsContent';
+import {
+    buildCleanupTabPanelProps,
+    buildNewsletterTabPanelProps,
+    buildSmtpTabPanelProps,
+} from './settingsTabPanelPropsEmail';
+import {
+    buildMediaServerTabPanelProps,
+    buildMediaStackTabPanelProps,
+    buildMetadataTabPanelProps,
+} from './settingsTabPanelPropsMedia';
 import type { SettingsTabPanelProps } from './SettingsTabPanel';
-import type { SettingsFormState, SettingsFormValues } from './useSettingsFormState';
-import type { useSettingsAdminPanel } from './useSettingsAdminPanel';
-import type { useSettingsEmailActions } from './useSettingsEmailActions';
-import type { useSettingsResources } from './useSettingsResources';
-import type { useSettingsTabs } from './useSettingsTabs';
-
-type SettingsTabPanelPropsInput = {
-    addToast: SettingsTabPanelProps['addToast'];
-    streamRulesSaveHandlerRef: SettingsTabPanelProps['streamRulesSaveHandlerRef'];
-    initialSettings: any;
-    form: SettingsFormState;
-    tabs: ReturnType<typeof useSettingsTabs>;
-    resources: ReturnType<typeof useSettingsResources>;
-    emailActions: ReturnType<typeof useSettingsEmailActions>;
-    admin: ReturnType<typeof useSettingsAdminPanel>;
-    handleFetchServers: () => Promise<void>;
-    setStatusDraft: React.Dispatch<React.SetStateAction<any>>;
-    handlePushAnnouncement: () => Promise<void>;
-    isPushingAnnouncement: boolean;
-};
+import {
+    createSettingsTabPanelOnChange,
+    type SettingsTabPanelPropsInput,
+} from './settingsTabPanelPropsTypes';
 
 export const buildSettingsTabPanelProps = ({
     addToast,
@@ -37,221 +44,34 @@ export const buildSettingsTabPanelProps = ({
     isPushingAnnouncement,
 }: SettingsTabPanelPropsInput): SettingsTabPanelProps => {
     const { values } = form;
-    const onChange = <K extends keyof SettingsFormValues>(key: K) => (value: SettingsFormValues[K]) => {
-        form.setField(key, value);
-    };
+    const onChange = createSettingsTabPanelOnChange(form);
 
     return {
         activeTab: tabs.activeTab,
         addToast,
         streamRulesSaveHandlerRef,
-        mediaServer: {
+        mediaServer: buildMediaServerTabPanelProps({
             initialSettings,
-            mediaServerType: values.mediaServerType,
-            token: values.token,
-            plexServerUrl: values.plexServerUrl,
-            jellyfinUrl: values.jellyfinUrl,
-            jellyfinApiKey: values.jellyfinApiKey,
-            servers: values.servers,
-            selectedServer: values.selectedServer,
-            onMediaServerTypeChange: onChange('mediaServerType'),
-            onTokenChange: onChange('token'),
-            onPlexServerUrlChange: onChange('plexServerUrl'),
-            onJellyfinUrlChange: onChange('jellyfinUrl'),
-            onJellyfinApiKeyChange: onChange('jellyfinApiKey'),
-            onSelectedServerChange: onChange('selectedServer'),
-            onFetchServers: handleFetchServers,
+            values,
+            onChange,
+            handleFetchServers,
             addToast,
-        },
-        smtp: {
-            smtpHost: values.smtpHost,
-            smtpPort: values.smtpPort,
-            smtpUser: values.smtpUser,
-            smtpPass: values.smtpPass,
-            smtpFrom: values.smtpFrom,
-            smtpSecure: values.smtpSecure,
-            emailDaysBefore: values.emailDaysBefore,
-            testRecipient: values.testRecipient,
-            isTestingSmtp: emailActions.isTestingSmtp,
-            onSmtpHostChange: onChange('smtpHost'),
-            onSmtpPortChange: onChange('smtpPort'),
-            onSmtpUserChange: onChange('smtpUser'),
-            onSmtpPassChange: onChange('smtpPass'),
-            onSmtpFromChange: onChange('smtpFrom'),
-            onSmtpSecureChange: onChange('smtpSecure'),
-            onEmailDaysBeforeChange: onChange('emailDaysBefore'),
-            onTestRecipientChange: onChange('testRecipient'),
-            onTestEmail: emailActions.handleTestEmail,
-        },
-        newsletter: {
-            newsletterFrequency: values.newsletterFrequency,
-            newsletterDay: values.newsletterDay,
-            publicDomain: values.publicDomain,
-            isTestingNewsletter: emailActions.isTestingNewsletter,
-            isSendingNewsletter: emailActions.isSendingNewsletter,
-            onNewsletterFrequencyChange: onChange('newsletterFrequency'),
-            onNewsletterDayChange: onChange('newsletterDay'),
-            onPublicDomainChange: onChange('publicDomain'),
-            onTestNewsletter: emailActions.handleTestNewsletter,
-            onSendNewsletterNow: emailActions.handleSendNewsletterNow,
-        },
-        cleanup: {
-            inactiveCleanupEnabled: values.inactiveCleanupEnabled,
-            inactiveCleanupDays: values.inactiveCleanupDays,
-            checkInterval: values.checkInterval,
-            onInactiveCleanupEnabledChange: onChange('inactiveCleanupEnabled'),
-            onInactiveCleanupDaysChange: onChange('inactiveCleanupDays'),
-            onCheckIntervalChange: onChange('checkInterval'),
-        },
-        mediaStack: {
-            initialSettings,
-            mediaServerType: values.mediaServerType,
-            arrInstances: values.arrInstances,
-            tautulliUrl: values.tautulliUrl,
-            tautulliApiKey: values.tautulliApiKey,
-            jellystatUrl: values.jellystatUrl,
-            jellystatApiKey: values.jellystatApiKey,
-            requestAppType: values.requestAppType,
-            requestAppUrl: values.requestAppUrl,
-            requestAppApiKey: values.requestAppApiKey,
-            requestAppMembershipSync: values.requestAppMembershipSync,
-            ombiUrl: values.ombiUrl,
-            ombiApiKey: values.ombiApiKey,
-            onArrInstancesChange: onChange('arrInstances'),
-            onTautulliUrlChange: onChange('tautulliUrl'),
-            onTautulliApiKeyChange: onChange('tautulliApiKey'),
-            onJellystatUrlChange: onChange('jellystatUrl'),
-            onJellystatApiKeyChange: onChange('jellystatApiKey'),
-            onRequestAppTypeChange: onChange('requestAppType'),
-            onRequestAppUrlChange: onChange('requestAppUrl'),
-            onRequestAppApiKeyChange: onChange('requestAppApiKey'),
-            onRequestAppMembershipSyncChange: onChange('requestAppMembershipSync'),
-            onOmbiUrlChange: onChange('ombiUrl'),
-            onOmbiApiKeyChange: onChange('ombiApiKey'),
-            addToast,
-        },
-        metadata: {
-            initialSettings,
-            tmdbApiKey: values.tmdbApiKey,
-            tvdbApiKey: values.tvdbApiKey,
-            tvdbPin: values.tvdbPin,
-            cacheRefreshMinutes: values.cacheRefreshMinutes,
-            onTmdbApiKeyChange: onChange('tmdbApiKey'),
-            onTvdbApiKeyChange: onChange('tvdbApiKey'),
-            onTvdbPinChange: onChange('tvdbPin'),
-            onCacheRefreshMinutesChange: onChange('cacheRefreshMinutes'),
-            addToast,
-        },
-        homeLayout: {
-            layout: values.dashboardLayout,
-            onChange: form.updateDashboardLayout,
-        },
-        navigation: {
-            navOrder: values.navOrder,
-            onNavOrderChange: onChange('navOrder'),
-        },
-        broadcast: { users: resources.users },
-        status: {
-            statusConfig: resources.statusConfig,
-            publicStatusEnabled: values.publicStatusEnabled,
-            onPublicStatusEnabledChange: onChange('publicStatusEnabled'),
-            onStatusDraftChange: setStatusDraft,
-            fetchStatusConfig: resources.fetchStatusConfig,
-        },
-        contact: {
-            contactWhatsApp: values.contactWhatsApp,
-            contactEmail: values.contactEmail,
-            contactUrl: values.contactUrl,
-            announcement: values.announcement,
-            isPushingAnnouncement,
-            onContactWhatsAppChange: onChange('contactWhatsApp'),
-            onContactEmailChange: onChange('contactEmail'),
-            onContactUrlChange: onChange('contactUrl'),
-            onAnnouncementChange: onChange('announcement'),
-            onPushAnnouncement: handlePushAnnouncement,
-        },
-        publicAccess: {
-            showLoginServerStats: values.showLoginServerStats,
-            useTrendingSlideshowOnLogin: values.useTrendingSlideshowOnLogin,
-            referralEnabled: values.referralEnabled,
-            referralTrialDays: values.referralTrialDays,
-            referralRewardDays: values.referralRewardDays,
-            mediaServerType: values.mediaServerType,
-            libraries: resources.libraries,
-            defaultLibraryIds: values.defaultLibraryIds,
-            hideStreamUsers: values.hideStreamUsers,
-            onShowLoginServerStatsChange: onChange('showLoginServerStats'),
-            onUseTrendingSlideshowOnLoginChange: onChange('useTrendingSlideshowOnLogin'),
-            onReferralEnabledChange: onChange('referralEnabled'),
-            onReferralTrialDaysChange: onChange('referralTrialDays'),
-            onReferralRewardDaysChange: onChange('referralRewardDays'),
-            onDefaultLibraryIdsChange: onChange('defaultLibraryIds'),
-            onHideStreamUsersChange: onChange('hideStreamUsers'),
-        },
-        branding: {
-            mediaServerType: values.mediaServerType,
-            customLogoUrl: values.customLogoUrl,
-            brandingTheme: values.brandingTheme,
-            backgroundImageUrl: values.backgroundImageUrl,
-            useScrollRevealAnimations: values.useScrollRevealAnimations,
-            useCinematicLoading: values.useCinematicLoading,
-            useBrandedSkeleton: values.useBrandedSkeleton,
-            useTrendingSlideshow: values.useTrendingSlideshow,
-            trendingSlideshowInterval: values.trendingSlideshowInterval,
-            use24HourClock: values.use24HourClock,
-            showPosterQualityBadges: values.showPosterQualityBadges,
-            onCustomLogoUrlChange: onChange('customLogoUrl'),
-            onLogoFileChange: onChange('logoFile'),
-            onBrandingThemeChange: onChange('brandingTheme'),
-            onBackgroundImageUrlChange: onChange('backgroundImageUrl'),
-            onUseScrollRevealAnimationsChange: onChange('useScrollRevealAnimations'),
-            onUseCinematicLoadingChange: onChange('useCinematicLoading'),
-            onUseBrandedSkeletonChange: onChange('useBrandedSkeleton'),
-            onUseTrendingSlideshowChange: onChange('useTrendingSlideshow'),
-            onTrendingSlideshowIntervalChange: onChange('trendingSlideshowInterval'),
-            onUse24HourClockChange: onChange('use24HourClock'),
-            onShowPosterQualityBadgesChange: onChange('showPosterQualityBadges'),
-            addToast,
-        },
-        invites: { addToast },
-        tasks: {
-            tasks: admin.tasks,
-            onRunTask: admin.handleRunTask,
-        },
-        system: {
-            systemHealth: admin.systemHealth,
-            autoBackupEnabled: admin.autoBackupEnabled,
-            autoBackupIntervalDays: admin.autoBackupIntervalDays,
-            autoBackupRetentionCount: admin.autoBackupRetentionCount,
-            backupRestoreText: admin.backupRestoreText,
-            backupFiles: admin.backupFiles,
-            isRestoringBackup: admin.isRestoringBackup,
-            diagnostics: admin.diagnostics,
-            mediaServerType: values.mediaServerType,
-            isLoadingDiagnostics: admin.isLoadingDiagnostics,
-            onAutoBackupEnabledChange: admin.setAutoBackupEnabled,
-            onAutoBackupIntervalDaysChange: admin.setAutoBackupIntervalDays,
-            onAutoBackupRetentionCountChange: admin.setAutoBackupRetentionCount,
-            onBackupRestoreTextChange: admin.setBackupRestoreText,
-            onDownloadBackup: admin.handleDownloadBackup,
-            onCreateBackupFile: admin.handleCreateBackupFile,
-            onRestoreBackup: admin.handleRestoreBackup,
-            onRestoreFromFile: admin.handleRestoreFromFile,
-            onRefreshDiagnostics: admin.fetchDiagnostics,
-        },
-        logs: {
-            deletedUsersLog: admin.deletedUsersLog,
-            pagedAuditEntries: admin.pagedAuditEntries,
-            pagedEmailEntries: admin.pagedEmailEntries,
-            auditLogPage: admin.auditLogPage,
-            totalAuditLogPages: admin.totalAuditLogPages,
-            emailLogPage: admin.emailLogPage,
-            totalEmailLogPages: admin.totalEmailLogPages,
-            isLoadingAuditLog: admin.isLoadingAuditLog,
-            onRefreshAuditLog: admin.fetchAuditLog,
-            onUnblockDeletedUser: admin.handleUnblockDeletedUser,
-            onEmailLogPageChange: admin.setEmailLogPage,
-            onAuditLogPageChange: admin.setAuditLogPage,
-        },
+        }),
+        smtp: buildSmtpTabPanelProps({ values, onChange, emailActions }),
+        newsletter: buildNewsletterTabPanelProps({ values, onChange, emailActions }),
+        cleanup: buildCleanupTabPanelProps({ values, onChange }),
+        mediaStack: buildMediaStackTabPanelProps({ initialSettings, values, onChange, addToast }),
+        metadata: buildMetadataTabPanelProps({ initialSettings, values, onChange, addToast }),
+        homeLayout: buildHomeLayoutTabPanelProps({ values, form }),
+        navigation: buildNavigationTabPanelProps({ values, onChange }),
+        broadcast: buildBroadcastTabPanelProps({ resources }),
+        status: buildStatusTabPanelProps({ values, onChange, resources, setStatusDraft }),
+        contact: buildContactTabPanelProps({ values, onChange, handlePushAnnouncement, isPushingAnnouncement }),
+        publicAccess: buildPublicAccessTabPanelProps({ values, onChange, resources }),
+        branding: buildBrandingTabPanelProps({ values, onChange, addToast }),
+        invites: buildInvitesTabPanelProps({ addToast }),
+        tasks: buildTasksTabPanelProps({ admin }),
+        system: buildSystemTabPanelProps({ values, admin }),
+        logs: buildLogsTabPanelProps({ admin }),
     };
 };

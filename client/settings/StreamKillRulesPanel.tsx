@@ -1,94 +1,8 @@
 import React, { useState, useEffect } from 'react';
+
 import { apiFetch } from '../shared/api';
-import { createClientId } from '../shared/id';
-import { CustomSelect } from '../shared/ui';
-// ─────────────────────────────────────────────────────────────────────────────
-// Stream Kill Rules Panel
-// ─────────────────────────────────────────────────────────────────────────────
-const RULE_FIELDS = [
-    { value: 'isTranscoding', label: 'Is Transcoding', type: 'bool' as const },
-    { value: 'videoResolution', label: 'Video Resolution', type: 'select' as const, options: ['4k', '1080', '720', '480', 'sd'] },
-    { value: 'transcodeVideoDecision', label: 'Transcode Decision', type: 'select' as const, options: ['transcode', 'copy', 'directplay'] },
-    { value: 'mediaType', label: 'Media Type', type: 'select' as const, options: ['movie', 'episode', 'track'] },
-    { value: 'state', label: 'Playback State', type: 'select' as const, options: ['playing', 'paused', 'buffering'] },
-    { value: 'sessionLocation', label: 'Connection Location', type: 'select' as const, options: ['lan', 'wan', 'cellular'] },
-    { value: 'videoCodec', label: 'Video Codec', type: 'text' as const },
-    { value: 'audioCodec', label: 'Audio Codec', type: 'text' as const },
-    { value: 'bandwidth', label: 'Bandwidth (Mbps)', type: 'number' as const },
-    { value: 'user', label: 'Username', type: 'text' as const },
-    { value: 'playerProduct', label: 'Player App', type: 'text' as const },
-    { value: 'playerTitle', label: 'Player/Device Name', type: 'text' as const },
-];
-const KR_OP_TEXT = [{ value: 'equals', label: 'equals' }, { value: 'not_equals', label: 'not equals' }, { value: 'contains', label: 'contains' }, { value: 'not_contains', label: "doesn't contain" }];
-const KR_OP_NUMBER = [{ value: 'equals', label: 'equals' }, { value: 'not_equals', label: 'not equals' }, { value: 'greater_than', label: 'greater than' }, { value: 'less_than', label: 'less than' }];
-const KR_OP_BOOL = [{ value: 'equals', label: 'is' }];
-const KR_OP_SELECT = [{ value: 'equals', label: 'equals' }, { value: 'not_equals', label: 'not equals' }];
-function krGetOps(field: any) {
-    if (!field) return KR_OP_TEXT;
-    if (field.type === 'bool') return KR_OP_BOOL;
-    if (field.type === 'number') return KR_OP_NUMBER;
-    if (field.type === 'select') return KR_OP_SELECT;
-    return KR_OP_TEXT;
-}
-function krMkCond() { return { id: createClientId(), field: 'isTranscoding', operator: 'equals', value: 'true' }; }
-function krMkRule(): any { return { id: Date.now().toString(), name: 'New Rule', enabled: true, conditionLogic: 'AND', conditions: [krMkCond()], killMessage: 'Your stream has been stopped by the server administrator.' }; }
-
-const KRConditionRow: React.FC<{ cond: any; onCh: (c: any) => void; onDel: () => void }> = ({ cond, onCh, onDel }) => {
-    const fd = RULE_FIELDS.find(f => f.value === cond.field);
-    const ops = krGetOps(fd);
-    const onField = (v: string) => {
-        const def = RULE_FIELDS.find(f => f.value === v);
-        const dv = def?.type === 'bool' ? 'true' : (def && 'options' in def && def.options ? def.options[0] : '');
-        onCh({ ...cond, field: v, value: dv, operator: krGetOps(def)[0].value });
-    };
-    const fieldOptions = RULE_FIELDS.map(f => ({ label: f.label, value: f.value }));
-    const opOptions = ops.map(o => ({ label: o.label, value: o.value }));
-    const boolOptions = [{ label: 'Yes / True', value: 'true' }, { label: 'No / False', value: 'false' }];
-    const selectOptions = ('options' in (fd ?? {}) && (fd as any).options)
-        ? (fd as any).options.map((o: string) => ({ label: o, value: o }))
-        : [];
-
-    return (
-        <div className="flex flex-wrap items-center gap-2 py-2 border-b border-border/30 last:border-b-0">
-            <CustomSelect
-                value={cond.field}
-                onChange={v => onField(v)}
-                options={fieldOptions}
-                className="flex-shrink-0 min-w-[160px]"
-            />
-            <CustomSelect
-                value={cond.operator}
-                onChange={v => onCh({ ...cond, operator: v })}
-                options={opOptions}
-                className="flex-shrink-0 min-w-[130px]"
-            />
-            {fd?.type === 'bool' ? (
-                <CustomSelect
-                    value={cond.value}
-                    onChange={v => onCh({ ...cond, value: v })}
-                    options={boolOptions}
-                    className="flex-1 min-w-[110px]"
-                />
-            ) : fd?.type === 'select' ? (
-                <CustomSelect
-                    value={cond.value}
-                    onChange={v => onCh({ ...cond, value: v })}
-                    options={selectOptions}
-                    className="flex-1 min-w-[110px]"
-                />
-            ) : (
-                <input type={fd?.type === 'number' ? 'number' : 'text'} value={cond.value}
-                    onChange={e => onCh({ ...cond, value: e.target.value })}
-                    placeholder={fd?.type === 'number' ? 'e.g. 20' : 'e.g. Plex Web'}
-                    className="flex-1 min-w-[100px] bg-background border border-border text-text rounded-lg px-3 py-2 text-sm focus:border-plex focus:ring-1 focus:ring-plex outline-none transition-all" />
-            )}
-            <button onClick={onDel} title="Remove" className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-            </button>
-        </div>
-    );
-};
-
+import { krMkCond, krMkRule } from './streamKillRulesConstants';
+import { StreamKillConditionRow } from './StreamKillConditionRow';
 
 export const StreamKillRulesPanel: React.FC<{ addToast: (m: string, t?: 'success' | 'error') => void; registerSaveHandler?: (handler: (() => Promise<boolean>) | null) => void }> = ({ addToast, registerSaveHandler }) => {
     const [rules, setRules] = useState<any[]>([]);
@@ -182,7 +96,7 @@ export const StreamKillRulesPanel: React.FC<{ addToast: (m: string, t?: 'success
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {(rule.conditions || []).map((c: any, i: number) => (
-                                            <KRConditionRow key={c.id ?? i} cond={c} onCh={nc => updCond(rule.id, i, nc)} onDel={() => delCond(rule.id, i)} />
+                                            <StreamKillConditionRow key={c.id ?? i} cond={c} onCh={nc => updCond(rule.id, i, nc)} onDel={() => delCond(rule.id, i)} />
                                         ))}
                                         <button onClick={() => addCond(rule.id)} className="flex items-center gap-2 text-plex text-sm font-bold hover:text-plex/80 transition-colors mt-1 w-fit py-1">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>

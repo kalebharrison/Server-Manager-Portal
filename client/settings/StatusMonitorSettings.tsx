@@ -1,94 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { apiFetch } from '../shared/api';
+import React from 'react';
+
 import { CustomSelect } from '../shared/ui';
-export const StatusMonitorSettings: React.FC<{ config: any; publicStatusEnabled: boolean; onPublicStatusEnabledChange: (enabled: boolean) => void; onChange: (cfg: any) => void; appConfirm: (msg: string, cb: () => void) => void; addToast: (msg: string, type?: 'success' | 'error') => void }> = ({ config, publicStatusEnabled, onPublicStatusEnabledChange, onChange, appConfirm, addToast }) => {
-    const [localConfig, setLocalConfig] = useState<any>({ groups: [], services: [] });
+import { useStatusMonitorConfig } from './useStatusMonitorConfig';
 
-    useEffect(() => {
-        if (config) {
-            setLocalConfig({
-                groups: config.groups || [],
-                services: config.services || []
-            });
-        }
-    }, [config]);
-
-    const addGroup = () => {
-        const id = `group-${Date.now()}`;
-        const newConfig = { ...localConfig, groups: [...localConfig.groups, { id, name: 'New Group', order: localConfig.groups.length }] };
-        setLocalConfig(newConfig);
-        onChange(newConfig);
-    };
-
-    const addService = () => {
-        const id = `service-${Date.now()}`;
-        const newService = {
-            id,
-            name: 'New Service',
-            url: '',
-            category: 'web',
-            type: 'http',
-            groupId: null,
-            description: ''
-        };
-        const newConfig = { ...localConfig, services: [...localConfig.services, newService] };
-        setLocalConfig(newConfig);
-        onChange(newConfig);
-    };
-
-    const updateGroup = (id: string, field: string, value: any) => {
-        const newConfig = {
-            ...localConfig,
-            groups: localConfig.groups.map((g: any) => g.id === id ? { ...g, [field]: value } : g)
-        };
-        setLocalConfig(newConfig);
-        onChange(newConfig);
-    };
-
-    const updateService = (id: string, field: string, value: any) => {
-        const newConfig = {
-            ...localConfig,
-            services: localConfig.services.map((s: any) => s.id === id ? { ...s, [field]: value } : s)
-        };
-        setLocalConfig(newConfig);
-        onChange(newConfig);
-    };
-
-    const removeGroup = async (id: string) => {
-        const groupName = localConfig.groups.find((g: any) => g.id === id)?.name || 'this group';
-        appConfirm(`Remove group "${groupName}"? Services inside it won't be deleted but will lose their group.`, () => {
-            const newConfig = {
-                ...localConfig,
-                groups: localConfig.groups.filter((g: any) => g.id !== id),
-                services: localConfig.services.map((s: any) => s.groupId === id ? { ...s, groupId: null } : s)
-            };
-            setLocalConfig(newConfig);
-            onChange(newConfig);
-        });
-    };
-
-    const removeService = async (id: string) => {
-        appConfirm(`Remove service ${id}?`, () => {
-            const newConfig = {
-                ...localConfig,
-                services: localConfig.services.filter((s: any) => s.id !== id)
-            };
-            setLocalConfig(newConfig);
-            onChange(newConfig);
-        });
-    };
-
-    const handleResetStats = () => {
-        appConfirm('Are you sure you want to reset all uptime statistics? This will delete all historical status data.', async () => {
-            try {
-                const res = await apiFetch('/api/status/reset', { method: 'POST' });
-                if (res.error) throw new Error(res.error);
-                addToast('Status statistics reset successfully.', 'success');
-            } catch (e: any) {
-                addToast(e.message || 'Failed to reset statistics.', 'error');
-            }
-        });
-    };
+export const StatusMonitorSettings: React.FC<{
+    config: any;
+    publicStatusEnabled: boolean;
+    onPublicStatusEnabledChange: (enabled: boolean) => void;
+    onChange: (cfg: any) => void;
+    appConfirm: (msg: string, cb: () => void) => void;
+    addToast: (msg: string, type?: 'success' | 'error') => void;
+}> = ({ config, publicStatusEnabled, onPublicStatusEnabledChange, onChange, appConfirm, addToast }) => {
+    const {
+        localConfig,
+        addGroup,
+        addService,
+        updateGroup,
+        updateService,
+        removeGroup,
+        removeService,
+        handleResetStats,
+    } = useStatusMonitorConfig({ config, onChange, appConfirm, addToast });
 
     return (
         <div className="flex flex-col gap-8 w-full">
