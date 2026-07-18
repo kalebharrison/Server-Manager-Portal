@@ -128,11 +128,9 @@ export const themeClasses = {
     sectionCard: 'section-card',
     btnPrimary: 'btn-primary',
     btnSecondary: 'btn-secondary',
-    btnPrimaryLg: 'btn-primary-lg',
     pageHeader: 'page-header',
     pageTitle: 'page-title',
     navActive: 'nav-item-active',
     inputPremium: 'input-premium',
     labelPremium: 'label-premium',
-    badgePlex: 'badge-plex',
 } as const;

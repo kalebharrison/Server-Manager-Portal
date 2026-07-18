@@ -298,16 +298,16 @@ const apiFetch = (url, token, options = {}) => {
     return fetch(url, { ...options, headers });
 };
 
-const jellyfinAuthorizationHeader = (token = '') => {
-    const parts = [
-        'MediaBrowser Client="Server Manager Portal"',
-        'Device="Web"',
-        `DeviceId="${CLIENT_ID}"`,
-        `Version="${appVersion}"`,
-    ];
-    if (token) parts.push(`Token="${token}"`);
-    return parts.join(', ');
-};
+const jellyfinAuthBase = [
+    'MediaBrowser Client="Server Manager Portal"',
+    'Device="Web"',
+    `DeviceId="${CLIENT_ID}"`,
+    `Version="${appVersion}"`,
+].join(', ');
+
+const jellyfinAuthorizationHeader = (token = '') => (
+    token ? `${jellyfinAuthBase}, Token="${token}"` : jellyfinAuthBase
+);
 
 const jellyfinHeaders = (token = '', extra = {}) => ({
     Accept: 'application/json',
@@ -450,12 +450,15 @@ const requireMember = createRequireMember({
 });
 
 const requireAdmin = async (req, res, next) => {
-    const token = req.cookies.session;
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-    try {
-        req.user = jwt.verify(token, JWT_SECRET);
-    } catch (e) {
-        return res.status(401).json({ error: 'Invalid session' });
+    // Reuse identity already verified by requireAuth when present.
+    if (!req.user) {
+        const token = req.cookies.session;
+        if (!token) return res.status(401).json({ error: 'Unauthorized' });
+        try {
+            req.user = jwt.verify(token, JWT_SECRET);
+        } catch (e) {
+            return res.status(401).json({ error: 'Invalid session' });
+        }
     }
     if (isImpersonatingSession(req.user)) {
         return res.status(403).json({ error: 'Admin actions are disabled while viewing as another user.' });

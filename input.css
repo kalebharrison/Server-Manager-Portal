@@ -177,14 +177,6 @@
     box-shadow: 0 8px 28px rgb(var(--color-plex) / 0.35);
   }
 
-  .btn-primary-lg {
-    @apply inline-flex items-center justify-center gap-2 w-full px-8 py-4 rounded-xl font-bold text-base;
-    @apply bg-gradient-to-r from-plex to-plex-hover text-background;
-    @apply hover:brightness-110 active:scale-[0.98] transition-all;
-    @apply disabled:opacity-50 disabled:pointer-events-none;
-    box-shadow: 0 8px 28px rgb(var(--color-plex) / 0.35);
-  }
-
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm;
     @apply border border-white/10 bg-white/[0.04] text-text;
@@ -201,11 +193,6 @@
 
   .label-premium {
     @apply text-[11px] font-bold text-muted uppercase tracking-[0.14em];
-  }
-
-  .badge-plex {
-    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full bg-plex/10 border border-plex/25 text-plex;
-    @apply text-[11px] font-bold uppercase tracking-widest;
   }
 
   /* —— Layout —— */

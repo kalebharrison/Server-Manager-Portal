@@ -65,10 +65,6 @@ export const formatTime = (date: Date) => {
     }
 };
 
-export const formatEventName = (event: string): string => {
-    return event.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-};
-
 export const formatDateTime = (dateString?: string): string => {
     if (!dateString) return 'Unknown';
     const locale = (typeof window !== 'undefined' && (window as any).__PORTAL_LOCALE__) || 'en-GB';

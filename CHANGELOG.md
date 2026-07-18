@@ -258,6 +258,7 @@ All notable changes to this project will be documented in this file.
 - Unified Media Stack **Release Calendar** with All/TV/Movies filters (sidebar label: Calendar).
 - Docker publish now runs `npm run check` before pushing images.
 - README trimmed to a Docker-first quick start; detail moved under `docs/`.
+- Hot-path perf: lock-free JSON cache hits, selective Seerr cache invalidation, batched membership imports, SMTP transporter reuse, SPA shell/meta caching, Jellyfin admin-profile TTL.
 
 ### Removed
 - Library Maintenance / Cleaner UI and background maintenance index task.

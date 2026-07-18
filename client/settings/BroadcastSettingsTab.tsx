@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { apiFetch } from '../shared/api';
 import { CustomSelect } from '../shared/ui';
 import type { User } from '../shared/types';
-export const BroadcastSettingsTab: React.FC<{ selectedUserIds: string[]; users: User[]; }> = ({ selectedUserIds, users }) => {
+
+export const BroadcastSettingsTab: React.FC<{ users: User[]; }> = ({ users }) => {
     const [subject, setSubject] = useState('Big updates to the Plex Server! 🚀');
     const [body, setBody] = useState(`🎬 <b>Hey everyone! Big updates to the Plex Server!</b> 🚀<br><br>If you have any friends or family who want to check out the server, I’m currently offering a <b>3-Day Temporary Access</b> pass with instant access to the entire library! 🍿<br>✅ No bank details needed<br>✅ No purchase required<br>✅ Instant, automated setup<br><br>We also just launched a brand new <b>User Portal</b> (https://yourdomain.com) packed with awesome features for everyone:<br>🕒 <b>Account Status:</b> Easily check exactly how many days you have left until your account expires.<br>🟢 <b>Server Health:</b> View live 24/7 uptime stats for all server services.<br>📊 <b>Live Library Stats:</b> See exact, live counts of our massive library.<br><br>Feel free to share the link (https://yourdomain.com) with anyone who might be interested! 👇`);
-    const [recipientFilter, setRecipientFilter] = useState<'all' | 'active' | 'trial' | 'expiring' | 'expired' | 'selected' | 'custom'>('all');
+    const [recipientFilter, setRecipientFilter] = useState<'all' | 'active' | 'trial' | 'expiring' | 'expired' | 'custom'>('all');
     const [customSelectedUserIds, setCustomSelectedUserIds] = useState<string[]>([]);
     const [isSending, setIsSending] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -15,7 +16,7 @@ export const BroadcastSettingsTab: React.FC<{ selectedUserIds: string[]; users: 
         setIsSending(true);
         try {
             const finalFilter = recipientFilter === 'custom' ? 'selected' : recipientFilter;
-            const finalSelectedIds = recipientFilter === 'custom' ? customSelectedUserIds : selectedUserIds;
+            const finalSelectedIds = recipientFilter === 'custom' ? customSelectedUserIds : [];
 
             const res = await apiFetch('/api/users/broadcast', {
                 method: 'POST',
@@ -57,7 +58,6 @@ export const BroadcastSettingsTab: React.FC<{ selectedUserIds: string[]; users: 
                         { label: 'Temporary Access Users Only', value: 'trial' },
                         { label: 'Expiring Soon (Next 7 Days)', value: 'expiring' },
                         { label: 'Expired Users', value: 'expired' },
-                        ...(selectedUserIds.length > 0 ? [{ label: `Selected Users (${selectedUserIds.length})`, value: 'selected' }] : []),
                         { label: 'Custom User Selection...', value: 'custom' }
                     ]}
                 />

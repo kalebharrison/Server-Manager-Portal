@@ -39,27 +39,6 @@ export interface ArrInstance {
     isDefault: boolean;
 }
 
-export interface PlexConfig {
-    token: string;
-    mediaServerType?: 'plex' | 'jellyfin';
-    serverIdentifier: string;
-    jellyfinUrl?: string;
-    jellyfinApiKey?: string;
-    checkIntervalMinutes: number;
-    smtpHost: string;
-    smtpPort: number;
-    smtpUser: string;
-    smtpPass: string;
-    smtpFrom: string;
-    smtpSecure: boolean;
-    emailDaysBefore: number;
-    newsletterFrequency: string;
-    newsletterDay: number;
-    publicDomain: string;
-    requestUrl?: string;
-    contactUrl?: string;
-}
-
 export interface AppSettings {
     token?: string;
     mediaServerType?: 'plex' | 'jellyfin';

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
-import { Check } from 'lucide-react';
 import type { CustomSelectProps } from './types';
 
 export type DropdownPosition = { top: number; left: number; width: number };
@@ -99,22 +98,6 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({ id, value, onChange,
         </div>
     );
 };
-
-export const StyledCheckbox: React.FC<{ checked: boolean; onChange: (checked: boolean) => void; label: string }> = ({ checked, onChange, label }) => (
-    <label className="flex items-center gap-2 text-xs text-muted">
-        <span className="relative inline-flex h-4 w-4 items-center justify-center">
-            <input
-                type="checkbox"
-                checked={checked}
-                onChange={(e) => onChange(e.target.checked)}
-                className="peer sr-only"
-            />
-            <span className="h-4 w-4 rounded border border-border bg-background transition-colors peer-checked:border-plex peer-checked:bg-plex/20" />
-            <Check className="pointer-events-none absolute h-3 w-3 text-plex opacity-0 transition-opacity peer-checked:opacity-100" />
-        </span>
-        {label}
-    </label>
-);
 
 export const ScrollReveal: React.FC<{ children: React.ReactNode; enabled?: boolean; delay?: number; className?: string }> = ({ children, enabled = true, delay = 0, className = '' }) => {
     const [isVisible, setIsVisible] = useState(!enabled);

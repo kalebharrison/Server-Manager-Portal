@@ -19,7 +19,7 @@ const FALLBACK_IMAGES = {
     habit: 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?auto=format&fit=crop&q=80&w=600',
 };
 
-export type WrapUpCardDef = {
+type WrapUpCardDef = {
     metric: string;
     label: string;
     bgImage: string;
@@ -31,7 +31,7 @@ export type WrapUpCardDef = {
 
 const resolveCardImage = (url: string) => portalUrl(url);
 
-export const buildWrapUpCards = (analytics: any): WrapUpCardDef[] => {
+const buildWrapUpCards = (analytics: any): WrapUpCardDef[] => {
     const topDayStreams = analytics.dayOfWeekCounts
         ? Math.max(...Object.values(analytics.dayOfWeekCounts) as number[])
         : 0;

@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 
 import { apiFetch } from '../../shared/api';
 import { activityStreamColumnCount, activityStreamGridClass, usePortalWideContentLayout } from '../../shared/portalLayout';
 import { useVisibleInterval } from '../../shared/useVisibleInterval';
-import { StreamDetailsModal } from '../StreamDetailsModal';
 import { ActiveStreamCard, CompactActiveStreamCard } from './ActiveStreamCard';
+
+const StreamDetailsModal = lazy(() => import('../StreamDetailsModal').then((module) => ({ default: module.StreamDetailsModal })));
 
 type ActiveStreamsPanelProps = {
     isAdmin?: boolean;
@@ -12,6 +13,20 @@ type ActiveStreamsPanelProps = {
     className?: string;
     variant?: 'detailed' | 'compact';
 };
+
+const sessionFingerprint = (sessions: any[]) => sessions.map((session) => [
+    session.sessionId || '',
+    session.ratingKey || '',
+    session.progress || '',
+    session.bandwidth || '',
+    session.isTranscoding ? '1' : '0',
+    session.user || '',
+].join(':')).join('|');
+
+const sessionKey = (session: any, index: number) => (
+    session.sessionId
+    || [session.ratingKey, session.user, session.player, index].filter(Boolean).join(':')
+);
 
 export const ActiveStreamsPanel: React.FC<ActiveStreamsPanelProps> = ({ isAdmin, isJellyfinPortal, className = '', variant = 'detailed' }) => {
     const [activeSessions, setActiveSessions] = useState<any[]>([]);
@@ -23,7 +38,9 @@ export const ActiveStreamsPanel: React.FC<ActiveStreamsPanelProps> = ({ isAdmin,
             const endpoint = isJellyfinPortal ? '/api/jellyfin/sessions' : '/api/plex/sessions';
             const result = await apiFetch(endpoint, { cacheTtlMs: 8_000, staleIfErrorMs: 60_000 });
             const next = result?.activeSessions || [];
-            setActiveSessions((current) => JSON.stringify(current) === JSON.stringify(next) ? current : next);
+            setActiveSessions((current) => (
+                sessionFingerprint(current) === sessionFingerprint(next) ? current : next
+            ));
         } catch {
             // Preserve the last live snapshot during short backend interruptions.
         }
@@ -47,13 +64,23 @@ export const ActiveStreamsPanel: React.FC<ActiveStreamsPanelProps> = ({ isAdmin,
             {activeSessions.length ? (
                 <div className={isCompact ? 'grid grid-cols-1 gap-3 xl:grid-cols-2' : activityStreamGridClass(isWidePortalLayout, activeSessions.length)}>
                     {activeSessions.map((session, index) => isCompact
-                        ? <CompactActiveStreamCard key={session.sessionId ?? index} session={session} onSelect={setSelectedSession} />
-                        : <ActiveStreamCard key={session.sessionId ?? index} session={session} columns={columns} onSelect={setSelectedSession} />)}
+                        ? <CompactActiveStreamCard key={sessionKey(session, index)} session={session} onSelect={setSelectedSession} />
+                        : <ActiveStreamCard key={sessionKey(session, index)} session={session} columns={columns} onSelect={setSelectedSession} />)}
                 </div>
             ) : (
                 <div className={`w-full rounded-lg border border-dashed border-border px-4 text-center text-sm text-muted ${isCompact ? 'py-3' : 'py-5'}`}>No active streams</div>
             )}
-            {selectedSession && <StreamDetailsModal session={selectedSession} onClose={() => setSelectedSession(null)} isAdmin={isAdmin} onKilled={fetchSessions} providerLabel={isJellyfinPortal ? 'Jellyfin' : 'Plex'} />}
+            {selectedSession && (
+                <Suspense fallback={null}>
+                    <StreamDetailsModal
+                        session={selectedSession}
+                        onClose={() => setSelectedSession(null)}
+                        isAdmin={isAdmin}
+                        onKilled={fetchSessions}
+                        providerLabel={isJellyfinPortal ? 'Jellyfin' : 'Plex'}
+                    />
+                </Suspense>
+            )}
         </section>
     );
 };
