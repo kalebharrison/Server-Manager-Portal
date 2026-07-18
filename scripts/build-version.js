@@ -37,12 +37,12 @@ const finalVersion = isTag ? `v${pkgVersion}` : `v${pkgVersion}-${assetVersion}`
 fs.writeFileSync('version.txt', finalVersion);
 
 try {
-    const indexPath = 'index.html';
+    const indexPath = 'client/index.html';
     const html = fs.readFileSync(indexPath, 'utf8');
     const stamped = html
         .replace(/(?:\/)?static\/tailwind\.css\?v=[^"']+/g, `static/tailwind.css?v=${assetVersion}`)
         .replace(/(?:\/)?static\/bundle\.js\?v=[^"']+/g, `static/bundle.js?v=${assetVersion}`);
     fs.writeFileSync(indexPath, stamped);
 } catch (e) {
-    console.warn('Could not stamp index.html asset versions:', e.message);
+    console.warn('Could not stamp client/index.html asset versions:', e.message);
 }

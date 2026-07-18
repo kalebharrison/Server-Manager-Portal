@@ -1,9 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./index.html",
-    "./index.tsx",
-    "./client/**/*.{js,ts,jsx,tsx}",
+    '../index.html',
+    '../main.tsx',
+    '../**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -11,7 +11,7 @@ module.exports = {
         background: 'rgb(var(--color-bg) / <alpha-value>)',
         card: 'rgb(var(--color-card) / <alpha-value>)',
         border: 'rgb(var(--color-border) / <alpha-value>)',
-        plex: 'rgb(var(--color-plex) / <alpha-value>)',       // Orange accent
+        plex: 'rgb(var(--color-plex) / <alpha-value>)',
         'plex-hover': 'rgb(var(--color-plex-hover) / <alpha-value>)',
         text: 'rgb(var(--color-text) / <alpha-value>)',
         muted: 'rgb(var(--color-muted) / <alpha-value>)',
@@ -28,4 +28,4 @@ module.exports = {
     },
   },
   plugins: [],
-}
+};

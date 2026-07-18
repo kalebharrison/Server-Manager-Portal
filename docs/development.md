@@ -39,16 +39,18 @@ npm run start:prod
 
 ```
 .
-├── index.js              # Express entry / composition root
-├── index.tsx             # React entry
-├── client/               # React UI (screens, settings, requests, setup)
-├── lib/                  # Backend domains (see lib/README.md)
-├── static/               # Built assets + logos/fonts
-├── tests/                # Mirrors lib domains
-├── docs/                 # Human docs
-├── scripts/              # Build/dev helpers
-├── Dockerfile            # Multi-stage production image
-├── docker-compose.yml    # Local/prod compose
+├── index.js                 # Express entry / composition root
+├── client/
+│   ├── main.tsx             # React entry
+│   ├── index.html           # SPA shell
+│   └── styles/              # Tailwind input + config
+├── lib/                     # Backend domains (see lib/README.md)
+├── static/                  # Built assets + logos/fonts
+├── tests/                   # Mirrors lib domains
+├── docs/                    # Human docs
+├── scripts/                 # Build / docker-entrypoint / local helpers
+├── Dockerfile
+├── docker-compose.yml
 └── .env.example
 ```
 

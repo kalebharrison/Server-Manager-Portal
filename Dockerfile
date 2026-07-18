@@ -12,7 +12,8 @@ RUN npm ci
 
 COPY . .
 RUN npm run build \
-    && test -f style.css || printf '/* Legacy stylesheet placeholder */\n' > style.css
+    && test -f static/style.css || printf '/* Legacy stylesheet placeholder */\n' > static/style.css \
+    && test -f client/index.html
 
 # --- Production image ---
 FROM node:22-alpine AS runner
@@ -30,12 +31,11 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/index.js ./
-COPY --from=builder /app/index.html ./
-COPY --from=builder /app/style.css ./
+COPY --from=builder /app/client/index.html ./client/index.html
 COPY --from=builder /app/version.txt ./
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/static ./static
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 RUN mkdir -p config backup \

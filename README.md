@@ -68,13 +68,13 @@ See **[docs/development.md](docs/development.md)**.
 
 ```
 .
-├── index.js / index.tsx   # Server + React entries
-├── client/                # React UI
+├── index.js               # Express entry
+├── client/                # React UI (main.tsx, screens, styles, index.html)
 ├── lib/                   # Backend by domain (auth, users, plex, request-app, …)
 ├── tests/                 # Mirrors lib domains
 ├── docs/                  # Deployment & contributor docs
-├── scripts/               # Build / local container helpers
-├── static/                # Built assets + logos
+├── scripts/               # Build / entrypoint / local container helpers
+├── static/                # Built assets + logos/fonts
 ├── Dockerfile
 ├── docker-compose.yml
 └── .env.example
