@@ -95,7 +95,7 @@ A curated content discovery experience for all users, powered by server-wide wat
 - Real-time stream summary cards (total streams, direct play, transcoding, bandwidth)
 - Now playing cards with poster art, quality badges, player info, progress bar, and ETA
 - Responsive layout: 3 stretched cards by default, up to 4 across on ultra-wide displays when 4 or more streams are active
-- Activity refreshes every second while the page is open
+- Activity refreshes every 10 seconds while the page is open (pauses when the tab is hidden)
 
 **Recently added**
 - Movies, TV shows, and music grids with poster quality badges
