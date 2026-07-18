@@ -6,16 +6,6 @@ import {
 import { formatStreamingHour } from './format';
 import { portalUrl } from './basePath';
 
-export const periodLabel = (days: number | string) => {
-    if (days === 'all') return 'All Time';
-    if (days === 7) return 'Last 7 Days';
-    if (days === 30) return 'Last 30 Days';
-    if (days === 60) return 'Last 60 Days';
-    if (days === 90) return 'Last 90 Days';
-    if (days === 180) return 'Last 180 Days';
-    return `Last ${days} Days`;
-};
-
 const FALLBACK_IMAGES = {
     rank: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=600',
     streams: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=600',
@@ -179,7 +169,6 @@ export const WrapUpCardGrid: React.FC<WrapUpCardGridProps> = ({
                 return (
                     <div
                         key={card.metric}
-                        data-wrap-up-card=""
                         onClick={interactive && onCardClick ? () => onCardClick(card.metric) : undefined}
                         className={`rounded-xl relative border border-border/50 flex flex-col overflow-hidden ${interactive ? 'cursor-pointer hover:ring-2 hover:ring-plex/50 transition-all group' : ''}`}
                         style={{ minHeight: `${minCardHeight}px` }}

@@ -42,11 +42,6 @@ plex-stats.json
 trending-cache.json
 analytics-cache.json
 kill-rules.json
-maintenance-rules.json
-maintenance-media-index.json
-maintenance-runs.json
-maintenance-request-index.json
-maintenance-prefs.json
 subzero-status-config.json
 status-config.json
 
@@ -67,3 +62,4 @@ test*.cjs
 patch.cjs
 static/bundle.js
 static/chunks/
+static/tailwind.css

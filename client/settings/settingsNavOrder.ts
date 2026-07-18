@@ -16,7 +16,4 @@ export const normalizeSettingsNavOrder = (order: string[]) => {
     return base;
 };
 
-/** @deprecated Use normalizeSettingsNavOrder */
-export const ensureMaintenanceNavOrder = normalizeSettingsNavOrder;
-
 export const getDefaultSettingsNavOrder = () => normalizeSettingsNavOrder(DEFAULT_NAV_ORDER);
