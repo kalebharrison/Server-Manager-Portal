@@ -85,10 +85,6 @@ export const useRequestDashboard = (cacheMinutes?: number) => {
         includeExisting,
     });
 
-    const openRequest = useCallback((item: RequestMediaItem) => {
-        if (item.canRequest !== false) setSelectedItem(item);
-    }, []);
-
     const openDetails = useCallback((item: RequestMediaItem) => {
         setOpenIssueOnSelect(false);
         if (!item.tmdbId && item.plexUrl) window.open(item.plexUrl, '_blank', 'noopener,noreferrer');
@@ -100,7 +96,8 @@ export const useRequestDashboard = (cacheMinutes?: number) => {
         setSelectedItem(item);
     }, []);
 
-    const submitRequest = async (item: RequestMediaItem, seasons: number[]) => {
+    const submitRequest = useCallback(async (item: RequestMediaItem, seasons: number[] | 'all' = []) => {
+        if (item.canRequest === false) return;
         setRequestingId(item.tmdbId);
         try {
             await apiFetch(`/api/request-app/media/${item.mediaType}/${item.tmdbId}/request`, {
@@ -112,13 +109,23 @@ export const useRequestDashboard = (cacheMinutes?: number) => {
             });
             markRequested(item);
             setSelectedItem(null);
-            addToast(`Requested "${item.title}"`);
+            addToast(
+                item.mediaType === 'tv' && seasons === 'all'
+                    ? `Requested "${item.title}" (all seasons)`
+                    : `Requested "${item.title}"`,
+            );
         } catch (err: any) {
             addToast(err?.message || 'Failed to submit request', 'error');
         } finally {
             setRequestingId(null);
         }
-    };
+    }, [addToast, markRequested]);
+
+    /** Card Request button: submit immediately. Poster/title still opens details for season picking. */
+    const requestFromCard = useCallback((item: RequestMediaItem) => {
+        if (item.canRequest === false) return;
+        void submitRequest(item, item.mediaType === 'tv' ? 'all' : []);
+    }, [submitRequest]);
 
     const statusLoading = status === null;
     const ready = status?.ready === true;
@@ -173,7 +180,7 @@ export const useRequestDashboard = (cacheMinutes?: number) => {
         loadMoreRef,
         loadItems,
         hasMore,
-        openRequest,
+        requestFromCard,
         openDetails,
         openIssue,
         submitRequest,

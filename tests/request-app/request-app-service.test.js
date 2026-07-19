@@ -58,3 +58,36 @@ test('accepted requests are requested until an active download is matched', asyn
     assert.equal(result.results[1].requested, false);
     assert.equal(result.results[1].processing, true);
 });
+
+test('requestMedia forwards seasons all for TV so one-click requests work', async () => {
+    const bodies = [];
+    const service = createRequestAppService({
+        resolveIntegrationUrlForFetch: async (value) => value,
+        fetchWithTimeout: async (url, options = {}) => {
+            if (options.method === 'POST' && String(url).includes('/api/v1/request')) {
+                bodies.push(JSON.parse(options.body));
+                return { ok: true, status: 201, json: async () => ({ id: 7 }) };
+            }
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    id: 99,
+                    mediaType: 'tv',
+                    title: 'One Click Show',
+                    seasons: [{ seasonNumber: 1 }, { seasonNumber: 2 }],
+                }),
+            };
+        },
+    });
+
+    await service.requestMedia(
+        { requestAppType: 'seerr', requestAppUrl: 'http://seerr', requestAppApiKey: 'key' },
+        { mediaType: 'tv', tmdbId: 99, seasons: 'all' },
+    );
+
+    assert.equal(bodies.length, 1);
+    assert.equal(bodies[0].mediaType, 'tv');
+    assert.equal(bodies[0].mediaId, 99);
+    assert.equal(bodies[0].seasons, 'all');
+});

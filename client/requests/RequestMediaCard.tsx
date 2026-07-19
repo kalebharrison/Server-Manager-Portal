@@ -94,6 +94,7 @@ export const RequestMediaCard = React.memo<{
                         <button
                             type="button"
                             disabled={disabled}
+                            title={item.mediaType === 'tv' ? 'Request all available seasons' : `Request ${item.title}`}
                             onClick={() => onRequest(item)}
                             className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-80 ${badgeClass} ${disabled ? '' : 'hover:bg-plex hover:text-background hover:border-plex'}`}
                         >

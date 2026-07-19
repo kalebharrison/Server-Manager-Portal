@@ -20,7 +20,9 @@ export const RequestMediaModalFooter: React.FC<{
     return (
         <div className="flex flex-col gap-3 border-t border-white/10 p-4 md:flex-row md:items-center md:justify-between md:p-5">
             <div className="text-xs text-muted">
-                {canRequest ? 'Requests are submitted to your configured request app.' : `${detail.title} is marked ${requestLabel.toLowerCase()}.`}
+                {canRequest
+                    ? (detail.mediaType === 'tv' ? 'Select seasons, then request.' : 'Submits to your configured request app.')
+                    : `${detail.title} is marked ${requestLabel.toLowerCase()}.`}
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                 {detail.plexUrl ? (
