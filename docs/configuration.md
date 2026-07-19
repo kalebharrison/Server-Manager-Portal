@@ -44,6 +44,12 @@ See [`.env.example`](../.env.example) for the full template.
 | Status | Monitored services and public status page |
 | System | Backups, diagnostics, background tasks |
 
+## Private homelab stack map (optional)
+
+For operator notes and API keys that should never hit git (Dockhand, Notifiarr, etc.), use [`.local/`](../.local/README.md). Copy the `*.example*` templates to `stack.env` / `stack.json`.
+
+Cloud agents only see committed examples unless the same values are added as **Cursor Cloud Environment** secrets.
+
 Library totals and the public status page require explicit admin opt-in. Member APIs remain authenticated regardless of those display toggles.
 
 ## Secrets at rest

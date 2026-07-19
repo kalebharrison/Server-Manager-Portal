@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "description": "Copy to .local/stack.json and edit. Prefer URLs/roles here; keep secrets in stack.env.",
+  "portal": {
+    "role": "member UX, Seerr proxy, membership sync, Discord invite + /request bot",
+    "publicUrl": "https://portal.example.com",
+    "deploy": {
+      "via": "dockhand",
+      "stackHint": "server-manager-portal"
+    }
+  },
+  "notifications": {
+    "discordMediaPosts": "notifiarr",
+    "discordRequestBot": "portal",
+    "discordInvite": "portal",
+    "note": "Leave portal channel webhook blank to avoid double posts with Notifiarr."
+  },
+  "services": [
+    {
+      "id": "dockhand",
+      "name": "Dockhand",
+      "role": "container redeploy / stack ops",
+      "urlEnv": "DOCKHAND_URL",
+      "tokenEnv": "DOCKHAND_API_TOKEN"
+    },
+    {
+      "id": "notifiarr",
+      "name": "Notifiarr",
+      "role": "Arr/Seerr/Plex → Discord (and other) notifications",
+      "urlEnv": "NOTIFIARR_URL",
+      "tokenEnv": "NOTIFIARR_API_KEY"
+    },
+    {
+      "id": "seerr",
+      "name": "Seerr / Jellyseerr",
+      "role": "request backend",
+      "urlEnv": "SEERR_URL",
+      "tokenEnv": "SEERR_API_KEY"
+    },
+    {
+      "id": "sonarr",
+      "name": "Sonarr",
+      "role": "TV acquisition",
+      "urlEnv": "SONARR_URL",
+      "tokenEnv": "SONARR_API_KEY"
+    },
+    {
+      "id": "radarr",
+      "name": "Radarr",
+      "role": "movie acquisition",
+      "urlEnv": "RADARR_URL",
+      "tokenEnv": "RADARR_API_KEY"
+    },
+    {
+      "id": "plex",
+      "name": "Plex",
+      "role": "media server",
+      "urlEnv": "PLEX_URL",
+      "tokenEnv": "PLEX_TOKEN"
+    }
+  ]
+}

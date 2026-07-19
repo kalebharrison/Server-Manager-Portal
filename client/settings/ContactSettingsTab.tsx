@@ -122,7 +122,7 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
         <div className="mb-4">
             <label htmlFor="discordWebhookUrl">Channel webhook URL (optional)</label>
             <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordWebhookUrl" type="password" value={discordWebhookUrl} onChange={(event) => onDiscordWebhookUrlChange(event.target.value)} placeholder="https://discord.com/api/webhooks/..." disabled={!discordEnabled} autoComplete="off" />
-            <div className="mt-2"><SettingHint>Portal posts request updates / issue replies / newly available titles here. Leave blank to keep Seerr-only Discord notify.</SettingHint></div>
+            <div className="mt-2"><SettingHint>Portal posts request updates / issue replies / newly available titles here. Leave blank if Seerr or Notifiarr already own Discord media posts.</SettingHint></div>
         </div>
         <div className="flex flex-col gap-2 mb-6">
             <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyRequestUpdates} onChange={(event) => onDiscordNotifyRequestUpdatesChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Post request approve / decline</span></label>

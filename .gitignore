@@ -10,7 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Vite / tool local files (e.g. foo.local) — not the .local/ secrets directory
 *.local
+!.local/
+!.local/**
 
 # Editor directories and files
 .vscode/*
@@ -64,3 +67,9 @@ static/tailwind.css
 # Local scratch
 /unneeded/
 /v2/
+
+# Private homelab stack (API keys, Dockhand, Notifiarr, etc.) — never commit secrets
+.local/*
+!.local/README.md
+!.local/*.example
+!.local/*.example.*

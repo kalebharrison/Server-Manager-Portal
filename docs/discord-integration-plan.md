@@ -2,9 +2,9 @@
 
 Goal: manage Discord invites + (optionally) a request bot from this portal, so Requestrr is no longer required.
 
-**Status (beta):** Phases 1–3 are implemented. Configure under Settings → Support & Announcements → Discord. Members link Discord user ID under Preferences and use Join Discord on the home Support card. `/request` slash command requires bot token + guild id; channel webhook posts are optional alongside Seerr Discord.
+**Status (beta):** Phases 1–3 are implemented. Configure under Settings → Support & Announcements → Discord. Members link Discord user ID under Preferences and use Join Discord on the home Support card. `/request` slash command requires bot token + guild id; channel webhook posts are optional alongside Seerr Discord / **Notifiarr**.
 
-Today the portal already owns the **web** request experience (Seerr/Jellyseerr proxy + membership sync). Requestrr only adds a **Discord** request surface. Discord media notifications can already live in Seerr — that does not have to move.
+Today the portal already owns the **web** request experience (Seerr/Jellyseerr proxy + membership sync). Requestrr only adds a **Discord** request surface. Discord media notifications can already live in Seerr or **Notifiarr** — that does not have to move.
 
 ---
 
@@ -15,7 +15,7 @@ Today the portal already owns the **web** request experience (Seerr/Jellyseerr p
 | Browse / request in the browser | Portal → Seerr API |
 | Member sync into Seerr | Portal (`Sync membership with Seerr`) |
 | Discord request slash-commands | Requestrr (external) |
-| “Movie ready” Discord posts / DMs | Usually **Seerr Discord agent** (your setup) |
+| “Movie ready” Discord posts / DMs | Usually **Seerr Discord** and/or **Notifiarr** |
 | Portal outbound notify | SMTP email only |
 
 There is **no** Discord bot, webhook, or invite config in this repo yet.
@@ -61,7 +61,7 @@ The **portal** posts selected events to a Discord channel (webhook or bot), for 
 - You’re happy managing Discord agents inside Seerr
 - You only wanted portal-managed **invites** + later a **request bot**
 
-**Recommended default for your setup:** skip or defer phase 2. Keep Seerr as the media notification engine. Phase 1 + phase 3 still replace Requestrr without touching Seerr notify.
+**Recommended default for your setup:** skip or defer phase 2. Keep Seerr and/or **Notifiarr** as the media notification engine. Phase 1 + phase 3 still replace Requestrr without touching those notifiers. If Notifiarr already posts grabbed/imported/available to Discord, leave the portal webhook blank.
 
 ### Consider moving (or dual-posting) if…
 - You want one admin surface for “where Discord stuff is configured” (portal settings only)
@@ -107,12 +107,14 @@ This is the actual Requestrr replacement: Discord slash commands / buttons that 
 ```text
 Portal (web requests + membership)
     │
-    ├─► Seerr ──► Discord media notifications  (keep, if already good)
+    ├─► Seerr ──► Notifiarr / Seerr Discord  (keep media posts here)
     │
     └─► Discord bot (phase 3) ──► same Seerr API path
             ▲
             └── invite link shown in portal (phase 1)
 ```
+
+Operator API map (Dockhand, Notifiarr keys, etc.): see [`.local/README.md`](../.local/README.md).
 
 ---
 
