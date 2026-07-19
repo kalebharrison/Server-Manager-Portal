@@ -1,12 +1,23 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { apiFetch, clearApiCache } from '../shared/api';
+import { apiFetch } from '../shared/api';
 import { portalUrl, stripBasePath } from '../shared/basePath';
+import { clearPortalViewCaches } from '../shared/sessionCaches';
 import { resolveHomeLanding, resolveLocale } from '../shared/userProfile';
 import type { AppRoute } from './types';
+
+const sessionIdentity = (data: any) => String(
+    data?.session?.accountId
+    || data?.session?.plexId
+    || data?.session?.jellyfinId
+    || data?.session?.username
+    || data?.account?.id
+    || ''
+);
 
 export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) => void) => {
     const [sessionInfo, setSessionInfo] = useState<any>(null);
     const sessionCheckSeq = useRef(0);
+    const sessionIdentityRef = useRef('');
     const publicStatusEnabledRef = useRef(publicConfig?.publicStatusEnabled);
     publicStatusEnabledRef.current = publicConfig?.publicStatusEnabled;
 
@@ -19,12 +30,16 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
         const params = new URLSearchParams(window.location.search);
         const loginError = params.get('loginError');
         if (loginError) {
+            clearPortalViewCaches();
+            sessionIdentityRef.current = '';
             setSessionInfo(null);
             updateRoute('login');
             return;
         }
 
         if (path.startsWith('/auth/')) {
+            clearPortalViewCaches();
+            sessionIdentityRef.current = '';
             setSessionInfo(null);
             updateRoute('login');
             return;
@@ -35,6 +50,14 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
             // Refresh session only; keep other API cache warm across navigations.
             const data = await apiFetch('/api/users/me', { forceRefresh: true, cacheTtlMs: 0 });
             if (seq !== sessionCheckSeq.current) return;
+            const nextIdentity = sessionIdentity(data);
+            if (sessionIdentityRef.current && sessionIdentityRef.current !== nextIdentity) {
+                clearPortalViewCaches();
+            } else if (!sessionIdentityRef.current && nextIdentity) {
+                // Fresh login into an already-mounted SPA — drop prior anonymous/stale views.
+                clearPortalViewCaches();
+            }
+            sessionIdentityRef.current = nextIdentity;
             setSessionInfo(data);
             if (data.serverName) document.title = `${data.serverName} Portal`;
             const locale = resolveLocale(data.account);
@@ -86,12 +109,14 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
             }
         } catch {
             if (seq !== sessionCheckSeq.current) return;
+            clearPortalViewCaches();
+            sessionIdentityRef.current = '';
+            setSessionInfo(null);
             if (path === '/status' && publicStatusEnabledRef.current !== false) {
                 updateRoute('status');
             } else if (path === '/dashboard') {
                 updateRoute('dashboard');
             } else {
-                setSessionInfo(null);
                 updateRoute('login');
             }
         }
@@ -111,19 +136,20 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
 
     const handleLogout = async () => {
         await apiFetch('/api/auth/logout', { method: 'POST' });
-        clearApiCache();
+        clearPortalViewCaches();
+        sessionIdentityRef.current = '';
         setSessionInfo(null);
     };
 
     const handleViewAsUser = async (userId: string) => {
         await apiFetch(`/api/admin/impersonate/${encodeURIComponent(userId)}`, { method: 'POST' });
-        clearApiCache();
+        clearPortalViewCaches();
         await checkSession();
     };
 
     const handleStopImpersonation = async () => {
         await apiFetch('/api/admin/stop-impersonation', { method: 'POST' });
-        clearApiCache();
+        clearPortalViewCaches();
         await checkSession();
     };
 

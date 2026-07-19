@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpCircle, CircleHelp, DownloadCloud, Film, Music, Sparkles, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
@@ -72,15 +72,18 @@ const DownloadPosterCard: React.FC<{ item: any }> = ({ item }) => {
 export const DiscoverDownloadsSection: React.FC<{ useScrollRevealAnimations?: boolean }> = ({ useScrollRevealAnimations }) => {
     const [downloads, setDownloads] = useState<any[]>([]);
     const [loaded, setLoaded] = useState(false);
+    const initialLoadRef = useRef(true);
 
     const loadDownloads = useCallback(async () => {
+        const forceRefresh = initialLoadRef.current;
+        initialLoadRef.current = false;
         try {
-            const queue = await apiFetch('/api/media-stack/queue', { cacheTtlMs: 15_000 });
+            const queue = await apiFetch('/api/media-stack/queue', { cacheTtlMs: 15_000, forceRefresh });
             const next = [
                 ...mapQueueRecords(queueRecords(queue?.sonarr?.queue), 'Sonarr'),
                 ...mapQueueRecords(queueRecords(queue?.radarr?.queue), 'Radarr'),
                 ...mapQueueRecords(queueRecords(queue?.lidarr?.queue), 'Lidarr'),
-            ].filter((item) => item.hasMediaTitle && item.progress >= 0);
+            ].filter((item) => item.hasMediaTitle && item.progress >= 0 && item.progress < 100);
             setDownloads(next);
         } catch {
             setDownloads([]);
@@ -93,7 +96,7 @@ export const DiscoverDownloadsSection: React.FC<{ useScrollRevealAnimations?: bo
         loadDownloads();
     }, [loadDownloads]);
 
-    useVisibleInterval(loadDownloads, 30000);
+    useVisibleInterval(loadDownloads, 15_000);
 
     const visibleDownloads = useMemo(() => downloads.slice(0, 20), [downloads]);
     if (!loaded) {
