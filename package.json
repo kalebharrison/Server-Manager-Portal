@@ -21,6 +21,7 @@
   "dependencies": {
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
+    "discord.js": "^14.27.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^9.0.1"

@@ -10,6 +10,8 @@ export const ProfileSection: React.FC<SectionProps> = ({ account, readOnly, pref
         setDisplayName,
         contactEmail,
         setContactEmail,
+        discordId,
+        setDiscordId,
         saving,
         setMessage,
         accountUsername,
@@ -25,7 +27,7 @@ export const ProfileSection: React.FC<SectionProps> = ({ account, readOnly, pref
                 <div>
                     <h2 className="font-bold text-text">Profile</h2>
                     <p className="text-sm text-muted mt-1">
-                        Display name and optional contact email for portal notices.
+                        Display name, contact email, and Discord link for portal notices / request bot.
                         {accountUsername ? ` Account username stays ${accountUsername}.` : ''}
                     </p>
                 </div>
@@ -78,6 +80,26 @@ export const ProfileSection: React.FC<SectionProps> = ({ account, readOnly, pref
                     </button>
                 </div>
                 <p className="text-xs text-muted">Leave blank to use your linked account email{account?.email ? ` (${account.email})` : ''}.</p>
+                <label className="text-sm text-text mt-2">Discord user ID</label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                        type="text"
+                        value={discordId}
+                        disabled={readOnly || saving}
+                        onChange={(event) => setDiscordId(event.target.value)}
+                        placeholder="Numeric Discord snowflake"
+                        className="w-full sm:flex-1 p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all disabled:opacity-50"
+                    />
+                    <button
+                        type="button"
+                        disabled={readOnly || saving}
+                        onClick={() => void saveAccountPrefs({ discordId: String(discordId || '').trim() }, String(discordId || '').trim() ? 'Discord ID saved.' : 'Discord ID cleared.')}
+                        className="px-5 py-3 bg-plex text-background rounded-md font-bold hover:bg-plex-hover transition-colors disabled:opacity-50"
+                    >
+                        Save Discord
+                    </button>
+                </div>
+                <p className="text-xs text-muted">Discord → Settings → Advanced → Developer Mode, then right-click your avatar → Copy User ID. Needed for `/request` in Discord.</p>
             </div>
         </section>
     );

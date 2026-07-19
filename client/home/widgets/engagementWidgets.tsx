@@ -76,6 +76,17 @@ export const renderEngagementWidget = (
                         </div>
                     )}
                     <div className="flex flex-col gap-3 mt-auto">
+                        {publicConfig?.discordEnabled && publicConfig?.discordInviteUrl && (
+                            <a href={publicConfig.discordInviteUrl} target="_blank" rel="noreferrer"
+                                className="w-full flex flex-col items-center justify-center gap-1 px-4 py-2.5 rounded-xl font-bold text-xs transition-all border bg-[#5865F2]/15 border-[#5865F2]/40 text-[#c7d2fe] hover:bg-[#5865F2]/25">
+                                <span>Join Discord</span>
+                                {(publicConfig.discordChatChannelLabel || publicConfig.discordMediaChannelLabel) && (
+                                    <span className="font-medium text-[10px] text-[#a5b4fc]">
+                                        {[publicConfig.discordChatChannelLabel, publicConfig.discordMediaChannelLabel].filter(Boolean).join(' · ')}
+                                    </span>
+                                )}
+                            </a>
+                        )}
                         {publicConfig?.contactWhatsApp && (
                             <a href={`https://wa.me/${publicConfig.contactWhatsApp}`} target="_blank" rel="noreferrer"
                                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all border bg-[#25D366]/10 border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20">

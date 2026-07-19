@@ -2,6 +2,8 @@
 
 Goal: manage Discord invites + (optionally) a request bot from this portal, so Requestrr is no longer required.
 
+**Status (beta):** Phases 1–3 are implemented. Configure under Settings → Support & Announcements → Discord. Members link Discord user ID under Preferences and use Join Discord on the home Support card. `/request` slash command requires bot token + guild id; channel webhook posts are optional alongside Seerr Discord.
+
 Today the portal already owns the **web** request experience (Seerr/Jellyseerr proxy + membership sync). Requestrr only adds a **Discord** request surface. Discord media notifications can already live in Seerr — that does not have to move.
 
 ---

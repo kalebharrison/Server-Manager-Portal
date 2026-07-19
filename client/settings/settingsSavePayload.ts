@@ -25,6 +25,17 @@ type SettingsSavePayloadInput = {
     contactUrl: string;
     contactWhatsApp: string;
     contactEmail: string;
+    discordEnabled: boolean;
+    discordInviteUrl: string;
+    discordChatChannelLabel: string;
+    discordMediaChannelLabel: string;
+    discordGuildId: string;
+    discordBotToken: string;
+    discordBotEnabled: boolean;
+    discordWebhookUrl: string;
+    discordNotifyRequestUpdates: boolean;
+    discordNotifyIssueReplies: boolean;
+    discordNotifyWatchlistAvailable: boolean;
     arrInstances: ArrInstance[];
     tautulliUrl: string;
     tautulliApiKey: string;

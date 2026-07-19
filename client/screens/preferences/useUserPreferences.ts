@@ -19,6 +19,7 @@ export const useUserPreferences = (
     const [newsletterEnabled, setNewsletterEnabled] = useState(wantsNewsletter(account));
     const [displayName, setDisplayName] = useState(sanitizeDisplayName(account?.displayName));
     const [contactEmail, setContactEmail] = useState(String(account?.contactEmail || ''));
+    const [discordId, setDiscordId] = useState(String(account?.discordId || ''));
     const [notifyAccessExpiry, setNotifyAccessExpiry] = useState(account?.notifyAccessExpiry === true);
     const [notifyRequestUpdates, setNotifyRequestUpdates] = useState(account?.notifyRequestUpdates === true);
     const [notifyIssueReplies, setNotifyIssueReplies] = useState(account?.notifyIssueReplies === true);
@@ -37,6 +38,7 @@ export const useUserPreferences = (
         setNewsletterEnabled(wantsNewsletter(account));
         setDisplayName(sanitizeDisplayName(account?.displayName));
         setContactEmail(String(account?.contactEmail || ''));
+        setDiscordId(String(account?.discordId || ''));
         setNotifyAccessExpiry(account?.notifyAccessExpiry === true);
         setNotifyRequestUpdates(account?.notifyRequestUpdates === true);
         setNotifyIssueReplies(account?.notifyIssueReplies === true);
@@ -86,6 +88,8 @@ export const useUserPreferences = (
         setDisplayName,
         contactEmail,
         setContactEmail,
+        discordId,
+        setDiscordId,
         notifyAccessExpiry,
         setNotifyAccessExpiry,
         notifyRequestUpdates,
