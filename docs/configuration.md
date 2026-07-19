@@ -38,6 +38,7 @@ See [`.env.example`](../.env.example) for the full template.
 | Request membership sync | Import/remove Seerr users when portal membership changes |
 | Access & privacy | Referrals, public login stats, status page visibility, stream privacy |
 | Branding | Theme, logo, animations, poster badges |
+| Support → Discord | Invite URL, optional channel webhook posts, `/request` bot token/guild (see [Discord plan](./discord-integration-plan.md)) |
 | Home layout | Section order/visibility for member home |
 | SMTP / newsletter | Outbound mail and newsletter schedule |
 | Status | Monitored services and public status page |
