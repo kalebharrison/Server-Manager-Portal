@@ -35,6 +35,8 @@ When Seerr/Jellyseerr is configured and **Sync membership with Seerr** is enable
 
 Members do not use the Seerr UI; the portal proxies request browsing and submission.
 
+Discord invite / request-bot work is planned separately; see [Discord integration plan](./discord-integration-plan.md). Seerr can keep owning Discord “media ready” notifications even if the portal later hosts a request bot.
+
 ## Data
 
 Runtime JSON lives in `CONFIG_DIR` (default `./config` or `/app/config`):
