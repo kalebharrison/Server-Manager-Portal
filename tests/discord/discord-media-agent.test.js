@@ -190,7 +190,7 @@ test('agent refuses off-topic without calling the LLM', async () => {
     assert.equal(called, false);
 });
 
-test('agent nudges then accepts clean finish after finish.* leakage', async () => {
+test('agent finalizes from Seerr hits when model dumps finish.* text', async () => {
     let chatRound = 0;
     const agent = createDiscordMediaAgent({
         fetchImpl: async (url) => {
@@ -218,41 +218,17 @@ test('agent nudges then accepts clean finish after finish.* leakage', async () =
                         }),
                     };
                 }
-                if (chatRound === 2) {
-                    return {
-                        ok: true,
-                        json: async () => ({
-                            choices: [{
-                                message: {
-                                    role: 'assistant',
-                                    content: [
-                                        'Army of the Dead (2021) is a zombie casino heist.',
-                                        'finish.candidates: ["Army of the Dead (2021)"]',
-                                        'finish.answer: Let\'s watch it!',
-                                    ].join('\n'),
-                                },
-                            }],
-                        }),
-                    };
-                }
                 return {
                     ok: true,
                     json: async () => ({
                         choices: [{
                             message: {
                                 role: 'assistant',
-                                content: null,
-                                tool_calls: [{
-                                    id: 'call_finish',
-                                    type: 'function',
-                                    function: {
-                                        name: 'finish',
-                                        arguments: JSON.stringify({
-                                            answer: 'Army of the Dead (2021) is a zombie casino heist on Seerr.',
-                                            candidates: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead' }],
-                                        }),
-                                    },
-                                }],
+                                content: [
+                                    'Army of the Dead (2021) is a zombie casino heist.',
+                                    'finish.candidates: ["Army of the Dead (2021)"]',
+                                    'finish.answer: Let\'s watch it!',
+                                ].join('\n'),
                             },
                         }],
                     }),
@@ -276,8 +252,55 @@ test('agent nudges then accepts clean finish after finish.* leakage', async () =
     });
     const outcome = await agent.run(agentConfig, 'zombie casino movie');
     assert.equal(outcome.ok, true);
-    assert.equal(chatRound, 3);
+    assert.equal(chatRound, 2);
     assert.match(outcome.answer, /Army of the Dead/);
     assert.doesNotMatch(outcome.answer, /finish\./i);
     assert.equal(outcome.results[0]?.tmdbId, 503736);
+});
+
+test('agent synthesizes finish from Seerr hits when rounds exhaust', async () => {
+    let chatRound = 0;
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url) => {
+            const href = String(url);
+            if (!href.includes('/chat/completions')) throw new Error(`Unexpected fetch ${href}`);
+            chatRound += 1;
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [{
+                        message: {
+                            role: 'assistant',
+                            content: null,
+                            tool_calls: [{
+                                id: `call_search_${chatRound}`,
+                                type: 'function',
+                                function: {
+                                    name: 'search_titles',
+                                    arguments: JSON.stringify({ query: 'Remains' }),
+                                },
+                            }],
+                        },
+                    }],
+                }),
+            };
+        },
+        getRequestAppService: () => ({
+            search: async () => ({
+                results: [{ mediaType: 'movie', tmdbId: 71676, title: 'Remains', year: '2011' }],
+            }),
+            getMediaDetails: async (_config, { mediaType, tmdbId }) => ({
+                mediaType,
+                tmdbId,
+                title: 'Remains',
+                year: '2011',
+                available: false,
+                canRequest: true,
+            }),
+        }),
+    });
+    const outcome = await agent.run(agentConfig, 'what about Remains 2011');
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.results[0]?.tmdbId, 71676);
+    assert.match(outcome.answer, /titles that may match|Remains/i);
 });
