@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createDiscordMediaAgent, isDiscordAgentReady } from '../../lib/discord/discord-media-agent.js';
+import {
+    cleanAgentAnswer,
+    createDiscordMediaAgent,
+    extractFinishFromContent,
+    isDiscordAgentReady,
+} from '../../lib/discord/discord-media-agent.js';
 
 const agentConfig = {
     discordAgentEnabled: true,
@@ -121,4 +126,16 @@ test('agent fails clearly when model skips tools', async () => {
     const outcome = await agent.run(agentConfig, 'recommend a movie');
     assert.equal(outcome.ok, false);
     assert.match(outcome.answer, /did not use discovery tools/i);
+});
+
+test('cleanAgentAnswer strips Finish: leakage', () => {
+    assert.equal(
+        cleanAgentAnswer("Finish: The movie 'Remains' (2011) can be requested."),
+        "The movie 'Remains' (2011) can be requested.",
+    );
+});
+
+test('extractFinishFromContent parses Finish dumps', () => {
+    const parsed = extractFinishFromContent("Some notes\nFinish: Remains (2011) is requestable.");
+    assert.equal(parsed.answer, 'Remains (2011) is requestable.');
 });
