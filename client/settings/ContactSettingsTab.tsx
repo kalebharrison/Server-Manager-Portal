@@ -21,6 +21,8 @@ type ContactSettingsTabProps = {
     discordLlmUrl: string;
     discordLlmApiKey: string;
     discordLlmModel: string;
+    discordAgentEnabled: boolean;
+    discordSearxngUrl: string;
     discordMentionNl: boolean;
     announcement: string;
     isPushingAnnouncement: boolean;
@@ -42,6 +44,8 @@ type ContactSettingsTabProps = {
     onDiscordLlmUrlChange: (value: string) => void;
     onDiscordLlmApiKeyChange: (value: string) => void;
     onDiscordLlmModelChange: (value: string) => void;
+    onDiscordAgentEnabledChange: (value: boolean) => void;
+    onDiscordSearxngUrlChange: (value: string) => void;
     onDiscordMentionNlChange: (value: boolean) => void;
     onAnnouncementChange: (value: string) => void;
     onPushAnnouncement: () => void;
@@ -66,6 +70,8 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
     discordLlmUrl,
     discordLlmApiKey,
     discordLlmModel,
+    discordAgentEnabled,
+    discordSearxngUrl,
     discordMentionNl,
     announcement,
     isPushingAnnouncement,
@@ -87,6 +93,8 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
     onDiscordLlmUrlChange,
     onDiscordLlmApiKeyChange,
     onDiscordLlmModelChange,
+    onDiscordAgentEnabledChange,
+    onDiscordSearxngUrlChange,
     onDiscordMentionNlChange,
     onAnnouncementChange,
     onPushAnnouncement,
@@ -179,7 +187,17 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
         </div>
         <div className="mb-4">
             <label htmlFor="discordLlmApiKey">LLM API key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmApiKey" type="password" value={discordLlmApiKey} onChange={(event) => onDiscordLlmApiKeyChange(event.target.value)} placeholder="Bearer token for LiteLLM / OpenAI" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} autoComplete="off" />
+            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmApiKey" type="password" value={discordLlmApiKey} onChange={(event) => onDiscordLlmApiKeyChange(event.target.value)} placeholder="ollama (any non-empty) or cloud API key" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} autoComplete="off" />
+            <SettingHint>OpenAI-compatible endpoint — Ollama (`…:11434/v1`) or external LiteLLM/OpenAI. Model should support tool calling for discovery.</SettingHint>
+        </div>
+        <label className="flex items-center gap-3 mb-4 cursor-pointer">
+            <input type="checkbox" checked={discordAgentEnabled} onChange={(event) => onDiscordAgentEnabledChange(event.target.checked)} disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
+            <span className="text-sm text-text">Enable media discovery agent on `/ask` (web research + Seerr)</span>
+        </label>
+        <div className="mb-4">
+            <label htmlFor="discordSearxngUrl">SearXNG base URL</label>
+            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordSearxngUrl" type="url" value={discordSearxngUrl} onChange={(event) => onDiscordSearxngUrlChange(event.target.value)} placeholder="http://searxng:8080" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled || !discordAgentEnabled} />
+            <SettingHint>Self-hosted SearXNG with `search.formats` including `json`. No API key. Portal must reach this host from Docker.</SettingHint>
         </div>
         <label className="flex items-center gap-3 mb-4 cursor-pointer">
             <input type="checkbox" checked={discordMentionNl} onChange={(event) => onDiscordMentionNlChange(event.target.checked)} disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
@@ -187,7 +205,7 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
         </label>
         <div className="mb-8">
             <SettingHint>
-                Members paste their Discord user ID under Preferences. Commands: `/request`, `/myrequests`, `/issue`, `/stats`, `/live`, `/queue`, `/status`, `/discover`, `/ask`, `/help`. Phrase matching works without an LLM; enable LLM for freer wording.
+                Members paste their Discord user ID under Preferences. Ops phrases (`my stats`, queue, live) stay instant. Discovery asks use the agent when LLM + SearXNG are set.
             </SettingHint>
         </div>
 

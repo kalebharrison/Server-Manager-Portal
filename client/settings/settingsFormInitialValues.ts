@@ -45,6 +45,8 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     discordLlmUrl: '',
     discordLlmApiKey: '',
     discordLlmModel: 'gpt-4o-mini',
+    discordAgentEnabled: true,
+    discordSearxngUrl: '',
     discordMentionNl: false,
     inactiveCleanupEnabled: false,
     inactiveCleanupDays: 90,

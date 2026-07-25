@@ -42,6 +42,8 @@ type SettingsHydrationSetters = {
     setDiscordLlmUrl: (value: string) => void;
     setDiscordLlmApiKey: (value: string) => void;
     setDiscordLlmModel: (value: string) => void;
+    setDiscordAgentEnabled: (value: boolean) => void;
+    setDiscordSearxngUrl: (value: string) => void;
     setDiscordMentionNl: (value: boolean) => void;
     setArrInstances: (value: ArrInstance[]) => void;
     setTautulliUrl: (value: string) => void;
@@ -126,6 +128,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setDiscordLlmUrl(initialSettings.discordLlmUrl || '');
     setters.setDiscordLlmApiKey(initialSettings.discordLlmApiKey || '');
     setters.setDiscordLlmModel(initialSettings.discordLlmModel || 'gpt-4o-mini');
+    setters.setDiscordAgentEnabled(initialSettings.discordAgentEnabled !== false);
+    setters.setDiscordSearxngUrl(initialSettings.discordSearxngUrl || '');
     setters.setDiscordMentionNl(!!initialSettings.discordMentionNl);
     setters.setArrInstances(Array.isArray(initialSettings.arrInstances) ? initialSettings.arrInstances : []);
     setters.setTautulliUrl(initialSettings.tautulliUrl || '');

@@ -67,6 +67,8 @@ export const useSettingsHydration = ({
             setDiscordLlmUrl: set('discordLlmUrl'),
             setDiscordLlmApiKey: set('discordLlmApiKey'),
             setDiscordLlmModel: set('discordLlmModel'),
+            setDiscordAgentEnabled: set('discordAgentEnabled'),
+            setDiscordSearxngUrl: set('discordSearxngUrl'),
             setDiscordMentionNl: set('discordMentionNl'),
             setArrInstances: set('arrInstances'),
             setTautulliUrl: set('tautulliUrl'),

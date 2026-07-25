@@ -39,17 +39,32 @@ Members must paste their Discord user ID under Preferences (Developer Mode → C
 
 ---
 
-## Natural language
+## Natural language + media discovery agent
 
 | Mode | Behavior |
 |---|---|
-| LLM off | `/ask` uses phrase matchers (`request dune`, `my stats`, `open issues`, `what's downloading`, …) |
-| LLM on | OpenAI-compatible client (`discordLlmUrl` + key + model, e.g. LiteLLM) returns structured JSON intent → same handlers |
-| Unclear | Bot replies with `/help` suggestions |
+| Ops phrases | Instant fixed handlers (`my stats`, queue, live, status, issues, discover trending, help) |
+| Media agent on | Discovery `/ask` uses a tool-calling agent: **SearXNG web search** → Seerr/TMDB resolve → answer + request buttons |
+| Agent off / incomplete config | Legacy phrase matchers + optional JSON intent LLM (title/person/theme shortcuts) |
+| Unclear (no agent) | Bot replies with `/help` suggestions |
 
-Optional `@bot …` mention routing requires enabling **Message Content Intent** in the Discord Developer Portal and the portal setting “Allow @bot natural language”.
+The agent needs:
 
-Settings fields: `discordLlmEnabled`, `discordLlmUrl`, `discordLlmApiKey`, `discordLlmModel`, `discordMentionNl`.
+1. **OpenAI-compatible LLM** (`discordLlmUrl` + non-empty `discordLlmApiKey` + `discordLlmModel`) — Ollama on LAN (`http://jetson01…:11434/v1`) or external LiteLLM/OpenAI. Prefer a **tool-calling** model (e.g. `qwen2.5:7b`).
+2. **SearXNG** (`discordSearxngUrl`) — free self-hosted search. Enable JSON in SearXNG `settings.yml`:
+
+```yaml
+search:
+  formats:
+    - html
+    - json
+```
+
+Portal container must reach SearXNG (use LAN hostname, not `localhost` from inside Docker). No SearXNG API key.
+
+Settings: `discordLlmEnabled`, `discordLlmUrl`, `discordLlmApiKey`, `discordLlmModel`, `discordAgentEnabled`, `discordSearxngUrl`, `discordMentionNl`.
+
+Optional `@bot …` mention routing requires **Message Content Intent** and “Allow @bot natural language”.
 
 ---
 
@@ -81,7 +96,8 @@ Operator API map (Dockhand, Notifiarr keys, etc.): see [`.local/README.md`](../.
 - [ ] Linked member: TV title → season buttons → confirm  
 - [ ] `/myrequests`, `/stats`, `/live`, `/queue`, `/status`, `/discover`, `/help`  
 - [ ] `/issue report` + `/issue list`  
-- [ ] `/ask request <title>` (phrase) and optional LLM `/ask`  
+- [ ] `/ask what's downloading` (ops phrase)  
+- [ ] `/ask` multi-constraint discovery with agent + SearXNG (e.g. zombie movie in a casino) → researched titles + request buttons  
 - [ ] Revoked or unlinked Discord ID is denied with Preferences hint  
 - [ ] Portal webhook blank while Notifiarr posts media events (no double posts)
 

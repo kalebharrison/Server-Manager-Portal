@@ -40,6 +40,8 @@ type SettingsSavePayloadInput = {
     discordLlmUrl: string;
     discordLlmApiKey: string;
     discordLlmModel: string;
+    discordAgentEnabled: boolean;
+    discordSearxngUrl: string;
     discordMentionNl: boolean;
     arrInstances: ArrInstance[];
     tautulliUrl: string;

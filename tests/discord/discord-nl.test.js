@@ -95,3 +95,24 @@ test('parseIntent uses mocked LLM when phrases miss', async () => {
     }, 'how am I doing lately');
     assert.deepEqual(result, { intent: 'stats.me', params: {} });
 });
+
+test('routeAskIntent keeps ops phrases on fixed handlers', async () => {
+    const nl = createDiscordNlParser();
+    const result = await nl.routeAskIntent({}, "what's downloading", { agentReady: true });
+    assert.equal(result.intent, 'queue.list');
+});
+
+test('routeAskIntent sends discovery to agent when ready', async () => {
+    const nl = createDiscordNlParser();
+    const text = "I'm looking for a zombie movie that's set in a casino";
+    const result = await nl.routeAskIntent({}, text, { agentReady: true });
+    assert.deepEqual(result, { intent: 'agent.discover', params: { query: text } });
+});
+
+test('routeAskIntent falls back to theme phrase when agent not ready', async () => {
+    const nl = createDiscordNlParser();
+    const result = await nl.routeAskIntent({ discordLlmEnabled: false }, "what's the latest zombie movie", {
+        agentReady: false,
+    });
+    assert.equal(result.intent, 'request.discover_theme');
+});

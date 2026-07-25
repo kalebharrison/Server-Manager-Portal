@@ -34,6 +34,8 @@ test('buildDiscordConfigFields preserves masked secrets', () => {
             discordLlmApiKey: mask,
             discordLlmModel: 'gpt-4o-mini',
             discordMentionNl: true,
+            discordAgentEnabled: true,
+            discordSearxngUrl: 'http://searxng:8080/',
         },
         existingConfig: {
             discordBotToken: 'real-bot-token',
@@ -50,6 +52,8 @@ test('buildDiscordConfigFields preserves masked secrets', () => {
     assert.equal(fields.discordLlmUrl, 'http://litellm:4000/v1');
     assert.equal(fields.discordLlmApiKey, 'real-llm-key');
     assert.equal(fields.discordMentionNl, true);
+    assert.equal(fields.discordAgentEnabled, true);
+    assert.equal(fields.discordSearxngUrl, 'http://searxng:8080');
 });
 
 test('public discord config hides secrets', () => {
