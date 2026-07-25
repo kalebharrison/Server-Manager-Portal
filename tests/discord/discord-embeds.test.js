@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
     DISCORD_COLORS,
     mediaEmbed,
+    mediaTypeLabel,
     parseCustomId,
     resolveDiscordPosterUrl,
     statusColor,
@@ -37,6 +38,12 @@ test('resolveDiscordPosterUrl unwraps portal proxy and posterPath', () => {
     );
 });
 
+test('mediaTypeLabel uses portal-friendly casing', () => {
+    assert.equal(mediaTypeLabel('movie'), 'Movie');
+    assert.equal(mediaTypeLabel('tv'), 'TV');
+    assert.equal(mediaTypeLabel('MOVIE'), 'Movie');
+});
+
 test('mediaEmbed shapes title status and optional poster', () => {
     const embed = mediaEmbed({
         title: 'Dune',
@@ -52,6 +59,7 @@ test('mediaEmbed shapes title status and optional poster', () => {
     assert.equal(data.thumbnail.url, 'https://image.tmdb.org/t/p/w500/poster.jpg');
     assert.equal(data.footer.text, 'as alice');
     assert.ok(data.fields.some((field) => field.name === 'Status' && field.value === 'Available'));
+    assert.ok(data.fields.some((field) => field.name === 'Type' && field.value === 'Movie'));
 });
 
 test('mediaEmbed largeImage uses setImage', () => {
