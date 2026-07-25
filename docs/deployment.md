@@ -92,17 +92,7 @@ The live portal at `https://plex.lostwaldo.net` is **not** updated by manual `do
 ### Normal beta release flow
 
 1. Push to `beta` (CI builds and pushes the GHCR image).
-2. Refresh Dockhand stack 151 (Sync + Deploy). Prefer the local scripts (no 1Password on each run):
-
-```bash
-# Once per machine (single 1Password unlock):
-./scripts/dockhand-auth-cache.sh
-
-# After CI publishes the image:
-./scripts/dockhand-deploy.sh
-```
-
-Do **not** recreate the container on unraid01 by hand. Do **not** `op inject` the full `.local/stack.env` for deploys — that file has many `op://` refs and causes repeated 1Password prompts.
+2. Let Dockhand refresh the stack (webhook/CI or manual **Sync** then **Deploy** on stack 151). Do **not** recreate the container on unraid01 by hand.
 
 ### Orphan container / name conflict
 
