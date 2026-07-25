@@ -15,7 +15,24 @@ Agents (and you) need a single place for:
 |---|---|
 | `stack.env` | Secrets + base URLs as env vars (copy from `stack.example.env`) |
 | `stack.json` | Non-secret inventory: hosts, roles, which notifier owns Discord (copy from `stack.example.json`) |
+| `dockhand.agent.env` | **Cached** Dockhand login (no `op://`). Create once — see below |
 | `notes.md` | Freeform “how I run this” notes |
+
+### Dockhand deploys without 1Password spam
+
+`stack.env` uses many `op://` refs. Injecting the whole file prompts 1Password repeatedly.
+
+For Dockhand only:
+
+```bash
+# One unlock (writes .local/dockhand.agent.env)
+./scripts/dockhand-auth-cache.sh
+
+# Every beta deploy after CI — never calls `op`
+./scripts/dockhand-deploy.sh
+```
+
+Agents should use `./scripts/dockhand-deploy.sh` and **must not** `op inject` the full `stack.env` just to redeploy.
 
 ```bash
 cp .local/stack.example.env .local/stack.env
