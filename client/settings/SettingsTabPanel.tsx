@@ -15,6 +15,7 @@ const BrandingSettingsTab = lazyTab(() => import('./BrandingSettingsTab').then(m
 const BroadcastTab = lazyTab(() => import('./BroadcastTab').then(module => ({ default: module.BroadcastTab })));
 const CleanupSettingsTab = lazyTab(() => import('./CleanupSettingsTab').then(module => ({ default: module.CleanupSettingsTab })));
 const ContactSettingsTab = lazyTab(() => import('./ContactSettingsTab').then(module => ({ default: module.ContactSettingsTab })));
+const DiscordSettingsTab = lazyTab(() => import('./DiscordSettingsTab').then(module => ({ default: module.DiscordSettingsTab })));
 const HomeLayoutSettings = lazyTab(() => import('./HomeLayoutSettings').then(module => ({ default: module.HomeLayoutSettings })));
 const InvitesSettings = lazyTab(() => import('./InvitesSettings').then(module => ({ default: module.InvitesSettings })));
 const LogsAuditTab = lazyTab(() => import('./LogsAuditTab').then(module => ({ default: module.LogsAuditTab })));
@@ -49,6 +50,7 @@ export type SettingsTabPanelProps = {
     broadcast: TabProps;
     status: TabProps;
     contact: TabProps;
+    discord: TabProps;
     branding: TabProps;
     invites: TabProps;
     tasks: TabProps;
@@ -72,6 +74,7 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
     broadcast,
     status,
     contact,
+    discord,
     branding,
     invites,
     tasks,
@@ -100,6 +103,7 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
         {activeTab === 'broadcast' && <BroadcastTab {...broadcast} />}
         {activeTab === 'status' && <StatusSettingsTab {...status} appConfirm={appConfirm} addToast={addToast} />}
         {activeTab === 'contact' && <ContactSettingsTab {...contact} />}
+        {activeTab === 'discord' && <DiscordSettingsTab {...discord} />}
         {activeTab === 'branding' && <BrandingSettingsTab {...branding} />}
         {activeTab === 'invites' && <InvitesSettings {...invites} />}
         {activeTab === 'tasks' && <BackgroundTasksTab {...tasks} />}

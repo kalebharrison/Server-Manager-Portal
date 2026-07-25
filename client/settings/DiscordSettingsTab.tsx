@@ -1,0 +1,109 @@
+import React from 'react';
+
+import { DiscordBotSection } from './DiscordBotSection';
+import { DiscordHubSection } from './DiscordHubSection';
+import { DiscordLlmSection } from './DiscordLlmSection';
+import { DiscordSearchSection } from './DiscordSearchSection';
+
+export type DiscordSettingsTabProps = {
+    discordEnabled: boolean;
+    discordInviteUrl: string;
+    discordChatChannelLabel: string;
+    discordMediaChannelLabel: string;
+    discordGuildId: string;
+    discordBotToken: string;
+    discordBotEnabled: boolean;
+    discordWebhookUrl: string;
+    discordNotifyRequestUpdates: boolean;
+    discordNotifyIssueReplies: boolean;
+    discordNotifyWatchlistAvailable: boolean;
+    discordLlmEnabled: boolean;
+    discordLlmUrl: string;
+    discordLlmApiKey: string;
+    discordLlmModel: string;
+    discordAgentEnabled: boolean;
+    discordSearxngUrl: string;
+    discordBraveSearchApiKey: string;
+    discordTavilyApiKey: string;
+    discordMentionNl: boolean;
+    onDiscordEnabledChange: (value: boolean) => void;
+    onDiscordInviteUrlChange: (value: string) => void;
+    onDiscordChatChannelLabelChange: (value: string) => void;
+    onDiscordMediaChannelLabelChange: (value: string) => void;
+    onDiscordGuildIdChange: (value: string) => void;
+    onDiscordBotTokenChange: (value: string) => void;
+    onDiscordBotEnabledChange: (value: boolean) => void;
+    onDiscordWebhookUrlChange: (value: string) => void;
+    onDiscordNotifyRequestUpdatesChange: (value: boolean) => void;
+    onDiscordNotifyIssueRepliesChange: (value: boolean) => void;
+    onDiscordNotifyWatchlistAvailableChange: (value: boolean) => void;
+    onDiscordLlmEnabledChange: (value: boolean) => void;
+    onDiscordLlmUrlChange: (value: string) => void;
+    onDiscordLlmApiKeyChange: (value: string) => void;
+    onDiscordLlmModelChange: (value: string) => void;
+    onDiscordAgentEnabledChange: (value: boolean) => void;
+    onDiscordSearxngUrlChange: (value: string) => void;
+    onDiscordBraveSearchApiKeyChange: (value: string) => void;
+    onDiscordTavilyApiKeyChange: (value: string) => void;
+    onDiscordMentionNlChange: (value: boolean) => void;
+};
+
+export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => (
+    <div className="mb-8">
+        <DiscordHubSection
+            discordEnabled={props.discordEnabled}
+            discordInviteUrl={props.discordInviteUrl}
+            discordChatChannelLabel={props.discordChatChannelLabel}
+            discordMediaChannelLabel={props.discordMediaChannelLabel}
+            discordWebhookUrl={props.discordWebhookUrl}
+            discordNotifyRequestUpdates={props.discordNotifyRequestUpdates}
+            discordNotifyIssueReplies={props.discordNotifyIssueReplies}
+            discordNotifyWatchlistAvailable={props.discordNotifyWatchlistAvailable}
+            onDiscordEnabledChange={props.onDiscordEnabledChange}
+            onDiscordInviteUrlChange={props.onDiscordInviteUrlChange}
+            onDiscordChatChannelLabelChange={props.onDiscordChatChannelLabelChange}
+            onDiscordMediaChannelLabelChange={props.onDiscordMediaChannelLabelChange}
+            onDiscordWebhookUrlChange={props.onDiscordWebhookUrlChange}
+            onDiscordNotifyRequestUpdatesChange={props.onDiscordNotifyRequestUpdatesChange}
+            onDiscordNotifyIssueRepliesChange={props.onDiscordNotifyIssueRepliesChange}
+            onDiscordNotifyWatchlistAvailableChange={props.onDiscordNotifyWatchlistAvailableChange}
+        />
+        <DiscordBotSection
+            discordEnabled={props.discordEnabled}
+            discordBotEnabled={props.discordBotEnabled}
+            discordGuildId={props.discordGuildId}
+            discordBotToken={props.discordBotToken}
+            onDiscordBotEnabledChange={props.onDiscordBotEnabledChange}
+            onDiscordGuildIdChange={props.onDiscordGuildIdChange}
+            onDiscordBotTokenChange={props.onDiscordBotTokenChange}
+        />
+        <DiscordLlmSection
+            discordEnabled={props.discordEnabled}
+            discordBotEnabled={props.discordBotEnabled}
+            discordLlmEnabled={props.discordLlmEnabled}
+            discordLlmUrl={props.discordLlmUrl}
+            discordLlmApiKey={props.discordLlmApiKey}
+            discordLlmModel={props.discordLlmModel}
+            discordAgentEnabled={props.discordAgentEnabled}
+            discordMentionNl={props.discordMentionNl}
+            onDiscordLlmEnabledChange={props.onDiscordLlmEnabledChange}
+            onDiscordLlmUrlChange={props.onDiscordLlmUrlChange}
+            onDiscordLlmApiKeyChange={props.onDiscordLlmApiKeyChange}
+            onDiscordLlmModelChange={props.onDiscordLlmModelChange}
+            onDiscordAgentEnabledChange={props.onDiscordAgentEnabledChange}
+            onDiscordMentionNlChange={props.onDiscordMentionNlChange}
+        />
+        <DiscordSearchSection
+            discordEnabled={props.discordEnabled}
+            discordBotEnabled={props.discordBotEnabled}
+            discordLlmEnabled={props.discordLlmEnabled}
+            discordAgentEnabled={props.discordAgentEnabled}
+            discordSearxngUrl={props.discordSearxngUrl}
+            discordBraveSearchApiKey={props.discordBraveSearchApiKey}
+            discordTavilyApiKey={props.discordTavilyApiKey}
+            onDiscordSearxngUrlChange={props.onDiscordSearxngUrlChange}
+            onDiscordBraveSearchApiKeyChange={props.onDiscordBraveSearchApiKeyChange}
+            onDiscordTavilyApiKeyChange={props.onDiscordTavilyApiKeyChange}
+        />
+    </div>
+);

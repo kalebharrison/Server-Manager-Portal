@@ -46,6 +46,8 @@ export type SettingsFormValues = {
     discordLlmModel: string;
     discordAgentEnabled: boolean;
     discordSearxngUrl: string;
+    discordBraveSearchApiKey: string;
+    discordTavilyApiKey: string;
     discordMentionNl: boolean;
     inactiveCleanupEnabled: boolean;
     inactiveCleanupDays: number;

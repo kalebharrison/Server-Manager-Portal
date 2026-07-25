@@ -1,4 +1,4 @@
-export const SETTINGS_TABS = ['plex', 'public-access', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'metadata', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'broadcast', 'stream-rules', 'logs'] as const;
+export const SETTINGS_TABS = ['plex', 'public-access', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'metadata', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'discord', 'broadcast', 'stream-rules', 'logs'] as const;
 
 export type SettingsTabId = typeof SETTINGS_TABS[number];
 
@@ -24,7 +24,8 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             { id: 'branding', label: 'Appearance', keywords: ['theme', 'logo', 'color', 'quality', 'badges', 'poster', 'hdr', 'codec', 'ui', 'animation', 'background'] },
             { id: 'home-layout', label: 'Home Page', keywords: ['dashboard', 'widgets', 'sections', 'home', 'layout', 'reorder', 'hide'] },
             { id: 'navigation', label: 'Navigation', keywords: ['menu', 'order', 'sidebar'] },
-            { id: 'contact', label: 'Support & Announcements', keywords: ['email', 'whatsapp', 'support', 'announcement', 'banner'] }
+            { id: 'contact', label: 'Support & Announcements', keywords: ['email', 'whatsapp', 'support', 'announcement', 'banner'] },
+            { id: 'discord', label: 'Discord', keywords: ['discord', 'bot', 'webhook', 'llm', 'ollama', 'ask', 'agent', 'searx', 'brave', 'tavily', 'requesty'] },
         ]
     },
     {

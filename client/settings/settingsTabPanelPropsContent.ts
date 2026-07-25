@@ -60,6 +60,19 @@ export const buildContactTabPanelProps = ({
     contactWhatsApp: values.contactWhatsApp,
     contactEmail: values.contactEmail,
     contactUrl: values.contactUrl,
+    announcement: values.announcement,
+    isPushingAnnouncement,
+    onContactWhatsAppChange: onChange('contactWhatsApp'),
+    onContactEmailChange: onChange('contactEmail'),
+    onContactUrlChange: onChange('contactUrl'),
+    onAnnouncementChange: onChange('announcement'),
+    onPushAnnouncement: handlePushAnnouncement,
+});
+
+export const buildDiscordTabPanelProps = ({
+    values,
+    onChange,
+}: Pick<ContentTabPanelPropsInput, 'values' | 'onChange'>): SettingsTabPanelProps['discord'] => ({
     discordEnabled: values.discordEnabled,
     discordInviteUrl: values.discordInviteUrl,
     discordChatChannelLabel: values.discordChatChannelLabel,
@@ -77,12 +90,9 @@ export const buildContactTabPanelProps = ({
     discordLlmModel: values.discordLlmModel,
     discordAgentEnabled: values.discordAgentEnabled,
     discordSearxngUrl: values.discordSearxngUrl,
+    discordBraveSearchApiKey: values.discordBraveSearchApiKey,
+    discordTavilyApiKey: values.discordTavilyApiKey,
     discordMentionNl: values.discordMentionNl,
-    announcement: values.announcement,
-    isPushingAnnouncement,
-    onContactWhatsAppChange: onChange('contactWhatsApp'),
-    onContactEmailChange: onChange('contactEmail'),
-    onContactUrlChange: onChange('contactUrl'),
     onDiscordEnabledChange: onChange('discordEnabled'),
     onDiscordInviteUrlChange: onChange('discordInviteUrl'),
     onDiscordChatChannelLabelChange: onChange('discordChatChannelLabel'),
@@ -100,9 +110,9 @@ export const buildContactTabPanelProps = ({
     onDiscordLlmModelChange: onChange('discordLlmModel'),
     onDiscordAgentEnabledChange: onChange('discordAgentEnabled'),
     onDiscordSearxngUrlChange: onChange('discordSearxngUrl'),
+    onDiscordBraveSearchApiKeyChange: onChange('discordBraveSearchApiKey'),
+    onDiscordTavilyApiKeyChange: onChange('discordTavilyApiKey'),
     onDiscordMentionNlChange: onChange('discordMentionNl'),
-    onAnnouncementChange: onChange('announcement'),
-    onPushAnnouncement: handlePushAnnouncement,
 });
 
 export const buildPublicAccessTabPanelProps = ({

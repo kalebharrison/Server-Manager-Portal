@@ -36,11 +36,15 @@ test('buildDiscordConfigFields preserves masked secrets', () => {
             discordMentionNl: true,
             discordAgentEnabled: true,
             discordSearxngUrl: 'http://searxng:8080/',
+            discordBraveSearchApiKey: mask,
+            discordTavilyApiKey: mask,
         },
         existingConfig: {
             discordBotToken: 'real-bot-token',
             discordWebhookUrl: 'https://discord.com/api/webhooks/1/abc',
             discordLlmApiKey: 'real-llm-key',
+            discordBraveSearchApiKey: 'real-brave-key',
+            discordTavilyApiKey: 'real-tavily-key',
         },
         resolveSecret: (value, existing) => (value === mask ? existing : value),
     });
@@ -54,6 +58,8 @@ test('buildDiscordConfigFields preserves masked secrets', () => {
     assert.equal(fields.discordMentionNl, true);
     assert.equal(fields.discordAgentEnabled, true);
     assert.equal(fields.discordSearxngUrl, 'http://searxng:8080');
+    assert.equal(fields.discordBraveSearchApiKey, 'real-brave-key');
+    assert.equal(fields.discordTavilyApiKey, 'real-tavily-key');
 });
 
 test('public discord config hides secrets', () => {

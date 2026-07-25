@@ -6,47 +6,11 @@ type ContactSettingsTabProps = {
     contactWhatsApp: string;
     contactEmail: string;
     contactUrl: string;
-    discordEnabled: boolean;
-    discordInviteUrl: string;
-    discordChatChannelLabel: string;
-    discordMediaChannelLabel: string;
-    discordGuildId: string;
-    discordBotToken: string;
-    discordBotEnabled: boolean;
-    discordWebhookUrl: string;
-    discordNotifyRequestUpdates: boolean;
-    discordNotifyIssueReplies: boolean;
-    discordNotifyWatchlistAvailable: boolean;
-    discordLlmEnabled: boolean;
-    discordLlmUrl: string;
-    discordLlmApiKey: string;
-    discordLlmModel: string;
-    discordAgentEnabled: boolean;
-    discordSearxngUrl: string;
-    discordMentionNl: boolean;
     announcement: string;
     isPushingAnnouncement: boolean;
     onContactWhatsAppChange: (value: string) => void;
     onContactEmailChange: (value: string) => void;
     onContactUrlChange: (value: string) => void;
-    onDiscordEnabledChange: (value: boolean) => void;
-    onDiscordInviteUrlChange: (value: string) => void;
-    onDiscordChatChannelLabelChange: (value: string) => void;
-    onDiscordMediaChannelLabelChange: (value: string) => void;
-    onDiscordGuildIdChange: (value: string) => void;
-    onDiscordBotTokenChange: (value: string) => void;
-    onDiscordBotEnabledChange: (value: boolean) => void;
-    onDiscordWebhookUrlChange: (value: string) => void;
-    onDiscordNotifyRequestUpdatesChange: (value: boolean) => void;
-    onDiscordNotifyIssueRepliesChange: (value: boolean) => void;
-    onDiscordNotifyWatchlistAvailableChange: (value: boolean) => void;
-    onDiscordLlmEnabledChange: (value: boolean) => void;
-    onDiscordLlmUrlChange: (value: string) => void;
-    onDiscordLlmApiKeyChange: (value: string) => void;
-    onDiscordLlmModelChange: (value: string) => void;
-    onDiscordAgentEnabledChange: (value: boolean) => void;
-    onDiscordSearxngUrlChange: (value: string) => void;
-    onDiscordMentionNlChange: (value: boolean) => void;
     onAnnouncementChange: (value: string) => void;
     onPushAnnouncement: () => void;
 };
@@ -55,47 +19,11 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
     contactWhatsApp,
     contactEmail,
     contactUrl,
-    discordEnabled,
-    discordInviteUrl,
-    discordChatChannelLabel,
-    discordMediaChannelLabel,
-    discordGuildId,
-    discordBotToken,
-    discordBotEnabled,
-    discordWebhookUrl,
-    discordNotifyRequestUpdates,
-    discordNotifyIssueReplies,
-    discordNotifyWatchlistAvailable,
-    discordLlmEnabled,
-    discordLlmUrl,
-    discordLlmApiKey,
-    discordLlmModel,
-    discordAgentEnabled,
-    discordSearxngUrl,
-    discordMentionNl,
     announcement,
     isPushingAnnouncement,
     onContactWhatsAppChange,
     onContactEmailChange,
     onContactUrlChange,
-    onDiscordEnabledChange,
-    onDiscordInviteUrlChange,
-    onDiscordChatChannelLabelChange,
-    onDiscordMediaChannelLabelChange,
-    onDiscordGuildIdChange,
-    onDiscordBotTokenChange,
-    onDiscordBotEnabledChange,
-    onDiscordWebhookUrlChange,
-    onDiscordNotifyRequestUpdatesChange,
-    onDiscordNotifyIssueRepliesChange,
-    onDiscordNotifyWatchlistAvailableChange,
-    onDiscordLlmEnabledChange,
-    onDiscordLlmUrlChange,
-    onDiscordLlmApiKeyChange,
-    onDiscordLlmModelChange,
-    onDiscordAgentEnabledChange,
-    onDiscordSearxngUrlChange,
-    onDiscordMentionNlChange,
     onAnnouncementChange,
     onPushAnnouncement,
 }) => (
@@ -108,7 +36,7 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
             <label htmlFor="contactWhatsApp">WhatsApp Number (Optional)</label>
             <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactWhatsApp" type="text" value={contactWhatsApp} onChange={(e) => onContactWhatsAppChange(e.target.value)} placeholder="e.g. 447303647923" />
             <div className="mt-2">
-                <SettingHint>Enter your phone number including country code, without any '+', spaces, or dashes. If left blank, the WhatsApp button will be hidden.</SettingHint>
+                <SettingHint>Enter your phone number including country code, without any &apos;+&apos;, spaces, or dashes. If left blank, the WhatsApp button will be hidden.</SettingHint>
             </div>
         </div>
         <div className="mb-4">
@@ -124,97 +52,12 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
             <div className="mt-2"><SettingHint>Destination used by the Request Extension button in expiry emails.</SettingHint></div>
         </div>
 
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 mt-8">Discord</h3>
-        <p className="text-sm text-muted mb-6">
-            Show a Join Discord button to members, optionally post portal events to a channel webhook, and run a request slash-command bot (Requestrr replacement). Seerr Discord notifications can stay enabled too.
-        </p>
-        <label className="flex items-center gap-3 mb-4 cursor-pointer">
-            <input type="checkbox" checked={discordEnabled} onChange={(event) => onDiscordEnabledChange(event.target.checked)} />
-            <span className="text-sm text-text">Enable Discord integration</span>
-        </label>
-        <div className="mb-4">
-            <label htmlFor="discordInviteUrl">Invite URL</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordInviteUrl" type="url" value={discordInviteUrl} onChange={(event) => onDiscordInviteUrlChange(event.target.value)} placeholder="https://discord.gg/your-invite" disabled={!discordEnabled} />
-            <div className="mt-2"><SettingHint>Shown to members as Join Discord. Use a discord.gg or discord.com invite.</SettingHint></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-                <label htmlFor="discordChatChannelLabel">Chat / bot channel label</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordChatChannelLabel" type="text" value={discordChatChannelLabel} onChange={(event) => onDiscordChatChannelLabelChange(event.target.value)} placeholder="#requests" disabled={!discordEnabled} />
-            </div>
-            <div>
-                <label htmlFor="discordMediaChannelLabel">Media notification channel label</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordMediaChannelLabel" type="text" value={discordMediaChannelLabel} onChange={(event) => onDiscordMediaChannelLabelChange(event.target.value)} placeholder="#media-ready" disabled={!discordEnabled} />
-            </div>
-        </div>
-        <div className="mb-4">
-            <label htmlFor="discordWebhookUrl">Channel webhook URL (optional)</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordWebhookUrl" type="password" value={discordWebhookUrl} onChange={(event) => onDiscordWebhookUrlChange(event.target.value)} placeholder="https://discord.com/api/webhooks/..." disabled={!discordEnabled} autoComplete="off" />
-            <div className="mt-2"><SettingHint>Portal posts request updates / issue replies / newly available titles here. Leave blank if Seerr or Notifiarr already own Discord media posts.</SettingHint></div>
-        </div>
-        <div className="flex flex-col gap-2 mb-6">
-            <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyRequestUpdates} onChange={(event) => onDiscordNotifyRequestUpdatesChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Post request approve / decline</span></label>
-            <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyIssueReplies} onChange={(event) => onDiscordNotifyIssueRepliesChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Post issue replies</span></label>
-            <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyWatchlistAvailable} onChange={(event) => onDiscordNotifyWatchlistAvailableChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Post newly available requests (when portal emails fire)</span></label>
-        </div>
-        <label className="flex items-center gap-3 mb-4 cursor-pointer">
-            <input type="checkbox" checked={discordBotEnabled} onChange={(event) => onDiscordBotEnabledChange(event.target.checked)} disabled={!discordEnabled} />
-            <span className="text-sm text-text">Enable Discord member bot (`/request`, `/issue`, `/stats`, …)</span>
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-                <label htmlFor="discordGuildId">Guild (server) ID</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordGuildId" type="text" value={discordGuildId} onChange={(event) => onDiscordGuildIdChange(event.target.value)} placeholder="Discord server snowflake" disabled={!discordEnabled || !discordBotEnabled} />
-            </div>
-            <div>
-                <label htmlFor="discordBotToken">Bot token</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordBotToken" type="password" value={discordBotToken} onChange={(event) => onDiscordBotTokenChange(event.target.value)} placeholder="Bot token from Discord Developer Portal" disabled={!discordEnabled || !discordBotEnabled} autoComplete="off" />
-            </div>
-        </div>
-        <label className="flex items-center gap-3 mb-4 cursor-pointer">
-            <input type="checkbox" checked={discordLlmEnabled} onChange={(event) => onDiscordLlmEnabledChange(event.target.checked)} disabled={!discordEnabled || !discordBotEnabled} />
-            <span className="text-sm text-text">Enable natural language (`/ask` + optional @bot)</span>
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-                <label htmlFor="discordLlmUrl">LLM base URL (OpenAI-compatible)</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmUrl" type="url" value={discordLlmUrl} onChange={(event) => onDiscordLlmUrlChange(event.target.value)} placeholder="http://litellm:4000/v1" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
-            </div>
-            <div>
-                <label htmlFor="discordLlmModel">Model</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmModel" type="text" value={discordLlmModel} onChange={(event) => onDiscordLlmModelChange(event.target.value)} placeholder="gpt-4o-mini" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
-            </div>
-        </div>
-        <div className="mb-4">
-            <label htmlFor="discordLlmApiKey">LLM API key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmApiKey" type="password" value={discordLlmApiKey} onChange={(event) => onDiscordLlmApiKeyChange(event.target.value)} placeholder="ollama (any non-empty) or cloud API key" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} autoComplete="off" />
-            <SettingHint>OpenAI-compatible endpoint — Ollama (`…:11434/v1`) or external LiteLLM/OpenAI. Model should support tool calling for discovery.</SettingHint>
-        </div>
-        <label className="flex items-center gap-3 mb-4 cursor-pointer">
-            <input type="checkbox" checked={discordAgentEnabled} onChange={(event) => onDiscordAgentEnabledChange(event.target.checked)} disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
-            <span className="text-sm text-text">Enable media discovery agent on `/ask` (web research + Seerr)</span>
-        </label>
-        <div className="mb-4">
-            <label htmlFor="discordSearxngUrl">SearXNG base URL</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordSearxngUrl" type="url" value={discordSearxngUrl} onChange={(event) => onDiscordSearxngUrlChange(event.target.value)} placeholder="http://searxng:8080" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled || !discordAgentEnabled} />
-            <SettingHint>Self-hosted SearXNG with `search.formats` including `json`. No API key. Portal must reach this host from Docker.</SettingHint>
-        </div>
-        <label className="flex items-center gap-3 mb-4 cursor-pointer">
-            <input type="checkbox" checked={discordMentionNl} onChange={(event) => onDiscordMentionNlChange(event.target.checked)} disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
-            <span className="text-sm text-text">Allow @bot natural language (requires Message Content intent)</span>
-        </label>
-        <div className="mb-8">
-            <SettingHint>
-                Members paste their Discord user ID under Preferences. Ops phrases (`my stats`, queue, live) stay instant. Discovery asks use the agent when LLM + SearXNG are set.
-            </SettingHint>
-        </div>
-
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 mt-8">Portal Announcement</h3>
         <div className="mb-4">
             <label htmlFor="portalAnnouncement">Announcement Banner</label>
             <textarea id="portalAnnouncement" className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all" value={announcement} onChange={(event) => onAnnouncementChange(event.target.value)} placeholder="Server maintenance scheduled for Friday..." rows={3} />
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mt-2">
-                <SettingHint>Saving settings publishes the banner. Use the button to also email all eligible members.</SettingHint>
+                <SettingHint>Saving settings publishes the banner. Use the button to also email all eligible members. Discord bot settings are under the Discord tab.</SettingHint>
                 <button type="button" onClick={onPushAnnouncement} disabled={isPushingAnnouncement || !announcement.trim()} className="bg-plex hover:bg-plex-hover disabled:opacity-50 text-background font-bold py-2 px-4 rounded-lg transition-colors text-sm whitespace-nowrap">
                     {isPushingAnnouncement ? 'Sending...' : 'Publish & Email Members'}
                 </button>

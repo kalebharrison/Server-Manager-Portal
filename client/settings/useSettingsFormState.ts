@@ -60,6 +60,8 @@ export const useSettingsFormState = () => {
         discordLlmModel: values.discordLlmModel,
         discordAgentEnabled: values.discordAgentEnabled,
         discordSearxngUrl: values.discordSearxngUrl,
+        discordBraveSearchApiKey: values.discordBraveSearchApiKey,
+        discordTavilyApiKey: values.discordTavilyApiKey,
         discordMentionNl: values.discordMentionNl,
         arrInstances: values.arrInstances,
         tautulliUrl: values.tautulliUrl,

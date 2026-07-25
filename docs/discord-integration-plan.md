@@ -41,28 +41,31 @@ Members must paste their Discord user ID under Preferences (Developer Mode → C
 
 ## Natural language + media discovery agent
 
+Configure under **Settings → Discord** (not Support & Announcements).
+
 | Mode | Behavior |
 |---|---|
 | Ops phrases | Instant fixed handlers (`my stats`, queue, live, status, issues, discover trending, help) |
-| Media agent on | Discovery `/ask` uses a tool-calling agent: **SearXNG web search** → Seerr/TMDB resolve → answer + request buttons |
-| Agent off / incomplete config | Legacy phrase matchers + optional JSON intent LLM (title/person/theme shortcuts) |
+| Media agent on | Discovery `/ask` uses a tool-calling agent: **web search** → Seerr/TMDB resolve → answer + request buttons |
+| Agent off / incomplete LLM config | Legacy phrase matchers + optional JSON intent LLM (title/person/theme shortcuts) |
 | Unclear (no agent) | Bot replies with `/help` suggestions |
 
-The agent needs:
+### LLM
 
-1. **OpenAI-compatible LLM** (`discordLlmUrl` + non-empty `discordLlmApiKey` + `discordLlmModel`) — Ollama on LAN (`http://jetson01…:11434/v1`) or external LiteLLM/OpenAI. Prefer a **tool-calling** model (e.g. `qwen2.5:7b`).
-2. **SearXNG** (`discordSearxngUrl`) — free self-hosted search. Enable JSON in SearXNG `settings.yml`:
+OpenAI-compatible (`discordLlmUrl` + non-empty `discordLlmApiKey` + `discordLlmModel`) — Ollama on LAN or external LiteLLM/OpenAI. Prefer a **tool-calling** model (e.g. `qwen2.5:7b`). Toggle `discordAgentEnabled`.
 
-```yaml
-search:
-  formats:
-    - html
-    - json
-```
+### Web search (multi-provider)
 
-Portal container must reach SearXNG (use LAN hostname, not `localhost` from inside Docker). No SearXNG API key.
+Tried in order; first non-empty wins:
 
-Settings: `discordLlmEnabled`, `discordLlmUrl`, `discordLlmApiKey`, `discordLlmModel`, `discordAgentEnabled`, `discordSearxngUrl`, `discordMentionNl`.
+1. SearXNG — optional `discordSearxngUrl` (enable `json` in SearXNG `search.formats`)
+2. Brave Search — optional `discordBraveSearchApiKey`
+3. Tavily — optional `discordTavilyApiKey`
+4. **DuckDuckGo** — always available, zero-config free fallback (no API key)
+
+You do **not** need SearXNG (or any paid search) for the agent to run.
+
+Settings fields: `discordLlmEnabled`, `discordLlmUrl`, `discordLlmApiKey`, `discordLlmModel`, `discordAgentEnabled`, `discordSearxngUrl`, `discordBraveSearchApiKey`, `discordTavilyApiKey`, `discordMentionNl`.
 
 Optional `@bot …` mention routing requires **Message Content Intent** and “Allow @bot natural language”.
 

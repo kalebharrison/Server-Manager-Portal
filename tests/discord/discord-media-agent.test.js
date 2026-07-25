@@ -12,9 +12,10 @@ const agentConfig = {
     discordSearxngUrl: 'http://searxng:8080',
 };
 
-test('isDiscordAgentReady requires LLM + SearXNG', () => {
+test('isDiscordAgentReady requires LLM only (search has free fallback)', () => {
     assert.equal(isDiscordAgentReady(agentConfig), true);
-    assert.equal(isDiscordAgentReady({ ...agentConfig, discordSearxngUrl: '' }), false);
+    assert.equal(isDiscordAgentReady({ ...agentConfig, discordSearxngUrl: '' }), true);
+    assert.equal(isDiscordAgentReady({ ...agentConfig, discordLlmApiKey: '' }), false);
     assert.equal(isDiscordAgentReady({ ...agentConfig, discordAgentEnabled: false }), false);
 });
 
