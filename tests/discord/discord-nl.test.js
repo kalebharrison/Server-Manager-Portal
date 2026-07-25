@@ -109,6 +109,13 @@ test('routeAskIntent sends discovery to agent when ready', async () => {
     assert.deepEqual(result, { intent: 'agent.discover', params: { query: text } });
 });
 
+test('routeAskIntent rejects non-media asks when agent ready', async () => {
+    const nl = createDiscordNlParser();
+    const text = "I'm looking for the best trashcan on the internet. what does reddit say?";
+    const result = await nl.routeAskIntent({}, text, { agentReady: true });
+    assert.deepEqual(result, { intent: 'agent.out_of_scope', params: { query: text } });
+});
+
 test('routeAskIntent falls back to theme phrase when agent not ready', async () => {
     const nl = createDiscordNlParser();
     const result = await nl.routeAskIntent({ discordLlmEnabled: false }, "what's the latest zombie movie", {

@@ -6,6 +6,8 @@ import {
     createDiscordMediaAgent,
     extractFinishFromContent,
     isDiscordAgentReady,
+    isMediaScopedQuery,
+    OUT_OF_SCOPE_ANSWER,
 } from '../../lib/discord/discord-media-agent.js';
 
 const agentConfig = {
@@ -135,7 +137,147 @@ test('cleanAgentAnswer strips Finish: leakage', () => {
     );
 });
 
+test('cleanAgentAnswer strips finish.answer / finish.candidates dumps', () => {
+    const leaked = [
+        'Based on the search, "Army of the Dead" (2021) is a zombie movie set in a casino. It\'s available on Netflix.',
+        '',
+        'finish.candidates: ["Army of the Dead (2021)"]',
+        'finish.answer: Let\'s watch "Army of the Dead"!',
+    ].join('\n');
+    assert.equal(
+        cleanAgentAnswer(leaked),
+        'Based on the search, "Army of the Dead" (2021) is a zombie movie set in a casino. It\'s available on Netflix.',
+    );
+});
+
 test('extractFinishFromContent parses Finish dumps', () => {
     const parsed = extractFinishFromContent("Some notes\nFinish: Remains (2011) is requestable.");
     assert.equal(parsed.answer, 'Remains (2011) is requestable.');
+});
+
+test('extractFinishFromContent parses finish.* field dumps', () => {
+    const parsed = extractFinishFromContent([
+        'Army of the Dead (2021) fits a zombie casino heist.',
+        'finish.candidates: ["Army of the Dead (2021)"]',
+        'finish.answer: Let\'s watch it!',
+    ].join('\n'));
+    assert.match(parsed.answer, /Army of the Dead/);
+    assert.doesNotMatch(parsed.answer, /finish\./i);
+});
+
+test('isMediaScopedQuery allows media and rejects shopping', () => {
+    assert.equal(isMediaScopedQuery('zombie movie set in a casino'), true);
+    assert.equal(isMediaScopedQuery('Dune'), true);
+    assert.equal(isMediaScopedQuery('what should I watch tonight'), true);
+    assert.equal(
+        isMediaScopedQuery("I'm looking for the best trashcan on the internet. what does reddit say?"),
+        false,
+    );
+});
+
+test('agent refuses off-topic without calling the LLM', async () => {
+    let called = false;
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async () => {
+            called = true;
+            throw new Error('LLM should not be called');
+        },
+        getRequestAppService: () => ({}),
+    });
+    const outcome = await agent.run(agentConfig, 'best trashcan on the internet');
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.answer, OUT_OF_SCOPE_ANSWER);
+    assert.equal(called, false);
+});
+
+test('agent nudges then accepts clean finish after finish.* leakage', async () => {
+    let chatRound = 0;
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url) => {
+            const href = String(url);
+            if (href.includes('/chat/completions')) {
+                chatRound += 1;
+                if (chatRound === 1) {
+                    return {
+                        ok: true,
+                        json: async () => ({
+                            choices: [{
+                                message: {
+                                    role: 'assistant',
+                                    content: null,
+                                    tool_calls: [{
+                                        id: 'call_search',
+                                        type: 'function',
+                                        function: {
+                                            name: 'search_titles',
+                                            arguments: JSON.stringify({ query: 'Army of the Dead' }),
+                                        },
+                                    }],
+                                },
+                            }],
+                        }),
+                    };
+                }
+                if (chatRound === 2) {
+                    return {
+                        ok: true,
+                        json: async () => ({
+                            choices: [{
+                                message: {
+                                    role: 'assistant',
+                                    content: [
+                                        'Army of the Dead (2021) is a zombie casino heist.',
+                                        'finish.candidates: ["Army of the Dead (2021)"]',
+                                        'finish.answer: Let\'s watch it!',
+                                    ].join('\n'),
+                                },
+                            }],
+                        }),
+                    };
+                }
+                return {
+                    ok: true,
+                    json: async () => ({
+                        choices: [{
+                            message: {
+                                role: 'assistant',
+                                content: null,
+                                tool_calls: [{
+                                    id: 'call_finish',
+                                    type: 'function',
+                                    function: {
+                                        name: 'finish',
+                                        arguments: JSON.stringify({
+                                            answer: 'Army of the Dead (2021) is a zombie casino heist on Seerr.',
+                                            candidates: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead' }],
+                                        }),
+                                    },
+                                }],
+                            },
+                        }],
+                    }),
+                };
+            }
+            throw new Error(`Unexpected fetch ${href}`);
+        },
+        getRequestAppService: () => ({
+            search: async () => ({
+                results: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead', year: '2021' }],
+            }),
+            getMediaDetails: async (_config, { mediaType, tmdbId }) => ({
+                mediaType,
+                tmdbId,
+                title: 'Army of the Dead',
+                year: '2021',
+                available: false,
+                canRequest: true,
+            }),
+        }),
+    });
+    const outcome = await agent.run(agentConfig, 'zombie casino movie');
+    assert.equal(outcome.ok, true);
+    assert.equal(chatRound, 3);
+    assert.match(outcome.answer, /Army of the Dead/);
+    assert.doesNotMatch(outcome.answer, /finish\./i);
+    assert.equal(outcome.results[0]?.tmdbId, 503736);
 });
