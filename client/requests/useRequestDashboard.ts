@@ -57,7 +57,7 @@ export const useRequestDashboard = (cacheMinutes?: number) => {
     }, []);
 
     const endpointBase = useMemo(() => {
-        if (activeView === 'queue') return '';
+        if (activeView === 'queue' || activeView === 'ask') return '';
         if (activeView === 'search') {
             if (debouncedQuery.length < 2) return '';
             return `/api/request-app/search?query=${encodeURIComponent(debouncedQuery)}&type=${encodeURIComponent(mediaFilter)}&anime=${animeOnly}&foreign=${foreignOnly}&genreId=${genreId || ''}`;
@@ -130,7 +130,7 @@ export const useRequestDashboard = (cacheMinutes?: number) => {
     const statusLoading = status === null;
     const ready = status?.ready === true;
     const showSearchHint = activeView === 'search' && debouncedQuery.length < 2;
-    const showSkeleton = loading && items.length === 0 && !showSearchHint && activeView !== 'queue';
+    const showSkeleton = loading && items.length === 0 && !showSearchHint && activeView !== 'queue' && activeView !== 'ask';
     const activeCategoryLabel = browseCategories.find((entry) => entry.id === browseCategory)?.label || 'Trending';
     const activeMediaLabel = animeOnly ? 'Anime' : mediaFilters.find((entry) => entry.id === mediaFilter)?.label || 'All';
     const activeGenreLabel = genreFilters.find((entry) => entry.id === genreId)?.label || '';
