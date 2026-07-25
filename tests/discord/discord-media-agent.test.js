@@ -150,6 +150,22 @@ test('cleanAgentAnswer strips finish.answer / finish.candidates dumps', () => {
     );
 });
 
+test('cleanAgentAnswer strips trailing finish JSON blobs', () => {
+    const leaked = [
+        'Army of the Dead (2021) might be what you\'re looking for.',
+        '',
+        'Would you like to check if we have it available?',
+        '',
+        '{',
+        '  "answer": "Have you tried \'Army of the Dead\' (2021)?",',
+        '  "candidates": [{ "mediaType": "movie", "tmdbId": 489736 }]',
+        '}',
+    ].join('\n');
+    const cleaned = cleanAgentAnswer(leaked);
+    assert.match(cleaned, /Army of the Dead/);
+    assert.doesNotMatch(cleaned, /candidates|tmdbId|489736/);
+});
+
 test('extractFinishFromContent parses Finish dumps', () => {
     const parsed = extractFinishFromContent("Some notes\nFinish: Remains (2011) is requestable.");
     assert.equal(parsed.answer, 'Remains (2011) is requestable.');
@@ -256,6 +272,133 @@ test('agent finalizes from Seerr hits when model dumps finish.* text', async () 
     assert.match(outcome.answer, /Army of the Dead/);
     assert.doesNotMatch(outcome.answer, /finish\./i);
     assert.equal(outcome.results[0]?.tmdbId, 503736);
+});
+
+test('agent prefers Seerr hits over invented finish tmdbIds', async () => {
+    let chatRound = 0;
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url) => {
+            if (!String(url).includes('/chat/completions')) throw new Error('unexpected');
+            chatRound += 1;
+            if (chatRound === 1) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        choices: [{
+                            message: {
+                                role: 'assistant',
+                                tool_calls: [{
+                                    id: 'call_search',
+                                    type: 'function',
+                                    function: {
+                                        name: 'search_titles',
+                                        arguments: JSON.stringify({ query: 'Army of the Dead' }),
+                                    },
+                                }],
+                            },
+                        }],
+                    }),
+                };
+            }
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [{
+                        message: {
+                            role: 'assistant',
+                            tool_calls: [{
+                                id: 'call_finish',
+                                type: 'function',
+                                function: {
+                                    name: 'finish',
+                                    arguments: JSON.stringify({
+                                        answer: 'Try Army of the Dead.',
+                                        candidates: [{ mediaType: 'movie', tmdbId: 489736 }],
+                                    }),
+                                },
+                            }],
+                        },
+                    }],
+                }),
+            };
+        },
+        getRequestAppService: () => ({
+            search: async () => ({
+                results: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead', year: '2021' }],
+            }),
+            getMediaDetails: async (_config, { tmdbId }) => {
+                if (tmdbId === 489736) throw new Error('Unable to retrieve movie.');
+                return {
+                    mediaType: 'movie',
+                    tmdbId,
+                    title: 'Army of the Dead',
+                    year: '2021',
+                    available: false,
+                    canRequest: true,
+                };
+            },
+        }),
+    });
+    const outcome = await agent.run(agentConfig, 'zombie casino movie');
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.results[0]?.tmdbId, 503736);
+    assert.doesNotMatch(outcome.answer, /\{|candidates/);
+});
+
+test('lookup_title failure does not crash the agent', async () => {
+    let chatRound = 0;
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url) => {
+            if (!String(url).includes('/chat/completions')) throw new Error('unexpected');
+            chatRound += 1;
+            if (chatRound === 1) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        choices: [{
+                            message: {
+                                role: 'assistant',
+                                tool_calls: [{
+                                    id: 'call_lookup',
+                                    type: 'function',
+                                    function: {
+                                        name: 'lookup_title',
+                                        arguments: JSON.stringify({ mediaType: 'movie', tmdbId: 489736 }),
+                                    },
+                                }],
+                            },
+                        }],
+                    }),
+                };
+            }
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [{
+                        message: {
+                            role: 'assistant',
+                            tool_calls: [{
+                                id: 'call_finish',
+                                type: 'function',
+                                function: {
+                                    name: 'finish',
+                                    arguments: JSON.stringify({ answer: 'Could not find that title.', candidates: [] }),
+                                },
+                            }],
+                        },
+                    }],
+                }),
+            };
+        },
+        getRequestAppService: () => ({
+            getMediaDetails: async () => {
+                throw new Error('Unable to retrieve movie.');
+            },
+        }),
+    });
+    const outcome = await agent.run(agentConfig, 'Army of the Dead');
+    assert.equal(outcome.ok, true);
+    assert.match(outcome.answer, /Could not find/i);
 });
 
 test('agent synthesizes finish from Seerr hits when rounds exhaust', async () => {
