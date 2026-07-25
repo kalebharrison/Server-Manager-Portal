@@ -46,7 +46,8 @@ export const useNavigation = ({
 
     const normalizedNavOrder = useMemo(() => {
         const order = Array.isArray(navOrder) ? navOrder.filter((key) => key !== 'maintenance') : [];
-        if (!isAdmin && !order.includes('preferences')) {
+        // Members and admins both need Preferences (Discord ID, profile, etc.).
+        if (!order.includes('preferences')) {
             const logoutIndex = order.indexOf('logout');
             if (logoutIndex >= 0) order.splice(logoutIndex, 0, 'preferences');
             else order.push('preferences');
