@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createDiscordNlParser, matchPhraseIntent, normalizeDiscordSearchQuery } from '../../lib/discord/discord-nl.js';
+import { createDiscordNlParser, isPersonFilmographyQuery, matchPhraseIntent, normalizeDiscordSearchQuery, normalizePersonQuery } from '../../lib/discord/discord-nl.js';
 
 test('phrase matcher maps request phrases', () => {
     assert.deepEqual(matchPhraseIntent('request dune'), {
@@ -28,6 +28,32 @@ test('normalizeDiscordSearchQuery strips trailing media filler', () => {
     assert.equal(normalizeDiscordSearchQuery('the dune'), 'dune');
     assert.equal(normalizeDiscordSearchQuery('foundation tv show'), 'foundation');
     assert.equal(normalizeDiscordSearchQuery('Inception'), 'Inception');
+});
+
+test('normalizePersonQuery strips filmography phrasing', () => {
+    assert.equal(normalizePersonQuery('Brad Pitt movie'), 'Brad Pitt');
+    assert.equal(normalizePersonQuery('Brad Pitt was in'), 'Brad Pitt');
+    assert.equal(normalizePersonQuery('director Christopher Nolan'), 'Christopher Nolan');
+});
+
+test('phrase matcher maps person filmography queries', () => {
+    assert.deepEqual(matchPhraseIntent("what's the latest movie Brad Pitt was in"), {
+        intent: 'request.person',
+        params: { query: 'Brad Pitt', mediaType: 'movie', creditType: 'cast' },
+    });
+    assert.deepEqual(matchPhraseIntent('movies starring Brad Pitt'), {
+        intent: 'request.person',
+        params: { query: 'Brad Pitt', mediaType: 'all', creditType: 'cast' },
+    });
+    assert.deepEqual(matchPhraseIntent('directed by Christopher Nolan'), {
+        intent: 'request.person',
+        params: { query: 'Christopher Nolan', mediaType: 'all', creditType: 'crew' },
+    });
+});
+
+test('isPersonFilmographyQuery detects filmography phrasing', () => {
+    assert.equal(isPersonFilmographyQuery('latest movie by Brad Pitt'), true);
+    assert.equal(isPersonFilmographyQuery('request dune'), false);
 });
 
 test('parseIntent falls back to help when no phrase and LLM off', async () => {
