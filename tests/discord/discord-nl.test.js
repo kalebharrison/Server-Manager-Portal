@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createDiscordNlParser, matchPhraseIntent } from '../../lib/discord/discord-nl.js';
+import { createDiscordNlParser, matchPhraseIntent, normalizeDiscordSearchQuery } from '../../lib/discord/discord-nl.js';
 
 test('phrase matcher maps request phrases', () => {
     assert.deepEqual(matchPhraseIntent('request dune'), {
@@ -21,6 +21,13 @@ test('phrase matcher maps ops intents', () => {
 
 test('phrase matcher returns null when unclear', () => {
     assert.equal(matchPhraseIntent('hello there'), null);
+});
+
+test('normalizeDiscordSearchQuery strips trailing media filler', () => {
+    assert.equal(normalizeDiscordSearchQuery('Brad Pitt movie'), 'Brad Pitt');
+    assert.equal(normalizeDiscordSearchQuery('the dune'), 'dune');
+    assert.equal(normalizeDiscordSearchQuery('foundation tv show'), 'foundation');
+    assert.equal(normalizeDiscordSearchQuery('Inception'), 'Inception');
 });
 
 test('parseIntent falls back to help when no phrase and LLM off', async () => {
