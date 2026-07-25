@@ -29,10 +29,16 @@ test('buildDiscordConfigFields preserves masked secrets', () => {
             discordWebhookUrl: mask,
             discordBotEnabled: true,
             discordGuildId: '1234567890',
+            discordLlmEnabled: true,
+            discordLlmUrl: 'http://litellm:4000/v1',
+            discordLlmApiKey: mask,
+            discordLlmModel: 'gpt-4o-mini',
+            discordMentionNl: true,
         },
         existingConfig: {
             discordBotToken: 'real-bot-token',
             discordWebhookUrl: 'https://discord.com/api/webhooks/1/abc',
+            discordLlmApiKey: 'real-llm-key',
         },
         resolveSecret: (value, existing) => (value === mask ? existing : value),
     });
@@ -40,6 +46,10 @@ test('buildDiscordConfigFields preserves masked secrets', () => {
     assert.equal(fields.discordBotToken, 'real-bot-token');
     assert.equal(fields.discordWebhookUrl, 'https://discord.com/api/webhooks/1/abc');
     assert.equal(fields.discordGuildId, '1234567890');
+    assert.equal(fields.discordLlmEnabled, true);
+    assert.equal(fields.discordLlmUrl, 'http://litellm:4000/v1');
+    assert.equal(fields.discordLlmApiKey, 'real-llm-key');
+    assert.equal(fields.discordMentionNl, true);
 });
 
 test('public discord config hides secrets', () => {

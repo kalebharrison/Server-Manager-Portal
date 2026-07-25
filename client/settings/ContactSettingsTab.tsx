@@ -17,6 +17,11 @@ type ContactSettingsTabProps = {
     discordNotifyRequestUpdates: boolean;
     discordNotifyIssueReplies: boolean;
     discordNotifyWatchlistAvailable: boolean;
+    discordLlmEnabled: boolean;
+    discordLlmUrl: string;
+    discordLlmApiKey: string;
+    discordLlmModel: string;
+    discordMentionNl: boolean;
     announcement: string;
     isPushingAnnouncement: boolean;
     onContactWhatsAppChange: (value: string) => void;
@@ -33,6 +38,11 @@ type ContactSettingsTabProps = {
     onDiscordNotifyRequestUpdatesChange: (value: boolean) => void;
     onDiscordNotifyIssueRepliesChange: (value: boolean) => void;
     onDiscordNotifyWatchlistAvailableChange: (value: boolean) => void;
+    onDiscordLlmEnabledChange: (value: boolean) => void;
+    onDiscordLlmUrlChange: (value: string) => void;
+    onDiscordLlmApiKeyChange: (value: string) => void;
+    onDiscordLlmModelChange: (value: string) => void;
+    onDiscordMentionNlChange: (value: boolean) => void;
     onAnnouncementChange: (value: string) => void;
     onPushAnnouncement: () => void;
 };
@@ -52,6 +62,11 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
     discordNotifyRequestUpdates,
     discordNotifyIssueReplies,
     discordNotifyWatchlistAvailable,
+    discordLlmEnabled,
+    discordLlmUrl,
+    discordLlmApiKey,
+    discordLlmModel,
+    discordMentionNl,
     announcement,
     isPushingAnnouncement,
     onContactWhatsAppChange,
@@ -68,6 +83,11 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
     onDiscordNotifyRequestUpdatesChange,
     onDiscordNotifyIssueRepliesChange,
     onDiscordNotifyWatchlistAvailableChange,
+    onDiscordLlmEnabledChange,
+    onDiscordLlmUrlChange,
+    onDiscordLlmApiKeyChange,
+    onDiscordLlmModelChange,
+    onDiscordMentionNlChange,
     onAnnouncementChange,
     onPushAnnouncement,
 }) => (
@@ -131,7 +151,7 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
         </div>
         <label className="flex items-center gap-3 mb-4 cursor-pointer">
             <input type="checkbox" checked={discordBotEnabled} onChange={(event) => onDiscordBotEnabledChange(event.target.checked)} disabled={!discordEnabled} />
-            <span className="text-sm text-text">Enable Discord request bot (`/request`)</span>
+            <span className="text-sm text-text">Enable Discord member bot (`/request`, `/issue`, `/stats`, …)</span>
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -143,9 +163,31 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
                 <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordBotToken" type="password" value={discordBotToken} onChange={(event) => onDiscordBotTokenChange(event.target.value)} placeholder="Bot token from Discord Developer Portal" disabled={!discordEnabled || !discordBotEnabled} autoComplete="off" />
             </div>
         </div>
+        <label className="flex items-center gap-3 mb-4 cursor-pointer">
+            <input type="checkbox" checked={discordLlmEnabled} onChange={(event) => onDiscordLlmEnabledChange(event.target.checked)} disabled={!discordEnabled || !discordBotEnabled} />
+            <span className="text-sm text-text">Enable natural language (`/ask` + optional @bot)</span>
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label htmlFor="discordLlmUrl">LLM base URL (OpenAI-compatible)</label>
+                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmUrl" type="url" value={discordLlmUrl} onChange={(event) => onDiscordLlmUrlChange(event.target.value)} placeholder="http://litellm:4000/v1" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
+            </div>
+            <div>
+                <label htmlFor="discordLlmModel">Model</label>
+                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmModel" type="text" value={discordLlmModel} onChange={(event) => onDiscordLlmModelChange(event.target.value)} placeholder="gpt-4o-mini" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
+            </div>
+        </div>
+        <div className="mb-4">
+            <label htmlFor="discordLlmApiKey">LLM API key</label>
+            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmApiKey" type="password" value={discordLlmApiKey} onChange={(event) => onDiscordLlmApiKeyChange(event.target.value)} placeholder="Bearer token for LiteLLM / OpenAI" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} autoComplete="off" />
+        </div>
+        <label className="flex items-center gap-3 mb-4 cursor-pointer">
+            <input type="checkbox" checked={discordMentionNl} onChange={(event) => onDiscordMentionNlChange(event.target.checked)} disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
+            <span className="text-sm text-text">Allow @bot natural language (requires Message Content intent)</span>
+        </label>
         <div className="mb-8">
             <SettingHint>
-                Members must paste their Discord user ID under Preferences so `/request` can attribute Seerr requests. Invite the bot to your guild with `applications.commands` scope.
+                Members paste their Discord user ID under Preferences. Commands: `/request`, `/myrequests`, `/issue`, `/stats`, `/live`, `/queue`, `/status`, `/discover`, `/ask`, `/help`. Phrase matching works without an LLM; enable LLM for freer wording.
             </SettingHint>
         </div>
 

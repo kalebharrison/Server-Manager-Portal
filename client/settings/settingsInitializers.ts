@@ -38,6 +38,11 @@ type SettingsHydrationSetters = {
     setDiscordNotifyRequestUpdates: (value: boolean) => void;
     setDiscordNotifyIssueReplies: (value: boolean) => void;
     setDiscordNotifyWatchlistAvailable: (value: boolean) => void;
+    setDiscordLlmEnabled: (value: boolean) => void;
+    setDiscordLlmUrl: (value: string) => void;
+    setDiscordLlmApiKey: (value: string) => void;
+    setDiscordLlmModel: (value: string) => void;
+    setDiscordMentionNl: (value: boolean) => void;
     setArrInstances: (value: ArrInstance[]) => void;
     setTautulliUrl: (value: string) => void;
     setTautulliApiKey: (value: string) => void;
@@ -117,6 +122,11 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setDiscordNotifyRequestUpdates(initialSettings.discordNotifyRequestUpdates !== false);
     setters.setDiscordNotifyIssueReplies(initialSettings.discordNotifyIssueReplies !== false);
     setters.setDiscordNotifyWatchlistAvailable(initialSettings.discordNotifyWatchlistAvailable !== false);
+    setters.setDiscordLlmEnabled(!!initialSettings.discordLlmEnabled);
+    setters.setDiscordLlmUrl(initialSettings.discordLlmUrl || '');
+    setters.setDiscordLlmApiKey(initialSettings.discordLlmApiKey || '');
+    setters.setDiscordLlmModel(initialSettings.discordLlmModel || 'gpt-4o-mini');
+    setters.setDiscordMentionNl(!!initialSettings.discordMentionNl);
     setters.setArrInstances(Array.isArray(initialSettings.arrInstances) ? initialSettings.arrInstances : []);
     setters.setTautulliUrl(initialSettings.tautulliUrl || '');
     setters.setTautulliApiKey(initialSettings.tautulliApiKey || '');

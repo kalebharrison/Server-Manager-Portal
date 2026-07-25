@@ -36,6 +36,11 @@ type SettingsSavePayloadInput = {
     discordNotifyRequestUpdates: boolean;
     discordNotifyIssueReplies: boolean;
     discordNotifyWatchlistAvailable: boolean;
+    discordLlmEnabled: boolean;
+    discordLlmUrl: string;
+    discordLlmApiKey: string;
+    discordLlmModel: string;
+    discordMentionNl: boolean;
     arrInstances: ArrInstance[];
     tautulliUrl: string;
     tautulliApiKey: string;

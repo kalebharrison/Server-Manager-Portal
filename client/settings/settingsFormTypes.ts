@@ -40,6 +40,11 @@ export type SettingsFormValues = {
     discordNotifyRequestUpdates: boolean;
     discordNotifyIssueReplies: boolean;
     discordNotifyWatchlistAvailable: boolean;
+    discordLlmEnabled: boolean;
+    discordLlmUrl: string;
+    discordLlmApiKey: string;
+    discordLlmModel: string;
+    discordMentionNl: boolean;
     inactiveCleanupEnabled: boolean;
     inactiveCleanupDays: number;
     arrInstances: ArrInstance[];
