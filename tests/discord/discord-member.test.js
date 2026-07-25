@@ -20,6 +20,13 @@ test('membership gate denies revoked user', () => {
     );
 });
 
+test('membership gate keeps portal admins allowed even if revoked flag set', () => {
+    assert.deepEqual(
+        evaluateDiscordMembership({ plexAccessStatus: 'revoked', isPortalAdmin: true }),
+        { ok: true, reason: null },
+    );
+});
+
 test('membership gate denies expired user', () => {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     assert.deepEqual(
