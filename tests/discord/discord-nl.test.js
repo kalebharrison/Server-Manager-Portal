@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createDiscordNlParser, isPersonFilmographyQuery, matchPhraseIntent, normalizeDiscordSearchQuery, normalizePersonQuery } from '../../lib/discord/discord-nl.js';
+import { createDiscordNlParser, isPersonFilmographyQuery, isThemeDiscoverQuery, matchPhraseIntent, normalizeDiscordSearchQuery, normalizePersonQuery } from '../../lib/discord/discord-nl.js';
 
 test('phrase matcher maps request phrases', () => {
     assert.deepEqual(matchPhraseIntent('request dune'), {
@@ -54,6 +54,22 @@ test('phrase matcher maps person filmography queries', () => {
 test('isPersonFilmographyQuery detects filmography phrasing', () => {
     assert.equal(isPersonFilmographyQuery('latest movie by Brad Pitt'), true);
     assert.equal(isPersonFilmographyQuery('request dune'), false);
+});
+
+test('phrase matcher maps theme discover queries', () => {
+    assert.deepEqual(matchPhraseIntent("what's the latest zombie movie"), {
+        intent: 'request.discover_theme',
+        params: { theme: 'zombie', mediaType: 'movie', recent: true },
+    });
+    assert.deepEqual(matchPhraseIntent('newest comedy shows'), {
+        intent: 'request.discover_theme',
+        params: { theme: 'comedy', mediaType: 'tv', recent: true },
+    });
+});
+
+test('isThemeDiscoverQuery detects themed latest queries', () => {
+    assert.equal(isThemeDiscoverQuery("what's the latest zombie movie"), true);
+    assert.equal(isThemeDiscoverQuery('latest movie by Brad Pitt'), false);
 });
 
 test('parseIntent falls back to help when no phrase and LLM off', async () => {
