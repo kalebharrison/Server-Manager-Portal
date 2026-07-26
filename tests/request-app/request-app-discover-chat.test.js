@@ -77,14 +77,21 @@ test('discover chat uses history on follow-up turns', async () => {
             };
         },
         requestAppService: {
-            search: async () => ({
-                results: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead', year: '2021' }],
-            }),
+            search: async (_config, { query }) => {
+                if (/Remains/i.test(query)) {
+                    return {
+                        results: [{ mediaType: 'movie', tmdbId: 71676, title: 'Remains', year: '2011' }],
+                    };
+                }
+                return {
+                    results: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead', year: '2021' }],
+                };
+            },
             getMediaDetails: async (_config, { mediaType, tmdbId }) => ({
                 mediaType,
                 tmdbId,
-                title: 'Army of the Dead',
-                year: '2021',
+                title: tmdbId === 71676 ? 'Remains' : 'Army of the Dead',
+                year: tmdbId === 71676 ? '2011' : '2021',
             }),
         },
     });
@@ -99,6 +106,7 @@ test('discover chat uses history on follow-up turns', async () => {
     });
     assert.equal(outcome.ok, true);
     assert.match(outcome.answer, /Remains/i);
+    assert.equal(outcome.results[0]?.tmdbId, 71676);
     assert.ok(bodies[0].messages.some((entry) => entry.role === 'assistant' && /Army of the Dead/.test(entry.content)));
     assert.ok(bodies[0].messages.some((entry) => entry.role === 'user' && /Remains/.test(entry.content)));
 });
