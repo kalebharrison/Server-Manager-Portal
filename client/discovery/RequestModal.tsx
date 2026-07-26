@@ -568,8 +568,12 @@ export const RequestModal: React.FC<Props> = ({
         if (options.canRequestAdvanced && form.loaded) {
             if (form.serverId != null) body.serverId = form.serverId;
             else if (fallbackServer?.id != null) body.serverId = fallbackServer.id;
+            const fallbackProfileId = form.serviceOptions?.server?.activeProfileId;
+            const fallbackRoot = form.serviceOptions?.server?.activeDirectory || '';
             if (form.profileId != null) body.profileId = form.profileId;
+            else if (fallbackProfileId != null) body.profileId = Number(fallbackProfileId);
             if (form.rootFolder) body.rootFolder = form.rootFolder;
+            else if (fallbackRoot) body.rootFolder = String(fallbackRoot);
             if (form.selectedTags.length) body.tags = form.selectedTags;
         } else if (fallbackServer?.id != null) {
             body.serverId = fallbackServer.id;
@@ -593,7 +597,10 @@ export const RequestModal: React.FC<Props> = ({
         if (options.canRequestAdvanced) {
             for (const quality of qualities) {
                 const form = qualityForms[quality];
-                if (form.loaded && !form.rootFolder) {
+                const root = form.rootFolder
+                    || form.serviceOptions?.server?.activeDirectory
+                    || '';
+                if (form.loaded && !root) {
                     onError(`Select a root folder for the ${quality === '4k' ? '4K' : 'HD'} request.`);
                     setAdvancedQuality(quality);
                     setShowAdvanced(true);
