@@ -48,7 +48,8 @@ test('every API route is authenticated or explicitly classified as public', asyn
             const route = match[2];
             if (!route.startsWith('/api/')) return;
             if (intentionallyPublic.some((pattern) => pattern.test(`${method} ${route}`))) return;
-            if (/\brequire(?:Auth|Member|Admin)\b/.test(line)) return;
+            // requireMemberOrPortalAgent = session member auth OR PORTAL_AGENT_API_KEY
+            if (/\brequire(?:Auth|Member|Admin|MemberOrPortalAgent)\b/.test(line)) return;
             unclassified.push(`${rel}:${index + 1} ${method} ${route}`);
         });
     }
