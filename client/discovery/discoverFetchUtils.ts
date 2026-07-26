@@ -33,8 +33,9 @@ export const buildDiscoverStudioApiUrl = (page: number, studioId: number | strin
 export const buildDiscoverNetworkApiUrl = (page: number, networkId: number | string, sort = 'popularity.desc') =>
     `/api/discovery/proxy/discover/tv/network/${networkId}?page=${page}&sortBy=${encodeURIComponent(sort)}`;
 
-/** Popularity floor so International browse surfaces Colony-tier hits, not obscure softcore. */
-const INTERNATIONAL_VOTE_COUNT_GTE = '100';
+/** Server merges popular per-language catalogs; vote floor keeps softcore out. */
+const INTERNATIONAL_VOTE_COUNT_GTE = '150';
+const ANIME_VOTE_COUNT_GTE = '150';
 const ANIMATION_GENRE_ID = '16';
 
 const withBrowseModeParams = (
@@ -44,13 +45,16 @@ const withBrowseModeParams = (
 ): string => {
     const international = !!options.international;
     const anime = !!options.anime;
-    if (!international && !anime) return url;
-
     const [base, qs = ''] = url.split('?');
     const params = new URLSearchParams(qs);
 
+    if (!international && !anime) {
+        // Default Popular: English originals (server also forces this when pref is empty).
+        if (!filters.language) params.set('language', 'en');
+        return `${base}?${params.toString()}`;
+    }
+
     if (anime && !international) {
-        // Dedicated anime discover: Japanese + Animation.
         params.set('anime', '1');
         params.set('language', 'ja');
         params.delete('international');
@@ -62,6 +66,9 @@ const withBrowseModeParams = (
         );
         genres.add(ANIMATION_GENRE_ID);
         params.set('genre', [...genres].join(','));
+        if (!filters.voteCountGte) {
+            params.set('voteCountGte', ANIME_VOTE_COUNT_GTE);
+        }
     } else if (international && !anime) {
         params.delete('language');
         params.set('international', '1');
@@ -70,7 +77,6 @@ const withBrowseModeParams = (
             params.set('voteCountGte', INTERNATIONAL_VOTE_COUNT_GTE);
         }
     } else {
-        // Both on: one popular unlocked feed; client keeps anime OR international.
         params.delete('language');
         params.set('international', '1');
         params.set('anime', '1');
@@ -97,7 +103,7 @@ export const buildDiscoverMoviesApiUrl = (
 
     const browseFilters = (options.international || options.anime)
         ? { ...filters, language: options.anime && !options.international ? 'ja' : '' }
-        : filters;
+        : { ...filters, language: filters.language || 'en' };
     let url = `/api/discovery/proxy/discover/movies?page=${page}&sortBy=${encodeURIComponent(sort)}`;
     url = appendDiscoverQuery(url, browseFilters, 'movie');
     return withBrowseModeParams(url, options, browseFilters);
@@ -124,7 +130,7 @@ export const buildDiscoverSeriesApiUrl = (
 
     const browseFilters = (options.international || options.anime)
         ? { ...filters, language: options.anime && !options.international ? 'ja' : '' }
-        : filters;
+        : { ...filters, language: filters.language || 'en' };
     let url = `/api/discovery/proxy/discover/tv?page=${page}&sortBy=${encodeURIComponent(sort)}`;
     url = appendDiscoverQuery(url, browseFilters, 'tv');
     return withBrowseModeParams(url, options, browseFilters);
