@@ -3,12 +3,21 @@ import React, { useEffect, useState } from 'react';
 import { addMonths, addYears, formatDate } from '../../shared/format';
 import type { User } from '../../shared/types';
 
+type AutoApproveState = {
+    autoApproveMovies: boolean;
+    autoApproveTv: boolean;
+};
+
 export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (user: User) => void; user: User | null }> = ({ isOpen, onClose, onSave, user }) => {
     const [username, setUsername] = useState('');
     const [joiningDate, setJoiningDate] = useState(formatDate(new Date().toISOString()));
     const [expiryDate, setExpiryDate] = useState<string | null>(formatDate(addMonths(new Date(), 1).toISOString()));
     const [exemptFromCleanup, setExemptFromCleanup] = useState(false);
     const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+    const [autoApprove, setAutoApprove] = useState<AutoApproveState>({
+        autoApproveMovies: false,
+        autoApproveTv: false,
+    });
 
     useEffect(() => {
         if (user) {
@@ -17,12 +26,17 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
             setExpiryDate(user.expiryDate ? formatDate(user.expiryDate) : null);
             setExemptFromCleanup(!!user.exemptFromCleanup);
             setNewsletterOptIn(user.newsletterOptIn === true);
+            setAutoApprove({
+                autoApproveMovies: user.requestOverrides?.autoApproveMovies === true,
+                autoApproveTv: user.requestOverrides?.autoApproveTv === true,
+            });
         } else {
             setUsername('');
             setJoiningDate(formatDate(new Date().toISOString()));
             setExpiryDate(formatDate(addMonths(new Date(), 1).toISOString()));
             setExemptFromCleanup(false);
             setNewsletterOptIn(false);
+            setAutoApprove({ autoApproveMovies: false, autoApproveTv: false });
         }
     }, [user, isOpen]);
 
@@ -30,7 +44,20 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
 
     const handleSave = () => {
         if (!user) return;
-        onSave({ ...user, expiryDate, exemptFromCleanup, newsletterOptIn });
+        onSave({
+            ...user,
+            expiryDate,
+            exemptFromCleanup,
+            newsletterOptIn,
+            requestOverrides: {
+                ...(user.requestOverrides || {}),
+                autoApproveMovies: autoApprove.autoApproveMovies,
+                autoApproveTv: autoApprove.autoApproveTv,
+                // Keep 4K in sync with HD for simple admin control.
+                autoApproveMovies4k: autoApprove.autoApproveMovies,
+                autoApproveTv4k: autoApprove.autoApproveTv,
+            },
+        });
     };
 
     const handleQuickAction = (action: 'addMonth' | 'addYear' | 'unlimited') => {
@@ -60,9 +87,9 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
                     <label htmlFor="expiryDate">Expiry Date</label>
                     <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="expiryDate" type="date" value={expiryDate ?? ''} onChange={(e) => setExpiryDate(e.target.value)} />
                     <div className="mt-3 grid grid-cols-3 gap-2">
-                        <button className="w-full h-10 px-3 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center text-sm whitespace-nowrap" onClick={() => handleQuickAction('addMonth')}>+1M</button>
-                        <button className="w-full h-10 px-3 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center text-sm whitespace-nowrap" onClick={() => handleQuickAction('addYear')}>+1Y</button>
-                        <button className="w-full h-10 px-3 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center text-sm whitespace-nowrap" onClick={() => handleQuickAction('unlimited')}>Unlimited</button>
+                        <button type="button" className="w-full h-10 px-3 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center text-sm whitespace-nowrap" onClick={() => handleQuickAction('addMonth')}>+1M</button>
+                        <button type="button" className="w-full h-10 px-3 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center text-sm whitespace-nowrap" onClick={() => handleQuickAction('addYear')}>+1Y</button>
+                        <button type="button" className="w-full h-10 px-3 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center text-sm whitespace-nowrap" onClick={() => handleQuickAction('unlimited')}>Unlimited</button>
                     </div>
                 </div>
                 <div className="mb-4 flex items-center justify-between bg-black/10 p-4 rounded-lg border border-border">
@@ -71,6 +98,7 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
                         <span className="text-xs text-muted block">Prevent automated inactive user removal</span>
                     </div>
                     <button
+                        type="button"
                         onClick={() => setExemptFromCleanup(!exemptFromCleanup)}
                         className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${exemptFromCleanup ? 'bg-plex' : 'bg-border'}`}
                     >
@@ -84,14 +112,43 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
                         <span className="text-xs text-muted block">Opt-in weekly library email (off by default)</span>
                     </div>
                     <button
+                        type="button"
                         onClick={() => setNewsletterOptIn(!newsletterOptIn)}
                         className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${newsletterOptIn ? 'bg-plex' : 'bg-border'}`}
                     >
                         <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${newsletterOptIn ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                 </div>
+                <h3 className="text-xs uppercase tracking-wider font-bold text-muted mt-6 mb-2">Request Auto-Approve</h3>
+                <p className="text-xs text-muted mb-3">When enabled, this member’s requests skip the admin queue and go straight to Radarr/Sonarr. Anime still routes to the anime folders automatically.</p>
+                <div className="mb-3 flex items-center justify-between bg-black/10 p-4 rounded-lg border border-border">
+                    <div>
+                        <label className="font-bold block mb-1">Movies</label>
+                        <span className="text-xs text-muted block">Including anime movies</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setAutoApprove((prev) => ({ ...prev, autoApproveMovies: !prev.autoApproveMovies }))}
+                        className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${autoApprove.autoApproveMovies ? 'bg-plex' : 'bg-border'}`}
+                    >
+                        <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${autoApprove.autoApproveMovies ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                </div>
+                <div className="mb-4 flex items-center justify-between bg-black/10 p-4 rounded-lg border border-border">
+                    <div>
+                        <label className="font-bold block mb-1">TV / Anime series</label>
+                        <span className="text-xs text-muted block">Series and anime use the matching Sonarr folders</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setAutoApprove((prev) => ({ ...prev, autoApproveTv: !prev.autoApproveTv }))}
+                        className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${autoApprove.autoApproveTv ? 'bg-plex' : 'bg-border'}`}
+                    >
+                        <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${autoApprove.autoApproveTv ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                </div>
                 <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-border">
-                    <button className="px-6 py-3 bg-plex text-background rounded-md font-bold hover:bg-plex-hover transition-colors flex items-center justify-center gap-2" onClick={handleSave}>Save</button>
+                    <button type="button" className="px-6 py-3 bg-plex text-background rounded-md font-bold hover:bg-plex-hover transition-colors flex items-center justify-center gap-2" onClick={handleSave}>Save</button>
                 </div>
             </div>
         </div>

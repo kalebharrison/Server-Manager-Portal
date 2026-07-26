@@ -287,8 +287,8 @@ export const RequestModal: React.FC<Props> = ({
             else initial.add('hd');
             setSelectedQualities(initial);
             setAdvancedQuality(initial.has('hd') ? 'hd' : '4k');
-            // Beta: keep Advanced open so quality / language profiles are visible for HD + 4K.
-            setShowAdvanced(true);
+            // Members do not pick profile/root — keep advanced closed.
+            setShowAdvanced(false);
 
             if (payload.mediaType === 'tv' && Array.isArray(payload.seasons)) {
                 setSelectedSeasons(

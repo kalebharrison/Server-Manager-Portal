@@ -17,7 +17,6 @@ import { MyIssuesPage } from './MyIssuesPage';
 import { useMyRequestCount } from './useMyRequestCount';
 import { useMyIssueCount } from './useMyIssueCount';
 import { useDiscoveryMe } from './useDiscoveryMe';
-import { WatchlistPage } from './WatchlistPage';
 import { scrollPortalToTop, stashDiscoverDetailSeed } from './discoverNavigationUtils';
 import { resolveTmdbImageUrl } from './tmdbImageUrl';
 import { useDiscoverI18n } from './i18n';
@@ -29,7 +28,7 @@ const DiscoveryDashboardInner: React.FC<{
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     mediaServerType?: string;
     isAdmin?: boolean;
-}> = ({ pushToast, mediaServerType = 'plex', isAdmin = false }) => {
+}> = ({ pushToast, mediaServerType = 'plex' }) => {
     const { t, locale } = useDiscoverI18n();
     const [path, setPath] = useState(() => {
         if (typeof window !== 'undefined') return window.location.pathname;
@@ -266,7 +265,6 @@ const DiscoveryDashboardInner: React.FC<{
                 onBack={() => navigate('/discovery')}
                 formatItem={formatItem}
                 pushToast={pushToast}
-                isAdmin={isAdmin}
                 mediaServerType={mediaServerType}
             />
         );
@@ -275,18 +273,9 @@ const DiscoveryDashboardInner: React.FC<{
     const showTabs = ['home', 'movies', 'series', 'requests', 'issues'].includes(subRoute);
 
     if (subRoute === 'watchlist') {
-        return (
-            <div className="discovery-theme w-full flex flex-col gap-4 pb-8">
-                <DiscoverHeroHeader {...heroProps} />
-                <WatchlistPage
-                    formatItem={formatItem}
-                    onSelect={openMedia}
-                    navigate={navigate}
-                    pushToast={pushToast}
-                    providerLabel={providerLabel}
-                />
-            </div>
-        );
+        // Plex watchlist integration is disabled — send people back to Discover.
+        navigate('/discovery');
+        return null;
     }
 
     const canSeeIssuesTab = Boolean(

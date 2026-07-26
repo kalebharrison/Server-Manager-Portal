@@ -25,6 +25,18 @@ export interface User {
     homeShowWrapUp?: boolean;
     homeShowWeekCalendar?: boolean;
     lastLogin?: string;
+    /** Per-member portal request policy overrides (null/omit = inherit global). */
+    requestOverrides?: {
+        autoApproveMovies?: boolean | null;
+        autoApproveTv?: boolean | null;
+        autoApproveMovies4k?: boolean | null;
+        autoApproveTv4k?: boolean | null;
+        allowRequestMovies?: boolean | null;
+        allowRequestTv?: boolean | null;
+        allowRequest4kMovies?: boolean | null;
+        allowRequest4kTv?: boolean | null;
+        allowAdvancedRequests?: boolean | null;
+    };
 }
 
 export type ArrType = 'sonarr' | 'radarr' | 'lidarr';

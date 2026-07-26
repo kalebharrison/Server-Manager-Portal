@@ -81,6 +81,7 @@ export const useAdminDashboardUserActions = ({
                     expiryDate: userToSave.expiryDate,
                     exemptFromCleanup: userToSave.exemptFromCleanup,
                     newsletterOptIn: userToSave.newsletterOptIn === true,
+                    requestOverrides: userToSave.requestOverrides || {},
                 }),
             });
             setUsers(currentUsers => currentUsers.map(u => u.id === updatedUser.id ? updatedUser : u));
