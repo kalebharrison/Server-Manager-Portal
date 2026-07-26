@@ -105,7 +105,7 @@ export const MediaStackRequestAppSection: React.FC<{
         </div>
         {requestEngine === 'portal' && (
             <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
-                Portal-native requests are opt-in. For the lab, set Request Engine to Portal-native and Discovery Source to TMDB; Discover then uses TMDB and approved requests go directly to Radarr/Sonarr. Discord and Ask still use Seerr APIs, so those request flows may be incomplete until they are migrated.
+                Portal-native Discover uses TMDB. With auto-approve enabled, requests push straight to Radarr/Sonarr; otherwise they wait in the admin queue. Discord and Ask still use Seerr until those flows migrate.
             </div>
         )}
         <div className="mb-4">
