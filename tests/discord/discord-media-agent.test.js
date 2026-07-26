@@ -258,6 +258,15 @@ test('rankCandidatesForQuery prefers main title over documentary', () => {
     assert.equal(ranked[0].tmdbId, 503736);
 });
 
+test('rankCandidatesForQuery prefers main title over colon featurettes via answer', () => {
+    const ranked = rankCandidatesForQuery('the one with the kid who sees dead people', [
+        { title: 'The Sixth Sense: A Conversation with M. Night Shyamalan', tmdbId: 685908, mediaType: 'movie' },
+        { title: 'The Sixth Sense', tmdbId: 745, mediaType: 'movie' },
+        { title: 'The Sixth Sense: The Actors', tmdbId: 685904, mediaType: 'movie' },
+    ], { answer: "That sounds like The Sixth Sense (1999)." });
+    assert.equal(ranked[0].tmdbId, 745);
+});
+
 test('agent skips keyword-soup Seerr for long plot asks', async () => {
     const searchQueries = [];
     let chatRound = 0;
