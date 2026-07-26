@@ -1,5 +1,5 @@
 import { normalizeRawDiscoveryItem } from './discoverItemUtils';
-import { isAnimeBrowseItem, isInternationalBrowseItem } from './discoverForeignUtils';
+import { isAnimeBrowseItem } from './discoverForeignUtils';
 import {
     buildSeasonStatusFromDetails,
     hasActiveSeerrDownloads,
@@ -494,20 +494,13 @@ export const filterDiscoverBrowseItems = (
     options: {
         hideAvailable?: boolean;
         hideRequested?: boolean;
-        foreignOnly?: boolean;
         animeOnly?: boolean;
     },
 ) => {
     let filtered = filterHiddenAvailableItems(items, !!options.hideAvailable);
     filtered = filterHiddenRequestedItems(filtered, !!options.hideRequested);
-    const animeOnly = !!options.animeOnly;
-    const foreignOnly = !!options.foreignOnly;
-    if (animeOnly && foreignOnly) {
-        filtered = filtered.filter((item) => isAnimeBrowseItem(item) || isInternationalBrowseItem(item));
-    } else if (animeOnly) {
+    if (options.animeOnly) {
         filtered = filtered.filter((item) => isAnimeBrowseItem(item));
-    } else if (foreignOnly) {
-        filtered = filtered.filter((item) => isInternationalBrowseItem(item));
     }
     return filtered;
 };

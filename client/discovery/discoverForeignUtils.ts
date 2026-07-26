@@ -1,4 +1,4 @@
-/** Client-side foreign/anime helpers (mirrors lib/request-app/request-app-media.js). */
+/** Client-side anime helpers (mirrors lib/request-app/request-app-media.js). */
 
 const ADULTISH_TITLE_RE = /\b(hentai|softcore|erotic|erotica|porn|xxx)\b/i;
 
@@ -33,18 +33,6 @@ export const isAnimeItem = (item: any): boolean => {
             (genre: any) => String(genre?.name || '').toLowerCase() === 'animation',
         ));
     return isAnimation;
-};
-
-export const isForeignLanguageItem = (item: any): boolean => {
-    const language = String(item?.originalLanguage || '').toLowerCase();
-    return !!language && language !== 'en' && !isAnimeItem(item);
-};
-
-/** International toolbar: non-English / non-anime (server already merges popular catalogs). */
-export const isInternationalBrowseItem = (item: any): boolean => {
-    if (!isForeignLanguageItem(item)) return false;
-    if (ADULTISH_TITLE_RE.test(titleBlob(item))) return false;
-    return true;
 };
 
 /** Anime toolbar: Japanese animation with an adult-title + popularity safety net. */

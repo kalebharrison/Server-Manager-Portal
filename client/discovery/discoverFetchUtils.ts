@@ -8,8 +8,6 @@ import type { DiscoverPagePayload } from './useDiscoverInfiniteScroll';
 type DiscoverBrowseFilterOptions = {
     hideAvailable?: boolean;
     hideRequested?: boolean;
-    /** When on, keep only non-English / non-anime titles. */
-    foreignOnly?: boolean;
     /** When on, keep Japanese animation (anime). */
     animeOnly?: boolean;
     /**
@@ -20,7 +18,6 @@ type DiscoverBrowseFilterOptions = {
 };
 
 export type DiscoverBrowseModeOptions = {
-    international?: boolean;
     anime?: boolean;
 };
 
@@ -33,8 +30,6 @@ export const buildDiscoverStudioApiUrl = (page: number, studioId: number | strin
 export const buildDiscoverNetworkApiUrl = (page: number, networkId: number | string, sort = 'popularity.desc') =>
     `/api/discovery/proxy/discover/tv/network/${networkId}?page=${page}&sortBy=${encodeURIComponent(sort)}`;
 
-/** Server merges popular per-language catalogs; vote floor keeps softcore out. */
-const INTERNATIONAL_VOTE_COUNT_GTE = '150';
 const ANIME_VOTE_COUNT_GTE = '150';
 const ANIMATION_GENRE_ID = '16';
 
@@ -43,48 +38,32 @@ const withBrowseModeParams = (
     options: DiscoverBrowseModeOptions,
     filters: FilterState,
 ): string => {
-    const international = !!options.international;
-    const anime = !!options.anime;
     const [base, qs = ''] = url.split('?');
     const params = new URLSearchParams(qs);
 
-    if (!international && !anime) {
-        // Default Popular: English originals (server also forces this when pref is empty).
-        if (!filters.language) params.set('language', 'en');
+    if (!options.anime) {
+        // Default Popular: no original-language lock — server mixes English + rolled-in intl.
+        // Keep drawer language when the user explicitly filtered by language.
+        if (!filters.language) params.delete('language');
+        params.delete('international');
+        params.delete('anime');
         return `${base}?${params.toString()}`;
     }
 
-    if (anime && !international) {
-        params.set('anime', '1');
-        params.set('language', 'ja');
-        params.delete('international');
-        const genres = new Set(
-            String(params.get('genre') || filters.genre || '')
-                .split(',')
-                .map((part) => part.trim())
-                .filter(Boolean),
-        );
-        genres.add(ANIMATION_GENRE_ID);
-        params.set('genre', [...genres].join(','));
-        if (!filters.voteCountGte) {
-            params.set('voteCountGte', ANIME_VOTE_COUNT_GTE);
-        }
-    } else if (international && !anime) {
-        params.delete('language');
-        params.set('international', '1');
-        params.delete('anime');
-        if (!filters.voteCountGte) {
-            params.set('voteCountGte', INTERNATIONAL_VOTE_COUNT_GTE);
-        }
-    } else {
-        params.delete('language');
-        params.set('international', '1');
-        params.set('anime', '1');
-        if (!filters.voteCountGte) {
-            params.set('voteCountGte', INTERNATIONAL_VOTE_COUNT_GTE);
-        }
+    params.set('anime', '1');
+    params.set('language', 'ja');
+    params.delete('international');
+    const genres = new Set(
+        String(params.get('genre') || filters.genre || '')
+            .split(',')
+            .map((part) => part.trim())
+            .filter(Boolean),
+    );
+    genres.add(ANIMATION_GENRE_ID);
+    params.set('genre', [...genres].join(','));
+    if (!filters.voteCountGte) {
+        params.set('voteCountGte', ANIME_VOTE_COUNT_GTE);
     }
-
     return `${base}?${params.toString()}`;
 };
 
@@ -101,9 +80,10 @@ export const buildDiscoverMoviesApiUrl = (
         return buildDiscoverStudioApiUrl(page, filters.studio, sort);
     }
 
-    const browseFilters = (options.international || options.anime)
-        ? { ...filters, language: options.anime && !options.international ? 'ja' : '' }
-        : { ...filters, language: filters.language || 'en' };
+    // Anime forces ja; otherwise keep drawer language only when the user set one.
+    const browseFilters = options.anime
+        ? { ...filters, language: 'ja' }
+        : filters;
     let url = `/api/discovery/proxy/discover/movies?page=${page}&sortBy=${encodeURIComponent(sort)}`;
     url = appendDiscoverQuery(url, browseFilters, 'movie');
     return withBrowseModeParams(url, options, browseFilters);
@@ -128,9 +108,9 @@ export const buildDiscoverSeriesApiUrl = (
         return buildDiscoverNetworkApiUrl(page, filters.network, sort);
     }
 
-    const browseFilters = (options.international || options.anime)
-        ? { ...filters, language: options.anime && !options.international ? 'ja' : '' }
-        : { ...filters, language: filters.language || 'en' };
+    const browseFilters = options.anime
+        ? { ...filters, language: 'ja' }
+        : filters;
     let url = `/api/discovery/proxy/discover/tv?page=${page}&sortBy=${encodeURIComponent(sort)}`;
     url = appendDiscoverQuery(url, browseFilters, 'tv');
     return withBrowseModeParams(url, options, browseFilters);
@@ -155,11 +135,8 @@ type HomeRowFetchOptions = {
     needsBackfill?: boolean;
     hideRequested?: boolean;
     trustAttachedAvailability?: boolean;
-    /** Parallel page fetches — Seerr-style home uses 1 (sequential). */
     pageConcurrency?: number;
-    /** Drop poster-less titles so home never shows "POSTER NOT FOUND" tiles. */
     requirePoster?: boolean;
-    /** Cancel in-flight page fetches (home remount / refresh). */
     signal?: AbortSignal;
 };
 
@@ -226,15 +203,13 @@ export async function fetchDiscoverHomeRowResults(
 /**
  * Seerr-style browse step: fetch page N, filter hide-available, and if the filtered
  * page is empty advance sequentially up to MAX_SEQUENTIAL_EXTRA_PAGES (same endpoint).
- * Replaces the old 50×4 parallel backfill storm.
  */
 export async function fetchDiscoverPageWithAdvance(
     buildUrl: (page: number) => string,
     page: number,
     options: DiscoverBrowseFilterOptions = {},
 ): Promise<DiscoverPagePayload & { lastFetchedPage: number }> {
-    const needsAdvance = !!options.hideAvailable || !!options.hideRequested
-        || !!options.foreignOnly || !!options.animeOnly;
+    const needsAdvance = !!options.hideAvailable || !!options.hideRequested || !!options.animeOnly;
     if (!needsAdvance) {
         const payload = await fetchDiscoverPage(buildUrl(page), options);
         return { ...payload, lastFetchedPage: page };
