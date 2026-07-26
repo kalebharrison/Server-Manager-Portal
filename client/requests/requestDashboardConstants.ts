@@ -1,6 +1,6 @@
 import type { RequestMediaItem } from './types';
 
-export type RequestView = 'browse' | 'search' | 'queue' | 'ask';
+export type RequestView = 'browse' | 'search' | 'queue';
 export type BrowseCategory = 'trending' | 'popular' | 'upcoming';
 export type MediaFilter = 'all' | 'movie' | 'tv';
 

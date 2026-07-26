@@ -104,14 +104,6 @@ export const RequestDashboardFilters: React.FC<RequestDashboardFiltersProps> = (
             >
                 Search
             </button>
-            <button
-                type="button"
-                onClick={() => onActiveViewChange('ask')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeView === 'ask' ? 'bg-plex text-background shadow-lg shadow-plex/20' : 'bg-background/60 border border-border text-muted hover:text-text hover:bg-white/5'}`}
-                title="Chat with the media discovery agent"
-            >
-                Ask
-            </button>
             {isAdmin && (
                 <button
                     type="button"

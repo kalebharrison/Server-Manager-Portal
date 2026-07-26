@@ -8,6 +8,7 @@ import { applyLocalPortalPreferences, loadLocalPortalPreferences, USER_PREFERENC
 import { updateFavicon, Navigation } from './lazyScreens';
 import { AppRouteRenderer, RouteFallback } from './app/AppRouteRenderer';
 import { useAppRouting, useAppSession } from './app/useAppSession';
+import { DiscoverChatWidget } from './requests/DiscoverChatWidget';
 
 const ConfirmModal = React.lazy(() => import('./shared/ConfirmModal').then(module => ({ default: module.ConfirmModal })));
 
@@ -194,6 +195,12 @@ export const MainApp: React.FC = () => {
                     </div>
                 )}
             </div>
+            {!isPublicView && sessionInfo && (
+                <DiscoverChatWidget
+                    enabled={sessionInfo?.navFeatures?.request !== false}
+                    readOnly={isImpersonating}
+                />
+            )}
         </div>
     );
 };

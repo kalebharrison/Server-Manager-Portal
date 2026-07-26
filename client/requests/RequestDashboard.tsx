@@ -2,7 +2,6 @@ import React from 'react';
 import { AlertTriangle, Search, Sparkles } from 'lucide-react';
 import { ToastContainer } from '../shared/toast';
 import { AdminRequestQueue } from './AdminRequestQueue';
-import { DiscoverChatPanel } from './DiscoverChatPanel';
 import { RequestDashboardContent } from './RequestDashboardContent';
 import { RequestDashboardFilters } from './RequestDashboardFilters';
 import { RequestMediaModal } from './RequestMediaModal';
@@ -25,7 +24,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
                         </div>
                         <h1 className="text-3xl md:text-5xl font-black text-text tracking-tight">Request Content</h1>
                         <p className="text-sm text-muted mt-2 max-w-2xl">
-                            Browse, search, or ask Requesty what to watch — then request without leaving the portal.
+                            Browse or search titles to request. Use Ask Requesty (bottom-right) anytime while you navigate.
                         </p>
                     </div>
                     <div className="relative w-full lg:w-[28rem]">
@@ -84,13 +83,6 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
 
                     {dashboard.activeView === 'queue' ? (
                         <AdminRequestQueue />
-                    ) : dashboard.activeView === 'ask' ? (
-                        <DiscoverChatPanel
-                            requestingId={dashboard.requestingId}
-                            onOpen={dashboard.openDetails}
-                            onRequest={dashboard.requestFromCard}
-                            onReportIssue={dashboard.openIssue}
-                        />
                     ) : (
                         <RequestDashboardContent
                             detailedContentTitle={dashboard.detailedContentTitle}

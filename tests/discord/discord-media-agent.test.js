@@ -6,6 +6,7 @@ import {
     classifyDiscoverIntent,
     createDiscordMediaAgent,
     extractFinishFromContent,
+    extractNamedTitlesFromAnswer,
     isConfidentTitleHint,
     isDiscordAgentReady,
     isJunkWebTitleHint,
@@ -18,6 +19,7 @@ import {
     CLARIFY_ANSWER,
     COULD_NOT_IDENTIFY_ANSWER,
     rankCandidatesForQuery,
+    reconcileAnswerWithResults,
     simplifyDiscoverSearchQuery,
     stripThinkingTags,
     titleHintsFromWebResults,
@@ -738,17 +740,16 @@ test('simplifyDiscoverSearchQuery strips filler for Seerr', () => {
     assert.equal(simplifyDiscoverSearchQuery('what about "Remains" 2011?'), 'Remains');
 });
 
-test('agent asks LLM for title names when Seerr keywords and web are empty', async () => {
-    let chatRound = 0;
+test('agent skips speculative LLM title invents on plot asks when web is empty', async () => {
+    let titleSuggestCalls = 0;
     const searchQueries = [];
     const agent = createDiscordMediaAgent({
         fetchImpl: async (url, options = {}) => {
             const href = String(url);
             if (href.includes('/chat/completions')) {
-                chatRound += 1;
                 const body = JSON.parse(options.body || '{}');
-                // Title-suggest call has no tools.
                 if (!body.tools) {
+                    titleSuggestCalls += 1;
                     return {
                         ok: true,
                         json: async () => ({
@@ -768,11 +769,71 @@ test('agent asks LLM for title names when Seerr keywords and web are empty', asy
                             message: {
                                 role: 'assistant',
                                 tool_calls: [{
-                                    id: `web_${chatRound}`,
+                                    id: 'web_1',
                                     type: 'function',
                                     function: {
                                         name: 'web_search',
                                         arguments: JSON.stringify({ query: 'zombie casino' }),
+                                    },
+                                }],
+                            },
+                        }],
+                    }),
+                };
+            }
+            return { ok: true, json: async () => ({ results: [] }), text: async () => '' };
+        },
+        getRequestAppService: () => ({
+            search: async (_config, { query }) => {
+                searchQueries.push(query);
+                return { results: [] };
+            },
+            discoverByTheme: async () => ({ results: [] }),
+            getMediaDetails: async () => null,
+        }),
+    });
+    const outcome = await agent.run(agentConfig, "I'm looking for a zombie movie that's set in a casino");
+    assert.equal(outcome.ok, true);
+    assert.equal(titleSuggestCalls, 0);
+    assert.equal(outcome.results.length, 0);
+    assert.equal(outcome.answer, COULD_NOT_IDENTIFY_ANSWER);
+    assert.equal(searchQueries.some((query) => /Army of the Dead/i.test(query)), false);
+});
+
+test('agent asks LLM for title names on short non-plot queries when web is empty', async () => {
+    let chatRound = 0;
+    const searchQueries = [];
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url, options = {}) => {
+            const href = String(url);
+            if (href.includes('/chat/completions')) {
+                chatRound += 1;
+                const body = JSON.parse(options.body || '{}');
+                if (!body.tools) {
+                    return {
+                        ok: true,
+                        json: async () => ({
+                            choices: [{
+                                message: {
+                                    role: 'assistant',
+                                    content: '{"titles":["Army of the Dead"]}',
+                                },
+                            }],
+                        }),
+                    };
+                }
+                return {
+                    ok: true,
+                    json: async () => ({
+                        choices: [{
+                            message: {
+                                role: 'assistant',
+                                tool_calls: [{
+                                    id: `web_${chatRound}`,
+                                    type: 'function',
+                                    function: {
+                                        name: 'web_search',
+                                        arguments: JSON.stringify({ query: 'Brad Pitt movies' }),
                                     },
                                 }],
                             },
@@ -802,7 +863,7 @@ test('agent asks LLM for title names when Seerr keywords and web are empty', asy
             }),
         }),
     });
-    const outcome = await agent.run(agentConfig, "I'm looking for a zombie movie that's set in a casino");
+    const outcome = await agent.run(agentConfig, 'Brad Pitt movies');
     assert.equal(outcome.ok, true);
     assert.equal(outcome.results[0]?.tmdbId, 503736);
     assert.ok(searchQueries.some((query) => /Army of the Dead/i.test(query)));
@@ -970,4 +1031,84 @@ test('agent synthesizes finish from Seerr hits when rounds exhaust', async () =>
     assert.equal(outcome.ok, true);
     assert.equal(outcome.results[0]?.tmdbId, 71676);
     assert.match(outcome.answer, /titles that may match|Remains/i);
+});
+
+test('extractNamedTitlesFromAnswer finds Title (YEAR) forms', () => {
+    assert.deepEqual(
+        extractNamedTitlesFromAnswer('That sounds like Army of the Dead (2021).'),
+        ['Army of the Dead'],
+    );
+});
+
+test('reconcileAnswerWithResults drops cards the answer never named', () => {
+    const reconciled = reconcileAnswerWithResults(
+        'Army of the Dead (2021) is the zombie casino heist.',
+        [
+            { title: 'Remains', tmdbId: 71676, mediaType: 'movie', year: '2011' },
+            { title: 'Army of the Dead', tmdbId: 503736, mediaType: 'movie', year: '2021' },
+        ],
+        { query: 'that zombie casino movie' },
+    );
+    assert.equal(reconciled.results.length, 1);
+    assert.equal(reconciled.results[0].tmdbId, 503736);
+    assert.match(reconciled.answer, /Army of the Dead/i);
+});
+
+test('reconcileAnswerWithResults clears orphan answer when no matching cards', () => {
+    const reconciled = reconcileAnswerWithResults(
+        'Army of the Dead (2021) fits perfectly.',
+        [{ title: 'Remains', tmdbId: 71676, mediaType: 'movie', year: '2011' }],
+        { query: 'that zombie casino movie' },
+    );
+    assert.equal(reconciled.results.length, 0);
+    assert.equal(reconciled.answer, COULD_NOT_IDENTIFY_ANSWER);
+});
+
+test('chat body disables think for Ollama reasoning models', async () => {
+    let sawThinkFalse = false;
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url, options = {}) => {
+            if (!String(url).includes('/chat/completions')) {
+                return { ok: true, json: async () => ({ results: [] }), text: async () => '' };
+            }
+            const body = JSON.parse(String(options.body || '{}'));
+            sawThinkFalse = body.think === false;
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [{
+                        message: {
+                            role: 'assistant',
+                            content: null,
+                            tool_calls: [{
+                                id: 'finish',
+                                type: 'function',
+                                function: {
+                                    name: 'finish',
+                                    arguments: JSON.stringify({
+                                        answer: 'Army of the Dead (2021).',
+                                        candidates: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead' }],
+                                    }),
+                                },
+                            }],
+                        },
+                    }],
+                }),
+            };
+        },
+        getRequestAppService: () => ({
+            search: async () => ({ results: [] }),
+            getMediaDetails: async () => ({
+                mediaType: 'movie',
+                tmdbId: 503736,
+                title: 'Army of the Dead',
+                year: '2021',
+                available: true,
+                canRequest: false,
+            }),
+        }),
+    });
+    const outcome = await agent.run(agentConfig, 'Army of the Dead');
+    assert.equal(sawThinkFalse, true);
+    assert.equal(outcome.ok, true);
 });
