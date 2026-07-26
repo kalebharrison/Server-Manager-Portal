@@ -199,7 +199,7 @@ export const DiscoverChatWidget: React.FC<DiscoverChatWidgetProps> = ({
                 ...message,
                 results: message.results?.map((entry) => (
                     entry.tmdbId === item.tmdbId && entry.mediaType === item.mediaType
-                        ? { ...entry, canRequest: false, requestStatus: 'pending' }
+                        ? { ...entry, requested: true, pending: false, canRequest: false, requestStatusLabel: 'requested' }
                         : entry
                 )),
             })));
