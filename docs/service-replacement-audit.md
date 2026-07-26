@@ -4,7 +4,7 @@ Snapshot after Wave 1–4 upstream ports on fork `beta` (lab: `plex-beta.lostwal
 
 | Container | Portal coverage now | Recommendation |
 |---|---|---|
-| **overseerr** | Still default request backend (`requestEngine=seerr`). Portal engine is opt-in dual-path; Discord/Ask remain Seerr-backed. | **Keep** until Discord/Ask facade + portal Discover UI are complete. |
+| **overseerr** | Lab (`plex-beta`) flips to `requestEngine=portal` + `discoverySource=tmdb` with Arr requester tags. Prod stays Seerr until lab smoke passes. Discord/Ask still Seerr-backed. | **Keep** on prod; retire after Discord/Ask migrate. |
 | **requestrr** | Portal Discord `/request` bot (WIP) overlaps. | **Candidate to drop** once Discord bot is enabled and trusted on prod; confirm slash commands cover Requestrr workflows first. |
 | **kometa** | ColleXions was **not** ported in this plan. | **Keep** for now. |
 | **checkrr** | Library Upgrader browse/index landed (standalone); advanced ARR CF/TRaSH actions still incomplete vs upstream. | **Keep** until Upgrader episode/profile/search actions match your checkrr use cases. |

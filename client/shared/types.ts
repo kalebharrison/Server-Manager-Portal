@@ -37,6 +37,14 @@ export interface ArrInstance {
     apiKey: string;
     enabled: boolean;
     isDefault: boolean;
+    /** Overseerr-parity defaults for portal request routing. */
+    activeProfileId?: number | null;
+    activeDirectory?: string;
+    activeLanguageProfileId?: number | null;
+    activeAnimeProfileId?: number | null;
+    activeAnimeDirectory?: string;
+    tags?: number[];
+    animeTags?: number[];
 }
 
 export interface AppSettings {
@@ -101,7 +109,7 @@ export interface CustomSelectProps {
     id?: string;
     value: string | number;
     onChange: (value: string) => void;
-    options: { label: string; value: string | number }[];
+    options: { label: string; value: string | number; isGroup?: boolean; icon?: React.ReactNode }[];
     className?: string;
     compact?: boolean;
 }

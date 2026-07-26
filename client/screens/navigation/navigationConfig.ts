@@ -25,7 +25,7 @@ export type NavItemConfig = {
 export const buildNavItemsConfig = (onLogout: () => void): Record<string, NavItemConfig> => ({
     'home': { label: 'Home', icon: Home, route: 'user', adminOnly: false },
     'users': { label: 'Users', icon: Users, route: 'users', adminOnly: true },
-    'discover': { label: 'Discover', icon: Film, route: 'dashboard', adminOnly: false },
+    'discover': { label: 'Discover', icon: Film, route: 'discover', adminOnly: false },
     'issues': { label: 'Issues', icon: AlertTriangle, route: 'issues', adminOnly: false },
     'status': { label: 'Status', icon: Activity, route: 'status', adminOnly: false },
     'logs': { label: 'Logs', icon: FileText, route: 'logs', adminOnly: true },

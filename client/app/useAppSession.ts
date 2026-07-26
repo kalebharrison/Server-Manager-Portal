@@ -78,6 +78,7 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
                     : `/${preferredLanding}`;
             if (path === '/status') updateRoute('status');
             else if (path === '/dashboard') updateRoute('dashboard');
+            else if (path === '/discovery' || path.startsWith('/discovery/')) updateRoute('discover');
             else if (path === '/settings' && data.session.isAdmin) updateRoute('settings');
             else if (path === '/preferences') updateRoute('preferences');
             else if (path === '/logs' && data.session.isAdmin) {
@@ -191,6 +192,7 @@ export const useAppRouting = () => {
             if (route === 'user') path = '/portal';
             if (route === 'status') path = '/status';
             if (route === 'dashboard') path = '/dashboard';
+            if (route === 'discover') path = '/discovery';
             if (route === 'settings') path = '/settings#branding';
             if (route === 'preferences') path = '/preferences';
             if (route === 'analytics') path = '/analytics';

@@ -1,5 +1,11 @@
 export type RequestMediaType = 'movie' | 'tv';
 
+// Portal-native Discover responses are intentionally Seerr-shaped but retain
+// a few routing fields which are not part of the legacy request dashboard.
+export type PortalRequestItem = any;
+export type PortalIssueItem = any;
+export type PortalServiceOptions = any;
+
 export type RequestSeason = {
     seasonNumber: number;
     name: string;

@@ -1,1 +1,1 @@
-export type AppRoute = 'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'request' | 'scanner' | 'upgrader' | 'invite' | 'loading';
+export type AppRoute = 'login' | 'admin' | 'user' | 'users' | 'status' | 'dashboard' | 'discover' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'request' | 'scanner' | 'upgrader' | 'invite' | 'loading';

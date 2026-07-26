@@ -1,0 +1,52 @@
+import React from 'react';
+
+type Props = {
+    backdropUrl?: string;
+    posterUrl?: string;
+    className?: string;
+    children: React.ReactNode;
+};
+
+/** Seerr-style request row with faded fanart/backdrop behind content. */
+export const RequestCardShell: React.FC<Props> = ({ backdropUrl, posterUrl, className = '', children }) => {
+    const artUrl = backdropUrl || posterUrl;
+    const cardGradient =
+        'linear-gradient(to right, rgb(var(--color-bg) / 1) 0%, rgb(var(--color-bg) / 0.94) 24%, rgb(var(--color-bg) / 0.55) 50%, rgb(var(--color-bg) / 0.28) 76%, rgb(var(--color-bg) / 0.18) 100%)';
+
+    return (
+        <div className={`relative overflow-hidden rounded-xl border border-border hover:border-border/80 transition-colors ${className}`}>
+            {artUrl ? (
+                <>
+                    <div
+                        className={`absolute inset-0 bg-cover bg-center ${
+                            backdropUrl ? 'opacity-30' : 'opacity-20 blur-[2px] scale-105'
+                        }`}
+                        style={{ backgroundImage: `url(${artUrl})` }}
+                        aria-hidden
+                    />
+                    <div
+                        className="absolute inset-0"
+                        style={{ backgroundImage: cardGradient }}
+                        aria-hidden
+                    />
+                </>
+            ) : (
+                <div className="absolute inset-0 bg-background/50" aria-hidden />
+            )}
+            <div className="relative z-[1]">{children}</div>
+        </div>
+    );
+};
+
+/** Action button column on request cards. */
+export const requestCardActionBtnClass =
+    'inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors disabled:opacity-50 whitespace-nowrap';
+
+export const RequestCardActions: React.FC<{ className?: string; children: React.ReactNode }> = ({
+    className = '',
+    children,
+}) => (
+    <div className={`flex sm:flex-col gap-1.5 sm:justify-center shrink-0 ${className}`}>
+        {children}
+    </div>
+);

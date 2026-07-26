@@ -20,13 +20,21 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
     const [actionId, setActionId] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [reviewTarget, setReviewTarget] = useState<AdminRequestItem | null>(null);
+    const [portalEngine, setPortalEngine] = useState(false);
+
+    useEffect(() => {
+        apiFetch('/api/portal-request/status', { cacheTtlMs: 0 })
+            .then((status) => setPortalEngine(status?.engine === 'portal'))
+            .catch(() => setPortalEngine(false));
+    }, []);
 
     const load = useCallback(async (silent = false) => {
         if (silent) setRefreshing(true);
         else setLoading(true);
         setError(null);
         try {
-            const data = await apiFetch(`/api/requests?filter=${encodeURIComponent(filter)}&take=${compact ? 8 : 30}`, { forceRefresh: true, cacheTtlMs: 0 });
+            const base = portalEngine ? '/api/portal-request/admin/requests' : '/api/requests';
+            const data = await apiFetch(`${base}?filter=${encodeURIComponent(filter)}&take=${compact ? 8 : 30}`, { forceRefresh: true, cacheTtlMs: 0 });
             setItems(Array.isArray(data?.results) ? data.results : []);
         } catch (err: any) {
             setError(err?.message || 'Failed to load requests');
@@ -35,7 +43,7 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
             setLoading(false);
             setRefreshing(false);
         }
-    }, [compact, filter]);
+    }, [compact, filter, portalEngine]);
 
     useEffect(() => {
         load(false);
@@ -44,9 +52,10 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
     const runAction = async (item: AdminRequestItem, action: 'approve' | 'decline' | 'retry' | 'delete') => {
         setActionId(item.id);
         try {
+            const base = portalEngine ? '/api/portal-request/admin/requests' : '/api/requests';
             const endpoint = action === 'delete'
-                ? `/api/requests/${item.id}`
-                : `/api/requests/${item.id}/${action}`;
+                ? `${base}/${item.id}`
+                : `${base}/${item.id}/${action}`;
             await apiFetch(endpoint, {
                 method: action === 'delete' ? 'DELETE' : 'POST',
                 body: JSON.stringify({ title: item.title, requestedBy: item.requestedBy || null }),
@@ -153,6 +162,7 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
             {reviewTarget && typeof document !== 'undefined' && createPortal(
                 <RequestApprovalModal
                     request={reviewTarget}
+                    portalEngine={portalEngine}
                     onClose={() => setReviewTarget(null)}
                     onComplete={() => {
                         setReviewTarget(null);

@@ -1,54 +1,94 @@
-import { useEffect, useState } from 'react';
+export const PORTAL_WIDE_LAYOUT_THRESHOLD = 1.78;
 
-/** Matches MainApp ultra-wide content cap (16:9 of screen height). */
-export const PORTAL_WIDE_LAYOUT_THRESHOLD = (16 / 9) + 0.03;
+import { useSyncExternalStore, type CSSProperties } from 'react';
 
-export const isPortalWideContentLayout = () => {
-    const screenWidth = window.screen?.width || window.innerWidth;
-    const screenHeight = window.screen?.height || window.innerHeight;
-    return screenWidth / Math.max(1, screenHeight) > PORTAL_WIDE_LAYOUT_THRESHOLD;
-};
+export const activityStreamColumnCount = (_isWide?: boolean, _totalStreams?: number) => 3;
 
-export const usePortalWideContentLayout = () => {
-    const [isWide, setIsWide] = useState(() =>
-        typeof window !== 'undefined' ? isPortalWideContentLayout() : false
-    );
+export const activityStreamGridClass = (_isWide?: boolean, _count?: number) => 'discover-activity-grid';
 
-    useEffect(() => {
-        const update = () => setIsWide(isPortalWideContentLayout());
-        update();
-        window.addEventListener('resize', update);
-        return () => window.removeEventListener('resize', update);
-    }, []);
-
-    return isWide;
-};
-
-export const activityStreamColumnCount = (wideLayout: boolean, sessionCount: number) =>
-    wideLayout && sessionCount >= 4 ? 4 : 3;
-
-export const activityStreamGridClass = (wideLayout: boolean, sessionCount: number) => {
-    const useFourCols = activityStreamColumnCount(wideLayout, sessionCount) === 4;
-    return useFourCols ? 'discover-activity-grid discover-activity-grid--quad' : 'discover-activity-grid';
-};
+/** True when the portal viewport is wide enough for multi-column activity layouts. */
+export const usePortalWideContentLayout = () => useSyncExternalStore(
+    (onStoreChange) => {
+        if (typeof window === 'undefined') return () => {};
+        const mq = window.matchMedia(`(min-aspect-ratio: ${PORTAL_WIDE_LAYOUT_THRESHOLD}/1)`);
+        mq.addEventListener('change', onStoreChange);
+        return () => mq.removeEventListener('change', onStoreChange);
+    },
+    () => (typeof window === 'undefined'
+        ? false
+        : (window.screen?.width || window.innerWidth) / Math.max(1, window.screen?.height || window.innerHeight) > PORTAL_WIDE_LAYOUT_THRESHOLD),
+    () => false,
+);
 
 /** Auto-wrapping poster grid sized to the content area, not the viewport. */
 export const discoverPosterGridClass = 'discover-poster-grid';
 
-export type UpgraderGridSize = 'small' | 'medium' | 'large' | 'list';
-export const UPGRADER_GRID_SIZE_STORAGE_KEY = 'upgrader_grid_size';
-export const UPGRADER_GRID_SIZE_OPTIONS = [
-    { value: 'small', label: 'Small grid' },
-    { value: 'medium', label: 'Medium grid' },
-    { value: 'large', label: 'Large grid' },
-    { value: 'list', label: 'List' },
+export type UpgraderGridSize = 'small' | 'medium' | 'large' | 'xlarge' | 'list';
+
+export const UPGRADER_GRID_SIZE_OPTIONS: Array<{ value: UpgraderGridSize; label: string }> = [
+    { value: 'small', label: 'Grid: Small' },
+    { value: 'medium', label: 'Grid: Medium' },
+    { value: 'large', label: 'Grid: Large' },
+    { value: 'xlarge', label: 'Grid: Extra large' },
+    { value: 'list', label: 'List view' },
 ];
-export const normalizeUpgraderGridSize = (value: string | null): UpgraderGridSize => (
-    ['small', 'medium', 'large', 'list'].includes(String(value)) ? value as UpgraderGridSize : 'medium'
+
+export const upgraderPosterGridClass = (size: UpgraderGridSize) => size === 'list' ? 'flex flex-col gap-3' : `upgrader-poster-grid upgrader-poster-grid--${size}`;
+
+/** Minimum poster column width per density preset (used with auto-fill). */
+export const UPGRADER_GRID_MIN_WIDTH: Record<UpgraderGridSize, string> = {
+    small: '5rem',
+    medium: '7rem',
+    large: '9.5rem',
+    xlarge: '13rem',
+    list: '100%',
+};
+
+/** Match discover-poster-grid @container breakpoints (width in px). */
+export const discoverPosterGridColumnsAtWidth = (containerWidth: number): number => {
+    if (containerWidth >= 896) return 10;
+    if (containerWidth >= 768) return 8;
+    if (containerWidth >= 480) return 5;
+    if (containerWidth >= 384) return 4;
+    return 3;
+};
+
+/** Approximate main content width (sidebar-aware). */
+export const estimatePortalContentWidth = (): number => {
+    if (typeof window === 'undefined') return 1200;
+    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+    const sidebar = isDesktop ? 288 : 0;
+    const padding = isDesktop ? 64 : 32;
+    return Math.max(320, window.innerWidth - sidebar - padding);
+};
+
+export const posterGridSkeletonCount = (rows = 2, containerWidth = estimatePortalContentWidth()): number => (
+    discoverPosterGridColumnsAtWidth(containerWidth) * rows
 );
-export const upgraderPosterGridClass = (size: UpgraderGridSize) => (
-    size === 'list' ? 'grid grid-cols-1 gap-3' : 'grid gap-4'
-);
-export const upgraderPosterGridStyle = (size: UpgraderGridSize) => (
-    size === 'list' ? undefined : { gridTemplateColumns: `repeat(auto-fill, minmax(${size === 'small' ? 120 : size === 'large' ? 220 : 165}px, 1fr))` }
-);
+
+export const carouselRowSkeletonCount = (containerWidth = estimatePortalContentWidth()): number => {
+    const cardWidth = containerWidth >= 640 ? 160 : 140;
+    return Math.max(4, Math.ceil(containerWidth / (cardWidth + 16)));
+};
+
+export const upgraderPosterGridStyle = (size: UpgraderGridSize): CSSProperties => size === 'list' ? {} : ({
+    gridTemplateColumns: `repeat(auto-fill, minmax(${UPGRADER_GRID_MIN_WIDTH[size]}, 1fr))`,
+});
+
+/** Fixed carousel poster widths for Discover home rails (mirrors Movies/Series grid density). */
+export const DISCOVER_ROW_CARD_WIDTH_CLASS: Record<UpgraderGridSize, string> = {
+    small: 'w-[100px] sm:w-[112px]',
+    medium: 'w-[140px] sm:w-[160px]',
+    large: 'w-[170px] sm:w-[196px]',
+    xlarge: 'w-[204px] sm:w-[236px]',
+    list: 'w-[140px] sm:w-[160px]',
+};
+
+export const discoverRowCardWidthClass = (size: UpgraderGridSize) => DISCOVER_ROW_CARD_WIDTH_CLASS[size] || DISCOVER_ROW_CARD_WIDTH_CLASS.medium;
+
+export const UPGRADER_GRID_SIZE_STORAGE_KEY = 'upgraderGridSize';
+
+export const normalizeUpgraderGridSize = (value: unknown): UpgraderGridSize => {
+    if (value === 'small' || value === 'medium' || value === 'large' || value === 'xlarge' || value === 'list') return value;
+    return 'medium';
+};

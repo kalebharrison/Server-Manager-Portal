@@ -5,6 +5,7 @@ import {
     PublicInviteClaim,
     StatusDashboard,
     LibraryDashboard,
+    DiscoveryDashboard,
     MediaStackDashboard,
     AnalyticsDashboard,
     RequestDashboard,
@@ -64,10 +65,14 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
     }
     if (currentRoute === 'status') return <StatusDashboard onBack={() => isPublicStatus ? setRoute('login') : setRoute('user')} isAdmin={isAdmin} isPublic={isPublicStatus} />;
     if (currentRoute === 'dashboard') return <LibraryDashboard isAdmin={isAdmin} publicConfig={effectivePublicConfig} mediaServerType={sessionInfo?.mediaServerType} cacheScope={sessionInfo?.serverName} />;
+    if (currentRoute === 'discover') return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} />;
     if (currentRoute === 'settings' && isAdmin) return <SettingsDashboard />;
     if (currentRoute === 'preferences') return <UserPreferencesDashboard account={sessionInfo?.account} activeTheme={activeTheme} setActiveTheme={setActiveTheme} refreshSession={checkSession} readOnly={isImpersonating} />;
     if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
     if (currentRoute === 'analytics') return <AnalyticsDashboard isAdmin={isAdmin} sessionInfo={sessionInfo} />;
+    if (currentRoute === 'request' && (effectivePublicConfig?.requestEngine === 'portal' || sessionInfo?.requestEngine === 'portal')) {
+        return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} />;
+    }
     if (currentRoute === 'request') return <RequestDashboard isAdmin={isAdmin} cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
     if (currentRoute === 'scanner' && isAdmin) return <ScannerDashboard />;
     if (currentRoute === 'upgrader' && isAdmin) return <UpgraderDashboard />;
