@@ -18,8 +18,10 @@ import { discoverSkeletonCountForGrid } from './discoverPaginationUtils';
 import { buildDiscoverMoviesApiUrl, fetchDiscoverPageWithAdvance } from './discoverFetchUtils';
 import { DiscoverHideExistingToggle } from './DiscoverHideExistingToggle';
 import { DiscoverForeignToggle } from './DiscoverForeignToggle';
+import { DiscoverAnimeToggle } from './DiscoverAnimeToggle';
 import { useHideExistingToggle } from './useHideExistingToggle';
 import { useForeignToggle } from './useForeignToggle';
+import { useAnimeToggle } from './useAnimeToggle';
 import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { discoveryTheme } from './discoveryThemeClasses';
 import { useDiscoverI18n } from './i18n';
@@ -34,6 +36,7 @@ export const DiscoverMovies: React.FC<{
     const { preferences } = useDiscoveryPreferences();
     const { hideExisting, setHideExisting } = useHideExistingToggle();
     const { foreignOnly, setForeignOnly } = useForeignToggle();
+    const { animeOnly, setAnimeOnly } = useAnimeToggle();
     const quickRequest = useDiscoverQuickRequest(pushToast);
     const [gridSize, setGridSize] = useDiscoverGridSize();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -58,8 +61,8 @@ export const DiscoverMovies: React.FC<{
     }, [readFiltersFromUrl]);
 
     const resetKey = useMemo(
-        () => `${JSON.stringify(filters)}:${preferences.hideAvailableMedia}:${preferences.discoverLanguage}:${hideExisting}:${foreignOnly}:${gridSize}:${locale}`,
-        [filters, preferences.hideAvailableMedia, preferences.discoverLanguage, hideExisting, foreignOnly, gridSize, locale],
+        () => `${JSON.stringify(filters)}:${preferences.hideAvailableMedia}:${preferences.discoverLanguage}:${hideExisting}:${foreignOnly}:${animeOnly}:${gridSize}:${locale}`,
+        [filters, preferences.hideAvailableMedia, preferences.discoverLanguage, hideExisting, foreignOnly, animeOnly, gridSize, locale],
     );
 
     const browseFilterOptions = useMemo(() => ({
@@ -67,13 +70,17 @@ export const DiscoverMovies: React.FC<{
         hideAvailable: preferences.hideAvailableMedia || hideExisting,
         hideRequested: false,
         foreignOnly,
-    }), [preferences.hideAvailableMedia, hideExisting, foreignOnly]);
+        animeOnly,
+    }), [preferences.hideAvailableMedia, hideExisting, foreignOnly, animeOnly]);
 
     const fetchPage = useCallback(async (page: number) => fetchDiscoverPageWithAdvance(
-        (nextPage) => buildDiscoverMoviesApiUrl(nextPage, filters, { international: foreignOnly }),
+        (nextPage) => buildDiscoverMoviesApiUrl(nextPage, filters, {
+            international: foreignOnly,
+            anime: animeOnly,
+        }),
         page,
         browseFilterOptions,
-    ), [filters, browseFilterOptions, foreignOnly]);
+    ), [filters, browseFilterOptions, foreignOnly, animeOnly]);
 
     const {
         results,
@@ -120,14 +127,16 @@ export const DiscoverMovies: React.FC<{
         containerRef.current?.clientWidth || (typeof window !== 'undefined' ? window.innerWidth : 1200),
     );
 
-    const emptyMessage = activeFilterCount > 0 || hideExisting || foreignOnly
+    const emptyMessage = activeFilterCount > 0 || hideExisting || foreignOnly || animeOnly
         ? t('browse.emptyMoviesFiltered')
         : t('browse.emptyMovies');
     const emptyHint = hideExisting
         ? t('browse.emptyHintHideExisting')
-        : foreignOnly
-            ? t('browse.emptyHintForeign')
-            : t('browse.emptyHint');
+        : animeOnly
+            ? t('browse.emptyHintAnime')
+            : foreignOnly
+                ? t('browse.emptyHintForeign')
+                : t('browse.emptyHint');
 
     return (
         <div className="w-full flex flex-col md:flex-row gap-8 px-4 sm:px-8 mt-4 relative">
@@ -143,6 +152,7 @@ export const DiscoverMovies: React.FC<{
                     </div>
                     <div className="flex items-center gap-3 flex-wrap justify-end">
                         <DiscoverGridSizeSelect value={gridSize} onChange={setGridSize} />
+                        <DiscoverAnimeToggle checked={animeOnly} onChange={setAnimeOnly} />
                         <DiscoverForeignToggle checked={foreignOnly} onChange={setForeignOnly} />
                         <DiscoverHideExistingToggle checked={hideExisting} onChange={setHideExisting} />
                         <button

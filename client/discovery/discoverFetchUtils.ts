@@ -10,11 +10,18 @@ type DiscoverBrowseFilterOptions = {
     hideRequested?: boolean;
     /** When on, keep only non-English / non-anime titles. */
     foreignOnly?: boolean;
+    /** When on, keep Japanese animation (anime). */
+    animeOnly?: boolean;
     /**
      * Trust mediaInfo already attached by the discovery proxy (disk cache + warm catalog).
      * Client must not round-trip /availability-batch — that caused badge pop-in after paint.
      */
     trustAttachedAvailability?: boolean;
+};
+
+export type DiscoverBrowseModeOptions = {
+    international?: boolean;
+    anime?: boolean;
 };
 
 /** Extra same-endpoint pages to scan when hide-available empties a single page (Seerr-style). */
@@ -28,24 +35,57 @@ export const buildDiscoverNetworkApiUrl = (page: number, networkId: number | str
 
 /** Popularity floor so International browse surfaces Colony-tier hits, not obscure softcore. */
 const INTERNATIONAL_VOTE_COUNT_GTE = '100';
+const ANIMATION_GENRE_ID = '16';
 
-const withInternationalBrowseParams = (url: string, international: boolean, filters: FilterState): string => {
-    if (!international) return url;
+const withBrowseModeParams = (
+    url: string,
+    options: DiscoverBrowseModeOptions,
+    filters: FilterState,
+): string => {
+    const international = !!options.international;
+    const anime = !!options.anime;
+    if (!international && !anime) return url;
+
     const [base, qs = ''] = url.split('?');
     const params = new URLSearchParams(qs);
-    // Drop original-language lock; server also honors `international=1`.
-    params.delete('language');
-    params.set('international', '1');
-    if (!filters.voteCountGte) {
-        params.set('voteCountGte', INTERNATIONAL_VOTE_COUNT_GTE);
+
+    if (anime && !international) {
+        // Dedicated anime discover: Japanese + Animation.
+        params.set('anime', '1');
+        params.set('language', 'ja');
+        params.delete('international');
+        const genres = new Set(
+            String(params.get('genre') || filters.genre || '')
+                .split(',')
+                .map((part) => part.trim())
+                .filter(Boolean),
+        );
+        genres.add(ANIMATION_GENRE_ID);
+        params.set('genre', [...genres].join(','));
+    } else if (international && !anime) {
+        params.delete('language');
+        params.set('international', '1');
+        params.delete('anime');
+        if (!filters.voteCountGte) {
+            params.set('voteCountGte', INTERNATIONAL_VOTE_COUNT_GTE);
+        }
+    } else {
+        // Both on: one popular unlocked feed; client keeps anime OR international.
+        params.delete('language');
+        params.set('international', '1');
+        params.set('anime', '1');
+        if (!filters.voteCountGte) {
+            params.set('voteCountGte', INTERNATIONAL_VOTE_COUNT_GTE);
+        }
     }
+
     return `${base}?${params.toString()}`;
 };
 
 export const buildDiscoverMoviesApiUrl = (
     page: number,
     filters: FilterState,
-    options: { international?: boolean } = {},
+    options: DiscoverBrowseModeOptions = {},
 ): string => {
     const sort = filters.sort || 'popularity.desc';
     const studioOnly = Boolean(filters.studio)
@@ -55,19 +95,18 @@ export const buildDiscoverMoviesApiUrl = (
         return buildDiscoverStudioApiUrl(page, filters.studio, sort);
     }
 
-    // Clear language filter for International so TMDB isn't locked to English originals.
-    const browseFilters = options.international
-        ? { ...filters, language: '' }
+    const browseFilters = (options.international || options.anime)
+        ? { ...filters, language: options.anime && !options.international ? 'ja' : '' }
         : filters;
     let url = `/api/discovery/proxy/discover/movies?page=${page}&sortBy=${encodeURIComponent(sort)}`;
     url = appendDiscoverQuery(url, browseFilters, 'movie');
-    return withInternationalBrowseParams(url, !!options.international, browseFilters);
+    return withBrowseModeParams(url, options, browseFilters);
 };
 
 export const buildDiscoverSeriesApiUrl = (
     page: number,
     filters: FilterState,
-    options: { international?: boolean } = {},
+    options: DiscoverBrowseModeOptions = {},
 ): string => {
     const sort = filters.sort || 'popularity.desc';
     const networkOnly = Boolean(filters.network)
@@ -83,12 +122,12 @@ export const buildDiscoverSeriesApiUrl = (
         return buildDiscoverNetworkApiUrl(page, filters.network, sort);
     }
 
-    const browseFilters = options.international
-        ? { ...filters, language: '' }
+    const browseFilters = (options.international || options.anime)
+        ? { ...filters, language: options.anime && !options.international ? 'ja' : '' }
         : filters;
     let url = `/api/discovery/proxy/discover/tv?page=${page}&sortBy=${encodeURIComponent(sort)}`;
     url = appendDiscoverQuery(url, browseFilters, 'tv');
-    return withInternationalBrowseParams(url, !!options.international, browseFilters);
+    return withBrowseModeParams(url, options, browseFilters);
 };
 
 export async function fetchDiscoverPage(
@@ -188,7 +227,8 @@ export async function fetchDiscoverPageWithAdvance(
     page: number,
     options: DiscoverBrowseFilterOptions = {},
 ): Promise<DiscoverPagePayload & { lastFetchedPage: number }> {
-    const needsAdvance = !!options.hideAvailable || !!options.hideRequested || !!options.foreignOnly;
+    const needsAdvance = !!options.hideAvailable || !!options.hideRequested
+        || !!options.foreignOnly || !!options.animeOnly;
     if (!needsAdvance) {
         const payload = await fetchDiscoverPage(buildUrl(page), options);
         return { ...payload, lastFetchedPage: page };

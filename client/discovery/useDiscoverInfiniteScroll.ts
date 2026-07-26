@@ -14,6 +14,7 @@ type BrowseFilterOptions = {
     hideAvailable?: boolean;
     hideRequested?: boolean;
     foreignOnly?: boolean;
+    animeOnly?: boolean;
 };
 
 type Options = {
