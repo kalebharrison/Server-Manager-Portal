@@ -422,6 +422,76 @@ test('simplifyDiscoverSearchQuery strips filler for Seerr', () => {
     assert.equal(simplifyDiscoverSearchQuery('what about "Remains" 2011?'), 'Remains');
 });
 
+test('agent asks LLM for title names when Seerr keywords and web are empty', async () => {
+    let chatRound = 0;
+    const searchQueries = [];
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url, options = {}) => {
+            const href = String(url);
+            if (href.includes('/chat/completions')) {
+                chatRound += 1;
+                const body = JSON.parse(options.body || '{}');
+                // Title-suggest call has no tools.
+                if (!body.tools) {
+                    return {
+                        ok: true,
+                        json: async () => ({
+                            choices: [{
+                                message: {
+                                    role: 'assistant',
+                                    content: '{"titles":["Army of the Dead","Remains"]}',
+                                },
+                            }],
+                        }),
+                    };
+                }
+                return {
+                    ok: true,
+                    json: async () => ({
+                        choices: [{
+                            message: {
+                                role: 'assistant',
+                                tool_calls: [{
+                                    id: `web_${chatRound}`,
+                                    type: 'function',
+                                    function: {
+                                        name: 'web_search',
+                                        arguments: JSON.stringify({ query: 'zombie casino' }),
+                                    },
+                                }],
+                            },
+                        }],
+                    }),
+                };
+            }
+            return { ok: true, json: async () => ({ results: [] }), text: async () => '' };
+        },
+        getRequestAppService: () => ({
+            search: async (_config, { query }) => {
+                searchQueries.push(query);
+                if (/Army of the Dead/i.test(query)) {
+                    return {
+                        results: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead', year: '2021' }],
+                    };
+                }
+                return { results: [] };
+            },
+            discoverByTheme: async () => ({ results: [] }),
+            getMediaDetails: async (_config, { mediaType, tmdbId }) => ({
+                mediaType,
+                tmdbId,
+                title: 'Army of the Dead',
+                year: '2021',
+                canRequest: true,
+            }),
+        }),
+    });
+    const outcome = await agent.run(agentConfig, "I'm looking for a zombie movie that's set in a casino");
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.results[0]?.tmdbId, 503736);
+    assert.ok(searchQueries.some((query) => /Army of the Dead/i.test(query)));
+});
+
 test('agent auto-resolves Seerr from simplified NL query when web is empty', async () => {
     let searchQueries = [];
     const agent = createDiscordMediaAgent({
