@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, BarChart3, FileText, Film, Home, Layers, LogOut, Settings, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowUpCircle, BarChart3, FileText, Film, Home, Layers, LogOut, Radar, Settings, SlidersHorizontal, Sparkles, Users } from 'lucide-react';
 import type React from 'react';
 
 export const THEME_OPTIONS = [
@@ -8,6 +8,9 @@ export const THEME_OPTIONS = [
     { label: 'Jellyfin Purple', value: 'jellyfin' },
     { label: 'Emerald Green', value: 'emerald' },
     { label: 'Neon Midnight', value: 'midnight' },
+    { label: 'Crimson', value: 'crimson' },
+    { label: 'Amethyst', value: 'amethyst' },
+    { label: 'Sunset', value: 'sunset' },
 ] as const;
 
 export type NavItemConfig = {
@@ -29,6 +32,8 @@ export const buildNavItemsConfig = (onLogout: () => void): Record<string, NavIte
     'analytics': { label: 'Analytics', icon: BarChart3, route: 'analytics', adminOnly: false },
     'mediastack': { label: 'Calendar', icon: Layers, route: 'mediastack', adminOnly: false },
     'request': { label: 'Request Content', icon: Sparkles, route: 'request', adminOnly: false },
+    'scanner': { label: 'Scanner', icon: Radar, route: 'scanner', adminOnly: true },
+    'upgrader': { label: 'Upgrader', icon: ArrowUpCircle, route: 'upgrader', adminOnly: true },
     'preferences': { label: 'Preferences', icon: SlidersHorizontal, route: 'preferences', adminOnly: false },
     'settings': { label: 'Settings', icon: Settings, route: 'settings', adminOnly: true },
     'logout': { label: 'Logout', icon: LogOut, route: '', adminOnly: false, onClick: onLogout }

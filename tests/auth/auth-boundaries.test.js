@@ -8,6 +8,7 @@ const intentionallyPublic = [
     /^GET \/api\/auth\/(plex\/callback|session)$/,
     /^POST \/api\/setup\/plex\/callback$/,
     /^GET \/api\/config\/public$/,
+    /^GET \/api\/release-notes$/,
     /^POST \/api\/config$/,
     /^POST \/api\/config\/test-integration$/,
     /^POST \/api\/plex\/servers$/,

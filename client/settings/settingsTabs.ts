@@ -1,4 +1,4 @@
-export const SETTINGS_TABS = ['plex', 'public-access', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'metadata', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'discord', 'broadcast', 'stream-rules', 'logs'] as const;
+export const SETTINGS_TABS = ['plex', 'public-access', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'scanner', 'upgrader', 'metadata', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'discord', 'broadcast', 'stream-rules', 'logs'] as const;
 
 export type SettingsTabId = typeof SETTINGS_TABS[number];
 
@@ -33,6 +33,8 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
         tabs: [
             { id: 'plex', label: 'Plex / Jellyfin', keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct', 'privacy', 'usernames'] },
             { id: 'mediastack', label: 'Apps & Automation', keywords: ['sonarr', 'radarr', 'tautulli', 'jellystat', 'seerr', 'jellyseerr', 'requests', 'integrations'] },
+            { id: 'scanner', label: 'Scanner', keywords: ['autoscan', 'scanner', 'webhook', 'path rewrite', 'sonarr', 'radarr', 'lidarr', 'library refresh'] },
+            { id: 'upgrader', label: 'Library Upgrader', keywords: ['upgrade', 'hevc', 'codec', 'sonarr', 'radarr', 'quality profile'] },
             { id: 'metadata', label: 'Metadata', keywords: ['tmdb', 'tvdb', 'artwork', 'genres', 'discovery', 'metadata'] },
             { id: 'status', label: 'Status Page', keywords: ['uptime', 'health', 'services', 'monitor'] }
         ]

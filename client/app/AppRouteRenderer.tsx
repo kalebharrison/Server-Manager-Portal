@@ -8,6 +8,8 @@ import {
     MediaStackDashboard,
     AnalyticsDashboard,
     RequestDashboard,
+    ScannerDashboard,
+    UpgraderDashboard,
     IssuesDashboard,
     AdminDashboard,
     UserDashboard,
@@ -67,6 +69,8 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
     if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
     if (currentRoute === 'analytics') return <AnalyticsDashboard isAdmin={isAdmin} sessionInfo={sessionInfo} />;
     if (currentRoute === 'request') return <RequestDashboard isAdmin={isAdmin} cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
+    if (currentRoute === 'scanner' && isAdmin) return <ScannerDashboard />;
+    if (currentRoute === 'upgrader' && isAdmin) return <UpgraderDashboard />;
     if (currentRoute === 'issues') return <IssuesDashboard isAdmin={isAdmin} />;
     if (currentRoute === 'admin' || currentRoute === 'users') return <AdminDashboard onViewAsUser={handleViewAsUser} />;
     return <UserDashboard sessionInfo={sessionInfo} publicConfig={effectivePublicConfig} refreshSession={checkSession} onViewAdmin={() => setRoute('users')} onViewSettings={() => setRoute('settings')} onViewLogs={() => { window.history.replaceState({}, '', portalUrl('/settings#logs')); setRoute('settings'); }} />;

@@ -1,4 +1,4 @@
-export type NavigationRoute = 'admin' | 'user' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'request';
+export type NavigationRoute = 'admin' | 'user' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'request' | 'scanner';
 
 export interface NavigationProps {
     currentRoute: string;
@@ -9,8 +9,10 @@ export interface NavigationProps {
     adminThumb?: string | null;
     customLogoUrl?: string | null;
     navOrder: string[];
+    navHiddenKeys?: string[];
     navFeatures?: {
         request?: boolean;
+        scanner?: boolean;
     };
     appVersion?: string;
     activeTheme: string;

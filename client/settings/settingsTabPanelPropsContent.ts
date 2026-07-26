@@ -30,6 +30,41 @@ export const buildNavigationTabPanelProps = ({
 }: Pick<ContentTabPanelPropsInput, 'values' | 'onChange'>): SettingsTabPanelProps['navigation'] => ({
     navOrder: values.navOrder,
     onNavOrderChange: onChange('navOrder'),
+    navHiddenKeys: values.navHiddenKeys,
+    onNavHiddenKeysChange: onChange('navHiddenKeys'),
+});
+
+export const buildScannerTabPanelProps = ({
+    values,
+    onChange,
+    addToast,
+}: Pick<ContentTabPanelPropsInput, 'values' | 'onChange' | 'addToast'>): SettingsTabPanelProps['scanner'] => ({
+    enabled: values.scannerEnabled,
+    onEnabledChange: onChange('scannerEnabled'),
+    homeWidgetEnabled: values.scannerHomeWidgetEnabled,
+    onHomeWidgetEnabledChange: onChange('scannerHomeWidgetEnabled'),
+    webhooksVisible: values.scannerWebhooksVisible,
+    onWebhooksVisibleChange: onChange('scannerWebhooksVisible'),
+    manualPathVisible: values.scannerManualPathVisible,
+    onManualPathVisibleChange: onChange('scannerManualPathVisible'),
+    scanner: values.scanner,
+    onChange: onChange('scanner'),
+    sectionId: 'scanner',
+    addToast,
+});
+
+export const buildUpgraderTabPanelProps = ({
+    values,
+    onChange,
+}: Pick<ContentTabPanelPropsInput, 'values' | 'onChange'>): SettingsTabPanelProps['upgrader'] => ({
+    enabled: values.upgraderEnabled,
+    automationEnabled: values.upgraderAutomationEnabled,
+    minSizeGB: values.upgraderMinSizeGB,
+    maxActionsPerHour: values.upgraderMaxActionsPerHour,
+    onEnabledChange: onChange('upgraderEnabled'),
+    onAutomationEnabledChange: onChange('upgraderAutomationEnabled'),
+    onMinSizeGBChange: onChange('upgraderMinSizeGB'),
+    onMaxActionsPerHourChange: onChange('upgraderMaxActionsPerHour'),
 });
 
 export const buildBroadcastTabPanelProps = ({

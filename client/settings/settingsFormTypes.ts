@@ -1,5 +1,6 @@
 import type { DashboardLayoutConfig } from '../shared/dashboardLayout';
 import type { ArrInstance, PlexServer } from '../shared/types';
+import type { ScannerSettings } from './ScannerSettingsPanel';
 
 export type SettingsFormValues = {
     token: string;
@@ -60,6 +61,8 @@ export type SettingsFormValues = {
     requestAppUrl: string;
     requestAppApiKey: string;
     requestAppMembershipSync: boolean;
+    requestEngine: 'portal' | 'seerr';
+    discoverySource: 'tmdb' | 'seerr';
     ombiUrl: string;
     ombiApiKey: string;
     dashboardLayout: DashboardLayoutConfig;
@@ -83,6 +86,16 @@ export type SettingsFormValues = {
     showPosterQualityBadges: boolean;
     allowTemporaryAccess: boolean;
     navOrder: string[];
+    navHiddenKeys: string[];
+    scannerEnabled: boolean;
+    scannerHomeWidgetEnabled: boolean;
+    scannerWebhooksVisible: boolean;
+    scannerManualPathVisible: boolean;
+    scanner: ScannerSettings;
+    upgraderEnabled: boolean;
+    upgraderAutomationEnabled: boolean;
+    upgraderMinSizeGB: number;
+    upgraderMaxActionsPerHour: number;
     logoFile: File | null;
 };
 

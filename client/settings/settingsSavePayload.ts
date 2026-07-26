@@ -1,6 +1,7 @@
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
-import { normalizeSettingsNavOrder } from './settingsNavOrder';
+import { normalizeNavHiddenKeys, normalizeSettingsNavOrder } from './settingsNavOrder';
 import type { ArrInstance } from '../shared/types';
+import type { ScannerSettings } from './ScannerSettingsPanel';
 
 type SettingsSavePayloadInput = {
     token: string;
@@ -54,6 +55,8 @@ type SettingsSavePayloadInput = {
     requestAppUrl: string;
     requestAppApiKey: string;
     requestAppMembershipSync: boolean;
+    requestEngine: 'portal' | 'seerr';
+    discoverySource: 'tmdb' | 'seerr';
     ombiUrl: string;
     ombiApiKey: string;
     customLogoUrl: string;
@@ -73,6 +76,7 @@ type SettingsSavePayloadInput = {
     referralRewardDays: number;
     announcement: string;
     navOrder: string[];
+    navHiddenKeys: string[];
     hideStreamUsers: string;
     useTrendingSlideshowOnLogin: boolean;
     showLoginServerStats: boolean;
@@ -84,6 +88,15 @@ type SettingsSavePayloadInput = {
     autoBackupEnabled: boolean;
     autoBackupIntervalDays: number;
     autoBackupRetentionCount: number;
+    scannerEnabled: boolean;
+    scannerHomeWidgetEnabled: boolean;
+    scannerWebhooksVisible: boolean;
+    scannerManualPathVisible: boolean;
+    scanner: ScannerSettings;
+    upgraderEnabled: boolean;
+    upgraderAutomationEnabled: boolean;
+    upgraderMinSizeGB: number;
+    upgraderMaxActionsPerHour: number;
     dashboardLayout: DashboardLayoutConfig;
 };
 
@@ -101,5 +114,6 @@ export const buildSettingsSavePayload = ({
     primaryColor: '',
     allowTemporaryAccess: false,
     navOrder: normalizeSettingsNavOrder(navOrder),
+    navHiddenKeys: normalizeNavHiddenKeys(settings.navHiddenKeys),
     dashboardLayout: normalizeSectionLayout(dashboardLayout),
 });

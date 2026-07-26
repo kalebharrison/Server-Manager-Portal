@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Check, Loader2, RefreshCw, RotateCcw, Trash2, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Check, Loader2, Pencil, RefreshCw, RotateCcw, Trash2, X } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { formatDateTime } from '../shared/format';
+import { RequestApprovalModal } from './RequestApprovalModal';
 import type { AdminRequestItem } from './types';
 
 const filters = [
@@ -17,6 +19,7 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
     const [refreshing, setRefreshing] = useState(false);
     const [actionId, setActionId] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [reviewTarget, setReviewTarget] = useState<AdminRequestItem | null>(null);
 
     const load = useCallback(async (silent = false) => {
         if (silent) setRefreshing(true);
@@ -121,6 +124,9 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
                                     <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 shrink-0">
                                         {filter === 'pending' && (
                                             <>
+                                                <button type="button" title="Review and approve" disabled={busy} onClick={() => setReviewTarget(item)} className="p-2 rounded-lg text-plex hover:bg-plex/10 disabled:opacity-50">
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
                                                 <button type="button" title="Approve" disabled={busy} onClick={() => runAction(item, 'approve')} className="p-2 rounded-lg text-green-300 hover:bg-green-500/10 disabled:opacity-50">
                                                     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                                                 </button>
@@ -143,6 +149,18 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
                         );
                     })}
                 </div>
+            )}
+            {reviewTarget && typeof document !== 'undefined' && createPortal(
+                <RequestApprovalModal
+                    request={reviewTarget}
+                    onClose={() => setReviewTarget(null)}
+                    onComplete={() => {
+                        setReviewTarget(null);
+                        void load(true);
+                    }}
+                    onError={(message) => setError(message)}
+                />,
+                document.body
             )}
         </section>
     );

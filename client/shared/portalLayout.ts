@@ -34,3 +34,21 @@ export const activityStreamGridClass = (wideLayout: boolean, sessionCount: numbe
 
 /** Auto-wrapping poster grid sized to the content area, not the viewport. */
 export const discoverPosterGridClass = 'discover-poster-grid';
+
+export type UpgraderGridSize = 'small' | 'medium' | 'large' | 'list';
+export const UPGRADER_GRID_SIZE_STORAGE_KEY = 'upgrader_grid_size';
+export const UPGRADER_GRID_SIZE_OPTIONS = [
+    { value: 'small', label: 'Small grid' },
+    { value: 'medium', label: 'Medium grid' },
+    { value: 'large', label: 'Large grid' },
+    { value: 'list', label: 'List' },
+];
+export const normalizeUpgraderGridSize = (value: string | null): UpgraderGridSize => (
+    ['small', 'medium', 'large', 'list'].includes(String(value)) ? value as UpgraderGridSize : 'medium'
+);
+export const upgraderPosterGridClass = (size: UpgraderGridSize) => (
+    size === 'list' ? 'grid grid-cols-1 gap-3' : 'grid gap-4'
+);
+export const upgraderPosterGridStyle = (size: UpgraderGridSize) => (
+    size === 'list' ? undefined : { gridTemplateColumns: `repeat(auto-fill, minmax(${size === 'small' ? 120 : size === 'large' ? 220 : 165}px, 1fr))` }
+);

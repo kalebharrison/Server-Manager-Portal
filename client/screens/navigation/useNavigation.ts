@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../../shared/basePath';
 import { updateFavicon } from '../../shared/favicon';
+import { ALWAYS_VISIBLE_NAV_KEYS, normalizeNavHiddenKeys } from '../../settings/settingsNavOrder';
 import { buildNavItemsConfig } from './navigationConfig';
 import type { NavigationProps } from './types';
 
@@ -11,8 +12,9 @@ export const useNavigation = ({
     adminThumb,
     customLogoUrl,
     navOrder,
+    navHiddenKeys,
     navFeatures,
-}: Pick<NavigationProps, 'onLogout' | 'isAdmin' | 'adminThumb' | 'customLogoUrl' | 'navOrder' | 'navFeatures'>) => {
+}: Pick<NavigationProps, 'onLogout' | 'isAdmin' | 'adminThumb' | 'customLogoUrl' | 'navOrder' | 'navHiddenKeys' | 'navFeatures'>) => {
     const serverIcon = customLogoUrl ? resolvePortalAssetUrl(customLogoUrl) : (adminThumb ? (adminThumb.startsWith('http') ? adminThumb : portalUrl(`/api/plex/image?path=${encodeURIComponent(adminThumb)}&width=256&height=256`)) : logoUrl());
 
     useEffect(() => {
@@ -56,14 +58,17 @@ export const useNavigation = ({
             const discoverIndex = order.indexOf('discover');
             order.splice(discoverIndex >= 0 ? discoverIndex + 1 : 1, 0, 'issues');
         }
+        const hidden = new Set(normalizeNavHiddenKeys(navHiddenKeys));
         return order.filter((key) => {
             const item = navItemsConfig[key];
             if (!item) return false;
             if (item.adminOnly && !isAdmin) return false;
             if (key === 'request' && navFeatures?.request === false) return false;
+            if (key === 'scanner' && navFeatures?.scanner !== true) return false;
+            if (hidden.has(key) && !ALWAYS_VISIBLE_NAV_KEYS.has(key)) return false;
             return true;
         });
-    }, [navOrder, isAdmin, navFeatures, navItemsConfig]);
+    }, [navOrder, navHiddenKeys, isAdmin, navFeatures, navItemsConfig]);
 
     return {
         serverIcon,

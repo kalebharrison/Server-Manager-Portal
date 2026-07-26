@@ -37,12 +37,16 @@ export const MediaStackRequestAppSection: React.FC<{
     requestAppUrl: string;
     requestAppApiKey: string;
     requestAppMembershipSync: boolean;
+    requestEngine: 'portal' | 'seerr';
+    discoverySource: 'tmdb' | 'seerr';
     ombiUrl: string;
     ombiApiKey: string;
     onRequestAppTypeChange: (value: string) => void;
     onRequestAppUrlChange: (value: string) => void;
     onRequestAppApiKeyChange: (value: string) => void;
     onRequestAppMembershipSyncChange: (value: boolean) => void;
+    onRequestEngineChange: (value: 'portal' | 'seerr') => void;
+    onDiscoverySourceChange: (value: 'tmdb' | 'seerr') => void;
     onOmbiUrlChange: (value: string) => void;
     onOmbiApiKeyChange: (value: string) => void;
     addToast: (message: string, type?: 'success' | 'error') => void;
@@ -52,12 +56,16 @@ export const MediaStackRequestAppSection: React.FC<{
     requestAppUrl,
     requestAppApiKey,
     requestAppMembershipSync,
+    requestEngine,
+    discoverySource,
     ombiUrl,
     ombiApiKey,
     onRequestAppTypeChange,
     onRequestAppUrlChange,
     onRequestAppApiKeyChange,
     onRequestAppMembershipSyncChange,
+    onRequestEngineChange,
+    onDiscoverySourceChange,
     onOmbiUrlChange,
     onOmbiApiKeyChange,
     addToast,
@@ -69,6 +77,37 @@ export const MediaStackRequestAppSection: React.FC<{
             subtitle="Seerr or Jellyseerr powers the embedded request experience"
             className="mt-8"
         />
+        <div className="grid gap-4 md:grid-cols-2 mb-4">
+            <div>
+                <label htmlFor="requestEngine">Request Engine</label>
+                <CustomSelect
+                    id="requestEngine"
+                    value={requestEngine}
+                    onChange={(value) => onRequestEngineChange(value === 'portal' ? 'portal' : 'seerr')}
+                    options={[
+                        { label: 'Seerr (default)', value: 'seerr' },
+                        { label: 'Portal-native (opt-in)', value: 'portal' },
+                    ]}
+                />
+            </div>
+            <div>
+                <label htmlFor="discoverySource">Discovery Source</label>
+                <CustomSelect
+                    id="discoverySource"
+                    value={discoverySource}
+                    onChange={(value) => onDiscoverySourceChange(value === 'tmdb' ? 'tmdb' : 'seerr')}
+                    options={[
+                        { label: 'Seerr (default)', value: 'seerr' },
+                        { label: 'TMDB (Portal discovery)', value: 'tmdb' },
+                    ]}
+                />
+            </div>
+        </div>
+        {requestEngine === 'portal' && (
+            <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
+                Portal-native requests are opt-in. Discord and Ask still use Seerr APIs, so those request flows may be incomplete until they are migrated.
+            </div>
+        )}
         <div className="mb-4">
             <label htmlFor="requestAppType">Request App Type</label>
             <CustomSelect

@@ -1,5 +1,6 @@
 import { DEFAULT_DASHBOARD_LAYOUT } from '../shared/dashboardLayout';
 import { getDefaultSettingsNavOrder } from './settingsNavOrder';
+import { defaultScannerSettings } from './ScannerSettingsPanel';
 import type { SettingsFormValues } from './settingsFormTypes';
 
 export const createInitialSettingsFormValues = (): SettingsFormValues => ({
@@ -61,6 +62,8 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     requestAppUrl: '',
     requestAppApiKey: '',
     requestAppMembershipSync: true,
+    requestEngine: 'seerr',
+    discoverySource: 'seerr',
     ombiUrl: '',
     ombiApiKey: '',
     dashboardLayout: DEFAULT_DASHBOARD_LAYOUT,
@@ -84,5 +87,15 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     showPosterQualityBadges: true,
     allowTemporaryAccess: false,
     navOrder: getDefaultSettingsNavOrder(),
+    navHiddenKeys: [],
+    scannerEnabled: false,
+    scannerHomeWidgetEnabled: false,
+    scannerWebhooksVisible: true,
+    scannerManualPathVisible: true,
+    scanner: defaultScannerSettings(),
+    upgraderEnabled: false,
+    upgraderAutomationEnabled: false,
+    upgraderMinSizeGB: 5,
+    upgraderMaxActionsPerHour: 25,
     logoFile: null,
 });

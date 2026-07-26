@@ -87,6 +87,8 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
             else if (path === '/mediastack') updateRoute('mediastack');
             else if (path === '/maintenance') updateRoute(data.session.isAdmin ? 'settings' : 'user');
             else if (path === '/request' || path === '/requests') updateRoute('request');
+            else if (path === '/scanner' && data.session.isAdmin && !data.impersonation?.active && data.navFeatures?.scanner) updateRoute('scanner');
+            else if (path === '/upgrader' && data.session.isAdmin && !data.impersonation?.active && data.navFeatures?.upgrader) updateRoute('upgrader');
             else if (path === '/issues') updateRoute('issues');
             else if (path === '/analytics') updateRoute('analytics');
             else if (path === '/settings' && !data.session.isAdmin) updateRoute('user');
@@ -194,6 +196,8 @@ export const useAppRouting = () => {
             if (route === 'analytics') path = '/analytics';
             if (route === 'mediastack') path = '/mediastack';
             if (route === 'request') path = '/request';
+            if (route === 'scanner') path = '/scanner';
+            if (route === 'upgrader') path = '/upgrader';
             if (route === 'issues') path = '/issues';
             window.history.pushState({}, '', portalUrl(path));
         }

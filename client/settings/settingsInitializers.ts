@@ -1,8 +1,9 @@
 import type React from 'react';
 
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
-import { normalizeSettingsNavOrder } from './settingsNavOrder';
+import { normalizeNavHiddenKeys, normalizeSettingsNavOrder } from './settingsNavOrder';
 import type { ArrInstance } from '../shared/types';
+import type { ScannerSettings } from './ScannerSettingsPanel';
 
 type SettingsHydrationSetters = {
     setToken: (value: string) => void;
@@ -56,6 +57,8 @@ type SettingsHydrationSetters = {
     setRequestAppUrl: (value: string) => void;
     setRequestAppApiKey: (value: string) => void;
     setRequestAppMembershipSync: (value: boolean) => void;
+    setRequestEngine: (value: 'portal' | 'seerr') => void;
+    setDiscoverySource: (value: 'tmdb' | 'seerr') => void;
     setOmbiUrl: (value: string) => void;
     setOmbiApiKey: (value: string) => void;
     setBrandingTheme: (value: string) => void;
@@ -75,6 +78,7 @@ type SettingsHydrationSetters = {
     setReferralRewardDays: (value: number) => void;
     setAnnouncement: (value: string) => void;
     setNavOrder: (value: string[]) => void;
+    setNavHiddenKeys: (value: string[]) => void;
     setHideStreamUsers: (value: string) => void;
     setUseTrendingSlideshowOnLogin: (value: boolean) => void;
     setShowLoginServerStats: (value: boolean) => void;
@@ -87,6 +91,15 @@ type SettingsHydrationSetters = {
     setAutoBackupIntervalDays: (value: number) => void;
     setAutoBackupRetentionCount: (value: number) => void;
     setDashboardLayout: (value: DashboardLayoutConfig) => void;
+    setScannerEnabled: (value: boolean) => void;
+    setScannerHomeWidgetEnabled: (value: boolean) => void;
+    setScannerWebhooksVisible: (value: boolean) => void;
+    setScannerManualPathVisible: (value: boolean) => void;
+    setScanner: (value: ScannerSettings) => void;
+    setUpgraderEnabled: (value: boolean) => void;
+    setUpgraderAutomationEnabled: (value: boolean) => void;
+    setUpgraderMinSizeGB: (value: number) => void;
+    setUpgraderMaxActionsPerHour: (value: number) => void;
     setTestRecipient: (value: string) => void;
     setServers: (value: any[]) => void;
     dashboardLayoutRef: React.MutableRefObject<DashboardLayoutConfig>;
@@ -144,6 +157,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setRequestAppUrl(initialSettings.requestAppUrl || '');
     setters.setRequestAppApiKey(initialSettings.requestAppApiKey || '');
     setters.setRequestAppMembershipSync(initialSettings.requestAppMembershipSync !== false);
+    setters.setRequestEngine(initialSettings.requestEngine === 'portal' ? 'portal' : 'seerr');
+    setters.setDiscoverySource(initialSettings.discoverySource === 'tmdb' ? 'tmdb' : 'seerr');
     setters.setOmbiUrl(initialSettings.ombiUrl || '');
     setters.setOmbiApiKey(initialSettings.ombiApiKey || '');
     setters.setBrandingTheme(initialSettings.brandingTheme || 'plex');
@@ -163,6 +178,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setReferralRewardDays(initialSettings.referralRewardDays || 7);
     setters.setAnnouncement(initialSettings.announcement || '');
     if (initialSettings.navOrder) setters.setNavOrder(normalizeSettingsNavOrder(initialSettings.navOrder));
+    setters.setNavHiddenKeys(normalizeNavHiddenKeys(initialSettings.navHiddenKeys));
     setters.setHideStreamUsers(initialSettings.hideStreamUsers === 'hidden' ? 'hidden' : 'anonymous');
     setters.setUseTrendingSlideshowOnLogin(initialSettings.useTrendingSlideshowOnLogin !== false);
     setters.setShowLoginServerStats(initialSettings.showLoginServerStats === true);
@@ -174,6 +190,22 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     if (initialSettings.autoBackupEnabled !== undefined) setters.setAutoBackupEnabled(!!initialSettings.autoBackupEnabled);
     if (initialSettings.autoBackupIntervalDays !== undefined) setters.setAutoBackupIntervalDays(Number(initialSettings.autoBackupIntervalDays) || 2);
     if (initialSettings.autoBackupRetentionCount !== undefined) setters.setAutoBackupRetentionCount(Number(initialSettings.autoBackupRetentionCount) || 10);
+    setters.setScannerEnabled(!!initialSettings.scannerEnabled);
+    setters.setScannerHomeWidgetEnabled(!!initialSettings.scannerHomeWidgetEnabled);
+    setters.setScannerWebhooksVisible(initialSettings.scannerWebhooksVisible !== false);
+    setters.setScannerManualPathVisible(initialSettings.scannerManualPathVisible !== false);
+    setters.setScanner(initialSettings.scanner || {
+        minimumAge: '1m',
+        verifyPathExists: false,
+        authUsername: '',
+        authPassword: '',
+        triggers: { sonarr: [], radarr: [], lidarr: [] },
+        targets: { plex: [], jellyfin: [], emby: [] },
+    });
+    setters.setUpgraderEnabled(!!initialSettings.upgraderEnabled);
+    setters.setUpgraderAutomationEnabled(!!initialSettings.upgraderAutomationEnabled);
+    setters.setUpgraderMinSizeGB(Math.max(0, Number(initialSettings.upgraderMinSizeGB) || 5));
+    setters.setUpgraderMaxActionsPerHour(Math.max(1, Number(initialSettings.upgraderMaxActionsPerHour) || 25));
     const layout = normalizeSectionLayout(initialSettings.dashboardLayout);
     setters.dashboardLayoutRef.current = layout;
     setters.setDashboardLayout(layout);

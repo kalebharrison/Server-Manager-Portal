@@ -8,6 +8,7 @@ import { createDefaultStatusConfig, createPublicStatusPayload, reconcileBuiltInS
 import { createStatusRuntime, STATUS_HEALTH_SCHEMA_VERSION } from '../../lib/status/status-runtime.js';
 import { resolvePlexDiscoveryToken } from '../../lib/users/invite-routes.js';
 import { canExposePublicServerStats, canExposePublicStatus } from '../../lib/status/public-status-routes.js';
+import { registerStatusSpeedTestRoutes } from '../../lib/status/status-speedtest-routes.js';
 
 test('masked Plex discovery credentials resolve to the stored owner token', () => {
     const normalize = (value) => String(value || '').trim();
@@ -26,6 +27,30 @@ test('status access is private unless public access is explicitly enabled', () =
     assert.equal(canExposePublicStatus({ publicStatusEnabled: false }), false);
     assert.equal(canExposePublicStatus({ publicStatusEnabled: true }), false);
     assert.equal(canExposePublicStatus({ publicStatusEnabled: true, publicStatusExplicitlyConfigured: true }), true);
+});
+
+test('speed test routes require an authenticated member and rate limit', () => {
+    const routes = [];
+    const app = {
+        get: (path, ...handlers) => routes.push({ method: 'get', path, handlers }),
+        post: (path, ...handlers) => routes.push({ method: 'post', path, handlers }),
+    };
+    const requireAuth = () => {};
+    const requireMember = () => {};
+    const speedtestRateLimit = () => {};
+
+    registerStatusSpeedTestRoutes({ app, requireAuth, requireMember, speedtestRateLimit });
+
+    assert.deepEqual(routes.map(({ method, path }) => ({ method, path })), [
+        { method: 'get', path: '/api/speedtest/ping' },
+        { method: 'get', path: '/api/speedtest/download' },
+        { method: 'post', path: '/api/speedtest/upload' },
+    ]);
+    routes.forEach(({ handlers }) => {
+        assert.equal(handlers[0], requireAuth);
+        assert.equal(handlers[1], requireMember);
+        assert.equal(handlers[2], speedtestRateLimit);
+    });
 });
 
 test('default status config does not point Plex at the portal URL', () => {

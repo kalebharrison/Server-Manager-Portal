@@ -102,6 +102,9 @@ export type AdminRequestItem = {
     overview?: string;
     posterUrl?: string;
     backdropUrl?: string;
+    originalLanguage?: string | null;
+    genres?: RequestNamedValue[];
+    seasons?: RequestSeason[];
     requestedBy?: {
         id?: number | null;
         displayName?: string;

@@ -17,6 +17,8 @@ type MediaStackSettingsTabProps = {
     requestAppUrl: string;
     requestAppApiKey: string;
     requestAppMembershipSync: boolean;
+    requestEngine: 'portal' | 'seerr';
+    discoverySource: 'tmdb' | 'seerr';
     ombiUrl: string;
     ombiApiKey: string;
     onArrInstancesChange: (value: ArrInstance[]) => void;
@@ -28,6 +30,8 @@ type MediaStackSettingsTabProps = {
     onRequestAppUrlChange: (value: string) => void;
     onRequestAppApiKeyChange: (value: string) => void;
     onRequestAppMembershipSyncChange: (value: boolean) => void;
+    onRequestEngineChange: (value: 'portal' | 'seerr') => void;
+    onDiscoverySourceChange: (value: 'tmdb' | 'seerr') => void;
     onOmbiUrlChange: (value: string) => void;
     onOmbiApiKeyChange: (value: string) => void;
     addToast: (message: string, type?: 'success' | 'error') => void;
@@ -45,6 +49,8 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     requestAppUrl,
     requestAppApiKey,
     requestAppMembershipSync,
+    requestEngine,
+    discoverySource,
     ombiUrl,
     ombiApiKey,
     onArrInstancesChange,
@@ -56,6 +62,8 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     onRequestAppUrlChange,
     onRequestAppApiKeyChange,
     onRequestAppMembershipSyncChange,
+    onRequestEngineChange,
+    onDiscoverySourceChange,
     onOmbiUrlChange,
     onOmbiApiKeyChange,
     addToast,
@@ -95,12 +103,16 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             requestAppUrl={requestAppUrl}
             requestAppApiKey={requestAppApiKey}
             requestAppMembershipSync={requestAppMembershipSync}
+            requestEngine={requestEngine}
+            discoverySource={discoverySource}
             ombiUrl={ombiUrl}
             ombiApiKey={ombiApiKey}
             onRequestAppTypeChange={onRequestAppTypeChange}
             onRequestAppUrlChange={onRequestAppUrlChange}
             onRequestAppApiKeyChange={onRequestAppApiKeyChange}
             onRequestAppMembershipSyncChange={onRequestAppMembershipSyncChange}
+            onRequestEngineChange={onRequestEngineChange}
+            onDiscoverySourceChange={onDiscoverySourceChange}
             onOmbiUrlChange={onOmbiUrlChange}
             onOmbiApiKeyChange={onOmbiApiKeyChange}
             addToast={addToast}

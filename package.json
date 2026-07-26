@@ -7,7 +7,7 @@
   "scripts": {
     "build:css": "npx @tailwindcss/cli -i ./client/styles/input.css -o ./static/tailwind.css",
     "build:js": "rm -rf static/chunks && esbuild client/main.tsx --bundle --outdir=static --entry-names=bundle --chunk-names=chunks/[name]-[hash] --splitting --jsx=automatic --format=esm --define:process.env.NODE_ENV=\\\"production\\\" --minify",
-    "build:version": "node scripts/build-version.js",
+    "build:version": "node scripts/build-version.js && node scripts/build-release-notes.js",
     "build": "npm run build:css && npm run build:js && npm run build:version",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test 'tests/**/*.test.js'",

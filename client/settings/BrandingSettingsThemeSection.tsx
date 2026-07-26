@@ -44,6 +44,9 @@ export const BrandingSettingsThemeSection: React.FC<{
                     { label: 'Jellyfin Purple', value: 'jellyfin' },
                     { label: 'Emerald Green', value: 'emerald' },
                     { label: 'Neon Midnight', value: 'midnight' },
+                    { label: 'Crimson', value: 'crimson' },
+                    { label: 'Amethyst', value: 'amethyst' },
+                    { label: 'Sunset', value: 'sunset' },
                 ]}
             />
             <div className="mt-2">

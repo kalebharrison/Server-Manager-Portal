@@ -9,6 +9,14 @@ import { updateFavicon, Navigation } from './lazyScreens';
 import { AppRouteRenderer, RouteFallback } from './app/AppRouteRenderer';
 import { useAppRouting, useAppSession } from './app/useAppSession';
 import { DiscoverChatWidget } from './requests/DiscoverChatWidget';
+import { WhatsNewModal } from './shared/WhatsNewModal';
+import {
+    getLastSeenVersion,
+    parseAppSemver,
+    setLastSeenVersion,
+    shouldShowReleaseNotes,
+    type ReleaseNotes,
+} from './shared/releaseNotes';
 
 const ConfirmModal = React.lazy(() => import('./shared/ConfirmModal').then(module => ({ default: module.ConfirmModal })));
 
@@ -53,6 +61,9 @@ export const MainApp: React.FC = () => {
 
     const [publicConfig, setPublicConfig] = useState<any>({});
     const [localPreferences, setLocalPreferences] = useState(loadLocalPortalPreferences);
+    const [releaseNotes, setReleaseNotes] = useState<ReleaseNotes | null>(null);
+    const [showWhatsNew, setShowWhatsNew] = useState(false);
+    const whatsNewCheckedRef = useRef(false);
     const effectivePublicConfig = useMemo(() => applyLocalPortalPreferences(publicConfig, localPreferences), [localPreferences, publicConfig]);
     const { currentRoute, updateRoute, setRoute } = useAppRouting();
     const {
@@ -128,6 +139,36 @@ export const MainApp: React.FC = () => {
         return () => window.removeEventListener('portal-public-config-updated', onPublicConfigUpdated);
     }, [fetchPublicConfig]);
 
+    useEffect(() => {
+        if (!sessionInfo || !publicConfig?.appVersion) return;
+        if (currentRoute === 'login' || currentRoute === 'loading' || currentRoute === 'invite') return;
+        if (whatsNewCheckedRef.current) return;
+
+        whatsNewCheckedRef.current = true;
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const notes = await apiFetch('/api/release-notes') as ReleaseNotes;
+                if (cancelled) return;
+                if (shouldShowReleaseNotes(publicConfig.appVersion, notes, getLastSeenVersion())) {
+                    setReleaseNotes(notes);
+                    setShowWhatsNew(true);
+                }
+            } catch {
+                // optional
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [sessionInfo, publicConfig?.appVersion, currentRoute]);
+
+    const dismissWhatsNew = useCallback(() => {
+        const semver = parseAppSemver(publicConfig?.appVersion);
+        if (semver) setLastSeenVersion(semver);
+        setShowWhatsNew(false);
+    }, [publicConfig?.appVersion]);
+
     const onLogout = async () => {
         await handleLogout();
         setRoute('login');
@@ -160,8 +201,15 @@ export const MainApp: React.FC = () => {
                 </React.Suspense>
             )}
             <React.Suspense fallback={null}>
-                {!isPublicView && <Navigation currentRoute={currentRoute} onNavigate={setRoute as any} onLogout={onLogout} isAdmin={isAdmin} serverName={sessionInfo?.serverName || 'Server Portal'} adminThumb={sessionInfo?.adminThumb} customLogoUrl={publicConfig?.customLogoUrl} navOrder={sessionInfo?.navOrder || ['home', 'discover', 'issues', 'status', 'analytics', 'mediastack', 'request', 'settings', 'logout']} navFeatures={sessionInfo?.navFeatures} appVersion={publicConfig.appVersion} activeTheme={activeTheme} setActiveTheme={setActiveTheme} />}
+                {!isPublicView && <Navigation currentRoute={currentRoute} onNavigate={setRoute as any} onLogout={onLogout} isAdmin={isAdmin} serverName={sessionInfo?.serverName || 'Server Portal'} adminThumb={sessionInfo?.adminThumb} customLogoUrl={publicConfig?.customLogoUrl} navOrder={sessionInfo?.navOrder || ['home', 'discover', 'issues', 'status', 'analytics', 'mediastack', 'request', 'settings', 'logout']} navHiddenKeys={sessionInfo?.navHiddenKeys} navFeatures={sessionInfo?.navFeatures} appVersion={publicConfig.appVersion} activeTheme={activeTheme} setActiveTheme={setActiveTheme} />}
             </React.Suspense>
+            {showWhatsNew && releaseNotes && (
+                <WhatsNewModal
+                    notes={releaseNotes}
+                    appVersion={publicConfig?.appVersion}
+                    onDismiss={dismissWhatsNew}
+                />
+            )}
             <div className={`relative z-10 flex-1 min-w-0 flex flex-col items-center px-4 pt-20 pb-[80px] md:p-8 md:pt-8 md:pb-8 overflow-x-visible ${isPublicView ? '!pt-8 !pb-8' : ''}`}>
                 {isImpersonating && (
                     <div className="w-full mb-4" style={{ maxWidth: contentMaxWidth }}>

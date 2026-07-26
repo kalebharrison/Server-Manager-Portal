@@ -63,6 +63,7 @@ patch.cjs
 static/bundle.js
 static/chunks/
 static/tailwind.css
+static/release-notes.json
 
 # Local scratch
 /unneeded/

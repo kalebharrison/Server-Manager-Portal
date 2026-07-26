@@ -99,6 +99,20 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({ id, value, onChange,
     );
 };
 
+export const OverlayCheckbox: React.FC<{ checked: boolean; onChange: () => void; size?: 'sm' | 'md'; title?: string }> = ({
+    checked, onChange, size = 'md', title,
+}) => (
+    <input
+        type="checkbox"
+        checked={checked}
+        title={title}
+        aria-label={title}
+        className={`${size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} accent-plex cursor-pointer`}
+        onClick={(event) => event.stopPropagation()}
+        onChange={onChange}
+    />
+);
+
 export const ScrollReveal: React.FC<{ children: React.ReactNode; enabled?: boolean; delay?: number; className?: string }> = ({ children, enabled = true, delay = 0, className = '' }) => {
     const [isVisible, setIsVisible] = useState(!enabled);
     const ref = useRef<HTMLDivElement>(null);
