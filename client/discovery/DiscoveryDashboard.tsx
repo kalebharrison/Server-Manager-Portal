@@ -223,6 +223,7 @@ const DiscoveryDashboardInner: React.FC<{
                     onBack={() => navigate('/discovery')}
                     onSelect={openMedia}
                     formatItem={formatItem}
+                    pushToast={pushToast}
                 />
             );
         }
@@ -238,6 +239,7 @@ const DiscoveryDashboardInner: React.FC<{
                     onBack={() => navigate('/discovery')}
                     onSelect={openMedia}
                     formatItem={formatItem}
+                    pushToast={pushToast}
                 />
             );
         }
@@ -383,6 +385,7 @@ const DiscoveryDashboardInner: React.FC<{
                                 onSelect={openMedia}
                                 formatItem={formatItem}
                                 navigate={navigate}
+                                pushToast={pushToast}
                             />
                         )}
                         {subRoute === 'series' && (
@@ -390,6 +393,7 @@ const DiscoveryDashboardInner: React.FC<{
                                 onSelect={openMedia}
                                 formatItem={formatItem}
                                 navigate={navigate}
+                                pushToast={pushToast}
                             />
                         )}
                         {subRoute === 'requests' && (

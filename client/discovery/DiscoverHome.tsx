@@ -24,6 +24,8 @@ import { DiscoverGridSizeSelect } from './DiscoverGridSizeSelect';
 import { useDiscoverGridSize } from './useDiscoverGridSize';
 import { discoverRowCardWidthClass } from '../shared/portalLayout';
 import { useDiscoverI18n } from './i18n';
+import { DiscoverQuickRequestButton } from './DiscoverQuickRequestButton';
+import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 
 type GenreSliderItem = { id: number; name: string; image?: string; backdrops?: string[] };
 
@@ -80,6 +82,7 @@ const DiscoverHomeRow: React.FC<{
     onViewAll?: () => void;
     empty?: React.ReactNode;
     animateEnter?: boolean;
+    quickRequest?: ReturnType<typeof useDiscoverQuickRequest>;
 }> = ({
     title,
     items,
@@ -90,6 +93,7 @@ const DiscoverHomeRow: React.FC<{
     onViewAll,
     empty,
     animateEnter = false,
+    quickRequest,
 }) => {
     if (!items?.length) {
         if (!empty) return null;
@@ -121,6 +125,18 @@ const DiscoverHomeRow: React.FC<{
                 {items.map((rawItem, idx) => {
                     if (!rawItem) return null;
                     const formatted = formatItem(rawItem);
+                    const showRequest = !!quickRequest
+                        && (quickRequest.canQuickRequest(formatted)
+                            || quickRequest.isRequesting(formatted)
+                            || quickRequest.isRequested(formatted));
+                    const overlay = (
+                        <>
+                            {formatted.overlay}
+                            {showRequest && quickRequest && (
+                                <DiscoverQuickRequestButton item={formatted} api={quickRequest} />
+                            )}
+                        </>
+                    );
                     return (
                         <div
                             key={`${title}-${formatted.id || idx}`}
@@ -129,7 +145,7 @@ const DiscoverHomeRow: React.FC<{
                         >
                             <DiscoverPosterCard
                                 item={formatted}
-                                overlay={formatted.overlay}
+                                overlay={overlay}
                                 showQualityBadges={false}
                                 onPosterClick={() => onSelect(formatted)}
                             />
@@ -187,6 +203,7 @@ export const DiscoverHome: React.FC<{
     const { t, locale } = useDiscoverI18n();
     const { preferences, loaded } = useDiscoveryPreferences();
     const { showLibraryQueue, toggleLibraryQueue } = useLibraryQueueToggle();
+    const quickRequest = useDiscoverQuickRequest(pushToast);
     const [gridSize, setGridSize] = useDiscoverGridSize();
     const posterCardClass = discoverRowCardWidthClass(gridSize);
     const [rows, setRows] = useState({
@@ -467,6 +484,7 @@ export const DiscoverHome: React.FC<{
                         formatItem={formatItem}
                         onSelect={onSelect}
                         animateEnter={enterAnim}
+                        quickRequest={quickRequest}
                     />
                 </div>
                 <DiscoverHomeRow
@@ -478,6 +496,7 @@ export const DiscoverHome: React.FC<{
                     onSelect={onSelect}
                     animateEnter={enterAnim}
                     onViewAll={() => navigate('/discovery/movies')}
+                    quickRequest={quickRequest}
                 />
                 <DiscoverGenreSliderRow
                     title={t('home.movieGenres')}
@@ -494,6 +513,7 @@ export const DiscoverHome: React.FC<{
                     formatItem={formatItem}
                     onSelect={onSelect}
                     animateEnter={enterAnim}
+                    quickRequest={quickRequest}
                 />
 
                 <div className="flex flex-col gap-2 relative rounded-2xl border border-border/60 bg-white/[0.02] p-3 sm:p-4">
@@ -519,6 +539,7 @@ export const DiscoverHome: React.FC<{
                     onSelect={onSelect}
                     animateEnter={enterAnim}
                     onViewAll={() => navigate('/discovery/series')}
+                    quickRequest={quickRequest}
                 />
                 <DiscoverGenreSliderRow
                     title={t('home.seriesGenres')}
@@ -535,6 +556,7 @@ export const DiscoverHome: React.FC<{
                     formatItem={formatItem}
                     onSelect={onSelect}
                     animateEnter={enterAnim}
+                    quickRequest={quickRequest}
                 />
 
                 <div className="flex flex-col gap-2 relative rounded-2xl border border-border/60 bg-white/[0.02] p-3 sm:p-4">

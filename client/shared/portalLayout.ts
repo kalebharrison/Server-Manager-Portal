@@ -72,6 +72,11 @@ export const carouselRowSkeletonCount = (containerWidth = estimatePortalContentW
 };
 
 export const upgraderPosterGridStyle = (size: UpgraderGridSize): CSSProperties => size === 'list' ? {} : ({
+    // Class name alone is not enough — Tailwind never emits `.upgrader-poster-grid`.
+    // Without display:grid, gridTemplateColumns is ignored and posters stack full-width.
+    display: 'grid',
+    width: '100%',
+    gap: '0.75rem',
     gridTemplateColumns: `repeat(auto-fill, minmax(${UPGRADER_GRID_MIN_WIDTH[size]}, 1fr))`,
 });
 

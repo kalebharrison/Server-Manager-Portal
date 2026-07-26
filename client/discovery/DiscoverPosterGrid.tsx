@@ -3,7 +3,9 @@ import { DiscoverPosterCard } from '../screens';
 import { PosterCardSkeleton } from '../shared/skeletons';
 import { upgraderPosterGridClass, upgraderPosterGridStyle, type UpgraderGridSize } from '../shared/portalLayout';
 import { dedupeDiscoverResults, getDiscoverItemKey } from './discoverItemUtils';
+import { DiscoverQuickRequestButton, type DiscoverQuickRequestApi } from './DiscoverQuickRequestButton';
 import { discoveryTheme } from './discoveryThemeClasses';
+import { useDiscoverI18n } from './i18n';
 
 type Props = {
     items: any[];
@@ -13,6 +15,8 @@ type Props = {
     loading?: boolean;
     skeletonCount?: number;
     emptyMessage?: string;
+    emptyHint?: string;
+    quickRequest?: DiscoverQuickRequestApi;
 };
 
 export const DiscoverPosterGrid: React.FC<Props> = ({
@@ -23,7 +27,10 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
     loading = false,
     skeletonCount = 15,
     emptyMessage = 'No results found.',
+    emptyHint,
+    quickRequest,
 }) => {
+    const { t } = useDiscoverI18n();
     const visibleItems = useMemo(() => dedupeDiscoverResults(items), [items]);
     // Enter-animate only the first paint after a loading cycle. Infinite-scroll appends
     // must not remount or re-animate existing posters (that flashed the grid to opacity 0).
@@ -57,7 +64,9 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
         return (
             <div className={`${discoveryTheme.posterEmpty} discover-content-enter`}>
                 <p className={discoveryTheme.emptyTitle}>{emptyMessage}</p>
-                <p className={discoveryTheme.emptyBody}>Try adjusting your filters or turn off Hide Available Media in settings.</p>
+                <p className={discoveryTheme.emptyBody}>
+                    {emptyHint || t('browse.emptyHint')}
+                </p>
             </div>
         );
     }
@@ -70,6 +79,18 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
             {visibleItems.map((rawItem, index) => {
                 const formatted = formatItem(rawItem);
                 const itemKey = getDiscoverItemKey(rawItem) || `${formatted.mediaType || formatted.type}-${formatted.id}`;
+                const showRequest = !!quickRequest
+                    && (quickRequest.canQuickRequest(formatted)
+                        || quickRequest.isRequesting(formatted)
+                        || quickRequest.isRequested(formatted));
+                const overlay = (
+                    <>
+                        {formatted.overlay}
+                        {showRequest && quickRequest && (
+                            <DiscoverQuickRequestButton item={formatted} api={quickRequest} />
+                        )}
+                    </>
+                );
                 return (
                     <div
                         key={itemKey}
@@ -80,7 +101,7 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
                     >
                         <DiscoverPosterCard
                             item={formatted}
-                            overlay={formatted.overlay}
+                            overlay={overlay}
                             showQualityBadges={false}
                             onPosterClick={() => onSelect(formatted)}
                         />

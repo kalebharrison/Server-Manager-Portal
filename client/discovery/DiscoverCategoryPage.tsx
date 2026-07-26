@@ -16,6 +16,8 @@ import {
     fetchDiscoverPageWithAdvance,
 } from './discoverFetchUtils';
 import { useDiscoverI18n } from './i18n';
+import { useHideExistingToggle } from './useHideExistingToggle';
+import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 
 type Props = {
     kind: 'studio' | 'network';
@@ -23,17 +25,21 @@ type Props = {
     onBack: () => void;
     onSelect: (item: any) => void;
     formatItem: (item: any) => any;
+    pushToast?: (msg: string, type: 'success' | 'error') => void;
 };
 
-export const DiscoverCategoryPage: React.FC<Props> = ({ kind, id, onBack, onSelect, formatItem }) => {
+export const DiscoverCategoryPage: React.FC<Props> = ({ kind, id, onBack, onSelect, formatItem, pushToast }) => {
     const { locale } = useDiscoverI18n();
     const { preferences } = useDiscoveryPreferences();
+    const { hideExisting } = useHideExistingToggle();
+    const quickRequest = useDiscoverQuickRequest(pushToast);
     const [gridSize, setGridSize] = useDiscoverGridSize();
     const containerRef = useRef<HTMLDivElement>(null);
     const meta = kind === 'studio' ? findStudio(id) : findNetwork(id);
     const [entityName, setEntityName] = useState(meta?.name || '');
+    const hideAvailable = preferences.hideAvailableMedia || hideExisting;
 
-    const resetKey = `${kind}:${id}:${preferences.hideAvailableMedia}:${gridSize}:${locale}`;
+    const resetKey = `${kind}:${id}:${hideAvailable}:${gridSize}:${locale}`;
 
     const buildUrl = useCallback((page: number) => (
         kind === 'studio'
@@ -61,17 +67,17 @@ export const DiscoverCategoryPage: React.FC<Props> = ({ kind, id, onBack, onSele
             return await fetchDiscoverPageWithAdvance(
                 buildUrl,
                 page,
-                { hideAvailable: preferences.hideAvailableMedia },
+                { hideAvailable },
             );
         } catch (primaryError) {
             console.error(primaryError);
             return fetchDiscoverPageWithAdvance(
                 buildFallbackUrl,
                 page,
-                { hideAvailable: preferences.hideAvailableMedia },
+                { hideAvailable },
             );
         }
-    }, [buildFallbackUrl, buildUrl, preferences.hideAvailableMedia]);
+    }, [buildFallbackUrl, buildUrl, hideAvailable]);
 
     const {
         results,
@@ -84,7 +90,7 @@ export const DiscoverCategoryPage: React.FC<Props> = ({ kind, id, onBack, onSele
         gridSize,
         containerRef,
         fetchPage,
-        filterOptions: { hideAvailable: preferences.hideAvailableMedia, hideRequested: false },
+        filterOptions: { hideAvailable, hideRequested: false },
     });
 
     const title = entityName || meta?.name || (kind === 'studio' ? 'Studio' : 'Network');
@@ -152,6 +158,8 @@ export const DiscoverCategoryPage: React.FC<Props> = ({ kind, id, onBack, onSele
                     loading={loading}
                     skeletonCount={skeletonCount}
                     emptyMessage={`No ${kind === 'studio' ? 'movies' : 'series'} found for ${title}.`}
+                    emptyHint={hideExisting ? 'Hide Existing is on — turn it off to see titles already in your library.' : undefined}
+                    quickRequest={quickRequest}
                 />
 
                 <DiscoverInfiniteScrollFooter

@@ -1,4 +1,5 @@
 import { normalizeRawDiscoveryItem } from './discoverItemUtils';
+import { isForeignLanguageItem } from './discoverForeignUtils';
 import {
     buildSeasonStatusFromDetails,
     hasActiveSeerrDownloads,
@@ -490,9 +491,12 @@ export const filterHiddenRequestedItems = <T extends { mediaInfo?: { status?: nu
 
 export const filterDiscoverBrowseItems = (
     items: any[],
-    options: { hideAvailable?: boolean; hideRequested?: boolean },
+    options: { hideAvailable?: boolean; hideRequested?: boolean; foreignOnly?: boolean },
 ) => {
     let filtered = filterHiddenAvailableItems(items, !!options.hideAvailable);
     filtered = filterHiddenRequestedItems(filtered, !!options.hideRequested);
+    if (options.foreignOnly) {
+        filtered = filtered.filter((item) => isForeignLanguageItem(item));
+    }
     return filtered;
 };

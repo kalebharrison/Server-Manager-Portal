@@ -21,6 +21,20 @@ const createInstance = (type: ArrType, isDefault: boolean): ArrInstance => ({
     isDefault,
 });
 
+const parseOptionalId = (value: string): number | null => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const n = Number(trimmed);
+    return Number.isFinite(n) ? n : null;
+};
+
+const parseTagList = (value: string): number[] => (
+    value
+        .split(/[,\s]+/)
+        .map((part) => Number(part.trim()))
+        .filter((id) => Number.isFinite(id))
+);
+
 type Props = {
     type: ArrType;
     instances: ArrInstance[];
@@ -31,6 +45,7 @@ type Props = {
 
 export const ArrInstancesPanel: React.FC<Props> = ({ type, instances, onChange, onMessage, className = '' }) => {
     const labels = LABELS[type];
+    const showRouting = type === 'sonarr' || type === 'radarr';
     const update = (id: string, patch: Partial<ArrInstance>) => onChange(
         instances.map((instance) => instance.id === id ? { ...instance, ...patch } : instance),
     );
@@ -85,6 +100,65 @@ export const ArrInstancesPanel: React.FC<Props> = ({ type, instances, onChange, 
                                 <label htmlFor={`${instance.id}-key`}>API Key</label>
                                 <input id={`${instance.id}-key`} type="password" className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex" value={instance.apiKey} onChange={(event) => update(instance.id, { apiKey: event.target.value })} placeholder="API key" />
                             </div>
+                            {showRouting && (
+                                <div className="rounded-lg border border-border/60 bg-background/30 p-3 space-y-3">
+                                    <p className="text-xs uppercase tracking-wider font-bold text-muted">Portal request defaults</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label htmlFor={`${instance.id}-profile`}>Quality Profile ID</label>
+                                            <input
+                                                id={`${instance.id}-profile`}
+                                                className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex"
+                                                value={instance.activeProfileId ?? ''}
+                                                onChange={(event) => update(instance.id, { activeProfileId: parseOptionalId(event.target.value) })}
+                                                placeholder="e.g. 8"
+                                                inputMode="numeric"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor={`${instance.id}-root`}>Root Folder</label>
+                                            <input
+                                                id={`${instance.id}-root`}
+                                                className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex"
+                                                value={instance.activeDirectory || ''}
+                                                onChange={(event) => update(instance.id, { activeDirectory: event.target.value })}
+                                                placeholder={type === 'sonarr' ? '/media/current/tv.shows' : '/media/current/movies'}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor={`${instance.id}-anime-profile`}>Anime Quality Profile ID</label>
+                                            <input
+                                                id={`${instance.id}-anime-profile`}
+                                                className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex"
+                                                value={instance.activeAnimeProfileId ?? ''}
+                                                onChange={(event) => update(instance.id, { activeAnimeProfileId: parseOptionalId(event.target.value) })}
+                                                placeholder="Same as default if blank"
+                                                inputMode="numeric"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor={`${instance.id}-anime-root`}>Anime Root Folder</label>
+                                            <input
+                                                id={`${instance.id}-anime-root`}
+                                                className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex"
+                                                value={instance.activeAnimeDirectory || ''}
+                                                onChange={(event) => update(instance.id, { activeAnimeDirectory: event.target.value })}
+                                                placeholder={type === 'sonarr' ? '/media/current/anime.shows' : '/media/current/anime.movies'}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label htmlFor={`${instance.id}-anime-tags`}>Anime Tags (comma-separated IDs)</label>
+                                        <input
+                                            id={`${instance.id}-anime-tags`}
+                                            className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex"
+                                            value={(instance.animeTags || []).join(', ')}
+                                            onChange={(event) => update(instance.id, { animeTags: parseTagList(event.target.value) })}
+                                            placeholder={type === 'sonarr' ? 'e.g. 36, 39' : 'Optional'}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                             <IntegrationTestButton
                                 type={type}
                                 payload={{ instanceId: instance.id, [`${type}Url`]: instance.url, [`${type}ApiKey`]: instance.apiKey }}

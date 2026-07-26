@@ -16,8 +16,11 @@ import { useDiscoverInfiniteScroll } from './useDiscoverInfiniteScroll';
 import { DiscoverInfiniteScrollFooter } from './DiscoverInfiniteScrollFooter';
 import { discoverSkeletonCountForGrid } from './discoverPaginationUtils';
 import { buildDiscoverSeriesApiUrl, fetchDiscoverPageWithAdvance } from './discoverFetchUtils';
-import { DiscoverHideRequestedToggle } from './DiscoverHideRequestedToggle';
-import { useHideRequestedToggle } from './useHideRequestedToggle';
+import { DiscoverHideExistingToggle } from './DiscoverHideExistingToggle';
+import { DiscoverForeignToggle } from './DiscoverForeignToggle';
+import { useHideExistingToggle } from './useHideExistingToggle';
+import { useForeignToggle } from './useForeignToggle';
+import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { discoveryTheme } from './discoveryThemeClasses';
 import { useDiscoverI18n } from './i18n';
 
@@ -25,10 +28,13 @@ export const DiscoverSeries: React.FC<{
     onSelect: (item: any) => void;
     formatItem: (item: any) => any;
     navigate: (path: string) => void;
-}> = ({ onSelect, formatItem, navigate }) => {
-    const { locale } = useDiscoverI18n();
+    pushToast?: (msg: string, type: 'success' | 'error') => void;
+}> = ({ onSelect, formatItem, navigate, pushToast }) => {
+    const { t, locale } = useDiscoverI18n();
     const { preferences } = useDiscoveryPreferences();
-    const { hideRequested, setHideRequested } = useHideRequestedToggle();
+    const { hideExisting, setHideExisting } = useHideExistingToggle();
+    const { foreignOnly, setForeignOnly } = useForeignToggle();
+    const quickRequest = useDiscoverQuickRequest(pushToast);
     const [gridSize, setGridSize] = useDiscoverGridSize();
     const containerRef = useRef<HTMLDivElement>(null);
     const [showFilters, setShowFilters] = React.useState(false);
@@ -52,15 +58,16 @@ export const DiscoverSeries: React.FC<{
     }, [readFiltersFromUrl]);
 
     const resetKey = useMemo(
-        () => `${JSON.stringify(filters)}:${preferences.hideAvailableMedia}:${preferences.discoverLanguage}:${hideRequested}:${gridSize}:${locale}`,
-        [filters, preferences.hideAvailableMedia, preferences.discoverLanguage, hideRequested, gridSize, locale],
+        () => `${JSON.stringify(filters)}:${preferences.hideAvailableMedia}:${preferences.discoverLanguage}:${hideExisting}:${foreignOnly}:${gridSize}:${locale}`,
+        [filters, preferences.hideAvailableMedia, preferences.discoverLanguage, hideExisting, foreignOnly, gridSize, locale],
     );
 
     const browseFilterOptions = useMemo(() => ({
         // Hide library titles (available/partial); keep requested visible with badges.
-        hideAvailable: preferences.hideAvailableMedia || hideRequested,
+        hideAvailable: preferences.hideAvailableMedia || hideExisting,
         hideRequested: false,
-    }), [preferences.hideAvailableMedia, hideRequested]);
+        foreignOnly,
+    }), [preferences.hideAvailableMedia, hideExisting, foreignOnly]);
 
     const fetchPage = useCallback(async (page: number) => fetchDiscoverPageWithAdvance(
         (nextPage) => buildDiscoverSeriesApiUrl(nextPage, filters),
@@ -107,11 +114,21 @@ export const DiscoverSeries: React.FC<{
         filters.status ? 'Status filtered' : null,
         filters.language ? `Language: ${filters.language.toUpperCase()}` : null,
         filters.watchProviders ? 'Streaming filtered' : null,
+        foreignOnly ? t('browse.foreign') : null,
     ].filter(Boolean).join(' · ');
     const skeletonCount = discoverSkeletonCountForGrid(
         gridSize,
         containerRef.current?.clientWidth || (typeof window !== 'undefined' ? window.innerWidth : 1200),
     );
+
+    const emptyMessage = activeFilterCount > 0 || hideExisting || foreignOnly
+        ? t('browse.emptySeriesFiltered')
+        : t('browse.emptySeries');
+    const emptyHint = hideExisting
+        ? t('browse.emptyHintHideExisting')
+        : foreignOnly
+            ? t('browse.emptyHintForeign')
+            : t('browse.emptyHint');
 
     return (
         <div className="w-full flex flex-col md:flex-row gap-8 px-4 sm:px-8 mt-4 relative">
@@ -119,7 +136,7 @@ export const DiscoverSeries: React.FC<{
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
                         <h2 className={`${discoveryTheme.heading} flex items-center gap-2`}>
-                            <Tv className="w-6 h-6 text-plex" /> Series
+                            <Tv className="w-6 h-6 text-plex" /> {t('browse.seriesHeading')}
                         </h2>
                         {filterSummary && (
                             <p className="text-sm text-muted mt-1 line-clamp-2">{filterSummary}</p>
@@ -127,13 +144,14 @@ export const DiscoverSeries: React.FC<{
                     </div>
                     <div className="flex items-center gap-3 flex-wrap justify-end">
                         <DiscoverGridSizeSelect value={gridSize} onChange={setGridSize} />
-                        <DiscoverHideRequestedToggle checked={hideRequested} onChange={setHideRequested} />
+                        <DiscoverForeignToggle checked={foreignOnly} onChange={setForeignOnly} />
+                        <DiscoverHideExistingToggle checked={hideExisting} onChange={setHideExisting} />
                         <button
                             type="button"
                             onClick={() => setShowFilters(true)}
                             className={`relative ${discoveryTheme.toolbarBtn}`}
                         >
-                            <Filter className="w-4 h-4" /> Filters
+                            <Filter className="w-4 h-4" /> {t('browse.filters')}
                             {activeFilterCount > 0 && (
                                 <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-plex text-black text-xs font-black flex items-center justify-center">
                                     {activeFilterCount}
@@ -150,11 +168,9 @@ export const DiscoverSeries: React.FC<{
                     onSelect={onSelect}
                     loading={loading}
                     skeletonCount={skeletonCount}
-                    emptyMessage={
-                        activeFilterCount > 0 || hideRequested
-                            ? 'No series match your filters.'
-                            : 'No series found.'
-                    }
+                    emptyMessage={emptyMessage}
+                    emptyHint={emptyHint}
+                    quickRequest={quickRequest}
                 />
 
                 <DiscoverInfiniteScrollFooter

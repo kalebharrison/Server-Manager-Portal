@@ -13,6 +13,7 @@ export type DiscoverPagePayload = {
 type BrowseFilterOptions = {
     hideAvailable?: boolean;
     hideRequested?: boolean;
+    foreignOnly?: boolean;
 };
 
 type Options = {

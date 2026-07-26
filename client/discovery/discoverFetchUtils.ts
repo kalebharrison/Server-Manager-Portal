@@ -8,6 +8,8 @@ import type { DiscoverPagePayload } from './useDiscoverInfiniteScroll';
 type DiscoverBrowseFilterOptions = {
     hideAvailable?: boolean;
     hideRequested?: boolean;
+    /** When on, keep only non-English / non-anime titles. */
+    foreignOnly?: boolean;
     /**
      * Trust mediaInfo already attached by the discovery proxy (disk cache + warm catalog).
      * Client must not round-trip /availability-batch — that caused badge pop-in after paint.
@@ -153,7 +155,7 @@ export async function fetchDiscoverPageWithAdvance(
     page: number,
     options: DiscoverBrowseFilterOptions = {},
 ): Promise<DiscoverPagePayload & { lastFetchedPage: number }> {
-    const needsAdvance = !!options.hideAvailable || !!options.hideRequested;
+    const needsAdvance = !!options.hideAvailable || !!options.hideRequested || !!options.foreignOnly;
     if (!needsAdvance) {
         const payload = await fetchDiscoverPage(buildUrl(page), options);
         return { ...payload, lastFetchedPage: page };
