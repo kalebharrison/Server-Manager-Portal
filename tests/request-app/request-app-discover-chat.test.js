@@ -111,6 +111,32 @@ test('discover chat uses history on follow-up turns', async () => {
     assert.ok(bodies[0].messages.some((entry) => entry.role === 'user' && /Remains/.test(entry.content)));
 });
 
+test('discover chat routes stats questions to ops (not media search)', async () => {
+    let llmCalled = false;
+    const chat = createRequestAppDiscoverChat({
+        fetchImpl: async () => {
+            llmCalled = true;
+            throw new Error('LLM should not run for stats');
+        },
+        requestAppService: {
+            getRequestCounts: async () => ({ pending: 2, processing: 1, available: 40 }),
+            listRequests: async () => ({ results: [] }),
+            search: async () => ({ results: [] }),
+            getMediaDetails: async () => null,
+        },
+    });
+    const outcome = await chat.runDiscoverChat(agentConfig, {
+        query: 'what are my current stats?',
+        sessionUser: { username: 'kaleb', expiryDate: null },
+    });
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.intent, 'stats.me');
+    assert.equal(llmCalled, false);
+    assert.match(outcome.answer, /Portal user: \*\*kaleb\*\*/i);
+    assert.match(outcome.answer, /pending: 2/i);
+    assert.equal(outcome.results.length, 0);
+});
+
 test('POST /api/request-app/discover-chat returns agent answer', async () => {
     let handler;
     const app = {

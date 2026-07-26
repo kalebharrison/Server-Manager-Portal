@@ -284,7 +284,7 @@ export const DiscoverChatWidget: React.FC<DiscoverChatWidgetProps> = ({
                                 <MessageSquare className="mx-auto h-7 w-7 text-muted mb-2" />
                                 <p className="text-xs font-bold text-text">Try something like</p>
                                 <p className="text-xs text-muted mt-1.5 leading-relaxed">
-                                    “zombie movie set in a casino” · “kid who sees dead people”
+                                    “zombie movie set in a casino” · “what are my stats?” · “what’s downloading?”
                                 </p>
                             </div>
                         )}
@@ -341,7 +341,7 @@ export const DiscoverChatWidget: React.FC<DiscoverChatWidgetProps> = ({
                                 }}
                                 maxLength={800}
                                 disabled={busy || readOnly}
-                                placeholder={readOnly ? 'Requests disabled while viewing as user' : 'Ask about a movie or show…'}
+                                placeholder={readOnly ? 'Requests disabled while viewing as user' : 'Ask about movies, stats, queue…'}
                                 className="min-w-0 flex-1 h-11 rounded-xl border border-border bg-background/80 px-3 text-sm text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex disabled:opacity-60"
                             />
                             <button

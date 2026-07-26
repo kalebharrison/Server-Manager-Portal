@@ -13,6 +13,8 @@ test('phrase matcher maps request phrases', () => {
 
 test('phrase matcher maps ops intents', () => {
     assert.equal(matchPhraseIntent('my stats').intent, 'stats.me');
+    assert.equal(matchPhraseIntent('what are my current stats').intent, 'stats.me');
+    assert.equal(matchPhraseIntent("what's my stats").intent, 'stats.me');
     assert.equal(matchPhraseIntent("who's watching").intent, 'live.sessions');
     assert.equal(matchPhraseIntent("what's downloading").intent, 'queue.list');
     assert.equal(matchPhraseIntent('open issues').intent, 'issue.list');
@@ -100,6 +102,10 @@ test('routeAskIntent keeps ops phrases on fixed handlers', async () => {
     const nl = createDiscordNlParser();
     const result = await nl.routeAskIntent({}, "what's downloading", { agentReady: true });
     assert.equal(result.intent, 'queue.list');
+    assert.equal(
+        (await nl.routeAskIntent({}, 'what are my current stats', { agentReady: true })).intent,
+        'stats.me',
+    );
 });
 
 test('routeAskIntent sends discovery to agent when ready', async () => {
