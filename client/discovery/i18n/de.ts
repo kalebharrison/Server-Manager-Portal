@@ -120,7 +120,7 @@ export const de: DeepPartial<EnCatalog> = {
         hideRequested: 'Vorhandene ausblenden',
         hideExisting: 'Vorhandene ausblenden',
         foreign: 'International',
-        foreignHint: 'Nicht-englische Titel anzeigen (ohne Anime)',
+        foreignHint: 'Beliebte nicht-englische Titel (ohne Anime)',
         requestMovie: 'Anfragen',
         requestShow: 'Anfragen',
         requestAllSeasons: 'Alle Staffeln anfragen',

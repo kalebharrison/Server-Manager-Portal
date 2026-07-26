@@ -26,7 +26,27 @@ export const buildDiscoverStudioApiUrl = (page: number, studioId: number | strin
 export const buildDiscoverNetworkApiUrl = (page: number, networkId: number | string, sort = 'popularity.desc') =>
     `/api/discovery/proxy/discover/tv/network/${networkId}?page=${page}&sortBy=${encodeURIComponent(sort)}`;
 
-export const buildDiscoverMoviesApiUrl = (page: number, filters: FilterState): string => {
+/** Popularity floor so International browse surfaces Colony-tier hits, not obscure softcore. */
+const INTERNATIONAL_VOTE_COUNT_GTE = '100';
+
+const withInternationalBrowseParams = (url: string, international: boolean, filters: FilterState): string => {
+    if (!international) return url;
+    const [base, qs = ''] = url.split('?');
+    const params = new URLSearchParams(qs);
+    // Drop original-language lock; server also honors `international=1`.
+    params.delete('language');
+    params.set('international', '1');
+    if (!filters.voteCountGte) {
+        params.set('voteCountGte', INTERNATIONAL_VOTE_COUNT_GTE);
+    }
+    return `${base}?${params.toString()}`;
+};
+
+export const buildDiscoverMoviesApiUrl = (
+    page: number,
+    filters: FilterState,
+    options: { international?: boolean } = {},
+): string => {
     const sort = filters.sort || 'popularity.desc';
     const studioOnly = Boolean(filters.studio)
         && !hasAdvancedDiscoverFilters({ ...filters, studio: '', sort: 'popularity.desc' }, 'movie');
@@ -35,11 +55,20 @@ export const buildDiscoverMoviesApiUrl = (page: number, filters: FilterState): s
         return buildDiscoverStudioApiUrl(page, filters.studio, sort);
     }
 
+    // Clear language filter for International so TMDB isn't locked to English originals.
+    const browseFilters = options.international
+        ? { ...filters, language: '' }
+        : filters;
     let url = `/api/discovery/proxy/discover/movies?page=${page}&sortBy=${encodeURIComponent(sort)}`;
-    return appendDiscoverQuery(url, filters, 'movie');
+    url = appendDiscoverQuery(url, browseFilters, 'movie');
+    return withInternationalBrowseParams(url, !!options.international, browseFilters);
 };
 
-export const buildDiscoverSeriesApiUrl = (page: number, filters: FilterState): string => {
+export const buildDiscoverSeriesApiUrl = (
+    page: number,
+    filters: FilterState,
+    options: { international?: boolean } = {},
+): string => {
     const sort = filters.sort || 'popularity.desc';
     const networkOnly = Boolean(filters.network)
         && !hasAdvancedDiscoverFilters({ ...filters, network: '', sort: 'popularity.desc' }, 'tv');
@@ -54,8 +83,12 @@ export const buildDiscoverSeriesApiUrl = (page: number, filters: FilterState): s
         return buildDiscoverNetworkApiUrl(page, filters.network, sort);
     }
 
+    const browseFilters = options.international
+        ? { ...filters, language: '' }
+        : filters;
     let url = `/api/discovery/proxy/discover/tv?page=${page}&sortBy=${encodeURIComponent(sort)}`;
-    return appendDiscoverQuery(url, filters, 'tv');
+    url = appendDiscoverQuery(url, browseFilters, 'tv');
+    return withInternationalBrowseParams(url, !!options.international, browseFilters);
 };
 
 export async function fetchDiscoverPage(

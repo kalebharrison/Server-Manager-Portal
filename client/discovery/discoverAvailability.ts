@@ -1,5 +1,5 @@
 import { normalizeRawDiscoveryItem } from './discoverItemUtils';
-import { isForeignLanguageItem } from './discoverForeignUtils';
+import { isInternationalBrowseItem } from './discoverForeignUtils';
 import {
     buildSeasonStatusFromDetails,
     hasActiveSeerrDownloads,
@@ -496,7 +496,7 @@ export const filterDiscoverBrowseItems = (
     let filtered = filterHiddenAvailableItems(items, !!options.hideAvailable);
     filtered = filterHiddenRequestedItems(filtered, !!options.hideRequested);
     if (options.foreignOnly) {
-        filtered = filtered.filter((item) => isForeignLanguageItem(item));
+        filtered = filtered.filter((item) => isInternationalBrowseItem(item));
     }
     return filtered;
 };

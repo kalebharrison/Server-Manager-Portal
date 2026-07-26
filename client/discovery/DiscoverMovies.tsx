@@ -70,10 +70,10 @@ export const DiscoverMovies: React.FC<{
     }), [preferences.hideAvailableMedia, hideExisting, foreignOnly]);
 
     const fetchPage = useCallback(async (page: number) => fetchDiscoverPageWithAdvance(
-        (nextPage) => buildDiscoverMoviesApiUrl(nextPage, filters),
+        (nextPage) => buildDiscoverMoviesApiUrl(nextPage, filters, { international: foreignOnly }),
         page,
         browseFilterOptions,
-    ), [filters, browseFilterOptions]);
+    ), [filters, browseFilterOptions, foreignOnly]);
 
     const {
         results,
@@ -114,7 +114,6 @@ export const DiscoverMovies: React.FC<{
         filters.language ? `Language: ${filters.language.toUpperCase()}` : null,
         filters.certification ? `Rated: ${filters.certification}` : null,
         filters.watchProviders ? 'Streaming filtered' : null,
-        foreignOnly ? t('browse.foreign') : null,
     ].filter(Boolean).join(' · ');
     const skeletonCount = discoverSkeletonCountForGrid(
         gridSize,

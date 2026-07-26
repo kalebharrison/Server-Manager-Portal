@@ -28,3 +28,12 @@ export const isForeignLanguageItem = (item: any): boolean => {
     const language = String(item?.originalLanguage || '').toLowerCase();
     return !!language && language !== 'en' && !isAnimeItem(item);
 };
+
+/** International toolbar: non-English with a popularity floor (Colony-tier, not obscure softcore). */
+export const isInternationalBrowseItem = (item: any): boolean => {
+    if (!isForeignLanguageItem(item)) return false;
+    const votes = Number(item?.voteCount ?? item?.vote_count ?? 0);
+    // Missing voteCount (rare) — keep; TMDB discover already applies vote_count.gte.
+    if (!Number.isFinite(votes) || votes <= 0) return true;
+    return votes >= 100;
+};
