@@ -85,14 +85,20 @@ The live portal at `https://plex.lostwaldo.net` is **not** updated by manual `do
 |---|---|
 | Host | `unraid01` |
 | Container name | `server-manager-portal` |
-| Image tag | `ghcr.io/kalebharrison/server-manager-portal:beta` |
+| Image tag | `ghcr.io/kalebharrison/server-manager-portal:main` |
 | Compose source | `docker_stacks` → `stacks/unraid01/enabled/server-manager-portal/` |
-| Stack has `repull_images = true` | floating `:beta` tag is pulled on deploy |
+| Stack has `repull_images = true` | floating `:main` tag is pulled on deploy |
+| Lab hostname | `https://plex-beta.lostwaldo.net` → stack `server-manager-portal-beta` (`:beta`) |
 
-### Normal beta release flow
+### Normal production release flow
 
-1. Push to `beta` (CI builds and pushes the GHCR image).
-2. Let Dockhand refresh the stack (webhook/CI or manual **Sync** then **Deploy** on stack 151). Do **not** recreate the container on unraid01 by hand.
+1. Merge/promote to `main` (CI builds and pushes the GHCR `:main` image).
+2. Let Dockhand refresh stack **151** (webhook/CI or manual **Sync** then **Deploy**). Do **not** recreate the container on unraid01 by hand.
+
+### Lab / feature work (`beta`)
+
+1. Push to `beta` (CI builds `:beta`).
+2. Dockhand refreshes `server-manager-portal-beta` at `plex-beta.lostwaldo.net` (separate config under `/mnt/user/docker/server-manager-portal-beta/`).
 
 ### Orphan container / name conflict
 
