@@ -6,15 +6,20 @@ import {
     classifyDiscoverIntent,
     createDiscordMediaAgent,
     extractFinishFromContent,
+    isConfidentTitleHint,
     isDiscordAgentReady,
+    isJunkWebTitleHint,
     isMediaScopedQuery,
+    isPlotDescriptionQuery,
     isReleasedCandidate,
     isVagueMediaRecommend,
     OUT_OF_SCOPE_ANSWER,
     INJECTION_REFUSAL_ANSWER,
     CLARIFY_ANSWER,
+    COULD_NOT_IDENTIFY_ANSWER,
     rankCandidatesForQuery,
     simplifyDiscoverSearchQuery,
+    stripThinkingTags,
     titleHintsFromWebResults,
 } from '../../lib/discord/discord-media-agent.js';
 
@@ -207,9 +212,121 @@ test('classifyDiscoverIntent blocks non-media and injection; allows plot riddles
     assert.equal(classifyDiscoverIntent('the one with the kid who sees dead people').kind, 'media');
     assert.equal(classifyDiscoverIntent('something scary but not too scary for date night').kind, 'media');
     assert.equal(classifyDiscoverIntent('Army of the Dead').kind, 'media');
+    assert.equal(classifyDiscoverIntent('spanish thriller about a girl who inherits a haunted apartment from her aunt').kind, 'media');
+    assert.equal(classifyDiscoverIntent('anime where the high school is actually a battle royale death game and they play cards').kind, 'media');
     assert.equal(isVagueMediaRecommend('something scary but not too scary for date night'), true);
     assert.equal(isVagueMediaRecommend('like Breaking Bad but funny'), true);
     assert.equal(isVagueMediaRecommend('that zombie casino movie'), false);
+    assert.equal(isVagueMediaRecommend('spanish thriller about a girl who inherits a haunted apartment from her aunt'), false);
+    assert.equal(isPlotDescriptionQuery('spanish thriller about a girl who inherits a haunted apartment from her aunt'), true);
+    assert.equal(isPlotDescriptionQuery('Army of the Dead'), false);
+});
+
+test('cleanAgentAnswer strips qwen3 think tags', () => {
+    assert.equal(
+        stripThinkingTags('<think>secret chain</think>Army of the Dead fits.'),
+        'Army of the Dead fits.',
+    );
+    assert.equal(
+        cleanAgentAnswer('<think>reasoning</think>\nRemains (2011) is requestable.'),
+        'Remains (2011) is requestable.',
+    );
+});
+
+test('title hint confidence rejects listicles and query crumbs', () => {
+    assert.equal(isJunkWebTitleHint('10 Best Spanish Thrillers to Watch'), true);
+    assert.equal(isJunkWebTitleHint('Visit'), true);
+    assert.equal(isConfidentTitleHint('Spanish', 'spanish thriller about a girl'), false);
+    assert.equal(isConfidentTitleHint('Death Note', 'anime battle royale death game cards'), true);
+    assert.equal(isConfidentTitleHint('Army of the Dead', 'zombie casino movie'), true);
+    assert.deepEqual(
+        titleHintsFromWebResults([
+            { title: '10 Best Spanish Thrillers Like Veronica - Ranker' },
+            { title: 'Visit (2015) - Wikipedia', content: 'Not related' },
+            { title: 'Veronica (2017) - Wikipedia', content: 'Spanish horror about a haunted Ouija session' },
+        ], { query: 'spanish thriller about a girl who inherits a haunted apartment' }),
+        ['Veronica'],
+    );
+});
+
+test('rankCandidatesForQuery prefers main title over documentary', () => {
+    const ranked = rankCandidatesForQuery('Army of the Dead', [
+        { title: 'Army of the Dead: Documentary', tmdbId: 1, mediaType: 'movie' },
+        { title: 'Army of the Dead', tmdbId: 503736, mediaType: 'movie' },
+        { title: 'The Making of Army of the Dead', tmdbId: 2, mediaType: 'movie' },
+    ]);
+    assert.equal(ranked[0].tmdbId, 503736);
+});
+
+test('agent skips keyword-soup Seerr for long plot asks', async () => {
+    const searchQueries = [];
+    let chatRound = 0;
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url) => {
+            if (!String(url).includes('/chat/completions')) {
+                return { ok: true, json: async () => ({ results: [] }), text: async () => '' };
+            }
+            chatRound += 1;
+            if (chatRound === 1) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        choices: [{
+                            message: {
+                                role: 'assistant',
+                                tool_calls: [{
+                                    id: 'search',
+                                    type: 'function',
+                                    function: {
+                                        name: 'search_titles',
+                                        arguments: JSON.stringify({
+                                            query: 'spanish thriller girl inherits haunted apartment aunt',
+                                        }),
+                                    },
+                                }],
+                            },
+                        }],
+                    }),
+                };
+            }
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [{
+                        message: {
+                            role: 'assistant',
+                            tool_calls: [{
+                                id: 'finish',
+                                type: 'function',
+                                function: {
+                                    name: 'finish',
+                                    arguments: JSON.stringify({ answer: '', candidates: [] }),
+                                },
+                            }],
+                        },
+                    }],
+                }),
+            };
+        },
+        getRequestAppService: () => ({
+            search: async (_config, { query }) => {
+                searchQueries.push(query);
+                return { results: [{ mediaType: 'movie', tmdbId: 1, title: 'Visit', year: '2015' }] };
+            },
+            discoverByTheme: async () => ({
+                results: [{ mediaType: 'movie', tmdbId: 1, title: 'Visit', year: '2015' }],
+            }),
+            getMediaDetails: async () => null,
+        }),
+    });
+    const outcome = await agent.run(
+        agentConfig,
+        'spanish thriller about a girl who inherits a haunted apartment from her aunt',
+    );
+    assert.equal(outcome.ok, true);
+    assert.ok(!searchQueries.some((query) => /inherits|apartment|spanish thriller girl/i.test(query)));
+    assert.equal(outcome.results.length, 0);
+    assert.equal(outcome.answer, COULD_NOT_IDENTIFY_ANSWER);
 });
 
 test('isReleasedCandidate drops future years and dates', () => {
@@ -271,7 +388,7 @@ test('agent refuses chores, coding help, and injection without LLM', async () =>
     assert.equal(called, false);
 });
 
-test('agent asks clarifying questions for vague mood recommends', async () => {
+test('agent asks clarifying questions for vague mood and comps', async () => {
     let called = false;
     const agent = createDiscordMediaAgent({
         fetchImpl: async () => {
@@ -280,10 +397,15 @@ test('agent asks clarifying questions for vague mood recommends', async () => {
         },
         getRequestAppService: () => ({}),
     });
-    const outcome = await agent.run(agentConfig, 'something scary but not too scary for date night');
-    assert.equal(outcome.ok, true);
-    assert.equal(outcome.answer, CLARIFY_ANSWER);
-    assert.equal(outcome.results.length, 0);
+    for (const query of [
+        'something scary but not too scary for date night',
+        'like Breaking Bad but funny',
+    ]) {
+        const outcome = await agent.run(agentConfig, query);
+        assert.equal(outcome.ok, true, query);
+        assert.equal(outcome.answer, CLARIFY_ANSWER, query);
+        assert.equal(outcome.results.length, 0, query);
+    }
     assert.equal(called, false);
 });
 
