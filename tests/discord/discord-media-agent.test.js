@@ -8,6 +8,7 @@ import {
     isDiscordAgentReady,
     isMediaScopedQuery,
     OUT_OF_SCOPE_ANSWER,
+    simplifyDiscoverSearchQuery,
     titleHintsFromWebResults,
 } from '../../lib/discord/discord-media-agent.js';
 
@@ -411,6 +412,67 @@ test('titleHintsFromWebResults strips site suffixes', () => {
         ]),
         ['Army of the Dead', 'Remains'],
     );
+});
+
+test('simplifyDiscoverSearchQuery strips filler for Seerr', () => {
+    assert.equal(
+        simplifyDiscoverSearchQuery("I'm looking for a zombie movie that's set in a casino"),
+        'zombie casino',
+    );
+    assert.equal(simplifyDiscoverSearchQuery('what about "Remains" 2011?'), 'Remains');
+});
+
+test('agent auto-resolves Seerr from simplified NL query when web is empty', async () => {
+    let searchQueries = [];
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url) => {
+            const href = String(url);
+            if (href.includes('/chat/completions')) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        choices: [{
+                            message: {
+                                role: 'assistant',
+                                tool_calls: [{
+                                    id: 'web_1',
+                                    type: 'function',
+                                    function: {
+                                        name: 'web_search',
+                                        arguments: JSON.stringify({ query: 'zombie casino movie' }),
+                                    },
+                                }],
+                            },
+                        }],
+                    }),
+                };
+            }
+            // Empty web results from every search backend.
+            return { ok: true, json: async () => ({ results: [] }), text: async () => '' };
+        },
+        getRequestAppService: () => ({
+            search: async (_config, { query }) => {
+                searchQueries.push(query);
+                if (query === 'zombie casino') {
+                    return {
+                        results: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead', year: '2021' }],
+                    };
+                }
+                return { results: [] };
+            },
+            getMediaDetails: async (_config, { mediaType, tmdbId }) => ({
+                mediaType,
+                tmdbId,
+                title: 'Army of the Dead',
+                year: '2021',
+                canRequest: true,
+            }),
+        }),
+    });
+    const outcome = await agent.run(agentConfig, "I'm looking for a zombie movie that's set in a casino");
+    assert.equal(outcome.ok, true);
+    assert.ok(searchQueries.includes('zombie casino'));
+    assert.equal(outcome.results[0]?.tmdbId, 503736);
 });
 
 test('agent auto-resolves Seerr after web_search-only loops', async () => {
