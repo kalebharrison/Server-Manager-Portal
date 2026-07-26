@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { DiscordAgentKeySection } from './DiscordAgentKeySection';
 import { DiscordBotSection } from './DiscordBotSection';
 import { DiscordHubSection } from './DiscordHubSection';
 import { DiscordLlmSection } from './DiscordLlmSection';
@@ -105,5 +106,6 @@ export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => 
             onDiscordBraveSearchApiKeyChange={props.onDiscordBraveSearchApiKeyChange}
             onDiscordTavilyApiKeyChange={props.onDiscordTavilyApiKeyChange}
         />
+        <DiscordAgentKeySection />
     </div>
 );

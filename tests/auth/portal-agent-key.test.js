@@ -2,17 +2,45 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-    getPortalAgentApiKey,
+    ensurePortalAgentApiKey,
+    generatePortalAgentApiKey,
     readPortalAgentKeyFromRequest,
     tryAttachPortalAgent,
 } from '../../lib/auth/portal-agent-key.js';
 
-test('tryAttachPortalAgent accepts matching X-Portal-Agent-Key', () => {
+test('generatePortalAgentApiKey returns a long hex secret', () => {
+    const key = generatePortalAgentApiKey();
+    assert.match(key, /^[a-f0-9]{64}$/);
+    assert.notEqual(key, generatePortalAgentApiKey());
+});
+
+test('ensurePortalAgentApiKey creates and persists when missing', async () => {
+    let saved = null;
+    const outcome = await ensurePortalAgentApiKey({}, {
+        save: async (next) => { saved = next; },
+    });
+    assert.equal(outcome.created, true);
+    assert.match(outcome.key, /^[a-f0-9]{64}$/);
+    assert.equal(saved.portalAgentApiKey, outcome.key);
+});
+
+test('ensurePortalAgentApiKey keeps an existing key', async () => {
+    let saved = false;
+    const outcome = await ensurePortalAgentApiKey({ portalAgentApiKey: 'existing-key-value-0123456789abcdef' }, {
+        save: async () => { saved = true; },
+    });
+    assert.equal(outcome.created, false);
+    assert.equal(outcome.key, 'existing-key-value-0123456789abcdef');
+    assert.equal(saved, false);
+});
+
+test('tryAttachPortalAgent accepts matching configured key', () => {
+    const key = 'configured-agent-key-abcdefghijklmnopqrstuv';
     const req = {
-        headers: { 'x-portal-agent-key': 'test-agent-key-123456' },
+        headers: { 'x-portal-agent-key': key },
         get(name) { return this.headers[String(name).toLowerCase()]; },
     };
-    assert.equal(tryAttachPortalAgent(req, { PORTAL_AGENT_API_KEY: 'test-agent-key-123456' }), true);
+    assert.equal(tryAttachPortalAgent(req, { expectedKey: key }), true);
     assert.equal(req.portalAgent, true);
     assert.equal(req.user?.username, 'portal-agent');
 });
@@ -22,7 +50,7 @@ test('tryAttachPortalAgent rejects wrong key', () => {
         headers: { authorization: 'Bearer nope' },
         get(name) { return this.headers[String(name).toLowerCase()]; },
     };
-    assert.equal(tryAttachPortalAgent(req, { PORTAL_AGENT_API_KEY: 'test-agent-key-123456' }), false);
+    assert.equal(tryAttachPortalAgent(req, { expectedKey: 'configured-agent-key-abcdefghijklmnopqrstuv' }), false);
     assert.equal(req.portalAgent, undefined);
 });
 
@@ -32,5 +60,4 @@ test('readPortalAgentKeyFromRequest supports bearer', () => {
         get(name) { return this.headers[String(name).toLowerCase()]; },
     };
     assert.equal(readPortalAgentKeyFromRequest(req), 'abc.def');
-    assert.equal(getPortalAgentApiKey({ PORTAL_AGENT_API_KEY: ' x ' }), 'x');
 });
