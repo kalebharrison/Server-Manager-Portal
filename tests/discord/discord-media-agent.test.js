@@ -8,6 +8,7 @@ import {
     isDiscordAgentReady,
     isMediaScopedQuery,
     OUT_OF_SCOPE_ANSWER,
+    titleHintsFromWebResults,
 } from '../../lib/discord/discord-media-agent.js';
 
 const agentConfig = {
@@ -399,6 +400,81 @@ test('lookup_title failure does not crash the agent', async () => {
     const outcome = await agent.run(agentConfig, 'Army of the Dead');
     assert.equal(outcome.ok, true);
     assert.match(outcome.answer, /Could not find/i);
+});
+
+test('titleHintsFromWebResults strips site suffixes', () => {
+    assert.deepEqual(
+        titleHintsFromWebResults([
+            { title: 'Army of the Dead (2021) - Wikipedia' },
+            { title: 'Army of the Dead | Netflix' },
+            { title: 'Remains (2011) – movie review' },
+        ]),
+        ['Army of the Dead', 'Remains'],
+    );
+});
+
+test('agent auto-resolves Seerr after web_search-only loops', async () => {
+    let chatRound = 0;
+    let searchQueries = [];
+    const agent = createDiscordMediaAgent({
+        fetchImpl: async (url) => {
+            const href = String(url);
+            if (href.includes('/search') || href.includes('duckduckgo') || href.includes('api.search')) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        results: [{
+                            title: 'Army of the Dead (2021) - Wikipedia',
+                            url: 'https://example.com',
+                            content: 'Zombie heist in Las Vegas',
+                        }],
+                    }),
+                    text: async () => '',
+                };
+            }
+            if (!href.includes('/chat/completions')) throw new Error(`Unexpected fetch ${href}`);
+            chatRound += 1;
+            // Keep calling web_search only — never finish / search_titles.
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [{
+                        message: {
+                            role: 'assistant',
+                            tool_calls: [{
+                                id: `web_${chatRound}`,
+                                type: 'function',
+                                function: {
+                                    name: 'web_search',
+                                    arguments: JSON.stringify({ query: 'zombie movie casino' }),
+                                },
+                            }],
+                        },
+                    }],
+                }),
+            };
+        },
+        getRequestAppService: () => ({
+            search: async (_config, { query }) => {
+                searchQueries.push(query);
+                return {
+                    results: [{ mediaType: 'movie', tmdbId: 503736, title: 'Army of the Dead', year: '2021' }],
+                };
+            },
+            getMediaDetails: async (_config, { mediaType, tmdbId }) => ({
+                mediaType,
+                tmdbId,
+                title: 'Army of the Dead',
+                year: '2021',
+                available: false,
+                canRequest: true,
+            }),
+        }),
+    });
+    const outcome = await agent.run(agentConfig, "I'm looking for a zombie movie that's set in a casino");
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.results[0]?.tmdbId, 503736);
+    assert.ok(searchQueries.some((query) => /Army of the Dead|zombie/i.test(query)));
 });
 
 test('agent synthesizes finish from Seerr hits when rounds exhaust', async () => {
