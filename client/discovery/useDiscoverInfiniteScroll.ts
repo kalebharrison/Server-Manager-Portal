@@ -25,8 +25,8 @@ type Options = {
     filterOptions?: BrowseFilterOptions;
 };
 
-/** First paint: two batches (~60 titles), then +30 on each scroll. */
-const INITIAL_BATCH_COUNT = 2;
+/** First paint: one batch (~30 titles); scroll loads the next 30. */
+const INITIAL_BATCH_COUNT = 1;
 
 export function useDiscoverInfiniteScroll({
     resetKey,

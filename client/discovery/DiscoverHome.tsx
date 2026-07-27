@@ -25,6 +25,7 @@ import { useDiscoverGridSize } from './useDiscoverGridSize';
 import { discoverRowCardWidthClass } from '../shared/portalLayout';
 import { useDiscoverI18n } from './i18n';
 import { DiscoverQuickRequestButton } from './DiscoverQuickRequestButton';
+import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
 import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 
 type GenreSliderItem = { id: number; name: string; image?: string; backdrops?: string[] };
@@ -129,9 +130,21 @@ const DiscoverHomeRow: React.FC<{
                         && (quickRequest.canQuickRequest(formatted)
                             || quickRequest.isRequesting(formatted)
                             || quickRequest.isRequested(formatted));
+                    const showRequestedBadge = !!quickRequest?.isRequested(formatted)
+                        && (!formatted.availability || formatted.availability.kind === 'none');
                     const overlay = (
                         <>
-                            {formatted.overlay}
+                            {showRequestedBadge ? (
+                                <DiscoverStatusOverlay state={{
+                                    kind: 'requested',
+                                    label: 'Requested',
+                                    detail: 'Your request was submitted.',
+                                    mediaStatus: 2,
+                                    hasUserRequest: true,
+                                    userRequestId: null,
+                                    userRequestStatus: 1,
+                                }} />
+                            ) : formatted.overlay}
                             {showRequest && quickRequest && (
                                 <DiscoverQuickRequestButton item={formatted} api={quickRequest} />
                             )}
@@ -239,9 +252,10 @@ export const DiscoverHome: React.FC<{
             // Seerr-style: one endpoint per rail; advance same URL pages only (no multi-source storm).
             const rowOpts = {
                 needsBackfill: hideAvailable,
-                maxPages: hideAvailable ? 4 : 2,
+                // Availability stamps on the proxy mean fewer empty pages to scan.
+                maxPages: hideAvailable ? 2 : 1,
                 maxItems: 30,
-                minItems: hideAvailable ? 20 : 30,
+                minItems: hideAvailable ? 16 : 20,
                 hideRequested: false,
                 trustAttachedAvailability: true,
                 pageConcurrency: 1,

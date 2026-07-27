@@ -4,6 +4,7 @@ import { PosterCardSkeleton } from '../shared/skeletons';
 import { upgraderPosterGridClass, upgraderPosterGridStyle, type UpgraderGridSize } from '../shared/portalLayout';
 import { dedupeDiscoverResults, getDiscoverItemKey } from './discoverItemUtils';
 import { DiscoverQuickRequestButton, type DiscoverQuickRequestApi } from './DiscoverQuickRequestButton';
+import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
 import { discoveryTheme } from './discoveryThemeClasses';
 import { useDiscoverI18n } from './i18n';
 
@@ -83,9 +84,22 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
                     && (quickRequest.canQuickRequest(formatted)
                         || quickRequest.isRequesting(formatted)
                         || quickRequest.isRequested(formatted));
+                const availability = formatted.availability;
+                const showRequestedBadge = !!quickRequest?.isRequested(formatted)
+                    && (!availability || availability.kind === 'none');
                 const overlay = (
                     <>
-                        {formatted.overlay}
+                        {showRequestedBadge ? (
+                            <DiscoverStatusOverlay state={{
+                                kind: 'requested',
+                                label: 'Requested',
+                                detail: 'Your request was submitted.',
+                                mediaStatus: 2,
+                                hasUserRequest: true,
+                                userRequestId: null,
+                                userRequestStatus: 1,
+                            }} />
+                        ) : formatted.overlay}
                         {showRequest && quickRequest && (
                             <DiscoverQuickRequestButton item={formatted} api={quickRequest} />
                         )}

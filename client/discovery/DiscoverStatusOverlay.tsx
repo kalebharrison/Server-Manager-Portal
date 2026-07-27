@@ -11,7 +11,7 @@ import {
 import type { MediaAvailabilityState } from './discoverAvailability';
 import { useDiscoverI18n, translateDiscoverStatus } from './i18n';
 
-const badgeClass = 'absolute top-2 right-2 rounded-full p-1 shadow-lg backdrop-blur-sm z-10 border flex items-center justify-center';
+const pillClass = 'absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide shadow-lg backdrop-blur-sm border';
 
 export const DiscoverStatusOverlay: React.FC<{ state: MediaAvailabilityState }> = ({ state }) => {
     const { t } = useDiscoverI18n();
@@ -21,18 +21,16 @@ export const DiscoverStatusOverlay: React.FC<{ state: MediaAvailabilityState }> 
 
     if (state.kind === 'available') {
         return (
-            <div className={`${badgeClass} bg-green-500/90 text-white border-green-400/30`} title={title}>
-                <CheckCircle className="w-4 h-4" />
+            <div className={`${pillClass} bg-green-500/95 text-white border-green-400/30`} title={title}>
+                <CheckCircle className="w-3 h-3" />
+                {t('status.available')}
             </div>
         );
     }
 
     if (state.kind === 'partial') {
         return (
-            <div
-                className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/90 text-white text-[10px] font-black uppercase tracking-wide shadow-lg backdrop-blur-sm border border-emerald-400/30"
-                title={title}
-            >
+            <div className={`${pillClass} bg-emerald-500/95 text-white border-emerald-400/30`} title={title}>
                 <Layers className="w-3 h-3" />
                 {t('status.partial')}
             </div>
@@ -41,18 +39,16 @@ export const DiscoverStatusOverlay: React.FC<{ state: MediaAvailabilityState }> 
 
     if (state.kind === 'processing') {
         return (
-            <div className={`${badgeClass} bg-blue-500/90 text-white border-blue-400/30`} title={title}>
-                <Download className="w-4 h-4" />
+            <div className={`${pillClass} bg-blue-500/95 text-white border-blue-400/30`} title={title}>
+                <Download className="w-3 h-3" />
+                {t('status.processing')}
             </div>
         );
     }
 
     if (state.kind === 'requested') {
         return (
-            <div
-                className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-500/90 text-white text-[10px] font-black uppercase tracking-wide shadow-lg backdrop-blur-sm border border-indigo-400/30"
-                title={title}
-            >
+            <div className={`${pillClass} bg-indigo-500/95 text-white border-indigo-400/30`} title={title}>
                 <Clock className="w-3 h-3" />
                 {t('status.requested')}
             </div>
@@ -61,18 +57,16 @@ export const DiscoverStatusOverlay: React.FC<{ state: MediaAvailabilityState }> 
 
     if (state.kind === 'pending') {
         return (
-            <div className={`${badgeClass} bg-amber-500/90 text-white border-amber-400/30`} title={title}>
-                <Clock className="w-4 h-4" />
+            <div className={`${pillClass} bg-amber-500/95 text-white border-amber-400/30`} title={title}>
+                <Clock className="w-3 h-3" />
+                {t('status.pending')}
             </div>
         );
     }
 
     if (state.kind === 'failed') {
         return (
-            <div
-                className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/90 text-white text-[10px] font-black uppercase tracking-wide shadow-lg backdrop-blur-sm border border-red-400/30"
-                title={title}
-            >
+            <div className={`${pillClass} bg-red-500/95 text-white border-red-400/30`} title={title}>
                 <AlertCircle className="w-3 h-3" />
                 {t('status.failed')}
             </div>
@@ -81,16 +75,18 @@ export const DiscoverStatusOverlay: React.FC<{ state: MediaAvailabilityState }> 
 
     if (state.kind === 'declined') {
         return (
-            <div className={`${badgeClass} bg-red-500/80 text-white border-red-400/30`} title={title}>
-                <XCircle className="w-4 h-4" />
+            <div className={`${pillClass} bg-red-500/90 text-white border-red-400/30`} title={title}>
+                <XCircle className="w-3 h-3" />
+                {t('status.declined')}
             </div>
         );
     }
 
     if (state.kind === 'blacklisted') {
         return (
-            <div className={`${badgeClass} bg-zinc-700/95 text-white border-white/20`} title={title}>
-                <Ban className="w-4 h-4" />
+            <div className={`${pillClass} bg-zinc-700/95 text-white border-white/20`} title={title}>
+                <Ban className="w-3 h-3" />
+                {t('status.blacklisted')}
             </div>
         );
     }
