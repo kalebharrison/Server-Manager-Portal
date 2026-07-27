@@ -179,9 +179,12 @@ const DiscoverHomeRow: React.FC<{
                             style={animateEnter ? { animationDelay: `${Math.min(idx, 12) * 30}ms` } : undefined}
                         >
                             <DiscoverPosterCard
-                                item={formatted}
+                                item={{
+                                    ...formatted,
+                                    tags: Array.isArray(formatted.qualityTags) ? formatted.qualityTags : [],
+                                }}
                                 overlay={overlay}
-                                showQualityBadges={false}
+                                showQualityBadges={Array.isArray(formatted.qualityTags) && formatted.qualityTags.length > 0}
                                 onPosterClick={() => onSelect(formatted)}
                             />
                         </div>

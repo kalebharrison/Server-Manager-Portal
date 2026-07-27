@@ -155,6 +155,9 @@ const DiscoveryDashboardInner: React.FC<{
         const overlay = !isPerson && availability.kind !== 'none'
             ? <DiscoverStatusOverlay state={availability} />
             : null;
+        const qualityTags = Array.isArray(item.displayTags) && item.displayTags.length
+            ? item.displayTags
+            : (Array.isArray(item.mediaInfo?.displayTags) ? item.mediaInfo.displayTags : []);
 
         return {
             ...item,
@@ -166,6 +169,7 @@ const DiscoveryDashboardInner: React.FC<{
             overview,
             type: mediaType,
             tags: [isPerson ? t('mediaType.person') : (isMovie ? t('mediaType.movie') : t('mediaType.tvShow'))],
+            qualityTags,
             status: item.mediaInfo?.status,
             availability,
             isAvailable: availability.kind === 'available',

@@ -52,6 +52,12 @@ export const DiscoverBrowseCard: React.FC<Props> = ({
     const rating = Number(formatted?.voteAverage ?? item?.voteAverage);
     const overview = String(formatted?.overview || item?.overview || '').trim();
     const year = formatted?.year || '';
+    const qualityTags = Array.isArray(formatted?.qualityTags) && formatted.qualityTags.length
+        ? formatted.qualityTags
+        : (Array.isArray(item?.displayTags) && item.displayTags.length
+            ? item.displayTags
+            : (Array.isArray(item?.mediaInfo?.displayTags) ? item.mediaInfo.displayTags : []));
+    const showQuality = available && qualityTags.length > 0;
 
     let statusLabel = isTv ? t('browse.requestShow') : t('browse.requestMovie');
     let badgeClass = 'bg-plex/15 text-plex border-plex/30';
@@ -133,6 +139,18 @@ export const DiscoverBrowseCard: React.FC<Props> = ({
                     <span className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/70 text-[10px] font-bold text-white border border-white/10">
                         {rating.toFixed(1)}
                     </span>
+                ) : null}
+                {showQuality ? (
+                    <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1 pointer-events-none z-10">
+                        {qualityTags.slice(0, 4).map((tag: string) => (
+                            <span
+                                key={tag}
+                                className="text-[9px] font-black px-1.5 py-0.5 rounded bg-black/85 text-white border border-white/20 uppercase tracking-wide"
+                            >
+                                {tag}
+                            </span>
+                        ))}
+                    </div>
                 ) : null}
             </button>
 

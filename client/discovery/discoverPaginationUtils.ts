@@ -8,10 +8,10 @@ export const DISCOVER_API_PAGE_SIZE = 20;
 export const DISCOVER_LOAD_MORE_TARGET = 30;
 
 const GRID_MIN_PX: Record<Exclude<UpgraderGridSize, 'list'>, number> = {
-    small: 80,
-    medium: 112,
-    large: 152,
-    xlarge: 208,
+    small: 192,
+    medium: 192,
+    large: 192,
+    xlarge: 240,
 };
 
 export const estimateDiscoverGridColumns = (gridSize: UpgraderGridSize, containerWidth: number): number => {

@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { DiscoverPosterCard } from '../screens';
 import { PosterCardSkeleton } from '../shared/skeletons';
-import { upgraderPosterGridClass, upgraderPosterGridStyle, type UpgraderGridSize } from '../shared/portalLayout';
+import { upgraderPosterGridClass, discoverBrowseGridStyle, type UpgraderGridSize } from '../shared/portalLayout';
 import { dedupeDiscoverResults, getDiscoverItemKey } from './discoverItemUtils';
 import { DiscoverBrowseCard } from './DiscoverBrowseCard';
 import { DiscoverQuickRequestButton, type DiscoverQuickRequestApi } from './DiscoverQuickRequestButton';
@@ -51,7 +51,7 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
         return (
             <div
                 className={upgraderPosterGridClass(gridSize)}
-                style={upgraderPosterGridStyle(gridSize)}
+                style={discoverBrowseGridStyle(gridSize)}
                 aria-busy="true"
                 aria-label="Loading results"
             >
@@ -80,7 +80,7 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
     return (
         <div
             className={upgraderPosterGridClass(gridSize)}
-            style={upgraderPosterGridStyle(gridSize)}
+            style={discoverBrowseGridStyle(gridSize)}
         >
             {visibleItems.map((rawItem, index) => {
                 const formatted = formatItem(rawItem);
@@ -159,9 +159,12 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
                             : undefined}
                     >
                         <DiscoverPosterCard
-                            item={formatted}
+                            item={{
+                                ...formatted,
+                                tags: Array.isArray(formatted.qualityTags) ? formatted.qualityTags : [],
+                            }}
                             overlay={overlay}
-                            showQualityBadges={false}
+                            showQualityBadges={Array.isArray(formatted.qualityTags) && formatted.qualityTags.length > 0}
                             onPosterClick={() => onSelect(formatted)}
                         />
                     </div>

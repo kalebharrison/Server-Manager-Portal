@@ -80,6 +80,22 @@ export const upgraderPosterGridStyle = (size: UpgraderGridSize): CSSProperties =
     gridTemplateColumns: `repeat(auto-fill, minmax(${UPGRADER_GRID_MIN_WIDTH[size]}, 1fr))`,
 });
 
+/** Wider columns for Discover dense cards (synopsis + CTA need room). */
+export const DISCOVER_GRID_MIN_WIDTH: Record<UpgraderGridSize, string> = {
+    small: '12rem',
+    medium: '12rem',
+    large: '12rem',
+    xlarge: '15rem',
+    list: '100%',
+};
+
+export const discoverBrowseGridStyle = (size: UpgraderGridSize): CSSProperties => size === 'list' ? {} : ({
+    display: 'grid',
+    width: '100%',
+    gap: '0.75rem',
+    gridTemplateColumns: `repeat(auto-fill, minmax(${DISCOVER_GRID_MIN_WIDTH[size] || DISCOVER_GRID_MIN_WIDTH.large}, 1fr))`,
+});
+
 /** Fixed carousel poster widths for Discover home rails (mirrors Movies/Series grid density). */
 export const DISCOVER_ROW_CARD_WIDTH_CLASS: Record<UpgraderGridSize, string> = {
     small: 'w-[100px] sm:w-[112px]',
@@ -89,7 +105,7 @@ export const DISCOVER_ROW_CARD_WIDTH_CLASS: Record<UpgraderGridSize, string> = {
     list: 'w-[140px] sm:w-[160px]',
 };
 
-export const discoverRowCardWidthClass = (size: UpgraderGridSize) => DISCOVER_ROW_CARD_WIDTH_CLASS[size] || DISCOVER_ROW_CARD_WIDTH_CLASS.medium;
+export const discoverRowCardWidthClass = (size: UpgraderGridSize) => DISCOVER_ROW_CARD_WIDTH_CLASS[size] || DISCOVER_ROW_CARD_WIDTH_CLASS.large;
 
 export const UPGRADER_GRID_SIZE_STORAGE_KEY = 'upgraderGridSize';
 

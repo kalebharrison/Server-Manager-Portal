@@ -1,9 +1,6 @@
 import React from 'react';
 import { CustomSelect } from '../shared/ui';
-import {
-    normalizeUpgraderGridSize,
-    type UpgraderGridSize,
-} from '../shared/portalLayout';
+import type { UpgraderGridSize } from '../shared/portalLayout';
 import { useDiscoverI18n } from './i18n';
 
 export const DiscoverGridSizeSelect: React.FC<{
@@ -12,18 +9,19 @@ export const DiscoverGridSizeSelect: React.FC<{
     className?: string;
 }> = ({ value, onChange, className = 'w-44' }) => {
     const { t } = useDiscoverI18n();
+    // Small/medium crush dense browse cards — only keep usable sizes.
     const options = [
-        { value: 'small', label: t('browse.gridSmall') },
-        { value: 'medium', label: t('browse.gridMedium') },
         { value: 'large', label: t('browse.gridLarge') },
         { value: 'xlarge', label: t('browse.gridXlarge') },
     ];
 
+    const safeValue = value === 'xlarge' ? 'xlarge' : 'large';
+
     return (
         <CustomSelect
             compact
-            value={value}
-            onChange={(next) => onChange(normalizeUpgraderGridSize(next))}
+            value={safeValue}
+            onChange={(next) => onChange(next === 'xlarge' ? 'xlarge' : 'large')}
             options={options}
             className={className}
         />
