@@ -12,6 +12,8 @@ export interface NavigationProps {
     navHiddenKeys?: string[];
     navFeatures?: {
         request?: boolean;
+        /** When false, hide Request Content (portal Discover already covers it). */
+        requestNav?: boolean;
         scanner?: boolean;
     };
     appVersion?: string;

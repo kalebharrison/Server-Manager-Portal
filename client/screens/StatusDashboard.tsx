@@ -4,7 +4,6 @@ import { Activity, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { Loader } from '../shared/toast';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
-import { StatusSpeedTest } from '../shared/StatusSpeedTest';
 import { StatusHistory } from './status/StatusHistory';
 import { StatusServiceCard } from './status/StatusServiceCard';
 
@@ -85,8 +84,6 @@ export const StatusDashboard: React.FC<{ onBack: () => void; isAdmin: boolean; i
             {announcement && (typeof announcement === 'string' || announcement.enabled) && (
                 <div className="mb-6 rounded-lg border border-plex/25 bg-plex/10 px-4 py-3 text-sm text-text">{typeof announcement === 'string' ? announcement : announcement.message}</div>
             )}
-
-            {!isPublic && <StatusSpeedTest />}
 
             <div className="flex gap-1 mb-8 p-1 bg-black/20 rounded-lg border border-border w-fit">
                 {([['overview', 'Overview'], ['history', 'History']] as const).map(([id, label]) => (

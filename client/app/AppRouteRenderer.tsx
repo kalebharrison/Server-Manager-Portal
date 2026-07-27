@@ -71,6 +71,10 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
     if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
     if (currentRoute === 'analytics') return <AnalyticsDashboard isAdmin={isAdmin} sessionInfo={sessionInfo} />;
     if (currentRoute === 'request' && (effectivePublicConfig?.requestEngine === 'portal' || sessionInfo?.requestEngine === 'portal')) {
+        const path = stripBasePath(window.location.pathname);
+        if (path === '/request' || path === '/requests') {
+            window.history.replaceState({}, '', portalUrl('/discovery'));
+        }
         return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} />;
     }
     if (currentRoute === 'request') return <RequestDashboard isAdmin={isAdmin} cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;

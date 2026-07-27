@@ -14,12 +14,7 @@ const appVersion = resolveAppVersion();
 const env = loadPortalEnv();
 
 const app = express();
-app.use(compression({
-    filter: (req, res) => {
-        if (String(req.originalUrl || req.url || '').includes('/api/speedtest/')) return false;
-        return compression.filter(req, res);
-    },
-}));
+app.use(compression());
 
 const BASE_PATH = deriveBasePath({ envBasePath: process.env.BASE_PATH, publicBaseUrl: env.PUBLIC_BASE_URL });
 const { withBasePath, stripBasePathFromUrl } = createBasePathHelpers(BASE_PATH);
