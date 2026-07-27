@@ -20,6 +20,7 @@ type RequestDashboardContentProps = {
     onRetry: () => void;
     onOpen: (item: RequestMediaItem) => void;
     onRequest: (item: RequestMediaItem) => void;
+    onNotify?: (item: RequestMediaItem) => void;
     onReportIssue: (item: RequestMediaItem) => void;
 };
 
@@ -40,6 +41,7 @@ export const RequestDashboardContent: React.FC<RequestDashboardContentProps> = (
     onRetry,
     onOpen,
     onRequest,
+    onNotify,
     onReportIssue,
 }) => (
     <section className="glass-card p-4 md:p-5 shadow-xl">
@@ -91,6 +93,7 @@ export const RequestDashboardContent: React.FC<RequestDashboardContentProps> = (
                             priority={index < 4}
                             onOpen={onOpen}
                             onRequest={onRequest}
+                            onNotify={onNotify}
                             onReportIssue={onReportIssue}
                         />
                     ))}

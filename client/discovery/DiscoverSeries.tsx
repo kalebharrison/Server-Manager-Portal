@@ -21,6 +21,7 @@ import { DiscoverAnimeToggle } from './DiscoverAnimeToggle';
 import { useHideExistingToggle } from './useHideExistingToggle';
 import { useAnimeToggle } from './useAnimeToggle';
 import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
+import { useDiscoverNotify } from './useDiscoverNotify';
 import { discoveryTheme } from './discoveryThemeClasses';
 import { useDiscoverI18n } from './i18n';
 
@@ -35,6 +36,7 @@ export const DiscoverSeries: React.FC<{
     const { hideExisting, setHideExisting } = useHideExistingToggle();
     const { animeOnly, setAnimeOnly } = useAnimeToggle();
     const quickRequest = useDiscoverQuickRequest(pushToast);
+    const notify = useDiscoverNotify(pushToast);
     const [gridSize, setGridSize] = useDiscoverGridSize();
     const containerRef = useRef<HTMLDivElement>(null);
     const [showFilters, setShowFilters] = React.useState(false);
@@ -170,6 +172,8 @@ export const DiscoverSeries: React.FC<{
                     emptyMessage={emptyMessage}
                     emptyHint={emptyHint}
                     quickRequest={quickRequest}
+                    notify={notify}
+                    variant="dense"
                 />
 
                 <DiscoverInfiniteScrollFooter

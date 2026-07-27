@@ -27,6 +27,7 @@ import { useDiscoverI18n } from './i18n';
 import { DiscoverQuickRequestButton } from './DiscoverQuickRequestButton';
 import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
 import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
+import { useDiscoverNotify } from './useDiscoverNotify';
 
 type GenreSliderItem = { id: number; name: string; image?: string; backdrops?: string[] };
 
@@ -84,6 +85,7 @@ const DiscoverHomeRow: React.FC<{
     empty?: React.ReactNode;
     animateEnter?: boolean;
     quickRequest?: ReturnType<typeof useDiscoverQuickRequest>;
+    notify?: ReturnType<typeof useDiscoverNotify>;
 }> = ({
     title,
     items,
@@ -95,7 +97,9 @@ const DiscoverHomeRow: React.FC<{
     empty,
     animateEnter = false,
     quickRequest,
+    notify,
 }) => {
+    const { t } = useDiscoverI18n();
     if (!items?.length) {
         if (!empty) return null;
         return (
@@ -130,6 +134,10 @@ const DiscoverHomeRow: React.FC<{
                         && (quickRequest.canQuickRequest(formatted)
                             || quickRequest.isRequesting(formatted)
                             || quickRequest.isRequested(formatted));
+                    const showNotify = !!notify
+                        && (notify.canNotify(rawItem)
+                            || notify.isNotifying(rawItem)
+                            || notify.isBusy(rawItem));
                     const showRequestedBadge = !!quickRequest?.isRequested(formatted)
                         && (!formatted.availability || formatted.availability.kind === 'none');
                     const overlay = (
@@ -145,6 +153,20 @@ const DiscoverHomeRow: React.FC<{
                                     userRequestStatus: 1,
                                 }} />
                             ) : formatted.overlay}
+                            {showNotify && notify && !showRequest && (
+                                <button
+                                    type="button"
+                                    disabled={notify.isBusy(rawItem)}
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        void notify.toggleNotify(rawItem);
+                                    }}
+                                    className="absolute bottom-2 left-2 right-2 z-20 inline-flex items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors pointer-events-auto bg-sky-500/25 text-sky-100 border-sky-500/40 hover:bg-sky-500/40 disabled:opacity-70"
+                                >
+                                    {notify.isNotifying(rawItem) ? t('browse.notifying') : t('browse.notify')}
+                                </button>
+                            )}
                             {showRequest && quickRequest && (
                                 <DiscoverQuickRequestButton item={formatted} api={quickRequest} />
                             )}
@@ -217,6 +239,7 @@ export const DiscoverHome: React.FC<{
     const { preferences, loaded } = useDiscoveryPreferences();
     const { showLibraryQueue, toggleLibraryQueue } = useLibraryQueueToggle();
     const quickRequest = useDiscoverQuickRequest(pushToast);
+    const notify = useDiscoverNotify(pushToast);
     const [gridSize, setGridSize] = useDiscoverGridSize();
     const posterCardClass = discoverRowCardWidthClass(gridSize);
     const [rows, setRows] = useState({
@@ -499,6 +522,7 @@ export const DiscoverHome: React.FC<{
                         onSelect={onSelect}
                         animateEnter={enterAnim}
                         quickRequest={quickRequest}
+                    notify={notify}
                     />
                 </div>
                 <DiscoverHomeRow
@@ -511,6 +535,7 @@ export const DiscoverHome: React.FC<{
                     animateEnter={enterAnim}
                     onViewAll={() => navigate('/discovery/movies')}
                     quickRequest={quickRequest}
+                    notify={notify}
                 />
                 <DiscoverGenreSliderRow
                     title={t('home.movieGenres')}
@@ -528,6 +553,7 @@ export const DiscoverHome: React.FC<{
                     onSelect={onSelect}
                     animateEnter={enterAnim}
                     quickRequest={quickRequest}
+                    notify={notify}
                 />
 
                 <div className="flex flex-col gap-2 relative rounded-2xl border border-border/60 bg-white/[0.02] p-3 sm:p-4">
@@ -554,6 +580,7 @@ export const DiscoverHome: React.FC<{
                     animateEnter={enterAnim}
                     onViewAll={() => navigate('/discovery/series')}
                     quickRequest={quickRequest}
+                    notify={notify}
                 />
                 <DiscoverGenreSliderRow
                     title={t('home.seriesGenres')}
@@ -571,6 +598,7 @@ export const DiscoverHome: React.FC<{
                     onSelect={onSelect}
                     animateEnter={enterAnim}
                     quickRequest={quickRequest}
+                    notify={notify}
                 />
 
                 <div className="flex flex-col gap-2 relative rounded-2xl border border-border/60 bg-white/[0.02] p-3 sm:p-4">

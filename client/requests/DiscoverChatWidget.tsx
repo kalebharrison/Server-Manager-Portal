@@ -215,6 +215,36 @@ export const DiscoverChatWidget: React.FC<DiscoverChatWidgetProps> = ({
         void submitRequest(item, item.mediaType === 'tv' ? 'all' : []);
     }, [readOnly, submitRequest]);
 
+    const notifyFromCard = useCallback(async (item: RequestMediaItem) => {
+        if (readOnly || !item?.tmdbId || !item?.mediaType) return;
+        setRequestingId(item.tmdbId);
+        try {
+            const notifying = !!item.notifying;
+            const res = await apiFetch('/api/discovery/notify', {
+                method: notifying ? 'DELETE' : 'POST',
+                body: JSON.stringify({ mediaType: item.mediaType, mediaId: item.tmdbId }),
+            });
+            if (res?.error) throw new Error(res.error);
+            setMessages((prev) => prev.map((message) => ({
+                ...message,
+                results: message.results?.map((entry) => (
+                    entry.tmdbId === item.tmdbId && entry.mediaType === item.mediaType
+                        ? { ...entry, notifying: !notifying, canNotify: notifying }
+                        : entry
+                )),
+            })));
+            addToast(
+                notifying
+                    ? 'Stopped notifications for this title'
+                    : 'You will be notified when this is available',
+            );
+        } catch (err: any) {
+            addToast(err?.message || 'Failed to update notify preference', 'error');
+        } finally {
+            setRequestingId(null);
+        }
+    }, [addToast, readOnly]);
+
     if (!enabled || !visible) return null;
 
     return (
@@ -309,6 +339,7 @@ export const DiscoverChatWidget: React.FC<DiscoverChatWidgetProps> = ({
                                                     priority={index < 2}
                                                     onOpen={openDetails}
                                                     onRequest={requestFromCard}
+                                                    onNotify={notifyFromCard}
                                                     onReportIssue={openIssue}
                                                 />
                                             ))}

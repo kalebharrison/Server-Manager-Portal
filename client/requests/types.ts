@@ -71,6 +71,9 @@ export type RequestMediaItem = {
     pending?: boolean;
     approved?: boolean;
     canRequest?: boolean;
+    /** Portal: join Notify list on someone else's open request. */
+    canNotify?: boolean;
+    notifying?: boolean;
     ratingKey?: string;
     plexUrl?: string;
     source?: 'request' | 'plex';

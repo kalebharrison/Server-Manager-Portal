@@ -153,6 +153,14 @@ export const useRequestDashboardCatalog = ({
         )));
     }, []);
 
+    const markNotifyState = useCallback((target: RequestMediaItem, notifying: boolean) => {
+        setItems((prev) => prev.map((item) => (
+            item.tmdbId === target.tmdbId && item.mediaType === target.mediaType
+                ? { ...item, notifying, canNotify: !notifying }
+                : item
+        )));
+    }, []);
+
     return {
         items,
         loading,
@@ -163,5 +171,6 @@ export const useRequestDashboardCatalog = ({
         loadItems,
         hasMore,
         markRequested,
+        markNotifyState,
     };
 };

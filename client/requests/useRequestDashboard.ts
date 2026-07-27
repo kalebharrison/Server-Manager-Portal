@@ -75,6 +75,7 @@ export const useRequestDashboard = (cacheMinutes?: number) => {
         loadItems,
         hasMore,
         markRequested,
+        markNotifyState,
     } = useRequestDashboardCatalog({
         refreshMs,
         status,
@@ -126,6 +127,29 @@ export const useRequestDashboard = (cacheMinutes?: number) => {
         if (item.canRequest === false) return;
         void submitRequest(item, item.mediaType === 'tv' ? 'all' : []);
     }, [submitRequest]);
+
+    const notifyFromCard = useCallback(async (item: RequestMediaItem) => {
+        if (!item?.tmdbId || !item?.mediaType) return;
+        setRequestingId(item.tmdbId);
+        try {
+            const notifying = !!item.notifying;
+            const res = await apiFetch('/api/discovery/notify', {
+                method: notifying ? 'DELETE' : 'POST',
+                body: JSON.stringify({ mediaType: item.mediaType, mediaId: item.tmdbId }),
+            });
+            if (res?.error) throw new Error(res.error);
+            markNotifyState(item, !notifying);
+            addToast(
+                notifying
+                    ? 'Stopped notifications for this title'
+                    : 'You will be notified when this is available',
+            );
+        } catch (err: any) {
+            addToast(err?.message || 'Failed to update notify preference', 'error');
+        } finally {
+            setRequestingId(null);
+        }
+    }, [addToast, markNotifyState]);
 
     const statusLoading = status === null;
     const ready = status?.ready === true;
@@ -181,6 +205,7 @@ export const useRequestDashboard = (cacheMinutes?: number) => {
         loadItems,
         hasMore,
         requestFromCard,
+        notifyFromCard,
         openDetails,
         openIssue,
         submitRequest,

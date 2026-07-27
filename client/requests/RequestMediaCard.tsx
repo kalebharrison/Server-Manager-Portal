@@ -1,10 +1,12 @@
 import React from 'react';
-import { AlertTriangle, CheckCircle2, Clock3, ExternalLink, Film, Loader2, Tv } from 'lucide-react';
+import { AlertTriangle, Bell, BellOff, CheckCircle2, Clock3, ExternalLink, Film, Loader2, Tv } from 'lucide-react';
 import type { RequestMediaItem } from './types';
 
 const statusText = (item: RequestMediaItem) => {
     if (item.available) return 'Available';
     if (item.processing) return 'Processing';
+    if (item.notifying) return 'Notifying';
+    if (item.canNotify) return 'Notify';
     if (item.requested || item.pending || item.approved) return 'Requested';
     return item.mediaType === 'tv' ? 'Request Show' : 'Request Movie';
 };
@@ -12,6 +14,8 @@ const statusText = (item: RequestMediaItem) => {
 const StatusIcon = ({ item, busy }: { item: RequestMediaItem; busy?: boolean }) => {
     if (busy) return <Loader2 className="w-4 h-4 animate-spin" />;
     if (item.available || item.approved) return <CheckCircle2 className="w-4 h-4" />;
+    if (item.notifying) return <BellOff className="w-4 h-4" />;
+    if (item.canNotify) return <Bell className="w-4 h-4" />;
     if (item.requested || item.pending || item.processing || item.approved) return <Clock3 className="w-4 h-4" />;
     return item.mediaType === 'tv' ? <Tv className="w-4 h-4" /> : <Film className="w-4 h-4" />;
 };
@@ -22,14 +26,19 @@ export const RequestMediaCard = React.memo<{
     priority?: boolean;
     onOpen: (item: RequestMediaItem) => void;
     onRequest: (item: RequestMediaItem) => void;
+    onNotify?: (item: RequestMediaItem) => void;
     onReportIssue: (item: RequestMediaItem) => void;
-}>(({ item, busy = false, priority = false, onOpen, onRequest, onReportIssue }) => {
-    const disabled = busy || item.canRequest === false;
+}>(({ item, busy = false, priority = false, onOpen, onRequest, onNotify, onReportIssue }) => {
+    const notifyMode = !item.available && (item.canNotify || item.notifying);
+    const disabled = busy
+        || (notifyMode ? false : item.canRequest === false);
     const badgeClass = item.available
         ? 'bg-green-500/20 text-green-200 border-green-500/30'
-        : item.requested || item.pending || item.processing || item.approved
-            ? 'bg-amber-500/20 text-amber-100 border-amber-500/30'
-            : 'bg-plex/15 text-plex border-plex/30';
+        : notifyMode
+            ? 'bg-sky-500/20 text-sky-100 border-sky-500/30'
+            : item.requested || item.pending || item.processing || item.approved
+                ? 'bg-amber-500/20 text-amber-100 border-amber-500/30'
+                : 'bg-plex/15 text-plex border-plex/30';
 
     return (
         <article className="group relative overflow-hidden rounded-xl border border-white/10 bg-card shadow-lg min-h-full flex flex-col">
@@ -94,8 +103,17 @@ export const RequestMediaCard = React.memo<{
                         <button
                             type="button"
                             disabled={disabled}
-                            title={item.mediaType === 'tv' ? 'Request all available seasons' : `Request ${item.title}`}
-                            onClick={() => onRequest(item)}
+                            title={
+                                notifyMode
+                                    ? (item.notifying
+                                        ? 'Stop availability notifications'
+                                        : 'Get notified when this becomes available')
+                                    : (item.mediaType === 'tv' ? 'Request all available seasons' : `Request ${item.title}`)
+                            }
+                            onClick={() => {
+                                if (notifyMode && onNotify) onNotify(item);
+                                else onRequest(item);
+                            }}
                             className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-80 ${badgeClass} ${disabled ? '' : 'hover:bg-plex hover:text-background hover:border-plex'}`}
                         >
                             <StatusIcon item={item} busy={busy} />

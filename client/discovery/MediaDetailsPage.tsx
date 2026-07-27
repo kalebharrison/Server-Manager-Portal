@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useMemo } from 'react';
-import { PlusCircle, CheckCircle, Clock, ArrowLeft, Star, Calendar, Globe, Film, Tv, Loader2, Users, Ticket, Cloud, Disc, AlertTriangle } from 'lucide-react';
+import { PlusCircle, CheckCircle, Clock, ArrowLeft, Star, Calendar, Globe, Film, Tv, Loader2, Users, Ticket, Cloud, Disc, AlertTriangle, Bell, BellOff } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { DiscoverPosterCard } from '../screens';
@@ -82,6 +82,9 @@ export const MediaDetailsPage: React.FC<{
     const [ratings, setRatings] = useState<CombinedRatings | null>(null);
     const [requestModalOpen, setRequestModalOpen] = useState(false);
     const [issueModalOpen, setIssueModalOpen] = useState(false);
+    const [canNotify, setCanNotify] = useState(false);
+    const [notifying, setNotifying] = useState(false);
+    const [notifyBusy, setNotifyBusy] = useState(false);
     const [episodesSeason, setEpisodesSeason] = useState<{
         seasonNumber: number;
         name: string;
@@ -102,6 +105,8 @@ export const MediaDetailsPage: React.FC<{
         setRecommendations([]);
         setRadarrReleases(null);
         setRatings(null);
+        setCanNotify(false);
+        setNotifying(false);
 
         const fetchDetails = async () => {
             try {
@@ -162,6 +167,14 @@ export const MediaDetailsPage: React.FC<{
         if (loading || !details) return undefined;
 
         let cancelled = false;
+
+        apiFetch(`/api/discovery/request-options?mediaType=${mediaType}&mediaId=${mediaId}`)
+            .then((opts) => {
+                if (cancelled || !opts || opts.error) return;
+                setCanNotify(!!opts.canNotify);
+                setNotifying(!!opts.notifying);
+            })
+            .catch(() => undefined);
 
         // Live library badge when disk cache missed (movies + TV).
         const needsLive = !Number.isFinite(Number(details?.mediaInfo?.status));
@@ -390,6 +403,30 @@ export const MediaDetailsPage: React.FC<{
         [details],
     );
 
+    const handleToggleNotify = async () => {
+        if (notifyBusy) return;
+        setNotifyBusy(true);
+        try {
+            const res = await apiFetch('/api/discovery/notify', {
+                method: notifying ? 'DELETE' : 'POST',
+                body: JSON.stringify({ mediaType, mediaId }),
+            });
+            if (res?.error) throw new Error(res.error);
+            setNotifying(!notifying);
+            setCanNotify(notifying);
+            pushToast?.(
+                notifying
+                    ? 'Stopped notifications for this title'
+                    : 'You will be notified when this is available',
+                'success',
+            );
+        } catch (err: any) {
+            pushToast?.(err?.message || 'Failed to update notify preference', 'error');
+        } finally {
+            setNotifyBusy(false);
+        }
+    };
+
     const handleRetryRequest = async () => {
         if (!availability?.userRequestId) return;
         try {
@@ -605,7 +642,17 @@ export const MediaDetailsPage: React.FC<{
                     </div>
 
                     <div className={`grid gap-2.5 w-full ${canReportIssue && !requestButton.hide ? 'grid-cols-2 md:grid-cols-1' : 'grid-cols-1'}`}>
-                    {!requestButton.hide && (
+                    {(canNotify || notifying) ? (
+                    <button
+                        type="button"
+                        onClick={() => { void handleToggleNotify(); }}
+                        disabled={notifyBusy}
+                        className="w-full py-3 px-2 sm:px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-colors shadow-lg bg-sky-500/20 text-sky-100 border border-sky-500/30 hover:bg-sky-500/30 disabled:opacity-50"
+                    >
+                        {notifying ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                        {notifying ? t('browse.notifying') : t('browse.notify')}
+                    </button>
+                    ) : !requestButton.hide && (
                     <button
                         type="button"
                         onClick={() => setRequestModalOpen(true)}

@@ -94,7 +94,7 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
             <div className="flex items-center justify-between gap-4 pl-8">
                 <div>
                     <p className="text-sm text-text font-medium">Request available</p>
-                    <p className="text-xs text-muted mt-1">When one of your requests becomes available to watch</p>
+                    <p className="text-xs text-muted mt-1">When a title you requested — or chose Notify on — becomes available to watch</p>
                 </div>
                 <ToggleRow
                     checked={notifyWatchlistAvailable}

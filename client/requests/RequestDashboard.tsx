@@ -101,6 +101,7 @@ export const RequestDashboard: React.FC<{ isAdmin: boolean; cacheMinutes?: numbe
                             onRetry={() => dashboard.loadItems()}
                             onOpen={dashboard.openDetails}
                             onRequest={dashboard.requestFromCard}
+                            onNotify={dashboard.notifyFromCard}
                             onReportIssue={dashboard.openIssue}
                         />
                     )}
