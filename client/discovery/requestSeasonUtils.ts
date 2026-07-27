@@ -582,7 +582,7 @@ export const getRequestButtonState = (
     });
 
     if (mediaType === 'movie') {
-        if (status === MEDIA_STATUS.AVAILABLE) {
+        if (status === MEDIA_STATUS.AVAILABLE || details?.radarrLibraryStatus?.hasFile === true) {
             return { label: 'Available', disabled: true, variant: 'available' as const };
         }
         if (status === MEDIA_STATUS.PROCESSING) {

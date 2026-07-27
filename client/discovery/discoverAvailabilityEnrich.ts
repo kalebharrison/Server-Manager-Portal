@@ -56,9 +56,9 @@ export async function enrichDiscoverItemsWithAvailability<T>(items: T[]): Promis
             const key = itemKey(item);
             if (!key) return null;
             const status = Number((item as any)?.mediaInfo?.status);
-            const hasRequests = Array.isArray((item as any)?.mediaInfo?.requests)
-                && (item as any).mediaInfo.requests.length > 0;
-            if (RESOLVED_MEDIA_STATUSES.has(status) || hasRequests) return null;
+            // Only skip when library status is already known. A request stamp alone must
+            // not block a live Arr check (Requested can still become Available).
+            if (RESOLVED_MEDIA_STATUSES.has(status)) return null;
             const normalized = normalizeRawDiscoveryItem(item) || item;
             const [mediaType, tmdbId] = key.split(':');
             const yearRaw = String(

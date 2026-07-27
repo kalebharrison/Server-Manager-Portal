@@ -164,7 +164,11 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
                                 tags: Array.isArray(formatted.qualityTags) ? formatted.qualityTags : [],
                             }}
                             overlay={overlay}
-                            showQualityBadges={Array.isArray(formatted.qualityTags) && formatted.qualityTags.length > 0}
+                            showQualityBadges={
+                                (availability?.kind === 'available' || availability?.kind === 'partial')
+                                && Array.isArray(formatted.qualityTags)
+                                && formatted.qualityTags.length > 0
+                            }
                             onPosterClick={() => onSelect(formatted)}
                         />
                     </div>

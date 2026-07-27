@@ -126,6 +126,19 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         };
     }
 
+    // On-disk beats request/processing stamps (list vs detail mismatches, stale PROCESSING).
+    if (
+        mediaType === 'movie'
+        && (item?.radarrLibraryStatus?.hasFile === true || mediaStatus === MEDIA_STATUS.AVAILABLE)
+    ) {
+        return {
+            ...base,
+            kind: 'available',
+            label: 'Available in library',
+            detail: 'This movie is already in your media library.',
+        };
+    }
+
     const seasonRows = mediaType === 'tv' ? buildSeasonStatusFromDetails(item) : [];
     const inProgressDisplay = resolveInProgressDisplay(mediaInfo, mediaStatus, item);
     if (inProgressDisplay?.kind === 'processing' || hasActiveShowDownloads(item, mediaInfo)) {

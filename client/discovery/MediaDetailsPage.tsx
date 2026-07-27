@@ -124,7 +124,22 @@ export const MediaDetailsPage: React.FC<{
                     );
                     if (cancelled) return;
                     if (!res?.error) {
-                        setDetails(res);
+                        // Merge into seed so browse mediaInfo (Available) isn't wiped by a
+                        // bare TMDB payload, and keep server stamps when present.
+                        setDetails((prev) => ({
+                            ...(prev || {}),
+                            ...res,
+                            mediaInfo: {
+                                ...(prev?.mediaInfo || {}),
+                                ...(res.mediaInfo || {}),
+                            },
+                            ...(res.radarrLibraryStatus
+                                ? { radarrLibraryStatus: res.radarrLibraryStatus }
+                                : {}),
+                            ...(res.sonarrLibraryStatus
+                                ? { sonarrLibraryStatus: res.sonarrLibraryStatus }
+                                : {}),
+                        }));
                         setLoadError(null);
                     } else if (!seed) {
                         setLoadError(res.error || 'Failed to load details');
@@ -290,7 +305,20 @@ export const MediaDetailsPage: React.FC<{
                 : `/api/discovery/proxy/tv/${mediaId}`;
             const res = await apiFetch(endpoint);
             if (!res.error) {
-                setDetails(res);
+                setDetails((prev) => ({
+                    ...(prev || {}),
+                    ...res,
+                    mediaInfo: {
+                        ...(prev?.mediaInfo || {}),
+                        ...(res.mediaInfo || {}),
+                    },
+                    ...(res.radarrLibraryStatus
+                        ? { radarrLibraryStatus: res.radarrLibraryStatus }
+                        : {}),
+                    ...(res.sonarrLibraryStatus
+                        ? { sonarrLibraryStatus: res.sonarrLibraryStatus }
+                        : {}),
+                }));
                 if (mediaType === 'tv') {
                     apiFetch(`/api/discovery/tv/${mediaId}/library-status`)
                         .then((lib) => {

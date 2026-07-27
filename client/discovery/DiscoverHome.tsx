@@ -184,7 +184,12 @@ const DiscoverHomeRow: React.FC<{
                                     tags: Array.isArray(formatted.qualityTags) ? formatted.qualityTags : [],
                                 }}
                                 overlay={overlay}
-                                showQualityBadges={Array.isArray(formatted.qualityTags) && formatted.qualityTags.length > 0}
+                                showQualityBadges={
+                                    (formatted.availability?.kind === 'available'
+                                        || formatted.availability?.kind === 'partial')
+                                    && Array.isArray(formatted.qualityTags)
+                                    && formatted.qualityTags.length > 0
+                                }
                                 onPosterClick={() => onSelect(formatted)}
                             />
                         </div>
