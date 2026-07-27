@@ -142,7 +142,7 @@ export const DiscoverBrowseCard: React.FC<Props> = ({
                 ) : null}
                 {showQuality ? (
                     <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1 pointer-events-none z-10">
-                        {qualityTags.slice(0, 4).map((tag: string) => (
+                        {qualityTags.slice(0, 5).map((tag: string) => (
                             <span
                                 key={tag}
                                 className="text-[9px] font-black px-1.5 py-0.5 rounded bg-black/85 text-white border border-white/20 uppercase tracking-wide"

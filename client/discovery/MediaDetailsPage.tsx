@@ -501,6 +501,18 @@ export const MediaDetailsPage: React.FC<{
     const year = (details.releaseDate || details.firstAirDate || '').substring(0, 4);
     const mediaStatus = details.mediaInfo?.status ?? null;
     const requestButton = getRequestButtonState(mediaType, mediaStatus, seasonRows, details.mediaInfo, details);
+    const qualityTags = Array.isArray(details.displayTags) && details.displayTags.length
+        ? details.displayTags
+        : (Array.isArray(details.mediaInfo?.displayTags) && details.mediaInfo.displayTags.length
+            ? details.mediaInfo.displayTags
+            : (Array.isArray(details.radarrLibraryStatus?.displayTags)
+                ? details.radarrLibraryStatus.displayTags
+                : (Array.isArray(details.sonarrLibraryStatus?.displayTags)
+                    ? details.sonarrLibraryStatus.displayTags
+                    : [])));
+    const showQualityTags = qualityTags.length > 0
+        && (availability?.kind === 'available' || availability?.kind === 'partial'
+            || requestButton.variant === 'available');
     const seerrMediaId = Number(details.mediaInfo?.id);
     const tmdbId = Number(details.tmdbId ?? details.id);
     const canReportIssue = discoveryMe.permissions?.createIssues !== false
@@ -716,14 +728,28 @@ export const MediaDetailsPage: React.FC<{
                         </button>
                     )}
 
-                    {availability && availability.kind !== 'none' && (
+                    {showQualityTags && (
+                        <div className="col-span-2 md:col-span-1 flex flex-wrap gap-1.5">
+                            {qualityTags.slice(0, 5).map((tag: string) => (
+                                <span
+                                    key={tag}
+                                    className="text-[10px] font-black px-2 py-1 rounded-md bg-black/70 text-white border border-white/15 uppercase tracking-wide"
+                                >
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Available is already the CTA button — skip the redundant status card. */}
+                    {availability && availability.kind !== 'none' && availability.kind !== 'available' && (
                         <div className="col-span-2 md:col-span-1">
                             <MediaStatusPanel
                                 state={availability}
                                 onViewRequests={availability.hasUserRequest ? openMyRequests : undefined}
                                 onRetry={availability.kind === 'failed' ? handleRetryRequest : undefined}
                                 libraryAction={
-                                    ['available', 'partial'].includes(availability.kind)
+                                    availability.kind === 'partial'
                                         ? (
                                             <OpenInLibraryButton
                                                 mediaType={mediaType}
@@ -739,6 +765,21 @@ export const MediaDetailsPage: React.FC<{
                                         : undefined
                                 }
                                 arrAction={undefined}
+                            />
+                        </div>
+                    )}
+
+                    {availability?.kind === 'available' && (
+                        <div className="col-span-2 md:col-span-1">
+                            <OpenInLibraryButton
+                                mediaType={mediaType}
+                                tmdbId={mediaId}
+                                title={title}
+                                year={year}
+                                mediaInfo={details.mediaInfo}
+                                mediaServerType={mediaServerType}
+                                className="w-full px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-border text-sm font-bold transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                                onError={(message) => pushToast?.(message, 'error')}
                             />
                         </div>
                     )}
