@@ -66,7 +66,9 @@ export const DiscoverBrowseCard: React.FC<Props> = ({
     let onClick: (() => void) | null = () => { void quickRequest?.quickRequest(formatted); };
 
     if (available) {
-        statusLabel = kind === 'partial' ? t('status.partial') : t('status.available');
+        statusLabel = kind === 'partial'
+            ? t('status.partial')
+            : (availability?.label === 'Up to date' ? t('status.upToDate') : t('status.available'));
         badgeClass = 'bg-green-500/20 text-green-200 border-green-500/30';
         StatusIcon = CheckCircle2;
         disabled = true;

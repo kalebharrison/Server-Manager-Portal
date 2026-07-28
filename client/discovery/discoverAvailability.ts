@@ -150,43 +150,20 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         };
     }
 
-    // List stamps often lack TMDB inProduction — only treat as "still airing" when
-    // the show is actually continuing (or Sonarr has a next airing). Ended shows with
-    // files must not be forced to Partial via showComplete===false alone.
+    // List stamps: PARTIAL means missing aired files. A continuing show that is
+    // caught up (showComplete / AVAILABLE) should fall through to "Up to date".
     if (mediaType === 'tv') {
         const sonarr = item?.sonarrLibraryStatus;
         const stamped = Number(mediaInfo?.status);
-        const ended = isEndedShow(item);
-        const returning = isReturningSeries(item);
-        const continuingInLibrary = Boolean(sonarr?.matched)
-            && !ended
-            && (
-                Boolean(sonarr?.nextAiring)
-                || (returning && sonarr?.showComplete === false)
-                || (returning && stamped === MEDIA_STATUS.PARTIAL)
-            );
         if (
-            continuingInLibrary
-            && stamped >= MEDIA_STATUS.PROCESSING
-            && stamped <= MEDIA_STATUS.AVAILABLE
+            stamped === MEDIA_STATUS.PARTIAL
+            && !(sonarr?.showComplete && !sonarr?.hasActiveDownloads)
         ) {
             return {
                 ...base,
                 kind: 'partial',
                 label: 'Partially available',
-                detail: sonarr?.nextAiring
-                    ? 'Some episodes are on disk; more are scheduled to air.'
-                    : 'This series is in your library and still airing.',
-            };
-        }
-        if (stamped === MEDIA_STATUS.PARTIAL) {
-            return {
-                ...base,
-                kind: 'partial',
-                label: 'Partially available',
-                detail: sonarr?.nextAiring
-                    ? 'Some episodes are on disk; more are scheduled to air.'
-                    : (formatSeasonSummary(seasonRows) || 'Part of this series is already in your library.'),
+                detail: formatSeasonSummary(seasonRows) || 'Part of this series is already in your library.',
             };
         }
     }
@@ -196,14 +173,22 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         : false;
 
     if (tvLibraryComplete) {
-        const showUpToDate = isReturningSeries(item) && hasAnyEpisodeAired(item);
+        const sonarr = item?.sonarrLibraryStatus;
+        const seriesStatus = String(sonarr?.seriesStatus || '').toLowerCase();
+        const continuing = isReturningSeries(item)
+            || Boolean(sonarr?.nextAiring)
+            || seriesStatus === 'continuing'
+            || seriesStatus === 'upcoming';
+        const showUpToDate = continuing && hasAnyEpisodeAired(item);
         return {
             ...base,
             kind: 'available',
             label: showUpToDate ? 'Up to date' : 'Available in library',
-            detail: item?.sonarrLibraryStatus?.showComplete
-                ? 'All aired episodes are on disk (verified via Sonarr).'
-                : formatTvLibraryDetail(seasonRows) || 'All aired episodes are in your library.',
+            detail: showUpToDate
+                ? 'All aired episodes are on disk. New ones will download as they air.'
+                : (sonarr?.showComplete
+                    ? 'All aired episodes are on disk (verified via Sonarr).'
+                    : formatTvLibraryDetail(seasonRows) || 'All aired episodes are in your library.'),
         };
     }
 
@@ -375,14 +360,22 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         };
     }
     if (mediaType === 'tv' && mediaStatus === MEDIA_STATUS.AVAILABLE) {
-        const showUpToDate = isReturningSeries(item) && hasAnyEpisodeAired(item);
+        const sonarr = item?.sonarrLibraryStatus;
+        const seriesStatus = String(sonarr?.seriesStatus || '').toLowerCase();
+        const continuing = isReturningSeries(item)
+            || Boolean(sonarr?.nextAiring)
+            || seriesStatus === 'continuing'
+            || seriesStatus === 'upcoming';
+        const showUpToDate = continuing && hasAnyEpisodeAired(item);
         return {
             ...base,
             kind: 'available',
             label: showUpToDate ? 'Up to date' : 'Available in library',
-            detail: item?.sonarrLibraryStatus?.showComplete
-                ? 'All aired episodes are on disk (verified via Sonarr).'
-                : 'This series is in your media library.',
+            detail: showUpToDate
+                ? 'All aired episodes are on disk. New ones will download as they air.'
+                : (sonarr?.showComplete
+                    ? 'All aired episodes are on disk (verified via Sonarr).'
+                    : 'This series is in your media library.'),
         };
     }
 
