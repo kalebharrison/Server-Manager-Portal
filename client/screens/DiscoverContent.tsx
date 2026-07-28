@@ -42,7 +42,7 @@ export const DiscoverPosterCard = React.memo<{
     footer?: React.ReactNode;
     showQualityBadges?: boolean;
     priority?: boolean;
-}>(({ item, aspect = '2/3', overlay, variant = 'discover', className = 'w-full', footer, showQualityBadges = false, priority = false }) => {
+}>(({ item, aspect = '2/3', overlay, variant = 'discover', className = 'w-full', footer, showQualityBadges = true, priority = false }) => {
     const posterShell = variant === 'home'
         ? 'relative rounded-xl overflow-hidden bg-background border border-white/5 transition-[box-shadow,border-color] duration-300 group-hover:shadow-xl group-hover:border-plex/50'
         : 'relative rounded-lg overflow-hidden bg-background border border-border group-hover:border-plex transition-colors shadow-md';
@@ -104,7 +104,7 @@ export const DISCOVER_LIMIT_OPTIONS = [
     { value: '50', label: '50 Items' },
 ];
 
-export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; limit: number; showQualityBadges?: boolean; useScrollRevealAnimations?: boolean; preloadPosters?: boolean }> = ({ title, items, limit, showQualityBadges = false, useScrollRevealAnimations, preloadPosters = false }) => {
+export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; limit: number; showQualityBadges?: boolean; useScrollRevealAnimations?: boolean; preloadPosters?: boolean }> = ({ title, items, limit, showQualityBadges = true, useScrollRevealAnimations, preloadPosters = false }) => {
     const initialCount = Math.min(20, limit);
     const [visibleCount, setVisibleCount] = React.useState(initialCount);
     React.useEffect(() => setVisibleCount(initialCount), [initialCount]);

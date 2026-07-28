@@ -48,7 +48,7 @@ export const LibraryDashboard: React.FC<{ isAdmin?: boolean; publicConfig?: any;
         return saved ? Math.min(50, Math.max(12, Number(saved) || 20)) : null;
     });
     const recentLimit = recentLimitOverride ?? (isDiscoverDesktop ? DISCOVER_DESKTOP_ITEM_LIMIT : DISCOVER_MOBILE_ITEM_LIMIT);
-    const showQualityBadges = publicConfig?.showPosterQualityBadges === true;
+    const showQualityBadges = publicConfig?.showPosterQualityBadges !== false;
     const isJellyfinPortal = String(publicConfig?.mediaServerType || mediaServerType || 'plex').toLowerCase() === 'jellyfin';
     const refreshMs = cacheRefreshMs(publicConfig);
 

@@ -9,7 +9,7 @@ test('Plex dashboard service serves and slices a persisted library snapshot', as
         configPath: 'config.json',
         cachePath: 'dashboard.json',
         loadFile: async (path) => path === 'dashboard.json' ? {
-            version: 1,
+            version: 2,
             generatedAt: Date.now(),
             serverIdentifier: 'server-id',
             uri: 'http://plex',

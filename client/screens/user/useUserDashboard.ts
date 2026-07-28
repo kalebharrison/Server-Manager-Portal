@@ -40,7 +40,7 @@ export const useUserDashboard = ({
     const [myRequests, setMyRequests] = useState<PortalRequestItem[]>([]);
 
     const user = sessionInfo.account;
-    const showQualityBadges = publicConfig?.showPosterQualityBadges === true;
+    const showQualityBadges = publicConfig?.showPosterQualityBadges !== false;
     const isJellyfinPortal = String(publicConfig?.mediaServerType || 'plex').toLowerCase() === 'jellyfin';
     const [newsletterOptIn, setNewsletterOptIn] = useState(user?.newsletterOptIn === true);
 

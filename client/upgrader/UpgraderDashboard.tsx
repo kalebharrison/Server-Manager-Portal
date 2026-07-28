@@ -261,7 +261,7 @@ export const UpgraderDashboard: React.FC = () => {
             setItems(Array.isArray(itemsData?.items) ? itemsData.items : []);
             setTotal(Number(itemsData?.total || 0));
             setLibraries(Array.isArray(itemsData?.libraries) ? itemsData.libraries : []);
-            setShowQualityBadges(publicConfig?.showPosterQualityBadges === true);
+            setShowQualityBadges(publicConfig?.showPosterQualityBadges !== false);
         } catch (e: any) {
             if (isUpgraderDisabledError(e)) {
                 setFeatureEnabled(false);
