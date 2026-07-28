@@ -10,13 +10,13 @@ test('tmdbIdFromPlexMedia reads Guid and guid fields', () => {
     assert.equal(tmdbIdFromPlexMedia({ Guid: [{ id: 'tvdb://99' }] }), null);
 });
 
-test('enrichRecentItemsWithTmdbPosters attaches thumbUrl from TMDB', async () => {
+test('enrichRecentItemsWithTmdbPosters attaches thumbUrl and voteAverage from TMDB', async () => {
     const calls = [];
     const fetchImpl = async (url) => {
         calls.push(String(url));
         return {
             ok: true,
-            json: async () => ({ poster_path: '/abc.jpg' }),
+            json: async () => ({ poster_path: '/abc.jpg', vote_average: 8.4 }),
         };
     };
     const [item] = await enrichRecentItemsWithTmdbPosters(
@@ -27,4 +27,5 @@ test('enrichRecentItemsWithTmdbPosters attaches thumbUrl from TMDB', async () =>
     assert.match(calls[0], /\/movie\/550\?/);
     assert.equal(item.thumbUrl, 'https://image.tmdb.org/t/p/w342/abc.jpg');
     assert.equal(item.posterPath, '/abc.jpg');
+    assert.equal(item.voteAverage, 8.4);
 });

@@ -34,7 +34,19 @@ export const PosterImage = React.memo<{
 });
 
 export const DiscoverPosterCard = React.memo<{
-    item: { ratingKey?: string; title: string; thumb?: string; thumbUrl?: string; plexUrl?: string; tags?: string[]; year?: number | string; parentTitle?: string };
+    item: {
+        ratingKey?: string;
+        title: string;
+        thumb?: string;
+        thumbUrl?: string;
+        plexUrl?: string;
+        tags?: string[];
+        year?: number | string;
+        parentTitle?: string;
+        rating?: number | string;
+        audienceRating?: number | string;
+        voteAverage?: number | string;
+    };
     aspect?: '2/3' | 'square';
     overlay?: React.ReactNode;
     variant?: 'discover' | 'home';
@@ -46,6 +58,14 @@ export const DiscoverPosterCard = React.memo<{
     const posterShell = variant === 'home'
         ? 'relative rounded-xl overflow-hidden bg-background border border-white/5 transition-[box-shadow,border-color] duration-300 group-hover:shadow-xl group-hover:border-plex/50'
         : 'relative rounded-lg overflow-hidden bg-background border border-border group-hover:border-plex transition-colors shadow-md';
+
+    const ratingValue = [item.voteAverage, item.audienceRating, item.rating]
+        .map((value) => Number(value))
+        .find((value) => Number.isFinite(value) && value > 0);
+    // Keep rating clear of status overlays (Available / Requested) which sit top-right.
+    const ratingClass = overlay
+        ? 'absolute top-2 left-2 z-10 px-2 py-1 rounded-md bg-black/70 text-[10px] font-bold text-white border border-white/10'
+        : 'absolute top-2 right-2 z-10 px-2 py-1 rounded-md bg-black/70 text-[10px] font-bold text-white border border-white/10';
 
     return (
         <a
@@ -69,6 +89,9 @@ export const DiscoverPosterCard = React.memo<{
                     </div>
                 )}
                 {overlay}
+                {ratingValue != null ? (
+                    <span className={ratingClass}>{ratingValue.toFixed(1)}</span>
+                ) : null}
                 {showQualityBadges && item.tags && item.tags.length > 0 && (
                     <div className="absolute bottom-1 left-1 right-1 flex flex-wrap gap-0.5 pointer-events-none z-10">
                         {item.tags.map((tag) => (

@@ -13,7 +13,7 @@ test('audioTagFromParts ranks Atmos over TrueHD and covers common codecs', () =>
     assert.equal(audioTagFromParts('aac'), 'AAC');
 });
 
-test('extractMediaDisplayTags includes non-Atmos audio chips', () => {
+test('extractMediaDisplayTags is resolution + tone + audio (no video codec)', () => {
     const dtsHd = extractMediaDisplayTags({
         Media: [{
             videoResolution: '1080',
@@ -26,20 +26,21 @@ test('extractMediaDisplayTags includes non-Atmos audio chips', () => {
             }],
         }],
     });
-    assert.ok(dtsHd.includes('DTS-HD'), dtsHd.join(','));
-    assert.ok(!dtsHd.includes('Atmos'), dtsHd.join(','));
+    assert.deepEqual(dtsHd, ['1080p', 'SDR', 'DTS-HD']);
 
-    const aac = extractMediaDisplayTags({
+    const dvAtmos = extractMediaDisplayTags({
         Media: [{
-            videoResolution: '720',
-            videoCodec: 'h264',
+            videoResolution: '4k',
             Part: [{
                 Stream: [
-                    { streamType: 1, codec: 'h264' },
-                    { streamType: 2, codec: 'aac', displayTitle: 'AAC 2.0' },
+                    { streamType: 1, codec: 'hevc', displayTitle: '4K Dolby Vision', colorTrc: 'smpte2084' },
+                    { streamType: 2, codec: 'truehd', displayTitle: 'TrueHD Atmos 7.1' },
                 ],
             }],
         }],
     });
-    assert.ok(aac.includes('AAC'), aac.join(','));
+    assert.ok(dvAtmos.includes('4K'), dvAtmos.join(','));
+    assert.ok(dvAtmos.includes('DV/HDR') || dvAtmos.includes('DV'), dvAtmos.join(','));
+    assert.ok(dvAtmos.includes('Atmos'), dvAtmos.join(','));
+    assert.ok(!dvAtmos.includes('HEVC'), dvAtmos.join(','));
 });

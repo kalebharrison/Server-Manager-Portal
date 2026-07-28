@@ -171,6 +171,7 @@ const DiscoveryDashboardInner: React.FC<{
             type: mediaType,
             tags: [isPerson ? t('mediaType.person') : (isMovie ? t('mediaType.movie') : t('mediaType.tvShow'))],
             qualityTags,
+            voteAverage: Number(item.voteAverage) || undefined,
             status: item.mediaInfo?.status,
             availability,
             isAvailable: availability.kind === 'available',

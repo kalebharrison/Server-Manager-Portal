@@ -1,12 +1,24 @@
 import type React from 'react';
 
 export type PosterCardProps = {
-    item: { title: string; thumb?: string; plexUrl: string; tags?: string[]; year?: number | string; parentTitle?: string };
+    item: {
+        title: string;
+        thumb?: string;
+        thumbUrl?: string;
+        plexUrl: string;
+        tags?: string[];
+        year?: number | string;
+        parentTitle?: string;
+        rating?: number | string;
+        audienceRating?: number | string;
+        voteAverage?: number | string;
+    };
     aspect?: '2/3' | 'square';
     variant?: 'discover' | 'home';
     className?: string;
     footer?: React.ReactNode;
     showQualityBadges?: boolean;
+    overlay?: React.ReactNode;
 };
 
 export type MainGridWidgetDeps = {
