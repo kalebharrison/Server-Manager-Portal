@@ -102,7 +102,7 @@ const ensureMyRequestsPlacement = (sections: DashboardSectionId[], inputHadMyReq
     const myIdx = sections.indexOf('myRequests');
     const recentIdx = sections.indexOf('recentlyAdded');
     if (myIdx < 0 || recentIdx < 0 || myIdx < recentIdx) return sections;
-    const next = sections.filter((id) => id !== 'myRequests');
+    const next: DashboardSectionId[] = sections.filter((id) => id !== 'myRequests');
     const insertAt = next.indexOf('recentlyAdded');
     next.splice(insertAt < 0 ? next.length : insertAt, 0, 'myRequests');
     return next;
