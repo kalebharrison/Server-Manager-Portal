@@ -4,7 +4,7 @@ import type { RecentlyAddedWidgetId } from '../shared/dashboardLayout';
 import { ScrollReveal } from '../shared/ui';
 import type { RecentlyAddedWidgetDeps } from './userDashboardWidgetTypes';
 
-const RecentlyAddedScrollRow: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+const RecentlyAddedScrollRow: React.FC<{ title: string; children: React.ReactNode; headerRight?: React.ReactNode }> = ({ title, children, headerRight }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
@@ -38,7 +38,10 @@ const RecentlyAddedScrollRow: React.FC<{ title: string; children: React.ReactNod
 
     return (
         <div className="glass-card p-4 md:p-5 shadow-xl overflow-hidden w-full">
-            <h3 className="text-lg md:text-xl font-bold text-text mb-3">{title}</h3>
+            <div className="flex items-center justify-between gap-3 mb-3">
+                <h3 className="text-lg md:text-xl font-bold text-text">{title}</h3>
+                {headerRight}
+            </div>
             <div className="relative">
                 <button
                     type="button"
@@ -68,6 +71,8 @@ const RecentlyAddedScrollRow: React.FC<{ title: string; children: React.ReactNod
         </div>
     );
 };
+
+export { RecentlyAddedScrollRow };
 
 export const createRecentlyAddedWidgetRenderer = (deps: RecentlyAddedWidgetDeps) => {
     const { dashboardData, showQualityBadges, DiscoverPosterCard, publicConfig } = deps;

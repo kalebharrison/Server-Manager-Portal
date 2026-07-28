@@ -11,3 +11,15 @@ test('dashboard layout adds the week calendar without changing hidden sections',
     assert.equal(layout.sections.includes('weekCalendar'), true);
     assert.deepEqual(layout.hiddenSections, ['watchRow']);
 });
+
+test('dashboard layout inserts myRequests before recentlyAdded for legacy layouts', () => {
+    const layout = normalizeSectionLayout({
+        sections: ['wrapUp', 'mainGrid', 'watchRow', 'recentlyAdded'],
+        hiddenSections: [],
+    });
+    const myIdx = layout.sections.indexOf('myRequests');
+    const recentIdx = layout.sections.indexOf('recentlyAdded');
+    assert.ok(myIdx >= 0);
+    assert.ok(recentIdx >= 0);
+    assert.ok(myIdx < recentIdx);
+});

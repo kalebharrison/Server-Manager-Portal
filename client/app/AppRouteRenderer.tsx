@@ -65,7 +65,7 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
     }
     if (currentRoute === 'status') return <StatusDashboard onBack={() => isPublicStatus ? setRoute('login') : setRoute('user')} isAdmin={isAdmin} isPublic={isPublicStatus} />;
     if (currentRoute === 'dashboard') return <LibraryDashboard isAdmin={isAdmin} publicConfig={effectivePublicConfig} mediaServerType={sessionInfo?.mediaServerType} cacheScope={sessionInfo?.serverName} />;
-    if (currentRoute === 'discover') return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} />;
+    if (currentRoute === 'discover') return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges === true} />;
     if (currentRoute === 'settings' && isAdmin) return <SettingsDashboard />;
     if (currentRoute === 'preferences') return <UserPreferencesDashboard account={sessionInfo?.account} activeTheme={activeTheme} setActiveTheme={setActiveTheme} refreshSession={checkSession} readOnly={isImpersonating} />;
     if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
@@ -75,7 +75,7 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
         if (path === '/request' || path === '/requests') {
             window.history.replaceState({}, '', portalUrl('/discovery'));
         }
-        return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} />;
+        return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges === true} />;
     }
     if (currentRoute === 'request') return <RequestDashboard isAdmin={isAdmin} cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
     if (currentRoute === 'scanner' && isAdmin) return <ScannerDashboard />;

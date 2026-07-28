@@ -84,7 +84,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     referralRewardDays: 7,
     announcement: '',
     use24HourClock: false,
-    showPosterQualityBadges: true,
+    showPosterQualityBadges: false,
     allowTemporaryAccess: false,
     navOrder: getDefaultSettingsNavOrder(),
     navHiddenKeys: [],

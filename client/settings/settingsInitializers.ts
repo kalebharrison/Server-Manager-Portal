@@ -185,7 +185,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setPublicStatusEnabled(initialSettings.publicStatusEnabled === true);
     if (initialSettings.defaultLibraryIds) setters.setDefaultLibraryIds(initialSettings.defaultLibraryIds);
     if (initialSettings.use24HourClock !== undefined) setters.setUse24HourClock(!!initialSettings.use24HourClock);
-    if (initialSettings.showPosterQualityBadges !== undefined) setters.setShowPosterQualityBadges(initialSettings.showPosterQualityBadges !== false);
+    if (initialSettings.showPosterQualityBadges !== undefined) setters.setShowPosterQualityBadges(initialSettings.showPosterQualityBadges === true);
     if (initialSettings.allowTemporaryAccess !== undefined) setters.setAllowTemporaryAccess(!!initialSettings.allowTemporaryAccess);
     if (initialSettings.autoBackupEnabled !== undefined) setters.setAutoBackupEnabled(!!initialSettings.autoBackupEnabled);
     if (initialSettings.autoBackupIntervalDays !== undefined) setters.setAutoBackupIntervalDays(Number(initialSettings.autoBackupIntervalDays) || 2);

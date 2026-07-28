@@ -51,7 +51,7 @@ export const saveLocalPortalPreferences = (preferences: LocalPortalPreferences) 
 export const applyLocalPortalPreferences = (config: any, preferences: LocalPortalPreferences) => ({
     ...config,
     use24HourClock: preferences.clock === 'server' ? !!config?.use24HourClock : preferences.clock === '24',
-    showPosterQualityBadges: preferences.posterBadges === 'server' ? config?.showPosterQualityBadges !== false : preferences.posterBadges === 'show',
+    showPosterQualityBadges: preferences.posterBadges === 'server' ? config?.showPosterQualityBadges === true : preferences.posterBadges === 'show',
     useScrollRevealAnimations: preferences.motion === 'server' ? !!config?.useScrollRevealAnimations : preferences.motion === 'full',
     useCinematicLoading: preferences.motion === 'reduced' ? false : !!config?.useCinematicLoading,
     useBrandedSkeleton: preferences.motion === 'reduced' ? false : config?.useBrandedSkeleton !== false,

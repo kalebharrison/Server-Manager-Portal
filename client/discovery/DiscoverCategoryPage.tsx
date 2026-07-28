@@ -26,9 +26,10 @@ type Props = {
     onSelect: (item: any) => void;
     formatItem: (item: any) => any;
     pushToast?: (msg: string, type: 'success' | 'error') => void;
+    showPosterQualityBadges?: boolean;
 };
 
-export const DiscoverCategoryPage: React.FC<Props> = ({ kind, id, onBack, onSelect, formatItem, pushToast }) => {
+export const DiscoverCategoryPage: React.FC<Props> = ({ kind, id, onBack, onSelect, formatItem, pushToast, showPosterQualityBadges = false }) => {
     const { locale } = useDiscoverI18n();
     const { preferences } = useDiscoveryPreferences();
     const { hideExisting } = useHideExistingToggle();
@@ -160,6 +161,7 @@ export const DiscoverCategoryPage: React.FC<Props> = ({ kind, id, onBack, onSele
                     emptyMessage={`No ${kind === 'studio' ? 'movies' : 'series'} found for ${title}.`}
                     emptyHint={hideExisting ? 'Hide Existing is on — turn it off to see titles already in your library.' : undefined}
                     quickRequest={quickRequest}
+                    showPosterQualityBadges={showPosterQualityBadges}
                 />
 
                 <DiscoverInfiniteScrollFooter

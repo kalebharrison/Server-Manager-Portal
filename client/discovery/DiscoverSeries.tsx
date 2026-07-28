@@ -30,7 +30,8 @@ export const DiscoverSeries: React.FC<{
     formatItem: (item: any) => any;
     navigate: (path: string) => void;
     pushToast?: (msg: string, type: 'success' | 'error') => void;
-}> = ({ onSelect, formatItem, navigate, pushToast }) => {
+    showPosterQualityBadges?: boolean;
+}> = ({ onSelect, formatItem, navigate, pushToast, showPosterQualityBadges = false }) => {
     const { t, locale } = useDiscoverI18n();
     const { preferences } = useDiscoveryPreferences();
     const { hideExisting, setHideExisting } = useHideExistingToggle();
@@ -174,6 +175,7 @@ export const DiscoverSeries: React.FC<{
                     quickRequest={quickRequest}
                     notify={notify}
                     variant="dense"
+                    showPosterQualityBadges={showPosterQualityBadges}
                 />
 
                 <DiscoverInfiniteScrollFooter

@@ -17,6 +17,7 @@ type Props = {
     renderMainGridWidget: (id: MainGridWidgetId) => React.ReactNode;
     renderWatchRow: () => React.ReactNode;
     renderWeekCalendar: () => React.ReactNode;
+    renderMyRequests: () => React.ReactNode;
     renderRecentlyAddedWidget: (id: RecentlyAddedWidgetId) => React.ReactNode;
     hasDashboardData: boolean;
 };
@@ -28,6 +29,7 @@ export const UserDashboardLayout: React.FC<Props> = ({
     renderMainGridWidget,
     renderWatchRow,
     renderWeekCalendar,
+    renderMyRequests,
     renderRecentlyAddedWidget,
     hasDashboardData,
 }) => {
@@ -65,6 +67,8 @@ export const UserDashboardLayout: React.FC<Props> = ({
                         return <React.Fragment key="watchRow">{renderWatchRow()}</React.Fragment>;
                     case 'weekCalendar':
                         return <React.Fragment key="weekCalendar">{renderWeekCalendar()}</React.Fragment>;
+                    case 'myRequests':
+                        return <React.Fragment key="myRequests">{renderMyRequests()}</React.Fragment>;
                     case 'recentlyAdded':
                         if (!hasDashboardData) return null;
                         return (

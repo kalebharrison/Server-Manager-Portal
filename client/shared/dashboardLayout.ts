@@ -1,4 +1,4 @@
-export type DashboardSectionId = 'wrapUp' | 'mainGrid' | 'weekCalendar' | 'watchRow' | 'recentlyAdded';
+export type DashboardSectionId = 'wrapUp' | 'mainGrid' | 'weekCalendar' | 'watchRow' | 'myRequests' | 'recentlyAdded';
 
 export type MainGridWidgetId =
     | 'adminBadge'
@@ -32,6 +32,7 @@ export const DASHBOARD_SECTION_LABELS: Record<DashboardSectionId, string> = {
     mainGrid: 'Main dashboard grid',
     weekCalendar: 'One-week release calendar',
     watchRow: 'Recently / Most Watched',
+    myRequests: 'Your Requests',
     recentlyAdded: 'Recently Added rows',
 };
 
@@ -50,7 +51,7 @@ export const MAIN_GRID_WIDGET_META: Record<MainGridWidgetId, { label: string; co
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutConfig = {
     version: 1,
-    sections: ['wrapUp', 'mainGrid', 'weekCalendar', 'watchRow', 'recentlyAdded'],
+    sections: ['wrapUp', 'mainGrid', 'weekCalendar', 'watchRow', 'myRequests', 'recentlyAdded'],
     mainGridOrder: [
         'adminBadge',
         'quickActions',
@@ -69,7 +70,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutConfig = {
     topWatchedRows: 2,
 };
 
-const ALL_SECTIONS: DashboardSectionId[] = ['wrapUp', 'mainGrid', 'weekCalendar', 'watchRow', 'recentlyAdded'];
+const ALL_SECTIONS: DashboardSectionId[] = ['wrapUp', 'mainGrid', 'weekCalendar', 'watchRow', 'myRequests', 'recentlyAdded'];
 const ALL_MAIN_GRID: MainGridWidgetId[] = Object.keys(MAIN_GRID_WIDGET_META) as MainGridWidgetId[];
 const ALL_RECENTLY_ADDED: RecentlyAddedWidgetId[] = ['recentMovies', 'recentShows', 'recentMusic'];
 
@@ -95,11 +96,27 @@ const validSubset = <T extends string>(values: unknown, allowed: T[]): T[] => {
     return [...new Set(values.filter((value): value is T => typeof value === 'string' && allowed.includes(value as T)))];
 };
 
+/** Place auto-added myRequests before recentlyAdded for legacy saved layouts. */
+const ensureMyRequestsPlacement = (sections: DashboardSectionId[], inputHadMyRequests: boolean): DashboardSectionId[] => {
+    if (inputHadMyRequests) return sections;
+    const myIdx = sections.indexOf('myRequests');
+    const recentIdx = sections.indexOf('recentlyAdded');
+    if (myIdx < 0 || recentIdx < 0 || myIdx < recentIdx) return sections;
+    const next = sections.filter((id) => id !== 'myRequests');
+    const insertAt = next.indexOf('recentlyAdded');
+    next.splice(insertAt < 0 ? next.length : insertAt, 0, 'myRequests');
+    return next;
+};
+
 export const normalizeDashboardLayout = (raw: unknown): DashboardLayoutConfig => {
     const input = raw && typeof raw === 'object' ? (raw as Partial<DashboardLayoutConfig>) : {};
+    const inputHadMyRequests = Array.isArray(input.sections) && input.sections.includes('myRequests');
     return {
         version: 1,
-        sections: uniqueValid(input.sections, ALL_SECTIONS, DEFAULT_DASHBOARD_LAYOUT.sections),
+        sections: ensureMyRequestsPlacement(
+            uniqueValid(input.sections, ALL_SECTIONS, DEFAULT_DASHBOARD_LAYOUT.sections),
+            inputHadMyRequests
+        ),
         mainGridOrder: uniqueValid(input.mainGridOrder, ALL_MAIN_GRID, DEFAULT_DASHBOARD_LAYOUT.mainGridOrder),
         recentlyAddedOrder: uniqueValid(input.recentlyAddedOrder, ALL_RECENTLY_ADDED, DEFAULT_DASHBOARD_LAYOUT.recentlyAddedOrder),
         hiddenSections: validSubset(input.hiddenSections, ALL_SECTIONS),
@@ -189,6 +206,11 @@ export const SECTION_PREVIEW_META: Record<
         shortLabel: 'Watch history',
         description: 'Recently watched & most watched',
         previewClass: 'h-16',
+    },
+    myRequests: {
+        shortLabel: 'Your Requests',
+        description: 'Member request posters above recently added',
+        previewClass: 'h-12',
     },
     recentlyAdded: {
         shortLabel: 'Recently added',

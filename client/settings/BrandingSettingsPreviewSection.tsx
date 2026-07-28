@@ -74,7 +74,7 @@ export const BrandingSettingsPreviewSection: React.FC<{
 
         <div className="mb-4">
             <label>Poster Quality Badges</label>
-            <InlineSwitch label="Show quality badges on recently added and discover posters (4K, HDR, codec, Atmos)" checked={showPosterQualityBadges} onChange={onShowPosterQualityBadgesChange} />
+            <InlineSwitch label="Show portal quality chips on posters (4K, HDR, codec, Atmos). Leave off if posters already have Kometa/Plex overlays." checked={showPosterQualityBadges} onChange={onShowPosterQualityBadgesChange} />
             <SettingHint>Applies to Home and Discover poster cards for all users.</SettingHint>
         </div>
     </>

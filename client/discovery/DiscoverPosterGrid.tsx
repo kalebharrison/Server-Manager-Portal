@@ -23,6 +23,7 @@ type Props = {
     notify?: DiscoverNotifyApi;
     /** Dense RequestMediaCard-style layout (Movies/Series). Compact posters for Home. */
     variant?: 'compact' | 'dense';
+    showPosterQualityBadges?: boolean;
 };
 
 export const DiscoverPosterGrid: React.FC<Props> = ({
@@ -37,6 +38,7 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
     quickRequest,
     notify,
     variant = 'compact',
+    showPosterQualityBadges = false,
 }) => {
     const { t } = useDiscoverI18n();
     const visibleItems = useMemo(() => dedupeDiscoverResults(items), [items]);
@@ -102,6 +104,7 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
                                 quickRequest={quickRequest}
                                 notify={notify}
                                 priority={index < 6}
+                                showPosterQualityBadges={showPosterQualityBadges}
                             />
                         </div>
                     );
@@ -165,7 +168,8 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
                             }}
                             overlay={overlay}
                             showQualityBadges={
-                                (availability?.kind === 'available' || availability?.kind === 'partial')
+                                showPosterQualityBadges
+                                && (availability?.kind === 'available' || availability?.kind === 'partial')
                                 && Array.isArray(formatted.qualityTags)
                                 && formatted.qualityTags.length > 0
                             }

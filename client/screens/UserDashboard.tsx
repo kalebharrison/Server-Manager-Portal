@@ -41,6 +41,7 @@ export const UserDashboard: React.FC<{ sessionInfo: any; publicConfig?: any; ref
                 layoutCtx={dashboard.layoutCtx}
                 renderMainGridWidget={dashboard.renderMainGridWidget}
                 renderRecentlyAddedWidget={dashboard.renderRecentlyAddedWidget}
+                renderMyRequests={dashboard.renderMyRequests}
                 renderWeekCalendar={() => <HomeWeekCalendar cacheMinutes={publicConfig?.cacheRefreshMinutes} cacheScope={dashboard.libraryStorageKey} />}
                 hasDashboardData={!!dashboard.dashboardData}
                 renderWrapUp={() => (

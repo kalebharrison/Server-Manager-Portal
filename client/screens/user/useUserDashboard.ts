@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, createElement } from 'react';
 
 import { apiFetch } from '../../shared/api';
 import { getAccessProgressPct, getDaysUntilExpiry } from '../../shared/format';
@@ -8,6 +8,8 @@ import {
     resolveHomeShowWrapUp,
 } from '../../shared/userProfile';
 import { createMainGridWidgetRenderer, createRecentlyAddedWidgetRenderer } from '../../home/userDashboardWidgetRenderers';
+import { HomeMyRequestsSection } from '../../home/HomeMyRequestsSection';
+import type { PortalRequestItem } from '../../requests/types';
 import { RebuildLibraryCacheButton } from '../RebuildLibraryCacheButton';
 import { DiscoverPosterCard } from '../DiscoverContent';
 import { homeLibraryCacheKey } from './userDashboardCache';
@@ -35,9 +37,10 @@ export const useUserDashboard = ({
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState<ToastMessage | null>(null);
     const [analyticsDaysOpen, setAnalyticsDaysOpen] = useState(false);
+    const [myRequests, setMyRequests] = useState<PortalRequestItem[]>([]);
 
     const user = sessionInfo.account;
-    const showQualityBadges = publicConfig?.showPosterQualityBadges !== false;
+    const showQualityBadges = publicConfig?.showPosterQualityBadges === true;
     const isJellyfinPortal = String(publicConfig?.mediaServerType || 'plex').toLowerCase() === 'jellyfin';
     const [newsletterOptIn, setNewsletterOptIn] = useState(user?.newsletterOptIn === true);
 
@@ -48,6 +51,22 @@ export const useUserDashboard = ({
     useEffect(() => {
         setNewsletterOptIn(user?.newsletterOptIn === true);
     }, [user?.newsletterOptIn]);
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const res = await apiFetch('/api/discovery/my-requests?filter=all&take=40');
+                if (cancelled) return;
+                setMyRequests(Array.isArray(res?.results) ? res.results : []);
+            } catch {
+                if (!cancelled) setMyRequests([]);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [sessionInfo?.session?.accountId, sessionInfo?.session?.username]);
 
     const {
         analytics,
@@ -162,6 +181,9 @@ export const useUserDashboard = ({
 
     const renderMainGridWidget = useMemo(() => createMainGridWidgetRenderer(mainGridWidgetDeps), [mainGridWidgetDeps]);
     const renderRecentlyAddedWidget = useMemo(() => createRecentlyAddedWidgetRenderer(recentlyAddedWidgetDeps), [recentlyAddedWidgetDeps]);
+    const renderMyRequests = useCallback(() => (
+        createElement(HomeMyRequestsSection, { items: myRequests })
+    ), [myRequests]);
 
     return {
         isLoading,
@@ -179,6 +201,7 @@ export const useUserDashboard = ({
         memberLayoutConfig,
         renderMainGridWidget,
         renderRecentlyAddedWidget,
+        renderMyRequests,
         setAnalyticsDays,
         sessionInfo,
         publicConfig,

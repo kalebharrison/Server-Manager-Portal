@@ -59,6 +59,7 @@ const DiscoverHomeRow: React.FC<{
     animateEnter?: boolean;
     quickRequest?: ReturnType<typeof useDiscoverQuickRequest>;
     notify?: ReturnType<typeof useDiscoverNotify>;
+    showPosterQualityBadges?: boolean;
 }> = ({
     title,
     items,
@@ -71,6 +72,7 @@ const DiscoverHomeRow: React.FC<{
     animateEnter = false,
     quickRequest,
     notify,
+    showPosterQualityBadges = false,
 }) => {
     const { t } = useDiscoverI18n();
     if (!items?.length) {
@@ -158,7 +160,8 @@ const DiscoverHomeRow: React.FC<{
                                 }}
                                 overlay={overlay}
                                 showQualityBadges={
-                                    (formatted.availability?.kind === 'available'
+                                    showPosterQualityBadges
+                                    && (formatted.availability?.kind === 'available'
                                         || formatted.availability?.kind === 'partial')
                                     && Array.isArray(formatted.qualityTags)
                                     && formatted.qualityTags.length > 0
@@ -179,7 +182,8 @@ export const DiscoverHome: React.FC<{
     navigate: (path: string) => void;
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     providerLabel?: string;
-}> = ({ onSelect, formatItem, navigate, pushToast, providerLabel = 'Plex' }) => {
+    showPosterQualityBadges?: boolean;
+}> = ({ onSelect, formatItem, navigate, pushToast, providerLabel = 'Plex', showPosterQualityBadges = false }) => {
     const { t, locale } = useDiscoverI18n();
     const { preferences, loaded } = useDiscoveryPreferences();
     const { showLibraryQueue, toggleLibraryQueue } = useLibraryQueueToggle();
@@ -350,6 +354,7 @@ export const DiscoverHome: React.FC<{
                             onSelect={onSelect}
                             animateEnter={enterAnim}
                             onViewAll={() => navigate('/discovery/requests')}
+                            showPosterQualityBadges={showPosterQualityBadges}
                             empty={(
                                 <EmptyRail
                                     title={t('home.noRequestsTitle')}
@@ -436,6 +441,7 @@ export const DiscoverHome: React.FC<{
                         formatItem={formatItem}
                         onSelect={onSelect}
                         animateEnter={enterAnim}
+                        showPosterQualityBadges={showPosterQualityBadges}
                     />
                 )}
                 <div id="discover-trending">
@@ -449,6 +455,7 @@ export const DiscoverHome: React.FC<{
                         animateEnter={enterAnim}
                         quickRequest={quickRequest}
                         notify={notify}
+                        showPosterQualityBadges={showPosterQualityBadges}
                     />
                 </div>
                 <DiscoverHomeRow
@@ -461,6 +468,7 @@ export const DiscoverHome: React.FC<{
                     animateEnter={enterAnim}
                     quickRequest={quickRequest}
                     notify={notify}
+                    showPosterQualityBadges={showPosterQualityBadges}
                 />
                 <DiscoverHomeRow
                     title={t('home.popularSeries')}
@@ -473,6 +481,7 @@ export const DiscoverHome: React.FC<{
                     onViewAll={() => navigate('/discovery/series')}
                     quickRequest={quickRequest}
                     notify={notify}
+                    showPosterQualityBadges={showPosterQualityBadges}
                 />
                 <DiscoverHomeRow
                     title={t('home.upcomingSeries')}
@@ -484,6 +493,7 @@ export const DiscoverHome: React.FC<{
                     animateEnter={enterAnim}
                     quickRequest={quickRequest}
                     notify={notify}
+                    showPosterQualityBadges={showPosterQualityBadges}
                 />
             </section>
         </div>

@@ -21,6 +21,7 @@ type Props = {
     quickRequest?: DiscoverQuickRequestApi;
     notify?: DiscoverNotifyApi;
     priority?: boolean;
+    showPosterQualityBadges?: boolean;
 };
 
 export const DiscoverBrowseCard: React.FC<Props> = ({
@@ -30,6 +31,7 @@ export const DiscoverBrowseCard: React.FC<Props> = ({
     quickRequest,
     notify,
     priority = false,
+    showPosterQualityBadges = false,
 }) => {
     const { t } = useDiscoverI18n();
     const mediaType = String(formatted?.mediaType || formatted?.type || 'movie').toLowerCase();
@@ -57,7 +59,7 @@ export const DiscoverBrowseCard: React.FC<Props> = ({
         : (Array.isArray(item?.displayTags) && item.displayTags.length
             ? item.displayTags
             : (Array.isArray(item?.mediaInfo?.displayTags) ? item.mediaInfo.displayTags : []));
-    const showQuality = available && qualityTags.length > 0;
+    const showQuality = showPosterQualityBadges && available && qualityTags.length > 0;
 
     let statusLabel = isTv ? t('browse.requestShow') : t('browse.requestMovie');
     let badgeClass = 'bg-plex/15 text-plex border-plex/30';

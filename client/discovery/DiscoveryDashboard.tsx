@@ -28,7 +28,8 @@ const DiscoveryDashboardInner: React.FC<{
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     mediaServerType?: string;
     isAdmin?: boolean;
-}> = ({ pushToast, mediaServerType = 'plex' }) => {
+    showPosterQualityBadges?: boolean;
+}> = ({ pushToast, mediaServerType = 'plex', showPosterQualityBadges = false }) => {
     const { t, locale } = useDiscoverI18n();
     const [path, setPath] = useState(() => {
         if (typeof window !== 'undefined') return window.location.pathname;
@@ -228,6 +229,7 @@ const DiscoveryDashboardInner: React.FC<{
                     onSelect={openMedia}
                     formatItem={formatItem}
                     pushToast={pushToast}
+                    showPosterQualityBadges={showPosterQualityBadges}
                 />
             );
         }
@@ -244,6 +246,7 @@ const DiscoveryDashboardInner: React.FC<{
                     onSelect={openMedia}
                     formatItem={formatItem}
                     pushToast={pushToast}
+                    showPosterQualityBadges={showPosterQualityBadges}
                 />
             );
         }
@@ -382,6 +385,7 @@ const DiscoveryDashboardInner: React.FC<{
                         navigate={navigate}
                         pushToast={pushToast}
                         providerLabel={providerLabel}
+                        showPosterQualityBadges={showPosterQualityBadges}
                     />
                         )}
                         {subRoute === 'movies' && (
@@ -390,6 +394,7 @@ const DiscoveryDashboardInner: React.FC<{
                                 formatItem={formatItem}
                                 navigate={navigate}
                                 pushToast={pushToast}
+                                showPosterQualityBadges={showPosterQualityBadges}
                             />
                         )}
                         {subRoute === 'series' && (
@@ -398,6 +403,7 @@ const DiscoveryDashboardInner: React.FC<{
                                 formatItem={formatItem}
                                 navigate={navigate}
                                 pushToast={pushToast}
+                                showPosterQualityBadges={showPosterQualityBadges}
                             />
                         )}
                         {subRoute === 'requests' && (
@@ -426,6 +432,7 @@ export const DiscoveryDashboard: React.FC<{
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     mediaServerType?: string;
     isAdmin?: boolean;
+    showPosterQualityBadges?: boolean;
 }> = ({ pushToast: pushToastProp, ...props }) => {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const pushToast = useCallback((msg: string, type: 'success' | 'error') => {
