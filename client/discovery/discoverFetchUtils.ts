@@ -51,7 +51,9 @@ const withBrowseModeParams = (
     }
 
     params.set('anime', '1');
-    params.set('language', 'ja');
+    // Keep Japanese originals via server `with_original_language=ja`, but do not
+    // force metadata `language=ja` — that made titles/overviews Japanese.
+    params.delete('language');
     params.delete('international');
     const genres = new Set(
         String(params.get('genre') || filters.genre || '')
@@ -80,9 +82,9 @@ export const buildDiscoverMoviesApiUrl = (
         return buildDiscoverStudioApiUrl(page, filters.studio, sort);
     }
 
-    // Anime forces ja; otherwise keep drawer language only when the user set one.
+    // Anime clears drawer language so it can't override English metadata titles.
     const browseFilters = options.anime
-        ? { ...filters, language: 'ja' }
+        ? { ...filters, language: '' }
         : filters;
     let url = `/api/discovery/proxy/discover/movies?page=${page}&sortBy=${encodeURIComponent(sort)}`;
     url = appendDiscoverQuery(url, browseFilters, 'movie');
@@ -109,7 +111,7 @@ export const buildDiscoverSeriesApiUrl = (
     }
 
     const browseFilters = options.anime
-        ? { ...filters, language: 'ja' }
+        ? { ...filters, language: '' }
         : filters;
     let url = `/api/discovery/proxy/discover/tv?page=${page}&sortBy=${encodeURIComponent(sort)}`;
     url = appendDiscoverQuery(url, browseFilters, 'tv');
