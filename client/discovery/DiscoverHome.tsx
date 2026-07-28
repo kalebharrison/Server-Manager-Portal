@@ -3,14 +3,6 @@ import { ChevronDown, ChevronUp, ClipboardList, Film, Sparkles } from 'lucide-re
 import { apiFetch } from '../shared/api';
 import { DiscoverPosterCard } from '../screens';
 import { Carousel } from './Carousel';
-import { CompanyCard, GenreCard } from './DiscoverCards';
-import {
-    DISCOVER_NETWORKS,
-    DISCOVER_STUDIOS,
-    MOVIE_GENRES,
-    TV_GENRES,
-    buildGenreSliderImage,
-} from './discoverConstants';
 import { enrichDiscoveryItems, normalizeRawDiscoveryItem } from './discoverItemUtils';
 import { portalRequestToDiscoveryRowItem } from './myRequestUtils';
 import { filterHiddenAvailableItems, useDiscoveryPreferences } from './useDiscoveryPreferences';
@@ -28,25 +20,6 @@ import { DiscoverQuickRequestButton } from './DiscoverQuickRequestButton';
 import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
 import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { useDiscoverNotify } from './useDiscoverNotify';
-
-type GenreSliderItem = { id: number; name: string; image?: string; backdrops?: string[] };
-
-const mapGenreSliderResponse = (payload: any): GenreSliderItem[] => {
-    const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.results) ? payload.results : []);
-    return list
-        .map((genre: any) => {
-            const id = Number(genre?.id);
-            const name = String(genre?.name || '').trim();
-            if (!Number.isFinite(id) || !name) return null;
-            const backdrops = genre?.backdrops || genre?.backdropPaths || genre?.backdrop_paths || [];
-            return {
-                id,
-                name,
-                image: genre?.image || buildGenreSliderImage(id, backdrops),
-            };
-        })
-        .filter(Boolean) as GenreSliderItem[];
-};
 
 const EmptyRail: React.FC<{
     title: string;
@@ -200,42 +173,6 @@ const DiscoverHomeRow: React.FC<{
     );
 };
 
-const DiscoverGenreSliderRow: React.FC<{
-    title: string;
-    apiGenres: GenreSliderItem[];
-    fallbackGenres: typeof MOVIE_GENRES;
-    basePath: '/discovery/movies' | '/discovery/series';
-    navigate: (path: string) => void;
-}> = ({ title, apiGenres, fallbackGenres, basePath, navigate }) => {
-    const items = apiGenres.length
-        ? apiGenres
-        : fallbackGenres.map((g) => ({
-            id: g.id,
-            name: g.name,
-            image: buildGenreSliderImage(g.id),
-        }));
-
-    return (
-        <div className="flex flex-col gap-2 relative">
-            <h2 className={`${discoveryTheme.sectionTitle} px-2 pr-16`}>{title}</h2>
-            <Carousel>
-                {items.map((g) => {
-                    const fallback = fallbackGenres.find((fg) => fg.id === g.id);
-                    return (
-                        <GenreCard
-                            key={g.id}
-                            name={g.name}
-                            image={g.image}
-                            gradient={fallback?.gradient}
-                            onClick={() => navigate(`${basePath}?genre=${g.id}`)}
-                        />
-                    );
-                })}
-            </Carousel>
-        </div>
-    );
-};
-
 export const DiscoverHome: React.FC<{
     onSelect: (item: any) => void;
     formatItem: (item: any) => any;
@@ -255,17 +192,10 @@ export const DiscoverHome: React.FC<{
         recentRequests: [] as any[],
         plexWatchlist: [] as any[],
         trending: [] as any[],
-        popularMovies: [] as any[],
         upcomingMovies: [] as any[],
         popularSeries: [] as any[],
         upcomingSeries: [] as any[],
     });
-    const [movieGenres, setMovieGenres] = useState<GenreSliderItem[]>(() => (
-        MOVIE_GENRES.map((g) => ({ id: g.id, name: g.name, image: buildGenreSliderImage(g.id) }))
-    ));
-    const [tvGenres, setTvGenres] = useState<GenreSliderItem[]>(() => (
-        TV_GENRES.map((g) => ({ id: g.id, name: g.name, image: buildGenreSliderImage(g.id) }))
-    ));
     const [loading, setLoading] = useState(true);
     const loadGenRef = useRef(0);
     const hasPaintedRef = useRef(false);
@@ -285,8 +215,8 @@ export const DiscoverHome: React.FC<{
                 needsBackfill: hideAvailable,
                 // Availability stamps on the proxy mean fewer empty pages to scan.
                 maxPages: hideAvailable ? 2 : 1,
-                maxItems: 30,
-                minItems: hideAvailable ? 16 : 20,
+                maxItems: 20,
+                minItems: hideAvailable ? 12 : 12,
                 hideRequested: false,
                 trustAttachedAvailability: true,
                 pageConcurrency: 1,
@@ -294,20 +224,17 @@ export const DiscoverHome: React.FC<{
                 signal: paintAbort.signal,
             };
             const trendingUrl = (page: number) => `/api/discovery/proxy/discover/trending?page=${page}`;
-            const moviesUrl = (page: number) => `/api/discovery/proxy/discover/movies?sortBy=popularity.desc&page=${page}`;
             const upcomingMoviesUrl = (page: number) => `/api/discovery/proxy/discover/movies/upcoming?page=${page}`;
             const seriesUrl = (page: number) => `/api/discovery/proxy/discover/tv?sortBy=popularity.desc&page=${page}`;
             const upcomingSeriesUrl = (page: number) => `/api/discovery/proxy/discover/tv/upcoming?page=${page}`;
 
             const [
                 trendingRes,
-                popularMovies,
                 upcomingMovies,
                 popularSeries,
                 upcomingSeries,
             ] = await Promise.all([
                 fetchDiscoverHomeRowResults(trendingUrl, hideAvailable, rowOpts).catch(() => []),
-                fetchDiscoverHomeRowResults(moviesUrl, hideAvailable, rowOpts).catch(() => []),
                 fetchDiscoverHomeRowResults(upcomingMoviesUrl, hideAvailable, rowOpts).catch(() => []),
                 fetchDiscoverHomeRowResults(seriesUrl, hideAvailable, rowOpts).catch(() => []),
                 fetchDiscoverHomeRowResults(upcomingSeriesUrl, hideAvailable, rowOpts).catch(() => []),
@@ -320,7 +247,6 @@ export const DiscoverHome: React.FC<{
                 recentRequests: [],
                 plexWatchlist: [],
                 trending: filterHiddenAvailableItems(trendingRes, hideAvailable),
-                popularMovies: filterHiddenAvailableItems(popularMovies, hideAvailable),
                 upcomingMovies: filterHiddenAvailableItems(upcomingMovies, hideAvailable),
                 popularSeries: filterHiddenAvailableItems(popularSeries, hideAvailable),
                 upcomingSeries: filterHiddenAvailableItems(upcomingSeries, hideAvailable),
@@ -367,30 +293,6 @@ export const DiscoverHome: React.FC<{
                     // Side rails are best-effort.
                 }
             })();
-
-            // Genre sliders after rows are visible (best-effort, no per-genre fan-out).
-            void (async () => {
-                try {
-                    if (gen !== loadGenRef.current) return;
-                    const [movieGenreRes, tvGenreRes] = await Promise.all([
-                        apiFetch('/api/discovery/proxy/discover/genreslider/movie').catch(() => null),
-                        apiFetch('/api/discovery/proxy/discover/genreslider/tv').catch(() => null),
-                    ]);
-                    if (gen !== loadGenRef.current) return;
-                    const mappedMovies = mapGenreSliderResponse(movieGenreRes);
-                    const mappedTv = mapGenreSliderResponse(tvGenreRes);
-                    setMovieGenres(mappedMovies.length
-                        ? mappedMovies.map((g) => ({ ...g, image: g.image || buildGenreSliderImage(g.id) }))
-                        : MOVIE_GENRES.map((g) => ({ id: g.id, name: g.name, image: buildGenreSliderImage(g.id) })));
-                    setTvGenres(mappedTv.length
-                        ? mappedTv.map((g) => ({ ...g, image: g.image || buildGenreSliderImage(g.id) }))
-                        : TV_GENRES.map((g) => ({ id: g.id, name: g.name, image: buildGenreSliderImage(g.id) })));
-                } catch {
-                    if (gen !== loadGenRef.current) return;
-                    setMovieGenres(MOVIE_GENRES.map((g) => ({ id: g.id, name: g.name, image: buildGenreSliderImage(g.id) })));
-                    setTvGenres(TV_GENRES.map((g) => ({ id: g.id, name: g.name, image: buildGenreSliderImage(g.id) })));
-                }
-            })();
         } catch (e) {
             console.error(e);
             if (gen === loadGenRef.current) setLoading(false);
@@ -417,29 +319,27 @@ export const DiscoverHome: React.FC<{
 
     return (
         <div className={`flex flex-col gap-6 w-full max-w-full overflow-hidden pb-8 px-1${enterAnim ? ' discover-content-enter' : ''}`}>
-            <section className={discoveryTheme.personalPanel}>
-                <div className="px-1 flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <p className={discoveryTheme.personalEyebrow}>{t('home.forYou')}</p>
-                        <h2 className="text-lg sm:text-xl font-black text-text mt-1">{t('home.libraryQueue')}</h2>
-                        {showLibraryQueue && (
+            {showLibraryQueue ? (
+                <section className={discoveryTheme.personalPanel}>
+                    <div className="px-1 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className={discoveryTheme.personalEyebrow}>{t('home.forYou')}</p>
+                            <h2 className="text-lg sm:text-xl font-black text-text mt-1">{t('home.libraryQueue')}</h2>
                             <p className="text-sm text-muted mt-1">{t('home.libraryQueueHint')}</p>
-                        )}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={toggleLibraryQueue}
+                            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-white/5 hover:bg-white/10 text-xs font-bold text-muted hover:text-text transition-colors"
+                            aria-expanded={true}
+                            aria-controls="discover-library-queue"
+                            title={t('home.hideLibraryQueue')}
+                        >
+                            {t('common.hide')}
+                            <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
                     </div>
-                    <button
-                        type="button"
-                        onClick={toggleLibraryQueue}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-white/5 hover:bg-white/10 text-xs font-bold text-muted hover:text-text transition-colors"
-                        aria-expanded={showLibraryQueue}
-                        aria-controls="discover-library-queue"
-                        title={showLibraryQueue ? t('home.hideLibraryQueue') : t('home.showLibraryQueue')}
-                    >
-                        {showLibraryQueue ? t('common.hide') : t('common.show')}
-                        {showLibraryQueue ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
-                </div>
 
-                {showLibraryQueue && (
                     <div id="discover-library-queue" className="flex flex-col gap-5">
                         <DiscoverHomeRow
                             title={t('home.yourRequests')}
@@ -488,8 +388,26 @@ export const DiscoverHome: React.FC<{
                             </div>
                         ) : null}
                     </div>
-                )}
-            </section>
+                </section>
+            ) : (
+                <section className="rounded-xl border border-border/60 bg-white/[0.02] px-3 py-2.5 flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex items-baseline gap-2 sm:gap-3">
+                        <p className={discoveryTheme.personalEyebrow}>{t('home.forYou')}</p>
+                        <h2 className="text-sm font-bold text-text truncate">{t('home.libraryQueue')}</h2>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={toggleLibraryQueue}
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-white/5 hover:bg-white/10 text-xs font-bold text-muted hover:text-text transition-colors"
+                        aria-expanded={false}
+                        aria-controls="discover-library-queue"
+                        title={t('home.showLibraryQueue')}
+                    >
+                        {t('common.show')}
+                        <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                </section>
+            )}
 
             <section className={discoveryTheme.browseSection}>
                 <div className="px-3 flex items-end justify-between gap-3 flex-wrap">
@@ -530,28 +448,9 @@ export const DiscoverHome: React.FC<{
                         onSelect={onSelect}
                         animateEnter={enterAnim}
                         quickRequest={quickRequest}
-                    notify={notify}
+                        notify={notify}
                     />
                 </div>
-                <DiscoverHomeRow
-                    title={t('home.popularMovies')}
-                    items={rows.popularMovies}
-                    posterCardClass={posterCardClass}
-                    viewAllLabel={t('common.viewAll')}
-                    formatItem={formatItem}
-                    onSelect={onSelect}
-                    animateEnter={enterAnim}
-                    onViewAll={() => navigate('/discovery/movies')}
-                    quickRequest={quickRequest}
-                    notify={notify}
-                />
-                <DiscoverGenreSliderRow
-                    title={t('home.movieGenres')}
-                    apiGenres={movieGenres}
-                    fallbackGenres={MOVIE_GENRES}
-                    basePath="/discovery/movies"
-                    navigate={navigate}
-                />
                 <DiscoverHomeRow
                     title={t('home.upcomingMovies')}
                     items={rows.upcomingMovies}
@@ -563,21 +462,6 @@ export const DiscoverHome: React.FC<{
                     quickRequest={quickRequest}
                     notify={notify}
                 />
-
-                <div className="flex flex-col gap-2 relative rounded-2xl border border-border/60 bg-white/[0.02] p-3 sm:p-4">
-                    <h2 className={`${discoveryTheme.sectionTitle} px-1 pr-16`}>{t('home.studios')}</h2>
-                    <Carousel>
-                        {DISCOVER_STUDIOS.map((studio) => (
-                            <CompanyCard
-                                key={studio.id}
-                                name={studio.name}
-                                logoPath={studio.logoPath}
-                                onClick={() => navigate(`/discovery/movies/studio/${studio.id}`)}
-                            />
-                        ))}
-                    </Carousel>
-                </div>
-
                 <DiscoverHomeRow
                     title={t('home.popularSeries')}
                     items={rows.popularSeries}
@@ -590,13 +474,6 @@ export const DiscoverHome: React.FC<{
                     quickRequest={quickRequest}
                     notify={notify}
                 />
-                <DiscoverGenreSliderRow
-                    title={t('home.seriesGenres')}
-                    apiGenres={tvGenres}
-                    fallbackGenres={TV_GENRES}
-                    basePath="/discovery/series"
-                    navigate={navigate}
-                />
                 <DiscoverHomeRow
                     title={t('home.upcomingSeries')}
                     items={rows.upcomingSeries}
@@ -608,20 +485,6 @@ export const DiscoverHome: React.FC<{
                     quickRequest={quickRequest}
                     notify={notify}
                 />
-
-                <div className="flex flex-col gap-2 relative rounded-2xl border border-border/60 bg-white/[0.02] p-3 sm:p-4">
-                    <h2 className={`${discoveryTheme.sectionTitle} px-1 pr-16`}>{t('home.networks')}</h2>
-                    <Carousel>
-                        {DISCOVER_NETWORKS.map((network) => (
-                            <CompanyCard
-                                key={`${network.id}-${network.name}`}
-                                name={network.name}
-                                logoPath={network.logoPath}
-                                onClick={() => navigate(`/discovery/series/network/${network.id}`)}
-                            />
-                        ))}
-                    </Carousel>
-                </div>
             </section>
         </div>
     );

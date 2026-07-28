@@ -90,45 +90,20 @@ export const DiscoverHomeRowSkeleton: React.FC<{
     </div>
 );
 
-export const DiscoverHomeSkeleton: React.FC = () => {
-    const { carousel } = useSkeletonLayoutCounts();
-
-    return (
+export const DiscoverHomeSkeleton: React.FC = () => (
     <div className="discover-layout-container flex flex-col gap-4 w-full max-w-full overflow-hidden pb-8" aria-busy="true" aria-label="Loading discover">
-        <DiscoverHomeRowSkeleton />
-        <DiscoverHomeRowSkeleton showViewAll />
-        <DiscoverHomeRowSkeleton showViewAll showSubtitle showAction />
-        <DiscoverHomeRowSkeleton showViewAll />
-        <DiscoverHomeRowSkeleton showViewAll />
-        <DiscoverHomeRowSkeleton />
-        <div className="flex flex-col gap-2 relative" aria-hidden="true">
-            <SkeletonBlock className="h-6 w-36 rounded ml-2" />
-            <div
-                className="grid w-full gap-4 py-2 px-2"
-                style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}
-            >
-                {Array.from({ length: carousel }, (_, i) => (
-                    <SkeletonBlock key={i} className="w-full h-[88px] sm:h-[100px] rounded-xl" />
-                ))}
-            </div>
+        {/* Compact library-queue bar (collapsed by default on Home). */}
+        <div className="rounded-xl border border-border/60 bg-white/[0.02] px-3 py-2.5 flex items-center justify-between gap-3" aria-hidden="true">
+            <SkeletonBlock className="h-4 w-36 rounded" />
+            <SkeletonBlock className="h-8 w-16 rounded-lg" />
         </div>
-        <DiscoverHomeRowSkeleton showViewAll />
         <DiscoverHomeRowSkeleton />
         <DiscoverHomeRowSkeleton showViewAll />
-        <div className="flex flex-col gap-2 relative" aria-hidden="true">
-            <SkeletonBlock className="h-6 w-28 rounded ml-2" />
-            <div
-                className="grid w-full gap-4 py-2 px-2"
-                style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))' }}
-            >
-                {Array.from({ length: Math.max(4, carousel - 1) }, (_, i) => (
-                    <SkeletonBlock key={i} className="w-full h-[100px] sm:h-[112px] rounded-xl" />
-                ))}
-            </div>
-        </div>
+        <DiscoverHomeRowSkeleton showViewAll />
+        <DiscoverHomeRowSkeleton showViewAll />
+        <DiscoverHomeRowSkeleton />
     </div>
-    );
-};
+);
 
 export const HomeRecentlyAddedSkeleton: React.FC = () => (
     <div className="flex flex-col gap-3 md:gap-4 w-full" aria-busy="true" aria-label="Loading recently added">

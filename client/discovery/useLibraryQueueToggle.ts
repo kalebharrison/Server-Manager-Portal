@@ -4,9 +4,10 @@ const STORAGE_KEY = 'discoveryShowLibraryQueue';
 
 export function useLibraryQueueToggle() {
     const [showLibraryQueue, setShowLibraryQueueState] = useState(() => {
-        if (typeof window === 'undefined') return true;
+        if (typeof window === 'undefined') return false;
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored === null) return true;
+        // Default collapsed so Discover opens on content, not the queue panel.
+        if (stored === null) return false;
         return stored === 'true';
     });
 
