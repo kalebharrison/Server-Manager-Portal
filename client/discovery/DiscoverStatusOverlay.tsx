@@ -11,7 +11,7 @@ import {
 import type { MediaAvailabilityState } from './discoverAvailability';
 import { useDiscoverI18n, translateDiscoverStatus } from './i18n';
 
-const pillClass = 'absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide shadow-lg backdrop-blur-sm border';
+const pillClass = 'absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide shadow-md border';
 
 export const DiscoverStatusOverlay: React.FC<{ state: MediaAvailabilityState }> = ({ state }) => {
     const { t } = useDiscoverI18n();

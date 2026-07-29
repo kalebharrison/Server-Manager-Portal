@@ -5,44 +5,61 @@ interface CarouselProps {
     children: React.ReactNode;
 }
 
+/** Update chevron disabled state without re-rendering on every scroll frame. */
 export const Carousel: React.FC<CarouselProps> = ({ children }) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const atStartRef = useRef(true);
+    const atEndRef = useRef(true);
+    const rafRef = useRef(0);
     const [atStart, setAtStart] = useState(true);
     const [atEnd, setAtEnd] = useState(true);
 
-    const handleScroll = useCallback(() => {
-        if (!scrollContainerRef.current) return;
-        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+    const syncEdges = useCallback(() => {
+        const node = scrollContainerRef.current;
+        if (!node) return;
+        const { scrollLeft, scrollWidth, clientWidth } = node;
         const margin = 5;
         const canScroll = scrollWidth > clientWidth + margin;
-        if (!canScroll) {
-            setAtStart(true);
-            setAtEnd(true);
-            return;
+        const nextStart = !canScroll || scrollLeft <= margin;
+        const nextEnd = !canScroll || scrollLeft >= scrollWidth - clientWidth - margin;
+        if (nextStart !== atStartRef.current) {
+            atStartRef.current = nextStart;
+            setAtStart(nextStart);
         }
-        setAtStart(scrollLeft <= margin);
-        setAtEnd(scrollLeft >= scrollWidth - clientWidth - margin);
+        if (nextEnd !== atEndRef.current) {
+            atEndRef.current = nextEnd;
+            setAtEnd(nextEnd);
+        }
     }, []);
 
+    const handleScroll = useCallback(() => {
+        if (rafRef.current) return;
+        rafRef.current = window.requestAnimationFrame(() => {
+            rafRef.current = 0;
+            syncEdges();
+        });
+    }, [syncEdges]);
+
     useEffect(() => {
-        handleScroll();
+        syncEdges();
         const node = scrollContainerRef.current;
         if (!node) return undefined;
 
         const resizeObserver = typeof ResizeObserver !== 'undefined'
-            ? new ResizeObserver(() => handleScroll())
+            ? new ResizeObserver(() => syncEdges())
             : null;
         resizeObserver?.observe(node);
-        window.addEventListener('resize', handleScroll);
+        window.addEventListener('resize', syncEdges);
 
-        const t = window.setTimeout(handleScroll, 100);
+        const t = window.setTimeout(syncEdges, 100);
 
         return () => {
             resizeObserver?.disconnect();
-            window.removeEventListener('resize', handleScroll);
+            window.removeEventListener('resize', syncEdges);
             window.clearTimeout(t);
+            if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
         };
-    }, [children, handleScroll]);
+    }, [children, syncEdges]);
 
     const scroll = (direction: 'left' | 'right') => {
         if (!scrollContainerRef.current) return;
@@ -82,7 +99,7 @@ export const Carousel: React.FC<CarouselProps> = ({ children }) => {
             <div
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
-                className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide py-2 px-2 w-full"
+                className="flex gap-4 overflow-x-auto snap-x snap-proximity scrollbar-hide py-2 px-2 w-full poster-rail-scroll"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {children}

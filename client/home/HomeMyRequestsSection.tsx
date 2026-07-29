@@ -54,7 +54,7 @@ export const HomeMyRequestsSection: React.FC<Props> = ({ items }) => {
                     <DiscoverPosterCard
                         key={raw.id || `${title}-${idx}`}
                         variant="home"
-                        className="snap-start shrink-0 w-32 md:w-40"
+                        className="snap-start shrink-0 w-32 md:w-40 poster-rail-item"
                         item={{
                             title,
                             year,

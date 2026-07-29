@@ -184,6 +184,22 @@
     box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.45);
   }
 
+  /* Home / Discover poster rails — solid fill, no backdrop-blur (blur under scrolling posters is janky). */
+  .poster-rail-panel {
+    @apply rounded-2xl border border-white/10 bg-card/90;
+    box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.4);
+  }
+
+  .poster-rail-scroll {
+    contain: layout paint;
+  }
+
+  .poster-rail-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 240px;
+    contain: layout paint style;
+  }
+
   .glass-card-sm {
     @apply rounded-xl border border-white/10 bg-card/60 backdrop-blur-lg;
     box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.4);

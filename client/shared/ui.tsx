@@ -241,7 +241,7 @@ export const ScrollReveal: React.FC<{ children: React.ReactNode; enabled?: boole
     }, [enabled]);
 
     return (
-        <div ref={ref} className={`${className} transition-all duration-700 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: `${delay}ms` }}>
+        <div ref={ref} className={`${className} transition-opacity duration-500 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: `${delay}ms` }}>
             {children}
         </div>
     );

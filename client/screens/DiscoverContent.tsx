@@ -56,7 +56,7 @@ export const DiscoverPosterCard = React.memo<{
     priority?: boolean;
 }>(({ item, aspect = '2/3', overlay, variant = 'discover', className = 'w-full', footer, showQualityBadges = true, priority = false }) => {
     const posterShell = variant === 'home'
-        ? 'relative rounded-xl overflow-hidden bg-background border border-white/5 transition-[box-shadow,border-color] duration-300 group-hover:shadow-xl group-hover:border-plex/50'
+        ? 'relative rounded-xl overflow-hidden bg-background border border-white/5 transition-[border-color] duration-200 group-hover:border-plex/50'
         : 'relative rounded-lg overflow-hidden bg-background border border-border group-hover:border-plex transition-colors shadow-md';
 
     const ratingValue = [item.voteAverage, item.audienceRating, item.rating]

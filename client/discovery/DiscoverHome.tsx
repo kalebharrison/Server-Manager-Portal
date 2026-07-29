@@ -149,7 +149,7 @@ const DiscoverHomeRow: React.FC<{
                     return (
                         <div
                             key={`${title}-${formatted.id || idx}`}
-                            className={`${posterCardClass} flex-shrink-0 relative group${animateEnter ? ' discover-poster-enter' : ''}`}
+                            className={`${posterCardClass} flex-shrink-0 relative group poster-rail-item${animateEnter ? ' discover-poster-enter' : ''}`}
                             style={animateEnter ? { animationDelay: `${Math.min(idx, 12) * 30}ms` } : undefined}
                         >
                             <DiscoverPosterCard
