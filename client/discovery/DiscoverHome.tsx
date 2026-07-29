@@ -6,7 +6,6 @@ import { Carousel } from './Carousel';
 import { enrichDiscoveryItems, normalizeRawDiscoveryItem } from './discoverItemUtils';
 import { portalRequestToDiscoveryRowItem } from './myRequestUtils';
 import { filterHiddenAvailableItems, useDiscoveryPreferences } from './useDiscoveryPreferences';
-import { fetchDiscoverHomeRowResults } from './discoverFetchUtils';
 import { enrichDiscoverItemsWithAvailability } from './discoverAvailabilityEnrich';
 import { WatchlistPanel } from './WatchlistPanel';
 import { DiscoverHomeSkeleton } from '../shared/skeletons';
@@ -208,36 +207,22 @@ export const DiscoverHome: React.FC<{
     const loadData = useCallback(async () => {
         if (!loaded) return;
         const gen = ++loadGenRef.current;
-        const paintAbort = new AbortController();
-        const paintTimer = window.setTimeout(() => paintAbort.abort(), 10000);
         // Avoid skeleton ↔ content flicker on preference/locale refreshes after first paint.
         if (!hasPaintedRef.current) setLoading(true);
         try {
             const hideAvailable = preferences.hideAvailableMedia;
-            // Seerr-style: one endpoint per rail; advance same URL pages only (no multi-source storm).
-            const rowOpts = {
-                needsBackfill: hideAvailable,
-                // Availability stamps on the proxy mean fewer empty pages to scan.
-                maxPages: hideAvailable ? 2 : 1,
-                maxItems: 20,
-                minItems: hideAvailable ? 12 : 12,
-                hideRequested: false,
-                trustAttachedAvailability: true,
-                pageConcurrency: 1,
-                requirePoster: true,
-                signal: paintAbort.signal,
-            };
-            const trendingUrl = (page: number) => `/api/discovery/proxy/discover/trending?page=${page}`;
-            const upcomingMoviesUrl = (page: number) => `/api/discovery/proxy/discover/movies/upcoming?page=${page}`;
-            const seriesUrl = (page: number) => `/api/discovery/proxy/discover/tv?sortBy=popularity.desc&page=${page}`;
-            const upcomingSeriesUrl = (page: number) => `/api/discovery/proxy/discover/tv/upcoming?page=${page}`;
+            const CACHE_STALE_MS = 5 * 60 * 1000;
 
-            // Paint each rail as it arrives so one slow TMDB/Arr stamp can't hold the skeleton.
-            const paintRail = (key: 'trending' | 'upcomingMovies' | 'popularSeries' | 'upcomingSeries', items: any[]) => {
-                if (gen !== loadGenRef.current) return;
+            const pageResults = (page: any) => (Array.isArray(page?.results) ? page.results : []);
+
+            const paintFromHome = (home: any) => {
+                if (gen !== loadGenRef.current || !home) return;
                 setRows((prev) => ({
                     ...prev,
-                    [key]: filterHiddenAvailableItems(items, hideAvailable),
+                    trending: filterHiddenAvailableItems(pageResults(home?.trending), hideAvailable),
+                    upcomingMovies: filterHiddenAvailableItems(pageResults(home?.upcomingMovies), hideAvailable),
+                    popularSeries: filterHiddenAvailableItems(pageResults(home?.popularSeries), hideAvailable),
+                    upcomingSeries: filterHiddenAvailableItems(pageResults(home?.upcomingSeries), hideAvailable),
                 }));
                 if (!hasPaintedRef.current) {
                     hasPaintedRef.current = true;
@@ -246,7 +231,7 @@ export const DiscoverHome: React.FC<{
                 }
             };
 
-            // Side rails run in parallel with browse rails (never gate the skeleton).
+            // Side rails stay live (per-user) and never gate the skeleton.
             void (async () => {
                 try {
                     if (gen !== loadGenRef.current) return;
@@ -266,7 +251,6 @@ export const DiscoverHome: React.FC<{
                         ? reqRes.results.map(portalRequestToDiscoveryRowItem)
                         : [];
 
-                    // Normalize library/requests; enrich watchlist posters + availability (Request vs Available).
                     const recentlyAdded = (addedRes?.results || []).map(normalizeRawDiscoveryItem);
                     const recentRequests = await enrichDiscoveryItems(myRequestItems);
                     const watchlistPosters = await enrichDiscoveryItems(watchlistRes?.results || []);
@@ -284,22 +268,20 @@ export const DiscoverHome: React.FC<{
                 }
             })();
 
-            await Promise.all([
-                fetchDiscoverHomeRowResults(trendingUrl, hideAvailable, rowOpts)
-                    .then((items) => paintRail('trending', items))
-                    .catch(() => paintRail('trending', [])),
-                fetchDiscoverHomeRowResults(upcomingMoviesUrl, hideAvailable, rowOpts)
-                    .then((items) => paintRail('upcomingMovies', items))
-                    .catch(() => paintRail('upcomingMovies', [])),
-                fetchDiscoverHomeRowResults(seriesUrl, hideAvailable, rowOpts)
-                    .then((items) => paintRail('popularSeries', items))
-                    .catch(() => paintRail('popularSeries', [])),
-                fetchDiscoverHomeRowResults(upcomingSeriesUrl, hideAvailable, rowOpts)
-                    .then((items) => paintRail('upcomingSeries', items))
-                    .catch(() => paintRail('upcomingSeries', [])),
-            ]);
-
+            // Shared rails from server prewarm cache (one round-trip).
+            const home = await apiFetch('/api/discovery/home').catch(() => null);
             if (gen !== loadGenRef.current) return;
+            paintFromHome(home);
+
+            // Soft-revalidate only when the snapshot is older than the 5m refresh window.
+            const generatedAt = Number(home?.generatedAt || 0);
+            if (generatedAt > 0 && Date.now() - generatedAt >= CACHE_STALE_MS) {
+                void apiFetch('/api/discovery/home').then((fresh) => {
+                    if (gen !== loadGenRef.current || !fresh) return;
+                    paintFromHome(fresh);
+                }).catch(() => {});
+            }
+
             if (!hasPaintedRef.current) {
                 hasPaintedRef.current = true;
                 setLoading(false);
@@ -308,7 +290,6 @@ export const DiscoverHome: React.FC<{
             console.error(e);
             if (gen === loadGenRef.current) setLoading(false);
         } finally {
-            window.clearTimeout(paintTimer);
             if (gen === loadGenRef.current) setLoading(false);
         }
     }, [loaded, preferences.hideAvailableMedia, preferences.discoverRegion, preferences.discoverLanguage, preferences.showRecentlyAdded, preferences.showWatchlist, locale]);
