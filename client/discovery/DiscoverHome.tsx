@@ -232,35 +232,21 @@ export const DiscoverHome: React.FC<{
             const seriesUrl = (page: number) => `/api/discovery/proxy/discover/tv?sortBy=popularity.desc&page=${page}`;
             const upcomingSeriesUrl = (page: number) => `/api/discovery/proxy/discover/tv/upcoming?page=${page}`;
 
-            const [
-                trendingRes,
-                upcomingMovies,
-                popularSeries,
-                upcomingSeries,
-            ] = await Promise.all([
-                fetchDiscoverHomeRowResults(trendingUrl, hideAvailable, rowOpts).catch(() => []),
-                fetchDiscoverHomeRowResults(upcomingMoviesUrl, hideAvailable, rowOpts).catch(() => []),
-                fetchDiscoverHomeRowResults(seriesUrl, hideAvailable, rowOpts).catch(() => []),
-                fetchDiscoverHomeRowResults(upcomingSeriesUrl, hideAvailable, rowOpts).catch(() => []),
-            ]);
+            // Paint each rail as it arrives so one slow TMDB/Arr stamp can't hold the skeleton.
+            const paintRail = (key: 'trending' | 'upcomingMovies' | 'popularSeries' | 'upcomingSeries', items: any[]) => {
+                if (gen !== loadGenRef.current) return;
+                setRows((prev) => ({
+                    ...prev,
+                    [key]: filterHiddenAvailableItems(items, hideAvailable),
+                }));
+                if (!hasPaintedRef.current) {
+                    hasPaintedRef.current = true;
+                    setLoading(false);
+                    window.setTimeout(() => setEnterAnim(false), 700);
+                }
+            };
 
-            if (gen !== loadGenRef.current) return;
-
-            setRows({
-                recentlyAdded: [],
-                recentRequests: [],
-                plexWatchlist: [],
-                trending: filterHiddenAvailableItems(trendingRes, hideAvailable),
-                upcomingMovies: filterHiddenAvailableItems(upcomingMovies, hideAvailable),
-                popularSeries: filterHiddenAvailableItems(popularSeries, hideAvailable),
-                upcomingSeries: filterHiddenAvailableItems(upcomingSeries, hideAvailable),
-            });
-            hasPaintedRef.current = true;
-            setLoading(false);
-            // Stagger enter only on the first successful paint.
-            window.setTimeout(() => setEnterAnim(false), 700);
-
-            // Side rails + poster enrich after first paint (never block the skeleton).
+            // Side rails run in parallel with browse rails (never gate the skeleton).
             void (async () => {
                 try {
                     if (gen !== loadGenRef.current) return;
@@ -297,6 +283,27 @@ export const DiscoverHome: React.FC<{
                     // Side rails are best-effort.
                 }
             })();
+
+            await Promise.all([
+                fetchDiscoverHomeRowResults(trendingUrl, hideAvailable, rowOpts)
+                    .then((items) => paintRail('trending', items))
+                    .catch(() => paintRail('trending', [])),
+                fetchDiscoverHomeRowResults(upcomingMoviesUrl, hideAvailable, rowOpts)
+                    .then((items) => paintRail('upcomingMovies', items))
+                    .catch(() => paintRail('upcomingMovies', [])),
+                fetchDiscoverHomeRowResults(seriesUrl, hideAvailable, rowOpts)
+                    .then((items) => paintRail('popularSeries', items))
+                    .catch(() => paintRail('popularSeries', [])),
+                fetchDiscoverHomeRowResults(upcomingSeriesUrl, hideAvailable, rowOpts)
+                    .then((items) => paintRail('upcomingSeries', items))
+                    .catch(() => paintRail('upcomingSeries', [])),
+            ]);
+
+            if (gen !== loadGenRef.current) return;
+            if (!hasPaintedRef.current) {
+                hasPaintedRef.current = true;
+                setLoading(false);
+            }
         } catch (e) {
             console.error(e);
             if (gen === loadGenRef.current) setLoading(false);
