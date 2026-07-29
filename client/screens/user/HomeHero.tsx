@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import { portalUrl, resolvePortalAssetUrl } from '../../shared/basePath';
 import { SlideshowBackground } from '../../shared/theme';
@@ -22,6 +22,8 @@ const greetingForCurrentTime = () => {
 };
 
 export const HomeHero = memo<Props>(({ analytics, dashboardData, publicConfig, sessionInfo, user }) => {
+    const heroRef = useRef<HTMLDivElement>(null);
+    const [heroVisible, setHeroVisible] = useState(true);
     const heroMovieColumns = useMemo(
         () => buildHeroMovieColumns(dashboardData?.recentMovies),
         [dashboardData?.recentMovies],
@@ -33,13 +35,35 @@ export const HomeHero = memo<Props>(({ analytics, dashboardData, publicConfig, s
     const thumbUrl = user?.thumb || sessionInfo.session.thumb || (sessionInfo.session.isAdmin ? sessionInfo.adminThumb : null);
     const username = resolveDisplayName(user || sessionInfo.session);
 
+    useEffect(() => {
+        const node = heroRef.current;
+        if (!node || typeof IntersectionObserver === 'undefined') return undefined;
+        const observer = new IntersectionObserver(
+            ([entry]) => setHeroVisible(!!entry?.isIntersecting),
+            { rootMargin: '80px', threshold: 0 },
+        );
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, []);
+
+    const columnAnimStyle = heroVisible
+        ? undefined
+        : ({ animationPlayState: 'paused' } as CSSProperties);
+
     return (
-        <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl bg-card border border-border">
+        <div ref={heroRef} className="relative w-full rounded-2xl overflow-hidden shadow-2xl bg-card border border-border">
             <div className="absolute inset-0 bg-background overflow-hidden">
                 {publicConfig?.useTrendingSlideshow && publicConfig?.trendingBackgrounds?.length > 0 ? (
                     <>
                         <div className="absolute inset-0 opacity-100">
-                            <SlideshowBackground backgrounds={publicConfig.trendingBackgrounds} intervalSeconds={publicConfig.trendingSlideshowInterval} opacity={1} />
+                            {heroVisible ? (
+                                <SlideshowBackground backgrounds={publicConfig.trendingBackgrounds} intervalSeconds={publicConfig.trendingSlideshowInterval} opacity={1} />
+                            ) : (
+                                <div
+                                    className="absolute inset-0 bg-cover bg-center"
+                                    style={{ backgroundImage: `url(${publicConfig.trendingBackgrounds[0]})` }}
+                                />
+                            )}
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
                         <div className="absolute inset-0 bg-gradient-to-r from-card via-card/20 to-transparent" />
@@ -49,11 +73,15 @@ export const HomeHero = memo<Props>(({ analytics, dashboardData, publicConfig, s
                     <>
                         <div className="absolute -inset-[50%] opacity-40 transform -rotate-12 scale-110 flex gap-4 overflow-hidden pointer-events-none justify-center">
                             {heroMovieColumns.map((column, colIdx) => (
-                                <div key={colIdx} className={`flex flex-col gap-4 ${colIdx % 2 === 0 ? 'animate-[scrollVertical_40s_linear_infinite]' : 'animate-[scrollVertical_50s_linear_infinite_reverse]'}`}>
+                                <div
+                                    key={colIdx}
+                                    className={`flex flex-col gap-4 ${colIdx % 2 === 0 ? 'animate-[scrollVertical_40s_linear_infinite]' : 'animate-[scrollVertical_50s_linear_infinite_reverse]'}`}
+                                    style={columnAnimStyle}
+                                >
                                     {column.map((movie: any, index: number) => (
                                         <img
                                             key={`c${colIdx}-${movie.ratingKey || movie.sourceRatingKey || movie.title || index}-${index}`}
-                                            src={movie.thumbUrl ? resolvePortalAssetUrl(movie.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(movie.thumb)}&width=200&height=300`)}
+                                            src={movie.thumbUrl ? resolvePortalAssetUrl(movie.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(movie.thumb)}&width=120&height=180`)}
                                             className="w-32 md:w-48 rounded-xl object-cover"
                                             alt=""
                                             loading="lazy"
@@ -68,7 +96,7 @@ export const HomeHero = memo<Props>(({ analytics, dashboardData, publicConfig, s
                     </>
                 ) : heroBg ? (
                     <>
-                        <div className="absolute inset-0 bg-cover bg-center opacity-30 blur-2xl scale-110" style={{ backgroundImage: `url(${heroBg})` }} />
+                        <div className="absolute inset-0 bg-cover bg-center opacity-30 scale-110" style={{ backgroundImage: `url(${heroBg})` }} />
                         <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
                         <div className="absolute inset-0 bg-gradient-to-r from-card via-card/40 to-transparent" />
                     </>

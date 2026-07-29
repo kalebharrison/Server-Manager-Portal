@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { RecentlyAddedWidgetId } from '../shared/dashboardLayout';
-import { ScrollReveal } from '../shared/ui';
 import type { RecentlyAddedWidgetDeps } from './userDashboardWidgetTypes';
 
-/** Cap posters per rail — 80 DOM nodes with blur was making Home scroll feel laggy. */
-const HOME_RAIL_POSTER_LIMIT = 24;
+/** Cap posters per rail — keep Home vertical scroll light. */
+const HOME_RAIL_POSTER_LIMIT = 18;
 
 const RecentlyAddedScrollRow: React.FC<{ title: string; children: React.ReactNode; headerRight?: React.ReactNode }> = ({ title, children, headerRight }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -98,7 +97,7 @@ const RecentlyAddedScrollRow: React.FC<{ title: string; children: React.ReactNod
 export { RecentlyAddedScrollRow };
 
 export const createRecentlyAddedWidgetRenderer = (deps: RecentlyAddedWidgetDeps) => {
-    const { dashboardData, showQualityBadges, DiscoverPosterCard, publicConfig } = deps;
+    const { dashboardData, showQualityBadges, DiscoverPosterCard } = deps;
 
     return (id: RecentlyAddedWidgetId): React.ReactNode => {
         if (!dashboardData) return null;
@@ -106,8 +105,7 @@ export const createRecentlyAddedWidgetRenderer = (deps: RecentlyAddedWidgetDeps)
             case 'recentMovies':
                 if (!dashboardData.recentMovies?.length) return null;
                 return (
-                    <ScrollReveal enabled={!!publicConfig?.useScrollRevealAnimations}>
-                        <RecentlyAddedScrollRow title="Recently Added Movies">
+                    <RecentlyAddedScrollRow title="Recently Added Movies">
                         {dashboardData.recentMovies.slice(0, HOME_RAIL_POSTER_LIMIT).map((item: any, idx: number) => (
                             <DiscoverPosterCard
                                 key={item.ratingKey || item.sourceRatingKey || `${item.title}-${idx}`}
@@ -124,13 +122,11 @@ export const createRecentlyAddedWidgetRenderer = (deps: RecentlyAddedWidgetDeps)
                             />
                         ))}
                     </RecentlyAddedScrollRow>
-                    </ScrollReveal>
                 );
             case 'recentShows':
                 if (!dashboardData.recentShows?.length) return null;
                 return (
-                    <ScrollReveal enabled={!!publicConfig?.useScrollRevealAnimations}>
-                        <RecentlyAddedScrollRow title="Recently Added TV Shows">
+                    <RecentlyAddedScrollRow title="Recently Added TV Shows">
                         {dashboardData.recentShows.slice(0, HOME_RAIL_POSTER_LIMIT).map((item: any, idx: number) => (
                             <DiscoverPosterCard
                                 key={item.ratingKey || item.sourceRatingKey || `${item.title}-${idx}`}
@@ -147,13 +143,11 @@ export const createRecentlyAddedWidgetRenderer = (deps: RecentlyAddedWidgetDeps)
                             />
                         ))}
                     </RecentlyAddedScrollRow>
-                    </ScrollReveal>
                 );
             case 'recentMusic':
                 if (!dashboardData.recentMusic?.length) return null;
                 return (
-                    <ScrollReveal enabled={!!publicConfig?.useScrollRevealAnimations}>
-                        <RecentlyAddedScrollRow title="Recently Added Music">
+                    <RecentlyAddedScrollRow title="Recently Added Music">
                         {dashboardData.recentMusic.slice(0, HOME_RAIL_POSTER_LIMIT).map((item: any, idx: number) => (
                             <DiscoverPosterCard
                                 key={item.ratingKey || item.sourceRatingKey || `${item.title}-${idx}`}
@@ -171,7 +165,6 @@ export const createRecentlyAddedWidgetRenderer = (deps: RecentlyAddedWidgetDeps)
                             />
                         ))}
                     </RecentlyAddedScrollRow>
-                    </ScrollReveal>
                 );
             default:
                 return null;

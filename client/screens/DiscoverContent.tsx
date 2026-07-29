@@ -10,24 +10,29 @@ export const PosterImage = React.memo<{
     priority?: boolean;
     className?: string;
 }>(({ src, alt, priority = false, className = '' }) => {
+    const [loaded, setLoaded] = React.useState(false);
+
+    React.useEffect(() => {
+        setLoaded(false);
+    }, [src]);
+
     return (
         <>
-            <div className="absolute inset-0 skeleton-base transition-opacity duration-150" aria-hidden="true" />
+            {!loaded ? (
+                <div className="absolute inset-0 bg-white/10" aria-hidden="true" />
+            ) : null}
             <img
                 src={src}
                 alt={alt}
                 loading={priority ? 'eager' : 'lazy'}
                 fetchPriority={priority ? 'high' : 'auto'}
                 decoding="async"
-                onLoad={(event) => {
-                    event.currentTarget.classList.remove('opacity-0');
-                    event.currentTarget.previousElementSibling?.classList.add('opacity-0');
-                }}
+                onLoad={() => setLoaded(true)}
                 onError={(event) => {
+                    setLoaded(true);
                     event.currentTarget.style.display = 'none';
-                    event.currentTarget.previousElementSibling?.classList.add('opacity-0');
                 }}
-                className={`absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-150 ${className}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-150 ${loaded ? 'opacity-100' : 'opacity-0'} ${className}`}
             />
         </>
     );
@@ -67,6 +72,9 @@ export const DiscoverPosterCard = React.memo<{
         ? 'absolute top-2 left-2 z-10 px-2 py-1 rounded-md bg-black/70 text-[10px] font-bold text-white border border-white/10'
         : 'absolute top-2 right-2 z-10 px-2 py-1 rounded-md bg-black/70 text-[10px] font-bold text-white border border-white/10';
 
+    const plexWidth = variant === 'home' ? 160 : 300;
+    const plexHeight = aspect === 'square' ? plexWidth : Math.round(plexWidth * 1.5);
+
     return (
         <a
             href={item.plexUrl || '#'}
@@ -78,7 +86,7 @@ export const DiscoverPosterCard = React.memo<{
             <div className={`${posterShell} ${aspect === 'square' ? 'aspect-square' : 'aspect-[2/3]'} w-full`}>
                 {item.thumb || item.thumbUrl ? (
                     <PosterImage
-                        src={item.thumbUrl ? resolvePortalAssetUrl(item.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb || '')}&width=300&height=${aspect === 'square' ? 300 : 450}`)}
+                        src={item.thumbUrl ? resolvePortalAssetUrl(item.thumbUrl) : portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb || '')}&width=${plexWidth}&height=${plexHeight}`)}
                         alt={item.title}
                         priority={priority}
                         className={variant === 'home' ? 'group-hover:opacity-80' : ''}

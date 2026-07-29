@@ -179,8 +179,9 @@
 
 @layer components {
   /* —— Cards —— */
+  /* Solid panels — backdrop-blur under scrolling Home widgets was a major jank source. */
   .glass-card {
-    @apply rounded-2xl border border-white/10 bg-card/70 backdrop-blur-xl;
+    @apply rounded-2xl border border-white/10 bg-card/90;
     box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.45);
   }
 
@@ -201,12 +202,12 @@
   }
 
   .glass-card-sm {
-    @apply rounded-xl border border-white/10 bg-card/60 backdrop-blur-lg;
+    @apply rounded-xl border border-white/10 bg-card/90;
     box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.4);
   }
 
   .glass-card-lg {
-    @apply rounded-3xl border border-white/10 bg-card/75 backdrop-blur-2xl;
+    @apply rounded-3xl border border-white/10 bg-card/92;
     box-shadow: 0 32px 100px -16px rgba(0, 0, 0, 0.65);
   }
 
@@ -256,7 +257,7 @@
   }
 
   .nav-shell {
-    @apply bg-card/80 backdrop-blur-2xl border-white/10;
+    @apply bg-card/95 border-white/10;
   }
 
   .modal-glass {
@@ -273,7 +274,7 @@
   }
 
   .settings-panel {
-    @apply rounded-2xl border border-white/10 bg-card/70 backdrop-blur-xl p-5 sm:p-6 md:p-8 lg:p-10 w-full min-w-0;
+    @apply rounded-2xl border border-white/10 bg-card/92 p-5 sm:p-6 md:p-8 lg:p-10 w-full min-w-0;
     box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.45);
   }
   .settings-panel > label:not([class]),
