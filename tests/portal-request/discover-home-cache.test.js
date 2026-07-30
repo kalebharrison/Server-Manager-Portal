@@ -10,7 +10,7 @@ const page = (ids) => ({
 });
 
 const seedSnapshot = (overrides = {}) => ({
-    version: 1,
+    version: 2,
     generatedAt: Date.now(),
     language: 'en',
     region: 'US',
@@ -46,7 +46,7 @@ test('discoverHomeCache loads versioned snapshot and ignores stale versions', as
 
     files.set('/tmp/discover-home-cache.json', seedSnapshot());
     const fresh = await cache.getSnapshot({ allowRefresh: false });
-    assert.equal(fresh.version, 1);
+    assert.equal(fresh.version, 2);
     assert.equal(fresh.rails.trending.results[0].id, 10);
 });
 
