@@ -174,7 +174,7 @@ const DiscoveryDashboardInner: React.FC<{
             voteAverage: Number(item.voteAverage) || undefined,
             status: item.mediaInfo?.status,
             availability,
-            isAvailable: availability.kind === 'available',
+            isAvailable: availability.kind === 'available' || availability.kind === 'upToDate',
             isPartial: availability.kind === 'partial',
             isPending: availability.kind === 'pending' || availability.kind === 'processing',
             overlay,

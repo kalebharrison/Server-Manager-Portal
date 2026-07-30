@@ -46,7 +46,7 @@ export const DiscoverBrowseCard: React.FC<Props> = ({
     const canNotify = !!notify?.canNotify(item) || !!notify?.canNotify(formatted) || (!!item?.canNotify && !notifying);
     const canRequest = !!quickRequest?.canQuickRequest(formatted);
 
-    const available = kind === 'available' || kind === 'partial';
+    const available = kind === 'available' || kind === 'upToDate' || kind === 'partial';
     const processing = kind === 'processing';
     const pending = kind === 'pending' || kind === 'requested' || requestedLocal;
 
@@ -68,10 +68,16 @@ export const DiscoverBrowseCard: React.FC<Props> = ({
     let onClick: (() => void) | null = () => { void quickRequest?.quickRequest(formatted); };
 
     if (available) {
-        statusLabel = kind === 'partial'
-            ? t('status.partial')
-            : (availability?.label === 'Up to date' ? t('status.upToDate') : t('status.available'));
-        badgeClass = 'bg-green-500/20 text-green-200 border-green-500/30';
+        if (kind === 'partial') {
+            statusLabel = t('status.partial');
+            badgeClass = 'bg-amber-500/20 text-amber-100 border-amber-500/35';
+        } else if (kind === 'upToDate') {
+            statusLabel = t('status.upToDate');
+            badgeClass = 'bg-sky-500/20 text-sky-100 border-sky-500/35';
+        } else {
+            statusLabel = t('status.available');
+            badgeClass = 'bg-green-500/20 text-green-200 border-green-500/30';
+        }
         StatusIcon = CheckCircle2;
         disabled = true;
         onClick = null;

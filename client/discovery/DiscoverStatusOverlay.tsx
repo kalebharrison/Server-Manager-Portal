@@ -6,6 +6,7 @@ import {
     Clock,
     Download,
     Layers,
+    Radio,
     XCircle,
 } from 'lucide-react';
 import type { MediaAvailabilityState } from './discoverAvailability';
@@ -19,6 +20,15 @@ export const DiscoverStatusOverlay: React.FC<{ state: MediaAvailabilityState }> 
 
     const title = translateDiscoverStatus(t, state.detail || state.label) || state.label;
 
+    if (state.kind === 'upToDate') {
+        return (
+            <div className={`${pillClass} bg-sky-500/95 text-white border-sky-300/40`} title={title}>
+                <Radio className="w-3 h-3" />
+                {t('status.upToDate')}
+            </div>
+        );
+    }
+
     if (state.kind === 'available') {
         return (
             <div className={`${pillClass} bg-green-500/95 text-white border-green-400/30`} title={title}>
@@ -30,7 +40,7 @@ export const DiscoverStatusOverlay: React.FC<{ state: MediaAvailabilityState }> 
 
     if (state.kind === 'partial') {
         return (
-            <div className={`${pillClass} bg-emerald-500/95 text-white border-emerald-400/30`} title={title}>
+            <div className={`${pillClass} bg-amber-500/95 text-white border-amber-300/40`} title={title}>
                 <Layers className="w-3 h-3" />
                 {t('status.partial')}
             </div>
@@ -95,8 +105,9 @@ export const DiscoverStatusOverlay: React.FC<{ state: MediaAvailabilityState }> 
 };
 
 export const mediaStatusPanelClass = (kind: MediaAvailabilityState['kind']) => {
+    if (kind === 'upToDate') return 'border-sky-500/30 bg-sky-500/10 text-sky-100';
     if (kind === 'available') return 'border-green-500/25 bg-green-500/10 text-green-200';
-    if (kind === 'partial') return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-100';
+    if (kind === 'partial') return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
     if (kind === 'processing') return 'border-blue-500/25 bg-blue-500/10 text-blue-100';
     if (kind === 'requested') return 'border-indigo-500/25 bg-indigo-500/10 text-indigo-100';
     if (kind === 'pending') return 'border-amber-500/25 bg-amber-500/10 text-amber-100';

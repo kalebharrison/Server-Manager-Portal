@@ -18,6 +18,7 @@ import {
 
 export type MediaAvailabilityKind =
     | 'available'
+    | 'upToDate'
     | 'partial'
     | 'processing'
     | 'requested'
@@ -45,6 +46,27 @@ const resolveMediaType = (item: any): 'movie' | 'tv' | null => {
     if (normalized?.firstAirDate && !normalized?.releaseDate) return 'tv';
     if (normalized?.releaseDate && !normalized?.firstAirDate) return 'movie';
     return null;
+};
+
+const sonarrSeriesStatus = (item: any) => String(item?.sonarrLibraryStatus?.seriesStatus || '').toLowerCase();
+
+/** Airing / returning show (Sonarr continuing/upcoming, TMDB returning, or next episode scheduled). */
+export const isContinuingLibraryShow = (item: any) => {
+    const status = sonarrSeriesStatus(item);
+    return isReturningSeries(item)
+        || Boolean(item?.sonarrLibraryStatus?.nextAiring)
+        || status === 'continuing'
+        || status === 'upcoming';
+};
+
+/** Ended / canceled in Sonarr or TMDB. */
+export const isEndedLibraryShow = (item: any) => {
+    const status = sonarrSeriesStatus(item);
+    return isEndedShow(item)
+        || status === 'ended'
+        || status === 'deleted'
+        || status === 'canceled'
+        || status === 'cancelled';
 };
 
 const getActiveUserRequest = (mediaInfo: any) => {
@@ -159,11 +181,14 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
             stamped === MEDIA_STATUS.PARTIAL
             && !(sonarr?.showComplete && !sonarr?.hasActiveDownloads)
         ) {
+            const ended = isEndedLibraryShow(item);
             return {
                 ...base,
                 kind: 'partial',
-                label: 'Partially available',
-                detail: formatSeasonSummary(seasonRows) || 'Part of this series is already in your library.',
+                label: 'Partial',
+                detail: ended
+                    ? 'This series has ended and some episodes are still missing.'
+                    : (formatSeasonSummary(seasonRows) || 'Missing aired episodes are not on disk yet.'),
             };
         }
     }
@@ -173,21 +198,16 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         : false;
 
     if (tvLibraryComplete) {
-        const sonarr = item?.sonarrLibraryStatus;
-        const seriesStatus = String(sonarr?.seriesStatus || '').toLowerCase();
-        const continuing = isReturningSeries(item)
-            || Boolean(sonarr?.nextAiring)
-            || seriesStatus === 'continuing'
-            || seriesStatus === 'upcoming';
+        const continuing = isContinuingLibraryShow(item);
         const showUpToDate = continuing && hasAnyEpisodeAired(item);
         return {
             ...base,
-            kind: 'available',
+            kind: showUpToDate ? 'upToDate' : 'available',
             label: showUpToDate ? 'Up to date' : 'Available in library',
             detail: showUpToDate
-                ? 'All aired episodes are on disk. New ones will download as they air.'
-                : (sonarr?.showComplete
-                    ? 'All aired episodes are on disk (verified via Sonarr).'
+                ? 'Airing series — all aired episodes are on disk. New ones will download as they air.'
+                : (item?.sonarrLibraryStatus?.showComplete
+                    ? 'Series complete — all aired episodes are on disk.'
                     : formatTvLibraryDetail(seasonRows) || 'All aired episodes are in your library.'),
         };
     }
@@ -228,14 +248,14 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         }
 
         if (!approvalStillOpen && requestable.length === 0 && handledSeasons.length > 0) {
-            if (returningSeries && hasAnyEpisodeAired(item)) {
+            if ((returningSeries || isContinuingLibraryShow(item)) && hasAnyEpisodeAired(item)) {
                 return {
                     ...base,
-                    kind: 'available',
+                    kind: 'upToDate',
                     label: 'Up to date',
                     detail: formatTvLibraryDetail(
                         seasonRows,
-                        'New episodes will be added as they air.',
+                        'Airing series — new episodes will download as they air.',
                     ),
                 };
             }
@@ -250,21 +270,29 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         }
         if ((mainAvailable.length > 0 || mainUpToDate.length > 0) && mainRequestable.length > 0) {
             const handledSummary = formatTvLibraryDetail(seasonRows);
+            const ended = endedShow || isEndedLibraryShow(item);
             return {
                 ...base,
                 kind: 'partial',
-                label: 'Partially available',
-                detail: handledSummary
-                    ? `${handledSummary}. ${mainRequestable.length} season${mainRequestable.length === 1 ? '' : 's'} still requestable.`
-                    : `${mainRequestable.length} season${mainRequestable.length === 1 ? '' : 's'} still requestable.`,
+                label: 'Partial',
+                detail: ended
+                    ? (handledSummary
+                        ? `Series ended. ${handledSummary}. ${mainRequestable.length} season${mainRequestable.length === 1 ? '' : 's'} still missing.`
+                        : `Series ended — ${mainRequestable.length} season${mainRequestable.length === 1 ? '' : 's'} still missing.`)
+                    : (handledSummary
+                        ? `${handledSummary}. ${mainRequestable.length} season${mainRequestable.length === 1 ? '' : 's'} still requestable.`
+                        : `${mainRequestable.length} season${mainRequestable.length === 1 ? '' : 's'} still requestable.`),
             };
         }
         if (mainIncomplete.length > 0 && mainRequestable.length === 0) {
+            const ended = endedShow || isEndedLibraryShow(item);
             return {
                 ...base,
                 kind: 'partial',
-                label: 'Partially available',
-                detail: `${mainIncomplete.length} season${mainIncomplete.length === 1 ? '' : 's'} missing episodes in your library.`,
+                label: 'Partial',
+                detail: ended
+                    ? `Series ended — ${mainIncomplete.length} season${mainIncomplete.length === 1 ? '' : 's'} missing episodes.`
+                    : `${mainIncomplete.length} season${mainIncomplete.length === 1 ? '' : 's'} missing episodes in your library.`,
             };
         }
         if (processingSeasons.length > 0 || (approvalStillOpen && hasActiveShowDownloads(item, mediaInfo))) {
@@ -350,31 +378,30 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
 
     // TV list stamps from the disk cache (no full season rows). Trust mediaInfo.status.
     if (mediaType === 'tv' && mediaStatus === MEDIA_STATUS.PARTIAL) {
+        const ended = isEndedLibraryShow(item);
         return {
             ...base,
             kind: 'partial',
-            label: 'Partially available',
-            detail: item?.sonarrLibraryStatus?.nextAiring
-                ? 'Some episodes are on disk; more are scheduled to air.'
-                : (formatSeasonSummary(seasonRows) || 'Part of this series is already in your library.'),
+            label: 'Partial',
+            detail: ended
+                ? 'This series has ended and some episodes are still missing.'
+                : (item?.sonarrLibraryStatus?.nextAiring
+                    ? 'Some episodes are on disk; more are scheduled to air.'
+                    : (formatSeasonSummary(seasonRows) || 'Missing aired episodes are not on disk yet.')),
         };
     }
     if (mediaType === 'tv' && mediaStatus === MEDIA_STATUS.AVAILABLE) {
         const sonarr = item?.sonarrLibraryStatus;
-        const seriesStatus = String(sonarr?.seriesStatus || '').toLowerCase();
-        const continuing = isReturningSeries(item)
-            || Boolean(sonarr?.nextAiring)
-            || seriesStatus === 'continuing'
-            || seriesStatus === 'upcoming';
+        const continuing = isContinuingLibraryShow(item);
         const showUpToDate = continuing && hasAnyEpisodeAired(item);
         return {
             ...base,
-            kind: 'available',
+            kind: showUpToDate ? 'upToDate' : 'available',
             label: showUpToDate ? 'Up to date' : 'Available in library',
             detail: showUpToDate
-                ? 'All aired episodes are on disk. New ones will download as they air.'
+                ? 'Airing series — all aired episodes are on disk. New ones will download as they air.'
                 : (sonarr?.showComplete
-                    ? 'All aired episodes are on disk (verified via Sonarr).'
+                    ? 'Series complete — all aired episodes are on disk.'
                     : 'This series is in your media library.'),
         };
     }
@@ -391,17 +418,21 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
 
     if (mediaStatus === MEDIA_STATUS.PARTIAL) {
         if (mediaType === 'tv' && item?.sonarrLibraryStatus?.showComplete) {
+            const continuing = isContinuingLibraryShow(item);
+            const showUpToDate = continuing && hasAnyEpisodeAired(item);
             return {
                 ...base,
-                kind: 'available',
-                label: 'Available in library',
-                detail: 'All aired episodes are on disk (verified via Sonarr).',
+                kind: showUpToDate ? 'upToDate' : 'available',
+                label: showUpToDate ? 'Up to date' : 'Available in library',
+                detail: showUpToDate
+                    ? 'Airing series — all aired episodes are on disk. New ones will download as they air.'
+                    : 'Series complete — all aired episodes are on disk.',
             };
         }
         return {
             ...base,
             kind: 'partial',
-            label: 'Partially available',
+            label: 'Partial',
             detail: formatSeasonSummary(seasonRows) || undefined,
         };
     }
@@ -455,10 +486,15 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
     };
 };
 
+/** Library-owned enough to hide from “requestable” browse (full, up to date, or partial). */
+export const isLibraryOwnedAvailabilityKind = (kind: MediaAvailabilityKind) => (
+    kind === 'available' || kind === 'upToDate' || kind === 'partial'
+);
+
 /** Whether an item should be hidden when "hide available" is enabled. */
 export const shouldHideAvailableItem = (item: any): boolean => {
     const { kind } = resolveMediaAvailabilityState(item);
-    return kind === 'available' || kind === 'partial';
+    return isLibraryOwnedAvailabilityKind(kind);
 };
 
 export const isMediaAvailableInLibrary = (item: any = {}) => {

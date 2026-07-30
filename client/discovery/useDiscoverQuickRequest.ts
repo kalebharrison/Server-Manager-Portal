@@ -7,6 +7,7 @@ type PushToast = (msg: string, type: 'success' | 'error') => void;
 
 const BLOCKED_KINDS = new Set([
     'available',
+    'upToDate',
     'partial',
     'pending',
     'processing',

@@ -27,8 +27,9 @@ export const resolveWatchlistMediaRef = (item: any): WatchlistMediaRef | null =>
 export const watchlistItemStatusLabel = (item: any): string | null => {
     const availability = resolveMediaAvailabilityState(item);
     if (availability.kind === 'none') return null;
+    if (availability.kind === 'upToDate') return availability.label || 'Up to date';
     if (availability.kind === 'available') return availability.label || 'Available';
-    if (availability.kind === 'partial') return availability.label || 'Partially available';
+    if (availability.kind === 'partial') return availability.label || 'Partial';
     if (availability.kind === 'processing') return 'Processing';
     if (availability.kind === 'requested') return 'Requested';
     if (availability.kind === 'pending') return 'Pending';
@@ -43,12 +44,13 @@ export const isWatchlistItemRequestable = (item: any): boolean => {
     const ref = resolveWatchlistMediaRef(item);
     if (!ref) return false;
     const availability = resolveMediaAvailabilityState(item);
-    // Already on the server (full or partial) — hide Request on the watchlist row.
+    // Already on the server (full, up to date, or partial) — hide Request on the watchlist row.
     if (
         availability.kind === 'blacklisted'
         || availability.kind === 'failed'
         || availability.kind === 'declined'
         || availability.kind === 'available'
+        || availability.kind === 'upToDate'
         || availability.kind === 'partial'
         || availability.kind === 'requested'
         || availability.kind === 'pending'

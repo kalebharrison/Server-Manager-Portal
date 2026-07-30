@@ -161,6 +161,7 @@ const DiscoverHomeRow: React.FC<{
                                 showQualityBadges={
                                     showPosterQualityBadges
                                     && (formatted.availability?.kind === 'available'
+                                        || formatted.availability?.kind === 'upToDate'
                                         || formatted.availability?.kind === 'partial')
                                     && Array.isArray(formatted.qualityTags)
                                     && formatted.qualityTags.length > 0

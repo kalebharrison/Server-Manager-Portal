@@ -511,7 +511,7 @@ export const MediaDetailsPage: React.FC<{
                     ? details.sonarrLibraryStatus.displayTags
                     : [])));
     const showQualityTags = qualityTags.length > 0
-        && (availability?.kind === 'available' || availability?.kind === 'partial'
+        && (availability?.kind === 'available' || availability?.kind === 'upToDate' || availability?.kind === 'partial'
             || requestButton.variant === 'available');
     const seerrMediaId = Number(details.mediaInfo?.id);
     const tmdbId = Number(details.tmdbId ?? details.id);
@@ -524,6 +524,7 @@ export const MediaDetailsPage: React.FC<{
             mediaStatus === 4
             || mediaStatus === 5
             || availability?.kind === 'available'
+            || availability?.kind === 'upToDate'
             || availability?.kind === 'partial'
         );
     const posterUrl = resolveTmdbImageUrl(details.posterPath, 'w500');
@@ -741,7 +742,8 @@ export const MediaDetailsPage: React.FC<{
                         </div>
                     )}
 
-                    {/* Available is already the CTA button — skip the redundant status card. */}
+                    {/* Available already has the library CTA — skip the redundant status card.
+                        Up to date keeps its status panel so airing vs ended is visible. */}
                     {availability && availability.kind !== 'none' && availability.kind !== 'available' && (
                         <div className="col-span-2 md:col-span-1">
                             <MediaStatusPanel
@@ -749,7 +751,7 @@ export const MediaDetailsPage: React.FC<{
                                 onViewRequests={availability.hasUserRequest ? openMyRequests : undefined}
                                 onRetry={availability.kind === 'failed' ? handleRetryRequest : undefined}
                                 libraryAction={
-                                    availability.kind === 'partial'
+                                    availability.kind === 'partial' || availability.kind === 'upToDate'
                                         ? (
                                             <OpenInLibraryButton
                                                 mediaType={mediaType}

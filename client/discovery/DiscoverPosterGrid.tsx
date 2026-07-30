@@ -169,7 +169,9 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
                             overlay={overlay}
                             showQualityBadges={
                                 showPosterQualityBadges
-                                && (availability?.kind === 'available' || availability?.kind === 'partial')
+                                && (availability?.kind === 'available'
+                                    || availability?.kind === 'upToDate'
+                                    || availability?.kind === 'partial')
                                 && Array.isArray(formatted.qualityTags)
                                 && formatted.qualityTags.length > 0
                             }
