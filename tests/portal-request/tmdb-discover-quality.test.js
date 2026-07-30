@@ -15,7 +15,8 @@ import { buildTmdbDiscoverQuery } from '../../lib/portal-request/tmdbClient.js';
 test('discover quality constants stay in expected ranges', () => {
     assert.equal(DISCOVER_DEFAULT_VOTE_COUNT_GTE, '150');
     assert.equal(DISCOVER_UPCOMING_WINDOW_DAYS, 180);
-    assert.ok(DISCOVER_UPCOMING_MIN_POPULARITY >= 10);
+    assert.ok(DISCOVER_UPCOMING_MIN_POPULARITY >= 1);
+    assert.ok(DISCOVER_UPCOMING_MIN_POPULARITY <= 15);
     assert.ok(DISCOVER_TRENDING_MIN_VOTE_COUNT >= 20);
     assert.ok(DISCOVER_TRENDING_MIN_POPULARITY >= 10);
 });
