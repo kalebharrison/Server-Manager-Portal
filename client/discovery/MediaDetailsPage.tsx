@@ -207,6 +207,11 @@ export const MediaDetailsPage: React.FC<{
                         return { ...prev, mediaInfo: nextMediaInfo };
                     });
                 }
+                // Belt-and-suspenders: other members' open requests always offer Notify.
+                const attribution = opts.mediaInfo?.requestAttribution;
+                if (attribution && attribution.isOwn === false && !opts.notifying) {
+                    setCanNotify(true);
+                }
             })
             .catch(() => undefined);
 
@@ -702,7 +707,7 @@ export const MediaDetailsPage: React.FC<{
                     </div>
 
                     <div className={`grid gap-2.5 w-full ${canReportIssue && !requestButton.hide ? 'grid-cols-2 md:grid-cols-1' : 'grid-cols-1'}`}>
-                    {(canNotify || notifying) ? (
+                    {(canNotify || notifying) && (
                     <button
                         type="button"
                         onClick={() => { void handleToggleNotify(); }}
@@ -712,7 +717,9 @@ export const MediaDetailsPage: React.FC<{
                         {notifying ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
                         {notifying ? t('browse.notifying') : t('browse.notify')}
                     </button>
-                    ) : !requestButton.hide && (
+                    )}
+                    {/* Request CTA when actionable; disabled Requested/Available when Notify isn't the alt. */}
+                    {!requestButton.hide && (requestButton.variant === 'action' || !(canNotify || notifying)) && (
                     <button
                         type="button"
                         onClick={() => setRequestModalOpen(true)}
