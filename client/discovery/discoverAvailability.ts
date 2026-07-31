@@ -69,6 +69,14 @@ export const isEndedLibraryShow = (item: any) => {
         || status === 'cancelled';
 };
 
+/**
+ * Complete on-disk TV: "Available" only when the series has ended.
+ * Browse cards often lack TMDB lastEpisodeToAir / inProduction, so requiring
+ * those (plus an explicit continuing signal) wrongly labeled caught-up airing
+ * shows as Available.
+ */
+const isCompleteTvUpToDate = (item: any) => !isEndedLibraryShow(item);
+
 const getActiveUserRequest = (mediaInfo: any) => {
     const requests = Array.isArray(mediaInfo?.requests) ? mediaInfo.requests : [];
     if (!requests.length) return null;
@@ -198,8 +206,7 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         : false;
 
     if (tvLibraryComplete) {
-        const continuing = isContinuingLibraryShow(item);
-        const showUpToDate = continuing && hasAnyEpisodeAired(item);
+        const showUpToDate = isCompleteTvUpToDate(item);
         return {
             ...base,
             kind: showUpToDate ? 'upToDate' : 'available',
@@ -219,7 +226,6 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
     const approvedSeasons = seasonRows.filter((s) => s.statusLabel === 'Approved');
     const processingSeasons = seasonRows.filter((s) => s.statusLabel === 'Processing');
     const requestedSeasons = seasonRows.filter((s) => s.statusLabel === 'Requested');
-    const returningSeries = isReturningSeries(item);
     const endedShow = isEndedShow(item);
     // Seerr flips seasons/show to Available on approve; don't treat that as on-disk
     // unless Sonarr (or tvLibraryComplete) already confirmed files.
@@ -248,7 +254,7 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         }
 
         if (!approvalStillOpen && requestable.length === 0 && handledSeasons.length > 0) {
-            if ((returningSeries || isContinuingLibraryShow(item)) && hasAnyEpisodeAired(item)) {
+            if (!isEndedLibraryShow(item)) {
                 return {
                     ...base,
                     kind: 'upToDate',
@@ -392,8 +398,7 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
     }
     if (mediaType === 'tv' && mediaStatus === MEDIA_STATUS.AVAILABLE) {
         const sonarr = item?.sonarrLibraryStatus;
-        const continuing = isContinuingLibraryShow(item);
-        const showUpToDate = continuing && hasAnyEpisodeAired(item);
+        const showUpToDate = isCompleteTvUpToDate(item);
         return {
             ...base,
             kind: showUpToDate ? 'upToDate' : 'available',
@@ -418,8 +423,7 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
 
     if (mediaStatus === MEDIA_STATUS.PARTIAL) {
         if (mediaType === 'tv' && item?.sonarrLibraryStatus?.showComplete) {
-            const continuing = isContinuingLibraryShow(item);
-            const showUpToDate = continuing && hasAnyEpisodeAired(item);
+            const showUpToDate = isCompleteTvUpToDate(item);
             return {
                 ...base,
                 kind: showUpToDate ? 'upToDate' : 'available',

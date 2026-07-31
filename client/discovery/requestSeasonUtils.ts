@@ -150,7 +150,17 @@ export const hasAnyEpisodeAired = (details: any): boolean => {
     const last = details?.lastEpisodeToAir;
     const season = Number(last?.seasonNumber);
     const episode = Number(last?.episodeNumber);
-    return Number.isFinite(season) && season > 0 && Number.isFinite(episode) && episode > 0;
+    if (Number.isFinite(season) && season > 0 && Number.isFinite(episode) && episode > 0) return true;
+
+    // Browse stamps often lack lastEpisodeToAir — files / library status imply aired eps.
+    const mediaStatus = Number(details?.mediaInfo?.status ?? details?.media?.status);
+    if (mediaStatus === MEDIA_STATUS.AVAILABLE || mediaStatus === MEDIA_STATUS.PARTIAL) return true;
+    const seasons = Array.isArray(details?.mediaInfo?.seasons) ? details.mediaInfo.seasons : [];
+    if (seasons.some((s: any) => Number(s?.seasonNumber) > 0 && (
+        Number(s?.status) === MEDIA_STATUS.AVAILABLE || Number(s?.status) === MEDIA_STATUS.PARTIAL
+    ))) return true;
+    if (Number(details?.sonarrLibraryStatus?.fileCount) > 0) return true;
+    return false;
 };
 
 /** True when this season has at least one aired episode. */
