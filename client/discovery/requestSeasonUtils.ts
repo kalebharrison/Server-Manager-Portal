@@ -103,6 +103,7 @@ export const resolveInProgressDisplay = (
     mediaInfo: any,
     mediaStatus?: number | null,
     details?: any,
+    opts: { isOwnRequest?: boolean; requestedByName?: string | null } = {},
 ): { kind: 'processing' | 'requested'; label: string; detail: string } | null => {
     if (hasActiveShowDownloads(details, mediaInfo)) {
         return {
@@ -115,18 +116,29 @@ export const resolveInProgressDisplay = (
     const status = Number(mediaStatus ?? mediaInfo?.status);
     if (status !== MEDIA_STATUS.PROCESSING) return null;
 
+    const isOwn = opts.isOwnRequest === true;
+    const byName = String(opts.requestedByName || mediaInfo?.requestAttribution?.requestedByName || '').trim();
+
     if (hasActiveSeerrDownloads(mediaInfo)) {
         return {
             kind: 'processing',
             label: 'Processing',
-            detail: 'Your request is being downloaded or imported.',
+            detail: isOwn
+                ? 'Your request is being downloaded or imported.'
+                : (byName
+                    ? `Requested by ${byName} — downloading or importing.`
+                    : 'This title was requested and is downloading or importing.'),
         };
     }
 
     return {
         kind: 'requested',
         label: 'Requested',
-        detail: 'Your request was sent to the media server and is waiting to download.',
+        detail: isOwn
+            ? 'Your request was sent to the media server and is waiting to download.'
+            : (byName
+                ? `Requested by ${byName} — waiting to download.`
+                : 'Already requested — waiting to download.'),
     };
 };
 

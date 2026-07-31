@@ -170,13 +170,21 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
     }
 
     const seasonRows = mediaType === 'tv' ? buildSeasonStatusFromDetails(item) : [];
-    const inProgressDisplay = resolveInProgressDisplay(mediaInfo, mediaStatus, item);
+    const requestAttribution = mediaInfo?.requestAttribution || item?.requestAttribution || null;
+    const attributedName = String(requestAttribution?.requestedByName || '').trim() || null;
+    const inProgressDisplay = resolveInProgressDisplay(mediaInfo, mediaStatus, item, {
+        isOwnRequest: hasUserRequest,
+        requestedByName: attributedName,
+    });
     if (inProgressDisplay?.kind === 'processing' || hasActiveShowDownloads(item, mediaInfo)) {
         return {
             ...base,
             kind: 'processing',
             label: 'Processing',
-            detail: inProgressDisplay?.detail || 'Episodes are still downloading or importing.',
+            detail: inProgressDisplay?.detail
+                || (hasUserRequest
+                    ? 'Your request is being downloaded or importing.'
+                    : 'This title was requested and is downloading or importing.'),
         };
     }
 

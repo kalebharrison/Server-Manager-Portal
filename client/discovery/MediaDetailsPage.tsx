@@ -188,6 +188,25 @@ export const MediaDetailsPage: React.FC<{
                 if (cancelled || !opts || opts.error) return;
                 setCanNotify(!!opts.canNotify);
                 setNotifying(!!opts.notifying);
+                // Merge request attribution / own requests so "Your request" is only for
+                // the viewer (impersonation included), not whoever requested the title.
+                if (opts.mediaInfo || opts.mediaStatus != null) {
+                    setDetails((prev) => {
+                        if (!prev) return prev;
+                        const nextMediaInfo = {
+                            ...(prev.mediaInfo || {}),
+                            ...(opts.mediaInfo || {}),
+                        };
+                        if (
+                            opts.mediaStatus != null
+                            && (!Number.isFinite(Number(nextMediaInfo.status))
+                                || Number(nextMediaInfo.status) <= 1)
+                        ) {
+                            nextMediaInfo.status = opts.mediaStatus;
+                        }
+                        return { ...prev, mediaInfo: nextMediaInfo };
+                    });
+                }
             })
             .catch(() => undefined);
 
