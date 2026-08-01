@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
     userOwnsArrRequesterLabel,
     listArrOwnershipDtosForUser,
+    normalizeArrRequesterTagsOnArr,
 } from '../../lib/portal-request/arrTagOwnershipImport.js';
 import {
     buildNotifyTagForUser,
@@ -99,4 +100,83 @@ test('dual-linked users still get one portal-id tag', () => {
     };
     assert.equal(buildPortalRequesterTagForUser(user, 'plex'), 'portal');
     assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-portal');
+});
+
+test('normalizeArrRequesterTagsOnArr migrates legacy id-username tags to id-only', async () => {
+    const user = { id: '100', plexId: '100', username: 'kaleb', seerrUserId: 16 };
+    const config = {
+        arrInstances: [{
+            id: 'radarr-1',
+            type: 'radarr',
+            name: 'Radarr',
+            url: 'http://radarr:7878',
+            apiKey: 'secret',
+            enabled: true,
+            isDefault: true,
+        }],
+    };
+
+    let putBody = null;
+    let nextTagId = 10;
+    const tags = [
+        { id: 1, label: '100-kaleb' },
+        { id: 2, label: 'n-100-kaleb' },
+        { id: 3, label: '16-kaleb' },
+        { id: 4, label: 'anime' },
+    ];
+
+    const jsonResponse = (payload) => ({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => payload,
+    });
+
+    const fetchImpl = async (url, opts = {}) => {
+        const href = String(url);
+        const method = String(opts.method || 'GET').toUpperCase();
+        if (href.endsWith('/api/v3/tag') && method === 'GET') {
+            return jsonResponse(tags);
+        }
+        if (href.endsWith('/api/v3/tag') && method === 'POST') {
+            const body = JSON.parse(opts.body);
+            const created = { id: nextTagId++, label: body.label };
+            tags.push(created);
+            return jsonResponse(created);
+        }
+        if (href.endsWith('/api/v3/movie') && method === 'GET') {
+            return jsonResponse([{
+                id: 9,
+                tmdbId: 550,
+                title: 'Fight Club',
+                tags: [1, 2, 3, 4],
+            }]);
+        }
+        if (href.endsWith('/api/v3/movie/9') && method === 'PUT') {
+            putBody = JSON.parse(opts.body);
+            return jsonResponse(putBody);
+        }
+        return {
+            ok: false,
+            status: 404,
+            headers: { get: () => 'application/json' },
+            json: async () => ({}),
+        };
+    };
+
+    const summary = await normalizeArrRequesterTagsOnArr({
+        config,
+        portalUsers: [user],
+        fetchImpl,
+        includeTv: false,
+    });
+
+    assert.equal(summary.itemsUpdated, 1);
+    assert.ok(summary.tagsCreated >= 1);
+    assert.ok(summary.tagsRemoved >= 2);
+    assert.ok(putBody);
+    const labels = putBody.tags.map((id) => tags.find((tag) => tag.id === id)?.label);
+    assert.deepEqual(new Set(labels), new Set(['100', 'n-100', 'anime']));
+    assert.equal(labels.includes('100-kaleb'), false);
+    assert.equal(labels.includes('16-kaleb'), false);
 });
