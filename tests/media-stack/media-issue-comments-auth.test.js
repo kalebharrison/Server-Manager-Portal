@@ -25,12 +25,6 @@ const createApp = ({ issues, user }) => {
         },
         saveFile: async () => {},
         appendAuditLog: async () => {},
-        requestAppService: {
-            getRequestAppGate: () => ({ ready: false }),
-            listIssues: async () => ({ results: [] }),
-            getIssue: async () => ({ comments: [] }),
-            commentOnIssue: async () => ({}),
-        },
         log: () => {},
     });
 

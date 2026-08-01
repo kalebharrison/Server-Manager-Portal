@@ -9,7 +9,7 @@ React UI source. Bundled by esbuild from `main.tsx` into `static/`.
 | `styles/` | Tailwind input CSS + config |
 | `screens/` | Top-level routed pages (home, admin, discover, status, …) |
 | `settings/` | Admin settings tabs and hooks |
-| `requests/` | Embedded request-app UI |
+| `requests/` | Admin request queue + approval UI |
 | `setup/` | First-run wizard |
 | `home/` | Member dashboard layout/widgets |
 | `issues/` | Issue conversation UI |

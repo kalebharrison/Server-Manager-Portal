@@ -21,7 +21,7 @@ export type DiscoverBrowseModeOptions = {
     anime?: boolean;
 };
 
-/** Extra same-endpoint pages to scan when hide-available empties a single page (Seerr-style). */
+/** Extra same-endpoint pages to scan when hide-available empties a single page. */
 const MAX_SEQUENTIAL_EXTRA_PAGES = 5;
 
 export const buildDiscoverStudioApiUrl = (page: number, studioId: number | string, sort = 'popularity.desc') =>
@@ -155,7 +155,7 @@ const applyHomeRowQualityFilters = (items: any[], options: HomeRowFetchOptions) 
 };
 
 /**
- * Seerr-style home rail: one endpoint, sequential same-URL pages.
+ * Home rail: one endpoint, sequential same-URL pages.
  * When hide-available is on, advance page 1→2… until minItems or maxPages — never alternate sorts.
  */
 export async function fetchDiscoverHomeRowResults(
@@ -203,7 +203,7 @@ export async function fetchDiscoverHomeRowResults(
 }
 
 /**
- * Seerr-style browse step: fetch page N, filter hide-available, and if the filtered
+ * Browse step: fetch page N, filter hide-available, and if the filtered
  * page is empty advance sequentially up to MAX_SEQUENTIAL_EXTRA_PAGES (same endpoint).
  */
 export async function fetchDiscoverPageWithAdvance(

@@ -240,7 +240,7 @@ export const RequestModal: React.FC<Props> = ({
         let nextServerId = servers.find((server) => server.isDefault)?.id ?? servers[0]?.id ?? null;
         let defaults: Record<string, unknown> | null = null;
 
-        // Portal engine has no Seerr override rules — skip the Seerr round-trip (can hang minutes).
+        // Portal engine has no external override rules — skip the round-trip (can hang minutes).
         if (opts.engine !== 'portal') {
             try {
                 defaults = await apiFetch('/api/discovery/request-override-defaults', {

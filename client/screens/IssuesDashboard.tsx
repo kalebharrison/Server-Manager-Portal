@@ -44,10 +44,8 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
     useEffect(() => { void load(true); }, [load]);
     useVisibleInterval(() => { void load(false); }, 60_000);
 
-    const sourceSummary = useMemo(() => [sources.plex && 'Plex', sources.seerr && 'Request service'].filter(Boolean).join(' · '), [sources]);
-    const sourceLabel = (source: string) => source === 'plex'
-        ? 'Reported in Plex'
-        : source === 'seerr' ? 'Reported in Request service' : 'Reported here';
+    const sourceSummary = useMemo(() => [sources.plex && 'Plex'].filter(Boolean).join(' · '), [sources]);
+    const sourceLabel = (source: string) => (source === 'plex' ? 'Reported in Plex' : 'Reported here');
     const formatReportDate = (value: string | null) => {
         if (!value) return 'Date unavailable';
         const date = new Date(value);

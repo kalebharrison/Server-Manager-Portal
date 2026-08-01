@@ -269,7 +269,7 @@ test('rankCandidatesForQuery prefers main title over colon featurettes via answe
     assert.equal(ranked[0].tmdbId, 745);
 });
 
-test('agent skips keyword-soup Seerr for long plot asks', async () => {
+test('agent skips keyword-soup catalog search for long plot asks', async () => {
     const searchQueries = [];
     let chatRound = 0;
     const agent = createDiscordMediaAgent({
@@ -526,7 +526,7 @@ test('search_titles ranks exact matches and filters unreleased', async () => {
     assert.ok(!outcome.results.some((item) => item.tmdbId === 888));
 });
 
-test('agent finalizes from Seerr hits when model dumps finish.* text', async () => {
+test('agent finalizes from catalog hits when model dumps finish.* text', async () => {
     let chatRound = 0;
     const agent = createDiscordMediaAgent({
         fetchImpl: async (url) => {
@@ -594,7 +594,7 @@ test('agent finalizes from Seerr hits when model dumps finish.* text', async () 
     assert.equal(outcome.results[0]?.tmdbId, 503736);
 });
 
-test('agent prefers Seerr hits over invented finish tmdbIds', async () => {
+test('agent prefers catalog hits over invented finish tmdbIds', async () => {
     let chatRound = 0;
     const agent = createDiscordMediaAgent({
         fetchImpl: async (url) => {
@@ -732,7 +732,7 @@ test('titleHintsFromWebResults strips site suffixes', () => {
     );
 });
 
-test('simplifyDiscoverSearchQuery strips filler for Seerr', () => {
+test('simplifyDiscoverSearchQuery strips filler for catalog search', () => {
     assert.equal(
         simplifyDiscoverSearchQuery("I'm looking for a zombie movie that's set in a casino"),
         'zombie casino',
@@ -869,7 +869,7 @@ test('agent asks LLM for title names on short non-plot queries when web is empty
     assert.ok(searchQueries.some((query) => /Army of the Dead/i.test(query)));
 });
 
-test('agent auto-resolves Seerr from simplified NL query when web is empty', async () => {
+test('agent auto-resolves catalog from simplified NL query when web is empty', async () => {
     let searchQueries = [];
     const agent = createDiscordMediaAgent({
         fetchImpl: async (url) => {
@@ -922,7 +922,7 @@ test('agent auto-resolves Seerr from simplified NL query when web is empty', asy
     assert.equal(outcome.results[0]?.tmdbId, 503736);
 });
 
-test('agent auto-resolves Seerr after web_search-only loops', async () => {
+test('agent auto-resolves catalog after web_search-only loops', async () => {
     let chatRound = 0;
     let searchQueries = [];
     const agent = createDiscordMediaAgent({
@@ -986,7 +986,7 @@ test('agent auto-resolves Seerr after web_search-only loops', async () => {
     assert.ok(searchQueries.some((query) => /Army of the Dead|zombie/i.test(query)));
 });
 
-test('agent synthesizes finish from Seerr hits when rounds exhaust', async () => {
+test('agent synthesizes finish from catalog hits when rounds exhaust', async () => {
     let chatRound = 0;
     const agent = createDiscordMediaAgent({
         fetchImpl: async (url) => {

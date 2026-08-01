@@ -557,13 +557,9 @@ export const MediaDetailsPage: React.FC<{
     const showQualityTags = qualityTags.length > 0
         && (availability?.kind === 'available' || availability?.kind === 'upToDate' || availability?.kind === 'partial'
             || requestButton.variant === 'available');
-    const seerrMediaId = Number(details.mediaInfo?.id);
     const tmdbId = Number(details.tmdbId ?? details.id);
     const canReportIssue = discoveryMe.permissions?.createIssues !== false
-        && (
-            (Number.isFinite(seerrMediaId) && seerrMediaId > 0)
-            || (Number.isFinite(tmdbId) && tmdbId > 0)
-        )
+        && Number.isFinite(tmdbId) && tmdbId > 0
         && (
             mediaStatus === 4
             || mediaStatus === 5
@@ -1135,7 +1131,6 @@ export const MediaDetailsPage: React.FC<{
                 open={issueModalOpen}
                 mediaType={mediaType}
                 title={title}
-                seerrMediaId={Number.isFinite(seerrMediaId) && seerrMediaId > 0 ? seerrMediaId : null}
                 tmdbId={Number.isFinite(tmdbId) && tmdbId > 0 ? tmdbId : null}
                 onClose={() => setIssueModalOpen(false)}
                 onSuccess={(msg) => pushToast?.(msg, 'success')}

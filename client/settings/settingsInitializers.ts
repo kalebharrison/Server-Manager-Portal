@@ -53,12 +53,6 @@ type SettingsHydrationSetters = {
     setTautulliApiKey: (value: string) => void;
     setJellystatUrl: (value: string) => void;
     setJellystatApiKey: (value: string) => void;
-    setRequestAppType: (value: string) => void;
-    setRequestAppUrl: (value: string) => void;
-    setRequestAppApiKey: (value: string) => void;
-    setRequestAppMembershipSync: (value: boolean) => void;
-    setRequestEngine: (value: 'portal' | 'seerr') => void;
-    setDiscoverySource: (value: 'tmdb' | 'seerr') => void;
     setOmbiUrl: (value: string) => void;
     setOmbiApiKey: (value: string) => void;
     setBrandingTheme: (value: string) => void;
@@ -153,12 +147,6 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setTautulliApiKey(initialSettings.tautulliApiKey || '');
     setters.setJellystatUrl(initialSettings.jellystatUrl || '');
     setters.setJellystatApiKey(initialSettings.jellystatApiKey || '');
-    setters.setRequestAppType(initialSettings.requestAppType === 'overseerr' ? 'seerr' : (initialSettings.requestAppType || 'none'));
-    setters.setRequestAppUrl(initialSettings.requestAppUrl || '');
-    setters.setRequestAppApiKey(initialSettings.requestAppApiKey || '');
-    setters.setRequestAppMembershipSync(initialSettings.requestAppMembershipSync !== false);
-    setters.setRequestEngine('portal');
-    setters.setDiscoverySource('tmdb');
     setters.setOmbiUrl(initialSettings.ombiUrl || '');
     setters.setOmbiApiKey(initialSettings.ombiApiKey || '');
     setters.setBrandingTheme(initialSettings.brandingTheme || 'plex');

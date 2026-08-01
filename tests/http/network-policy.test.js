@@ -24,8 +24,8 @@ test('private and blocked hosts are detected for SSRF guards', () => {
     assert.equal(isAlwaysBlockedIp('10.0.0.8'), false);
     assert.equal(isAlwaysBlockedIp('fe80::1'), true);
     assert.equal(isBlockedHostName('localhost'), true);
-    assert.equal(isBlockedHostName('seerr.local'), true);
-    assert.equal(isBlockedHostName('seerr.example.com'), false);
+    assert.equal(isBlockedHostName('requests.local'), true);
+    assert.equal(isBlockedHostName('requests.example.com'), false);
 });
 
 test('normalizeExternalBaseUrl requires allowPrivate for LAN hosts', async () => {
@@ -42,8 +42,8 @@ test('normalizeExternalBaseUrl requires allowPrivate for LAN hosts', async () =>
         /Link-local and cloud metadata/,
     );
     assert.equal(
-        await resolveIntegrationUrlForFetch('http://seerr:5055/'),
-        'http://seerr:5055',
+        await resolveIntegrationUrlForFetch('http://requests:5055/'),
+        'http://requests:5055',
     );
     const strictFetch = createResolveIntegrationUrlForFetch({ allowPrivate: false });
     await assert.rejects(

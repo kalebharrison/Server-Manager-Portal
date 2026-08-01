@@ -5,13 +5,12 @@ const INTEGRATION_LABELS: Record<string, string> = {
     radarrConfigured: 'Radarr',
     tautulliConfigured: 'Tautulli',
     jellystatConfigured: 'Jellystat',
-    requestAppConfigured: 'Request App',
 };
 
 const trackedIntegrationKeys = (mediaServerType: string) => {
     const mediaKey = mediaServerType === 'jellyfin' ? 'jellyfinConfigured' : 'plexConfigured';
     const analyticsKey = mediaServerType === 'jellyfin' ? 'jellystatConfigured' : 'tautulliConfigured';
-    return [mediaKey, 'sonarrConfigured', 'radarrConfigured', analyticsKey, 'requestAppConfigured'];
+    return [mediaKey, 'sonarrConfigured', 'radarrConfigured', analyticsKey];
 };
 
 export const calculateSystemHealth = ({
@@ -37,7 +36,6 @@ export const calculateSystemHealth = ({
 
     const integrations = diagnostics.integrations || {};
     const trackedIntegrations = trackedIntegrationKeys(mediaServerType)
-        .filter((key) => key !== 'requestAppConfigured' || integrations.requestAppEnabled)
         .map((key) => [key, !!integrations[key]] as const);
     const cacheEntries = Object.entries(diagnostics.caches || {}).filter(([key]) => {
         if (key.startsWith('maintenance')) return false;

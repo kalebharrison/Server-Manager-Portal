@@ -51,12 +51,6 @@ type SettingsSavePayloadInput = {
     tautulliApiKey: string;
     jellystatUrl: string;
     jellystatApiKey: string;
-    requestAppType: string;
-    requestAppUrl: string;
-    requestAppApiKey: string;
-    requestAppMembershipSync: boolean;
-    requestEngine: 'portal' | 'seerr';
-    discoverySource: 'tmdb' | 'seerr';
     ombiUrl: string;
     ombiApiKey: string;
     customLogoUrl: string;

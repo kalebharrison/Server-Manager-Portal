@@ -8,13 +8,13 @@ Server Portal is a single Node.js process that serves:
 
 ## Composition root
 
-[`server/index.js`](../server/index.js) creates shared services (cache, email, media-user sync, request-app, analytics, status) and registers route modules from `lib/`.
+[`server/index.js`](../server/index.js) creates shared services (cache, email, media-user sync, portal requests, analytics, status) and registers route modules from `lib/`.
 
-There is no separate API microservice. Integrations (Plex, Jellyfin, Seerr, Arr, Tautulli/Jellystat) are called server-side with stored credentials.
+There is no separate API microservice. Integrations (Plex, Jellyfin, Arr, Tautulli/Jellystat) are called server-side with stored credentials.
 
 ## Domains
 
-Backend modules live under `lib/` by responsibility — auth, users, analytics, plex, request-app, media-stack, status, comms, admin, http, cache, config, core. See [`lib/README.md`](../lib/README.md).
+Backend modules live under `lib/` by responsibility — auth, users, analytics, plex, portal-request, media-stack, status, comms, admin, http, cache, config, core. See [`lib/README.md`](../lib/README.md).
 
 Frontend code lives under `client/` with feature folders (`settings`, `requests`, `setup`, `home`, `screens`, `shared`).
 
@@ -26,16 +26,11 @@ Frontend code lives under `client/` with feature folders (`settings`, `requests`
 - Optional admin “View As” impersonation with a short-lived user token
 - Revoked/expired members are rejected on session/member paths
 
-## Membership ↔ request app
+## Requests
 
-When Seerr/Jellyseerr is configured and **Sync membership with Seerr** is enabled:
+Requests are portal-native. Discover browsing comes straight from TMDB, and approvals are pushed to Sonarr/Radarr/Lidarr with a requester tag so ownership survives outside the portal.
 
-- Active portal members are imported into Seerr (for request attribution / Discord media events)
-- Revoked/deleted members are removed from Seerr (admin id `1` is protected)
-
-Members do not use the Seerr UI; the portal proxies request browsing and submission.
-
-Discord invite / request-bot work is planned separately; see [Discord integration plan](./discord-integration-plan.md). Seerr can keep owning Discord “media ready” notifications even if the portal later hosts a request bot.
+Discord invite / request-bot work is planned separately; see [Discord integration plan](./discord-integration-plan.md).
 
 ## Data
 

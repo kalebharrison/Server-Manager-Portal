@@ -23,7 +23,7 @@ const isHttpUrl = (value: unknown): value is string => {
     return href.startsWith('http://') || href.startsWith('https://');
 };
 
-/** Prefer Seerr http(s) play links; ignore plex:// scheme (causes desktop flicker / no-op). */
+/** Prefer http(s) play links; ignore plex:// scheme (causes desktop flicker / no-op). */
 export const resolveLibraryLinkFromMediaInfo = (mediaInfo: any, mediaServerType?: string): string | null => {
     if (!mediaInfo || typeof mediaInfo !== 'object') return null;
     const type = String(mediaServerType || 'plex').toLowerCase();

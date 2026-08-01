@@ -7,7 +7,7 @@ type Props = {
     children: React.ReactNode;
 };
 
-/** Seerr-style request row with faded fanart/backdrop behind content. */
+/** Request row with faded fanart/backdrop behind content. */
 export const RequestCardShell: React.FC<Props> = ({ backdropUrl, posterUrl, className = '', children }) => {
     const artUrl = backdropUrl || posterUrl;
     const cardGradient =

@@ -1,4 +1,4 @@
-/** Overseerr-aligned discovery constants — TMDB IDs + duotone logo URLs. */
+/** Discovery constants — TMDB IDs + duotone logo URLs. */
 
 export type DiscoverCompany = {
     id: number;
@@ -13,7 +13,7 @@ export type DiscoverGenre = {
     gradient: string;
 };
 
-/** TMDB duotone logo treatment used by Overseerr CompanyCard.
+/** TMDB duotone logo treatment for company cards.
  *  onDark = light marks for dark cards; onLight = dark marks for light cards. */
 export const tmdbDuotoneLogo = (
     logoPath: string,
@@ -32,7 +32,7 @@ export const tmdbBackdropUrl = (backdropPath: string) => {
 };
 
 export const DISCOVER_STUDIOS: DiscoverCompany[] = [
-    // Core Seerr / Overseerr set
+    // Core set
     { id: 2, name: 'Disney', logoPath: '/wdrCwmRnLFJhEoH8GSfymY85KHT.png' },
     { id: 127928, name: '20th Century Studios', logoPath: '/h0rjX5vjW5r8yEnUBStFarjcLT4.png' },
     { id: 34, name: 'Sony Pictures', logoPath: '/GagSvqWlyPdkFHMfQ3pNq6ix9P.png' },
@@ -66,7 +66,7 @@ export const DISCOVER_STUDIOS: DiscoverCompany[] = [
 ];
 
 export const DISCOVER_NETWORKS: DiscoverCompany[] = [
-    // Core Seerr / Overseerr set
+    // Core set
     { id: 213, name: 'Netflix', logoPath: '/wwemzKWzjKYJFfCeiB57q3r4Bcm.png' },
     { id: 2739, name: 'Disney+', logoPath: '/gJ8VX6JSu3ciXHuC2dDGAo2lvwM.png' },
     { id: 1024, name: 'Prime Video', logoPath: '/ifhbNuuVnlwYy5oXA5VIb2YR8AZ.png' },
@@ -143,7 +143,7 @@ export const TV_GENRES: DiscoverGenre[] = [
 export const findStudio = (id: number) => DISCOVER_STUDIOS.find((s) => s.id === id);
 export const findNetwork = (id: number) => DISCOVER_NETWORKS.find((n) => n.id === id);
 
-/** Seerr/Overseerr genre card duotone tones [dark, light]. */
+/** Genre card duotone tones [dark, light]. */
 export const GENRE_COLOR_TONES: Record<string, [string, string]> = {
     red: ['991B1B', 'FCA5A5'],
     darkred: ['1F2937', 'F87171'],
@@ -227,7 +227,7 @@ export const GENRE_BACKDROP_PATHS: Record<number, string> = {
     10768: '/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg', // War & Politics
 };
 
-/** Build Seerr-style duotone backdrop URL for a genre slider card. */
+/** Build duotone backdrop URL for a genre slider card. */
 export const buildGenreSliderImage = (genreId: number, backdrops?: string[] | null) => {
     const list = (Array.isArray(backdrops) ? backdrops : []).filter(Boolean);
     const rawPath = list.length

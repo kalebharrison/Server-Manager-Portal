@@ -1,4 +1,4 @@
-/** Seerr / Jellyseerr media status codes (library state). */
+/** Media status codes (library state). */
 export const MEDIA_STATUS = {
     UNKNOWN: 1,
     PENDING: 2,
@@ -9,7 +9,7 @@ export const MEDIA_STATUS = {
     DELETED: 7,
 } as const;
 
-/** Seerr request status codes. */
+/** Request status codes. */
 export const REQUEST_STATUS = {
     PENDING: 1,
     APPROVED: 2,
@@ -28,8 +28,8 @@ export type SeasonStatusInfo = {
     requestable: boolean;
 };
 
-/** True when a Seerr downloadStatus row is an active Radarr/Sonarr queue transfer. */
-export const isActiveSeerrDownloadItem = (item: any): boolean => {
+/** True when a downloadStatus row is an active Radarr/Sonarr queue transfer. */
+export const isActiveDownloadItem = (item: any): boolean => {
     if (!item || typeof item !== 'object') return false;
 
     const sizeLeft = Number(item.sizeLeft ?? item.sizeleft);
@@ -59,8 +59,8 @@ export const isActiveSeerrDownloadItem = (item: any): boolean => {
     );
 };
 
-/** True when Seerr's download tracker reports active Radarr/Sonarr queue items. */
-export const hasActiveSeerrDownloads = (
+/** True when the download tracker reports active Radarr/Sonarr queue items. */
+export const hasActiveDownloads = (
     mediaInfo: any,
     opts?: { is4k?: boolean | null; seasonNumber?: number | null },
 ): boolean => {
@@ -73,7 +73,7 @@ export const hasActiveSeerrDownloads = (
     else if (opts?.is4k === false) queues = hd;
     else queues = [...hd, ...fourK];
 
-    const activeQueues = queues.filter((item) => isActiveSeerrDownloadItem(item));
+    const activeQueues = queues.filter((item) => isActiveDownloadItem(item));
 
     if (typeof opts?.seasonNumber === 'number' && Number.isFinite(opts.seasonNumber)) {
         return activeQueues.some((item) => Number(item?.episode?.seasonNumber) === opts.seasonNumber);
@@ -82,10 +82,10 @@ export const hasActiveSeerrDownloads = (
     return activeQueues.length > 0;
 };
 
-/** True when Seerr or Sonarr reports this title is still downloading / importing. */
+/** True when the request or Sonarr reports this title is still downloading / importing. */
 export const hasActiveShowDownloads = (details?: any, mediaInfo?: any): boolean => {
     if (details?.sonarrLibraryStatus?.hasActiveDownloads) return true;
-    return hasActiveSeerrDownloads(mediaInfo || details?.mediaInfo);
+    return hasActiveDownloads(mediaInfo || details?.mediaInfo);
 };
 
 export const isMediaActivelyProcessing = (
@@ -96,7 +96,7 @@ export const isMediaActivelyProcessing = (
     if (hasActiveShowDownloads(details, mediaInfo)) return true;
     const status = Number(mediaStatus ?? mediaInfo?.status);
     if (status !== MEDIA_STATUS.PROCESSING) return false;
-    return hasActiveSeerrDownloads(mediaInfo);
+    return hasActiveDownloads(mediaInfo);
 };
 
 export const resolveInProgressDisplay = (
@@ -119,7 +119,7 @@ export const resolveInProgressDisplay = (
     const isOwn = opts.isOwnRequest === true;
     const byName = String(opts.requestedByName || mediaInfo?.requestAttribution?.requestedByName || '').trim();
 
-    if (hasActiveSeerrDownloads(mediaInfo)) {
+    if (hasActiveDownloads(mediaInfo)) {
         return {
             kind: 'processing',
             label: 'Processing',
@@ -204,7 +204,7 @@ export const isSeasonStillAiring = (details: any, seasonNumber: number): boolean
     return false;
 };
 
-/** Label for a season Seerr marks as PARTIAL (tracked in Sonarr with not-all episodes). */
+/** Label for a season marked PARTIAL (tracked in Sonarr with not-all episodes). */
 export const resolvePartialSeasonLabel = (details: any, seasonNumber: number): string => (
     isSeasonStillAiring(details, seasonNumber) ? 'Up to date' : 'Partial'
 );
@@ -245,7 +245,7 @@ export const isTvShowLibraryComplete = (
         // Prefer per-season evidence below when Sonarr matched but didn't flip complete.
     }
 
-    // Without Sonarr verification, do not trust Seerr show-level AVAILABLE /
+    // Without Sonarr verification, do not trust show-level AVAILABLE /
     // Approved — those flip on approve, before files land on disk.
     if (seasonRows.length > 0) {
         const requestable = seasonRows.filter((s) => s.requestable);
@@ -273,7 +273,7 @@ export const isSeasonHandledInLibrary = (label: string) => (
 );
 
 /**
- * Seerr often lacks per-season rows even when Sonarr is monitoring a season.
+ * Request data often lacks per-season rows even when Sonarr is monitoring a season.
  * Infer "Up to date" for aired seasons on returning/partial shows already in the library.
  */
 export const inferMissingLibrarySeasonStatus = (
@@ -359,7 +359,7 @@ export const applyMissingLibrarySeasonInference = (
     })
 );
 
-/** Prefer Sonarr episode files over stale Seerr season rows when enrichment is present. */
+/** Prefer Sonarr episode files over stale season rows when enrichment is present. */
 export const applySonarrLibrarySeasonOverrides = (
     details: any,
     seasonRows: SeasonStatusInfo[],
@@ -410,7 +410,7 @@ export const applySonarrLibrarySeasonOverrides = (
             };
         }
 
-        // Seerr often marks seasons Available once approved/sent to Sonarr even
+        // Seasons are often marked Available once approved/sent to Sonarr even
         // with 0 files on disk — prefer Processing/Requested from Sonarr truth.
         if (Number(probe.airedTotal) > 0 || Number(probe.total) > 0) {
             const downloading = !!sonarr.hasActiveDownloads;
@@ -468,7 +468,6 @@ export type RequestOptionsPayload = {
     hasHdServer: boolean;
     standardQuotaBlocked?: boolean;
     fourKQuotaBlocked?: boolean;
-    seerrUserId?: number | null;
     servers?: {
         id: number;
         name: string;
@@ -513,7 +512,7 @@ export const isMovieRequestPending = (mediaStatus: number | null | undefined) =>
     return value === MEDIA_STATUS.PENDING || value === MEDIA_STATUS.PROCESSING;
 };
 
-/** Build per-season status from Seerr media detail payload (client-side, no extra API call). */
+/** Build per-season status from the media detail payload (client-side, no extra API call). */
 export const buildSeasonStatusFromDetails = (details: any): SeasonStatusInfo[] => {
     const mediaInfo = details?.mediaInfo || {};
     const tmdbSeasons = Array.isArray(details?.seasons) ? details.seasons : [];
@@ -553,7 +552,7 @@ export const buildSeasonStatusFromDetails = (details: any): SeasonStatusInfo[] =
                 statusLabel = 'Available';
             } else if (libraryStatus === MEDIA_STATUS.PROCESSING) {
                 requestable = false;
-                const fallback = hasActiveSeerrDownloads(mediaInfo, { seasonNumber })
+                const fallback = hasActiveDownloads(mediaInfo, { seasonNumber })
                     ? 'Processing'
                     : 'Requested';
                 statusLabel = resolveMonitoredSeasonLabel(details, seasonNumber, fallback);

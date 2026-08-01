@@ -2,7 +2,7 @@ import type { UpgraderGridSize } from '../shared/portalLayout';
 import { estimatePortalContentWidth } from '../shared/portalLayout';
 
 export const DISCOVER_INITIAL_ROW_COUNT = 5;
-/** Expected titles per Seerr/TMDB discover page (used for initial-fill estimates). */
+/** Expected titles per TMDB discover page (used for initial-fill estimates). */
 export const DISCOVER_API_PAGE_SIZE = 20;
 /** Target titles appended on each infinite-scroll load. */
 export const DISCOVER_LOAD_MORE_TARGET = 30;

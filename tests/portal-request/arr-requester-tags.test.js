@@ -23,7 +23,7 @@ test('buildPortalRequesterTagLabel uses portal id + username', () => {
     assert.equal(buildPortalRequesterTagLabel('99', 'i2ach'), '99-i2ach');
 });
 
-test('parseArrRequesterTagLabel handles seerr/portal and bare forms', () => {
+test('parseArrRequesterTagLabel handles legacy/portal and bare forms', () => {
     assert.deepEqual(parseArrRequesterTagLabel('16-i2ach'), {
         idPrefix: '16',
         username: 'i2ach',
@@ -38,7 +38,7 @@ test('parseArrRequesterTagLabel handles seerr/portal and bare forms', () => {
     });
 });
 
-test('resolvePortalUserFromArrTag matches portal id, seerr id, and username', () => {
+test('resolvePortalUserFromArrTag matches portal id, legacy id, and username', () => {
     const users = [
         { id: '100', plexId: '100', username: 'kalebharrison', email: 'k@example.com' },
         { id: '200', plexId: '200', username: 'i2ach', seerrUserId: 16, displayName: 'i2ach' },
@@ -59,7 +59,7 @@ test('buildPortalRequesterTagForUser and isPortalRequesterTagForUser', () => {
     assert.equal(isPortalRequesterTagForUser('kalebharrison', user), false);
 });
 
-test('collectPortalUsersFromArrTagLabels maps Seerr tags without requiring portal tags', () => {
+test('collectPortalUsersFromArrTagLabels maps legacy tags without requiring portal tags', () => {
     const users = [
         { id: '100', username: 'kalebharrison' },
         { id: '200', username: 'i2ach', seerrUserId: 16 },

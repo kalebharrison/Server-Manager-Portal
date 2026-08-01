@@ -9,7 +9,6 @@ type Props = {
     onClose: () => void;
     onComplete: (message: string) => void;
     onError: (message: string) => void;
-    portalEngine?: boolean;
 };
 
 const seasonStatusLabel = (status?: number | null) => {
@@ -20,7 +19,7 @@ const seasonStatusLabel = (status?: number | null) => {
     return 'Not requested';
 };
 
-export const RequestApprovalModal: React.FC<Props> = ({ request, onClose, onComplete, onError, portalEngine = false }) => {
+export const RequestApprovalModal: React.FC<Props> = ({ request, onClose, onComplete, onError }) => {
     const [detail, setDetail] = useState<AdminRequestItem>(request);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -29,8 +28,7 @@ export const RequestApprovalModal: React.FC<Props> = ({ request, onClose, onComp
         let cancelled = false;
         setDetail(request);
         setLoading(true);
-        const base = portalEngine ? '/api/portal-request/admin/requests' : '/api/requests';
-        apiFetch(`${base}/${request.id}`, { forceRefresh: true, cacheTtlMs: 0 })
+        apiFetch(`/api/portal-request/admin/requests/${request.id}`, { forceRefresh: true, cacheTtlMs: 0 })
             .then((data) => {
                 if (!cancelled && data?.request) setDetail(data.request);
             })
@@ -41,7 +39,7 @@ export const RequestApprovalModal: React.FC<Props> = ({ request, onClose, onComp
                 if (!cancelled) setLoading(false);
             });
         return () => { cancelled = true; };
-    }, [request, onError, portalEngine]);
+    }, [request, onError]);
 
     const seasons = useMemo(() => (detail.seasons || []) as RequestSeason[], [detail.seasons]);
     const TypeIcon = detail.mediaType === 'tv' ? Tv : Film;
@@ -49,8 +47,7 @@ export const RequestApprovalModal: React.FC<Props> = ({ request, onClose, onComp
     const approve = async () => {
         setSaving(true);
         try {
-            const base = portalEngine ? '/api/portal-request/admin/requests' : '/api/requests';
-            await apiFetch(`${base}/${detail.id}/approve`, {
+            await apiFetch(`/api/portal-request/admin/requests/${detail.id}/approve`, {
                 method: 'POST',
                 body: JSON.stringify({ title: detail.title, requestedBy: detail.requestedBy || null }),
             });
@@ -109,14 +106,12 @@ export const RequestApprovalModal: React.FC<Props> = ({ request, onClose, onComp
                         )}
 
                         <p className="mb-5 rounded-xl border border-white/10 bg-background/40 p-3 text-xs text-muted">
-                            {portalEngine
-                                ? 'Approval sends this request directly to the configured Radarr or Sonarr service.'
-                                : 'Approval is performed by Seerr. Server, quality profile, and folder routing remain managed by its configured services.'}
+                            Approval sends this request directly to the configured Radarr or Sonarr service.
                         </p>
                         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 border-t border-border/40">
                             <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2.5 rounded-lg border border-border text-muted hover:text-text transition-colors disabled:opacity-50">Cancel</button>
                             <button type="button" onClick={approve} disabled={saving} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-plex text-background font-bold hover:bg-plex-hover transition-colors disabled:opacity-50">
-                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {portalEngine ? 'Approve and send to *arr' : 'Approve in Seerr'}
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Approve and send to *arr
                             </button>
                         </div>
                     </>

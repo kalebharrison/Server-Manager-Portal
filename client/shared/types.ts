@@ -49,7 +49,7 @@ export interface ArrInstance {
     apiKey: string;
     enabled: boolean;
     isDefault: boolean;
-    /** Overseerr-parity defaults for portal request routing. */
+    /** Defaults for portal request routing. */
     activeProfileId?: number | null;
     activeDirectory?: string;
     activeLanguageProfileId?: number | null;

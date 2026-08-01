@@ -1,6 +1,6 @@
 import { apiFetch } from '../shared/api';
 
-/** Normalize Seerr media, request, or watchlist shapes into a TMDB-friendly item. */
+/** Normalize media, request, or watchlist shapes into a TMDB-friendly item. */
 export const normalizeRawDiscoveryItem = (item: any) => {
     if (!item || typeof item !== 'object') return item;
 

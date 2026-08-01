@@ -63,8 +63,8 @@ export const DiscordAgentKeySection: React.FC = () => {
             </div>
             <p className="text-sm text-muted">
                 Auto-generated and stored encrypted in portal config. Copy it into gitignored
-                {' '}<code className="text-xs">.local/portal-agent.env</code> so Cursor can call
-                {' '}<code className="text-xs">POST /api/request-app/discover-chat</code> without a browser session.
+                {' '}<code className="text-xs">.local/portal-agent.env</code> for headless portal access without a
+                browser session. No endpoint currently accepts it — the chat route it used to gate was retired.
                 Never commit the key.
             </p>
             {key ? (

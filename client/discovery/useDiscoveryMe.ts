@@ -4,12 +4,8 @@ import { apiFetch } from '../shared/api';
 export type DiscoveryMeProfile = {
     configured?: boolean;
     userMapped: boolean;
-    seerrUserId: number | null;
     displayName?: string | null;
     email?: string | null;
-    seerrUrl?: string;
-    seerrSettingsUrl?: string;
-    seerrUserUrl?: string;
     permissions: {
         request: boolean;
         requestMovie?: boolean;
@@ -45,7 +41,6 @@ export type DiscoveryMeProfile = {
 
 const DEFAULT_PROFILE: DiscoveryMeProfile = {
     userMapped: false,
-    seerrUserId: null,
     permissions: {
         request: true,
         request4k: true,
@@ -57,7 +52,7 @@ const DEFAULT_PROFILE: DiscoveryMeProfile = {
     },
 };
 
-/** Member Seerr profile for permissions / quota UI gating. */
+/** Member request profile for permissions / quota UI gating. */
 export const useDiscoveryMe = (enabled = true) => {
     const [profile, setProfile] = useState<DiscoveryMeProfile>(DEFAULT_PROFILE);
     const [loading, setLoading] = useState(false);

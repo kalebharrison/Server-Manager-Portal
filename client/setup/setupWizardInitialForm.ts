@@ -30,7 +30,4 @@ export const createInitialSetupWizardForm = (stored: StoredSetupPlex | null): Se
     tautulliApiKey: stored?.tautulliApiKey ?? '',
     jellystatUrl: stored?.jellystatUrl ?? '',
     jellystatApiKey: stored?.jellystatApiKey ?? '',
-    requestAppType: stored?.requestAppType === 'overseerr' ? 'seerr' : (stored?.requestAppType ?? 'none'),
-    requestAppUrl: stored?.requestAppUrl ?? '',
-    requestAppApiKey: stored?.requestAppApiKey ?? '',
 });

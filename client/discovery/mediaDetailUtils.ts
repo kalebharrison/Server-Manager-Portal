@@ -233,7 +233,7 @@ export const buildMediaFactRows = (
     return rows;
 };
 
-/** Fetch RT/IMDb combined ratings via portal backend (Seerr ratingscombined + fallbacks). */
+/** Fetch RT/IMDb combined ratings via portal backend (combined ratings + fallbacks). */
 export const fetchCombinedRatings = async (
     mediaType: 'movie' | 'tv',
     mediaId: number,

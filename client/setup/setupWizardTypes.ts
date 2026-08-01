@@ -25,9 +25,6 @@ export type SetupWizardForm = {
     tautulliApiKey: string;
     jellystatUrl: string;
     jellystatApiKey: string;
-    requestAppType: string;
-    requestAppUrl: string;
-    requestAppApiKey: string;
 };
 
 export type UpdateSetupWizardForm = (patch: Partial<SetupWizardForm>) => void;
@@ -38,4 +35,4 @@ export type SetupWizardMediaState = {
     showManualToken: boolean;
 };
 
-export type IntegrationTab = 'arr' | 'requests' | 'analytics';
+export type IntegrationTab = 'arr' | 'analytics';

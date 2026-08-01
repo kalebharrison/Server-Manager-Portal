@@ -17,8 +17,6 @@ services:
       BIND_HOST: 0.0.0.0
       CONFIG_DIR: /app/config
       PLEX_PREFER_REMOTE_CONNECTION: "true"
-      # When the public Request App URL is unreachable from this container, set
-      # REQUEST_APP_INTERNAL_URL in .env (e.g. http://seerr:5055).
     volumes:
       - ../config:/app/config
       - ../backup:/app/backup

@@ -64,7 +64,7 @@ export const WatchlistPage: React.FC<Props> = ({ formatItem, onSelect, navigate,
             <div className="mx-2 rounded-xl border border-white/10 bg-white/[0.03] px-6 py-12 text-center">
                 <p className="text-white/70 font-semibold">Your {providerLabel} watchlist is empty</p>
                 <p className="text-sm text-white/45 mt-2">
-                    Add movies and shows to your {providerLabel} watchlist — they will appear here once Seerr syncs.
+                    Add movies and shows to your {providerLabel} watchlist — they appear here after you sign in.
                 </p>
                 <button
                     type="button"

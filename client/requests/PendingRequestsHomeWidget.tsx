@@ -23,7 +23,7 @@ export const PendingRequestsHomeWidget: React.FC<{
         silent ? setRefreshing(true) : setLoading(true);
         setError(null);
         try {
-            const data = await apiFetch(`/api/requests?filter=pending&take=${layout === 'wide' ? 6 : 5}`, { forceRefresh: true, cacheTtlMs: 0 });
+            const data = await apiFetch(`/api/portal-request/admin/requests?filter=pending&take=${layout === 'wide' ? 6 : 5}`, { forceRefresh: true, cacheTtlMs: 0 });
             setRequests(Array.isArray(data?.results) ? data.results : []);
         } catch (err: any) {
             setError(err?.message || 'Could not load pending requests');

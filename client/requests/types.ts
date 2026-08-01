@@ -1,6 +1,6 @@
 export type RequestMediaType = 'movie' | 'tv';
 
-// Portal-native Discover responses are intentionally Seerr-shaped but retain
+// Portal-native Discover responses keep the legacy request shape and retain
 // a few routing fields which are not part of the legacy request dashboard.
 export type PortalRequestItem = any;
 export type PortalIssueItem = any;
@@ -89,15 +89,6 @@ export type RequestListResponse = {
         pageSize?: number;
         hasNextPage?: boolean;
     };
-};
-
-export type RequestAppStatus = {
-    configured: boolean;
-    supported: boolean;
-    ready: boolean;
-    connected?: boolean;
-    type?: string;
-    error?: string | null;
 };
 
 export type AdminRequestItem = {

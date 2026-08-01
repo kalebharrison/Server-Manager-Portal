@@ -12,7 +12,7 @@ const inputClass =
 const chipClass =
     'inline-flex items-center gap-1.5 max-w-full rounded-lg border border-plex/30 bg-plex/10 text-plex text-xs font-bold px-2.5 py-1';
 
-/** TMDB/Seerr expect ISO 3166-1 alpha-2 (United Kingdom = GB, not UK). */
+/** TMDB expects ISO 3166-1 alpha-2 (United Kingdom = GB, not UK). */
 export const normalizeWatchRegion = (region: string, fallback = 'US'): string => {
     const raw = String(region || '').trim().toUpperCase();
     if (!raw) return fallback;

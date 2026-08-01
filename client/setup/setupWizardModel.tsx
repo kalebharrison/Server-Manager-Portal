@@ -23,13 +23,6 @@ export const WELCOME_FEATURES = [
 
 export const SETUP_PLEX_STORAGE_KEY = 'setupWizardPlex';
 
-export const REQUEST_APP_OPTIONS = [
-    { label: 'Disabled', value: 'none' },
-    { label: 'Seerr', value: 'seerr' },
-    { label: 'Jellyseerr', value: 'jellyseerr' },
-    { label: 'Ombi', value: 'ombi' },
-];
-
 export const MEDIA_SERVER_OPTIONS = [
     { label: 'Plex', value: 'plex' },
     { label: 'Jellyfin', value: 'jellyfin' },
@@ -51,9 +44,6 @@ const APP_ICONS: Record<string, string> = {
     sonarr: `${SELFHST_ICON_BASE}/sonarr.svg`,
     radarr: `${SELFHST_ICON_BASE}/radarr.svg`,
     tautulli: `${SELFHST_ICON_BASE}/tautulli.svg`,
-    seerr: `${SELFHST_ICON_BASE}/seerr.svg`,
-    overseerr: `${SELFHST_ICON_BASE}/seerr.svg`,
-    jellyseerr: `${SELFHST_ICON_BASE}/jellyseerr.svg`,
     ombi: `${SELFHST_ICON_BASE}/ombi.svg`,
     jellystat: 'https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/jellystat.png',
 };
@@ -86,9 +76,6 @@ export type StoredSetupPlex = {
     tautulliApiKey?: string;
     jellystatUrl?: string;
     jellystatApiKey?: string;
-    requestAppType?: string;
-    requestAppUrl?: string;
-    requestAppApiKey?: string;
 };
 
 export const ProgramIcon: React.FC<{ app: string; label: string }> = ({ app, label }) => (

@@ -190,7 +190,7 @@ export const WatchlistPanel: React.FC<Props> = ({
                 )}
                 {requestableCount > 0 && !canBulkRequest && (
                     <span className="text-[11px] font-semibold text-muted px-2 py-1">
-                        {!discoveryMe.userMapped ? 'Seerr account not linked' : 'No request permission'}
+                        {!discoveryMe.userMapped ? 'Account not linked' : 'No request permission'}
                     </span>
                 )}
             </div>

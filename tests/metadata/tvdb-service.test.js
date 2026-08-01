@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createTvdbService } from '../../lib/request-app/tvdb-service.js';
+import { createTvdbService } from '../../lib/metadata/tvdb-service.js';
 
 test('TVDB enriches missing TV metadata and reuses its authentication token', async () => {
     let loginCalls = 0;

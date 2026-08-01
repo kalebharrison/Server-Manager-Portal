@@ -58,7 +58,7 @@ npm run start:prod
 ```bash
 npm test
 # or one folder:
-node --test tests/request-app/*.test.js
+node --test tests/portal-request/*.test.js
 ```
 
 Add new tests under the matching `tests/<domain>/` folder and import from `../../lib/<domain>/...`.

@@ -22,7 +22,6 @@ See [`.env.example`](../.env.example) for the full template.
 | `CONFIG_DIR` | Runtime data directory (default `/app/config` in Docker) |
 | `BASE_PATH` | URL prefix for subpath hosting (e.g. `/portal`) |
 | `ALLOW_PRIVATE_INTEGRATION_URLS` | Allow LAN/private integration URLs |
-| `REQUEST_APP_INTERNAL_URL` | Internal Seerr/Jellyseerr/Ombi URL when the public request-app URL is unreachable from the container |
 | `PLEX_PREFER_REMOTE_CONNECTION` | Prefer non-localhost Plex connections in Docker |
 | `PUID` / `PGID` | Run-as user/group (default `1000` / `1000`) |
 | `IMAGE_CACHE_MAX_MB` | Per-proxy in-memory image cache cap (default `64`) |
@@ -34,8 +33,7 @@ See [`.env.example`](../.env.example) for the full template.
 | Area | What it controls |
 |---|---|
 | Media server | Plex or Jellyfin connection |
-| Apps & automation | Sonarr / Radarr / Lidarr, Tautulli / Jellystat, Seerr/Jellyseerr |
-| Request membership sync | Import/remove Seerr users when portal membership changes |
+| Apps & automation | Sonarr / Radarr / Lidarr, Tautulli / Jellystat, Ombi (music) |
 | Access & privacy | Referrals, public login stats, status page visibility, stream privacy |
 | Branding | Theme, logo, animations, poster badges |
 | Support → Discord | Invite URL, optional channel webhook posts, `/request` bot token/guild (see [Discord plan](./discord-integration-plan.md)) |

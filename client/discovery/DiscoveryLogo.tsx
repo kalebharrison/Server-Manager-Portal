@@ -13,7 +13,7 @@ type Props = {
     alt: string;
     className?: string;
     width?: 154 | 300 | 780;
-    /** Overseerr-style duotone — light marks on dark cards, dark marks in light theme. */
+    /** Duotone treatment — light marks on dark cards, dark marks in light theme. */
     duotone?: boolean;
     onError?: () => void;
 };

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createMetadataHealthProbe } from '../../lib/request-app/metadata-health.js';
+import { createMetadataHealthProbe } from '../../lib/metadata/metadata-health.js';
 
 test('metadata health probes authenticate and cache external checks', async () => {
     let now = 1000;

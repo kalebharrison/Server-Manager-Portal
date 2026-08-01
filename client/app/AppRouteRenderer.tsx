@@ -8,7 +8,6 @@ import {
     DiscoveryDashboard,
     MediaStackDashboard,
     AnalyticsDashboard,
-    RequestDashboard,
     ScannerDashboard,
     UpgraderDashboard,
     IssuesDashboard,
@@ -70,14 +69,13 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
     if (currentRoute === 'preferences') return <UserPreferencesDashboard account={sessionInfo?.account} activeTheme={activeTheme} setActiveTheme={setActiveTheme} refreshSession={checkSession} readOnly={isImpersonating} />;
     if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
     if (currentRoute === 'analytics') return <AnalyticsDashboard isAdmin={isAdmin} sessionInfo={sessionInfo} />;
-    if (currentRoute === 'request' && (effectivePublicConfig?.requestEngine === 'portal' || sessionInfo?.requestEngine === 'portal')) {
+    if (currentRoute === 'request') {
         const path = stripBasePath(window.location.pathname);
         if (path === '/request' || path === '/requests') {
             window.history.replaceState({}, '', portalUrl('/discovery'));
         }
         return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} />;
     }
-    if (currentRoute === 'request') return <RequestDashboard isAdmin={isAdmin} cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
     if (currentRoute === 'scanner' && isAdmin) return <ScannerDashboard />;
     if (currentRoute === 'upgrader' && isAdmin) return <UpgraderDashboard />;
     if (currentRoute === 'issues') return <IssuesDashboard isAdmin={isAdmin} />;

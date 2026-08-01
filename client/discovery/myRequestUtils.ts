@@ -42,7 +42,7 @@ export const memberRequestDisplayStatus = (item: PortalRequestItem) => {
     if (status === 3) return 'Declined';
     if (status === 4) return 'Failed';
     if (status === 1) return 'Pending Approval';
-    // Downloads in flight always win over Seerr's optimistic Available/Partial.
+    // Downloads in flight always win over the optimistic Available/Partial.
     if (status === 2 && item.isDownloading) return 'Processing';
     if (status === 2 && mediaStatus === 5) return 'Available';
     if (status === 2 && mediaStatus === 4) return item.type === 'tv' ? 'Requested' : 'Available';

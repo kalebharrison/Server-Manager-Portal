@@ -12,7 +12,7 @@ Node.js · Express · React · Tailwind · Docker
 
 ---
 
-Invite members, manage access expiry, browse/request media through Seerr/Jellyseerr (without exposing Seerr UI), watch live sessions, and ship personalized wrap-ups — from one portal.
+Invite members, manage access expiry, browse and request media from a portal-native Discover UI, watch live sessions, and ship personalized wrap-ups — from one portal.
 
 ## Quick start (Docker)
 
@@ -39,7 +39,7 @@ More detail: **[docs/deployment.md](docs/deployment.md)** · **[docs/configurati
 
 - **Member home** — wrap-up analytics, week calendar, recently/most watched, recently added
 - **Discover** — live activity, trending, community picks
-- **Requests** — embedded Seerr/Jellyseerr browse + request flow; optional membership sync
+- **Requests** — portal-native TMDB Discover, request queue, and Arr approvals
 - **Calendar** — Sonarr/Radarr release calendar and download activity
 - **Admin** — users, invites/referrals, live streams, kill rules, status page, backups
 - **Auth** — Plex OAuth or Jellyfin login / Quick Connect
@@ -71,7 +71,7 @@ See **[docs/development.md](docs/development.md)**.
 .
 ├── server/                # Express entry (server/index.js)
 ├── client/                # React UI (main.tsx, screens, styles, index.html)
-├── lib/                   # Backend by domain (auth, users, plex, request-app, …)
+├── lib/                   # Backend by domain (auth, users, plex, portal-request, …)
 ├── docker/                # Dockerfile + Compose
 ├── tests/                 # Mirrors lib domains
 ├── docs/                  # Deployment & contributor docs

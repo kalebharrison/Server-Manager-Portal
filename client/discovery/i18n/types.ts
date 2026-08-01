@@ -20,7 +20,7 @@ export const normalizeDiscoverLocale = (value: unknown): DiscoverLocale => (
     isDiscoverLocale(value) ? value : 'en'
 );
 
-/** TMDB / Seerr metadata language codes for our supported UI locales. */
+/** TMDB metadata language codes for our supported UI locales. */
 export const discoverLocaleToTmdbLanguage = (locale: unknown): DiscoverLocale => (
     normalizeDiscoverLocale(locale)
 );

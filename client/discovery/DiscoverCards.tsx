@@ -7,7 +7,7 @@ type CompanyCardProps = {
     onClick: () => void;
 };
 
-/** Overseerr-style duotone logo card for networks and studios. */
+/** Duotone logo card for networks and studios. */
 export const CompanyCard: React.FC<CompanyCardProps> = ({ name, logoPath, onClick }) => {
     const [failed, setFailed] = useState(false);
 
@@ -40,7 +40,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ name, logoPath, onClic
 type GenreCardProps = {
     name: string;
     gradient?: string;
-    /** Seerr/Overseerr genre slider duotone backdrop URL */
+    /** Genre slider duotone backdrop URL */
     image?: string;
     onClick: () => void;
 };

@@ -20,21 +20,13 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
     const [actionId, setActionId] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [reviewTarget, setReviewTarget] = useState<AdminRequestItem | null>(null);
-    const [portalEngine, setPortalEngine] = useState(false);
-
-    useEffect(() => {
-        apiFetch('/api/portal-request/status', { cacheTtlMs: 0 })
-            .then((status) => setPortalEngine(status?.engine === 'portal'))
-            .catch(() => setPortalEngine(false));
-    }, []);
 
     const load = useCallback(async (silent = false) => {
         if (silent) setRefreshing(true);
         else setLoading(true);
         setError(null);
         try {
-            const base = portalEngine ? '/api/portal-request/admin/requests' : '/api/requests';
-            const data = await apiFetch(`${base}?filter=${encodeURIComponent(filter)}&take=${compact ? 8 : 30}`, { forceRefresh: true, cacheTtlMs: 0 });
+            const data = await apiFetch(`/api/portal-request/admin/requests?filter=${encodeURIComponent(filter)}&take=${compact ? 8 : 30}`, { forceRefresh: true, cacheTtlMs: 0 });
             setItems(Array.isArray(data?.results) ? data.results : []);
         } catch (err: any) {
             setError(err?.message || 'Failed to load requests');
@@ -43,7 +35,7 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
             setLoading(false);
             setRefreshing(false);
         }
-    }, [compact, filter, portalEngine]);
+    }, [compact, filter]);
 
     useEffect(() => {
         load(false);
@@ -52,7 +44,7 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
     const runAction = async (item: AdminRequestItem, action: 'approve' | 'decline' | 'retry' | 'delete') => {
         setActionId(item.id);
         try {
-            const base = portalEngine ? '/api/portal-request/admin/requests' : '/api/requests';
+            const base = '/api/portal-request/admin/requests';
             const endpoint = action === 'delete'
                 ? `${base}/${item.id}`
                 : `${base}/${item.id}/${action}`;
@@ -71,7 +63,7 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <div>
                     <h2 className="text-xl font-black text-plex">Request Queue</h2>
-                    <p className="text-xs text-muted mt-1">Approve, decline, retry, or remove Seerr requests without leaving the portal.</p>
+                    <p className="text-xs text-muted mt-1">Approve, decline, retry, or remove member requests without leaving the portal.</p>
                 </div>
                 <button
                     type="button"
@@ -162,7 +154,6 @@ export const AdminRequestQueue: React.FC<{ compact?: boolean }> = ({ compact = f
             {reviewTarget && typeof document !== 'undefined' && createPortal(
                 <RequestApprovalModal
                     request={reviewTarget}
-                    portalEngine={portalEngine}
                     onClose={() => setReviewTarget(null)}
                     onComplete={() => {
                         setReviewTarget(null);

@@ -43,8 +43,7 @@ docker run -d \
 
 ## Docker networking tips
 
-- For LAN integrations (Sonarr, Radarr, Seerr, Tautulli, Jellystat), set `ALLOW_PRIVATE_INTEGRATION_URLS=true` and use URLs reachable from inside the container (`http://host.docker.internal:8989` on Docker Desktop, or the host/LAN IP on Linux).
-- If the public Request App URL is not reachable from the container, set `REQUEST_APP_INTERNAL_URL` (for example `http://seerr:5055`).
+- For LAN integrations (Sonarr, Radarr, Tautulli, Jellystat), set `ALLOW_PRIVATE_INTEGRATION_URLS=true` and use URLs reachable from inside the container (`http://host.docker.internal:8989` on Docker Desktop, or the host/LAN IP on Linux).
 - Set `PLEX_PREFER_REMOTE_CONNECTION=true` when the portal runs in Docker and should not use a localhost Plex URL.
 
 ## Reverse proxy

@@ -6,7 +6,7 @@ Drop **your** credentials and service map here. Everything under `.local/` is ig
 
 Agents (and you) need a single place for:
 
-- How your stack is wired (portal → Seerr → Arr → Notifiarr → Discord)
+- How your stack is wired (portal → Arr → Notifiarr → Discord)
 - API access for ops tools (Dockhand redeploy, Notifiarr, etc.)
 
 ## Files to create (copy from examples)
@@ -42,7 +42,7 @@ Until that environment exists, cloud agents only see the committed `*.example*` 
 
 | Concern | Owner |
 |---|---|
-| Web requests + membership | Portal → Seerr |
+| Web requests + membership | Portal |
 | Discord `/request` bot + invite | Portal Discord settings |
 | Media Discord posts (grabbed / imported / available) | **Notifiarr** (leave portal webhook blank) |
 | Container redeploy | **Dockhand** API |

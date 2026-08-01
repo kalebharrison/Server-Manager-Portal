@@ -43,7 +43,7 @@ test('status payload abstracts vendor defaults but preserves custom labels', () 
         services: [
             { id: 'sonarr', name: 'Sonarr', description: 'TV automation', groupId: 'downloads' },
             { id: 'radarr', name: 'Cinema Pipeline', description: 'Movie acquisition and upgrades', groupId: 'downloads' },
-            { id: 'seerr', name: 'Seerr', description: 'Requests portal', groupId: 'external' },
+            { id: 'ombi', name: 'Ombi', description: 'Requests portal', groupId: 'external' },
         ],
     });
     assert.equal(payload.config.groups[0].name, 'Automation Health');
@@ -55,9 +55,9 @@ test('status payload abstracts vendor defaults but preserves custom labels', () 
 });
 
 test('default status config does not expose the request provider brand', () => {
-    const config = createDefaultStatusConfig({ requestAppType: 'seerr', requestAppUrl: 'http://requests:5055' });
-    assert.equal(config.services[0].name, 'Request Service');
-    assert.equal(config.services[0].description, 'Media requests');
+    const config = createDefaultStatusConfig({ ombiUrl: 'http://requests:3579', ombiApiKey: 'ombi-key' });
+    assert.equal(config.services[0].name, 'Music Requests');
+    assert.equal(config.services[0].description, 'Music request service');
 });
 
 test('built-in status URLs follow current application settings', () => {
@@ -100,16 +100,13 @@ test('metadata APIs and additional Arr instances receive distinct status monitor
     assert.deepEqual(payload.config.services.map((service) => service.name), ['TV Automation', 'Anime', 'Media Metadata', 'TV Metadata']);
 });
 
-test('Seerr and Ombi can coexist without exposing provider names to members', () => {
+test('Ombi music requests are monitored without exposing the provider name to members', () => {
     const config = createDefaultStatusConfig({
-        requestAppType: 'seerr',
-        requestAppUrl: 'http://seerr:5055',
-        requestAppApiKey: 'seerr-key',
         ombiUrl: 'http://ombi:3579',
         ombiApiKey: 'ombi-key',
     });
     const payload = createPublicStatusPayload(config);
-    assert.deepEqual(payload.config.services.map((service) => service.name), ['Request Service', 'Music Requests']);
+    assert.deepEqual(payload.config.services.map((service) => service.name), ['Music Requests']);
 });
 
 test('stale generated Plex monitor is removed without a Plex URL', () => {

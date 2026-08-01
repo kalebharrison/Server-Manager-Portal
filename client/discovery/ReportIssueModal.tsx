@@ -8,7 +8,6 @@ type Props = {
     open: boolean;
     mediaType: 'movie' | 'tv';
     title: string;
-    seerrMediaId?: number | null;
     tmdbId?: number | null;
     onClose: () => void;
     onSuccess: (message: string) => void;
@@ -19,7 +18,6 @@ export const ReportIssueModal: React.FC<Props> = ({
     open,
     mediaType,
     title,
-    seerrMediaId,
     tmdbId,
     onClose,
     onSuccess,
@@ -38,7 +36,7 @@ export const ReportIssueModal: React.FC<Props> = ({
         setProblemSeason('');
         setProblemEpisode('');
         return undefined;
-    }, [open, seerrMediaId, tmdbId]);
+    }, [open, tmdbId]);
 
     useEffect(() => {
         if (!open) return undefined;
@@ -63,9 +61,6 @@ export const ReportIssueModal: React.FC<Props> = ({
             };
             if (Number.isFinite(Number(tmdbId)) && Number(tmdbId) > 0) {
                 body.tmdbId = Number(tmdbId);
-            }
-            if (Number.isFinite(Number(seerrMediaId)) && Number(seerrMediaId) > 0) {
-                body.mediaId = Number(seerrMediaId);
             }
             if (mediaType === 'tv' && problemSeason.trim()) {
                 body.problemSeason = Number(problemSeason);

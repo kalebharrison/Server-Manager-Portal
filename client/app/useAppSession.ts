@@ -88,13 +88,9 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
             else if (path === '/mediastack') updateRoute('mediastack');
             else if (path === '/maintenance') updateRoute(data.session.isAdmin ? 'settings' : 'user');
             else if (path === '/request' || path === '/requests') {
-                // Portal engine: Discover is the request UI — don't keep a duplicate route alive.
-                if (publicConfig?.requestEngine === 'portal') {
-                    window.history.replaceState({}, '', portalUrl('/discovery'));
-                    updateRoute('discover');
-                } else {
-                    updateRoute('request');
-                }
+                // Discover is the request UI — don't keep a duplicate route alive.
+                window.history.replaceState({}, '', portalUrl('/discovery'));
+                updateRoute('discover');
             }
             else if (path === '/scanner' && data.session.isAdmin && !data.impersonation?.active && data.navFeatures?.scanner) updateRoute('scanner');
             else if (path === '/upgrader' && data.session.isAdmin && !data.impersonation?.active && data.navFeatures?.upgrader) updateRoute('upgrader');
@@ -131,7 +127,7 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
                 updateRoute('login');
             }
         }
-    }, [updateRoute, publicConfig?.requestEngine]);
+    }, [updateRoute]);
 
     useEffect(() => {
         checkSession();

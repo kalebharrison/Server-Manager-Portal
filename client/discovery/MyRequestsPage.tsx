@@ -75,7 +75,7 @@ export const MyRequestsPage: React.FC<Props> = ({ navigate, pushToast, onCountsC
 
             if (listData?.userMapped === false) {
                 setRequests([]);
-                setError(listData?.error || 'Your portal account is not linked to a Seerr user. Contact your admin.');
+                setError(listData?.error || 'Your portal account is not linked to a request profile. Contact your admin.');
                 return;
             }
 

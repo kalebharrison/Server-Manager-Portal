@@ -2,7 +2,7 @@ import { normalizeRawDiscoveryItem } from './discoverItemUtils';
 import { isAnimeBrowseItem } from './discoverForeignUtils';
 import {
     buildSeasonStatusFromDetails,
-    hasActiveSeerrDownloads,
+    hasActiveDownloads,
     hasActiveShowDownloads,
     hasAnyEpisodeAired,
     isEndedShow,
@@ -235,7 +235,7 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
     const processingSeasons = seasonRows.filter((s) => s.statusLabel === 'Processing');
     const requestedSeasons = seasonRows.filter((s) => s.statusLabel === 'Requested');
     const endedShow = isEndedShow(item);
-    // Seerr flips seasons/show to Available on approve; don't treat that as on-disk
+    // Approval flips seasons/show to Available; don't treat that as on-disk
     // unless Sonarr (or tvLibraryComplete) already confirmed files.
     const approvalStillOpen = userRequestStatus === REQUEST_STATUS.APPROVED
         && !(item?.sonarrLibraryStatus?.matched && item.sonarrLibraryStatus.showComplete);
@@ -333,7 +333,7 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
             };
         }
         if (approvedSeasons.length > 0 || userRequestStatus === REQUEST_STATUS.APPROVED) {
-            if (hasActiveSeerrDownloads(mediaInfo) || hasActiveShowDownloads(item, mediaInfo)) {
+            if (hasActiveDownloads(mediaInfo) || hasActiveShowDownloads(item, mediaInfo)) {
                 return {
                     ...base,
                     kind: 'processing',
@@ -419,7 +419,7 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
         };
     }
 
-    // Seerr show-level AVAILABLE is unreliable for TV during/after approve —
+    // Show-level AVAILABLE is unreliable for TV during/after approve —
     // only trust it for movies, or when Sonarr already confirmed completeness above.
     if (mediaStatus === MEDIA_STATUS.AVAILABLE && mediaType === 'movie') {
         return {
@@ -473,7 +473,7 @@ export const resolveMediaAvailabilityState = (item: any): MediaAvailabilityState
 
     // Approval ≠ available. Keep requested/processing until files are on disk.
     if (userRequestStatus === REQUEST_STATUS.APPROVED) {
-        if (hasActiveShowDownloads(item, mediaInfo) || hasActiveSeerrDownloads(mediaInfo)) {
+        if (hasActiveShowDownloads(item, mediaInfo) || hasActiveDownloads(mediaInfo)) {
             return {
                 ...base,
                 kind: 'processing',

@@ -32,7 +32,7 @@ test('resolveDiscordPosterUrl unwraps portal proxy and posterPath', () => {
     );
     assert.equal(
         resolveDiscordPosterUrl({
-            posterUrl: '/api/request-app/image?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw300%2Fxyz.jpg',
+            posterUrl: '/api/media/image?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Fw300%2Fxyz.jpg',
         }),
         'https://image.tmdb.org/t/p/w500/xyz.jpg',
     );

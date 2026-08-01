@@ -1,8 +1,7 @@
 import React from 'react';
 
 import { IntegrationTestButton, type IntegrationTestType } from '../shared/IntegrationTestButton';
-import { CustomSelect } from '../shared/ui';
-import { ProgramIcon, REQUEST_APP_OPTIONS } from './setupWizardModel';
+import { ProgramIcon } from './setupWizardModel';
 import {
     SETUP_INPUT_CLASS,
     SETUP_SECTION_CARD_CLASS,
@@ -58,7 +57,6 @@ export const IntegrationsStep: React.FC<{
 }> = ({ stepNumber, form, updateForm, activeTab, setActiveTab }) => {
     const tabs: Array<{ id: IntegrationTab; label: string }> = [
         { id: 'arr', label: 'Arr Apps' },
-        { id: 'requests', label: 'Requests' },
         { id: 'analytics', label: form.mediaServerType === 'jellyfin' ? 'Jellystat' : 'Tautulli' },
     ];
 
@@ -104,26 +102,6 @@ export const IntegrationsStep: React.FC<{
                         updateUrl={(radarrUrl) => updateForm({ radarrUrl })}
                         updateApiKey={(radarrApiKey) => updateForm({ radarrApiKey })}
                     />
-                </div>
-            )}
-
-            {activeTab === 'requests' && (
-                <div className={`${SETUP_SECTION_CARD_CLASS} flex flex-col gap-3.5`}>
-                    <div className="flex items-center gap-3">
-                        <ProgramIcon app={form.requestAppType === 'none' ? (form.mediaServerType === 'jellyfin' ? 'jellyseerr' : 'seerr') : form.requestAppType} label="Request App" />
-                        <div>
-                            <h3 className="font-bold text-text text-base leading-tight">Request App</h3>
-                            <p className="text-xs text-muted mt-0.5">Seerr, Jellyseerr, or Ombi for user requests.</p>
-                        </div>
-                    </div>
-                    <CustomSelect value={form.requestAppType} onChange={(requestAppType) => updateForm({ requestAppType })} options={REQUEST_APP_OPTIONS} />
-                    {form.requestAppType !== 'none' && (
-                        <>
-                            <input type="text" className={SETUP_INPUT_CLASS} value={form.requestAppUrl} onChange={(event) => updateForm({ requestAppUrl: event.target.value })} placeholder="http://localhost:5055" />
-                            <input type="password" className={SETUP_INPUT_CLASS} value={form.requestAppApiKey} onChange={(event) => updateForm({ requestAppApiKey: event.target.value })} placeholder="API Key" />
-                            <IntegrationTestButton type="requestApp" payload={{ requestAppType: form.requestAppType, requestAppUrl: form.requestAppUrl, requestAppApiKey: form.requestAppApiKey }} disabled={!form.requestAppUrl || !form.requestAppApiKey} />
-                        </>
-                    )}
                 </div>
             )}
 

@@ -4,7 +4,7 @@ Snapshot after Wave 1–4 upstream ports on fork `beta` (lab: `plex-beta.lostwal
 
 | Container | Portal coverage now | Recommendation |
 |---|---|---|
-| **overseerr** | Lab (`plex-beta`) flips to `requestEngine=portal` + `discoverySource=tmdb` with Arr requester tags. Prod stays Seerr until lab smoke passes. Discord/Ask still Seerr-backed. | **Keep** on prod; retire after Discord/Ask migrate. |
+| **overseerr** | Requests are fully portal-native (TMDB Discover + Arr requester tags). The external request-app integration has been removed from the portal entirely. | **Drop** — the portal no longer talks to it. |
 | **requestrr** | Portal Discord `/request` bot (WIP) overlaps. | **Candidate to drop** once Discord bot is enabled and trusted on prod; confirm slash commands cover Requestrr workflows first. |
 | **kometa** | ColleXions was **not** ported in this plan. | **Keep** for now. |
 | **checkrr** | Library Upgrader browse/index landed (standalone); advanced ARR CF/TRaSH actions still incomplete vs upstream. | **Keep** until Upgrader episode/profile/search actions match your checkrr use cases. |
@@ -16,5 +16,5 @@ Snapshot after Wave 1–4 upstream ports on fork `beta` (lab: `plex-beta.lostwal
 ## Promote checklist
 
 1. Smoke lab: themes, What’s New, nav hide, mobile More, Scanner settings, Status speed test, Request Review modal, Upgrader page (admin).
-2. Confirm `requestEngine` remains `seerr` on prod after promote.
+2. Smoke the portal request path end to end: Discover → request → admin approve → Arr add with requester tag.
 3. Merge `beta` → `main` → Dockhand pulls `:main`.

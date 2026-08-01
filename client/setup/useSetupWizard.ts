@@ -50,15 +50,11 @@ export const useSetupWizard = (onComplete: () => void) => {
         const nextType = type === 'jellyfin' ? 'jellyfin' : 'plex';
         setForm((current) => {
             const followsServerTheme = current.brandTheme === 'plex' || current.brandTheme === 'jellyfin';
-            const followsServerRequestApp = ['none', 'seerr', 'overseerr', 'jellyseerr'].includes(current.requestAppType);
             return {
                 ...current,
                 mediaServerType: nextType,
                 brandTheme: followsServerTheme ? nextType : current.brandTheme,
                 primaryColor: followsServerTheme ? BRAND_THEME_COLORS[nextType] : current.primaryColor,
-                requestAppType: followsServerRequestApp
-                    ? (nextType === 'jellyfin' ? 'jellyseerr' : 'seerr')
-                    : current.requestAppType,
             };
         });
     };

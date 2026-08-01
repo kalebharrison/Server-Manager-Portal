@@ -6,17 +6,6 @@ const ConfigPill: React.FC<{ configured: boolean }> = ({ configured }) => (
     </span>
 );
 
-const OptionalPill: React.FC<{ enabled: boolean; configured: boolean }> = ({ enabled, configured }) => {
-    if (!enabled) {
-        return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-muted border border-border">
-                Disabled
-            </span>
-        );
-    }
-    return <ConfigPill configured={configured} />;
-};
-
 const OptionalIntegrationPill: React.FC<{ configured: boolean }> = ({ configured }) => {
     if (configured) return <ConfigPill configured />;
     return (
@@ -64,7 +53,6 @@ export const SystemDiagnosticsPanel: React.FC<SystemDiagnosticsPanelProps> = ({
                 ) : (
                     <div className="flex items-center justify-between gap-2"><strong>Tautulli</strong><ConfigPill configured={!!diagnostics?.integrations?.tautulliConfigured} /></div>
                 )}
-                <div className="flex items-center justify-between gap-2"><strong>Request App</strong><OptionalPill enabled={!!diagnostics?.integrations?.requestAppEnabled} configured={!!diagnostics?.integrations?.requestAppConfigured} /></div>
                 <div className="flex items-center justify-between gap-2"><strong>Analytics Cache</strong><ConfigPill configured={!!diagnostics?.caches?.analytics?.exists} /></div>
                 <div className="flex items-center justify-between gap-2"><strong>Trending Cache</strong><ConfigPill configured={!!diagnostics?.caches?.trending?.exists} /></div>
                 {mediaServerType !== 'jellyfin' && (

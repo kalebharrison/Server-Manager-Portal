@@ -1,4 +1,4 @@
-/** Client-side anime helpers (mirrors lib/request-app/request-app-media.js). */
+/** Client-side anime helpers (mirrors lib/media/mediaFilters.js). */
 
 const ADULTISH_TITLE_RE = /\b(hentai|softcore|erotic|erotica|porn|xxx)\b/i;
 

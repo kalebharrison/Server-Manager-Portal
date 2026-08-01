@@ -74,7 +74,7 @@ export const Carousel: React.FC<CarouselProps> = ({ children }) => {
 
     return (
         <div className="relative w-full min-w-0">
-            {/* Seerr-style: chevrons sit on the section title row, top-right — no side gradients */}
+            {/* Chevrons sit on the section title row, top-right — no side gradients */}
             <div className="absolute right-1 -top-9 z-10 flex items-center text-muted">
                 <button
                     type="button"

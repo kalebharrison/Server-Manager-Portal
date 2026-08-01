@@ -97,7 +97,7 @@ export const de: DeepPartial<EnCatalog> = {
         noRequestsBody: 'Finde etwas Gutes und sende es in die Warteschlange.',
         browseMovies: 'Filme durchsuchen',
         watchlistEmptyTitle: 'Watchlist ist leer',
-        watchlistEmptyBody: 'Synchronisiere aus {provider} in Seerr oder starte bei den Trends.',
+        watchlistEmptyBody: 'Füge Titel in {provider} hinzu und melde dich erneut an — oder starte bei den Trends.',
         seeTrending: 'Trends ansehen',
         browse: 'Durchsuchen',
         whatsPopular: 'Was gerade populär ist',
@@ -275,7 +275,7 @@ export const de: DeepPartial<EnCatalog> = {
     watchlist: {
         title: 'Deine {provider}-Watchlist',
         emptyTitle: 'Deine {provider}-Watchlist ist leer',
-        emptyBody: 'Füge Titel zur {provider}-Watchlist hinzu — sie erscheinen hier, sobald Seerr synchronisiert.',
+        emptyBody: 'Füge Filme und Serien zur {provider}-Watchlist hinzu — sie erscheinen hier nach der Anmeldung.',
         loadFailed: 'Watchlist konnte nicht geladen werden',
     },
     person: {

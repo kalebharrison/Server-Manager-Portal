@@ -1,6 +1,6 @@
 # Discord integration (Requestrr replacement + member bot)
 
-Goal: manage Discord invites and a member-facing Discord bot from this portal so Requestrr is no longer required, without replacing **Notifiarr** / Seerr for media Discord posts.
+Goal: manage Discord invites and a member-facing Discord bot from this portal so Requestrr is no longer required, without replacing **Notifiarr** for media Discord posts.
 
 **Status (beta):** Phases 1–3 plus member web-UI parity and optional natural language are implemented. Configure under Settings → Support & Announcements → Discord. Members link their Discord user ID under Preferences.
 
@@ -10,10 +10,9 @@ Goal: manage Discord invites and a member-facing Discord bot from this portal so
 
 | Concern | Owner |
 |---|---|
-| Browse / request in the browser | Portal → Seerr API |
-| Member sync into Seerr | Portal (`Sync membership with Seerr`) |
+| Browse / request in the browser | Portal → TMDB Discover + Arr |
 | Discord member slash commands | Portal Discord bot (in-process) |
-| “Movie ready” Discord posts / DMs | **Notifiarr** and/or Seerr Discord (keep these) |
+| “Movie ready” Discord posts / DMs | **Notifiarr** (keep this) |
 | Portal channel webhook | Optional — leave blank when Notifiarr owns media posts |
 
 ---
@@ -22,7 +21,7 @@ Goal: manage Discord invites and a member-facing Discord bot from this portal so
 
 | Command | Mirrors web |
 |---|---|
-| `/request query [type]` | Search → select → TV seasons / confirm → Seerr |
+| `/request query [type]` | Search → select → TV seasons / confirm → portal request |
 | `/myrequests [filter]` | Request list / status for linked member |
 | `/issue` (`report`, `list`, `view`, `comment`) | Media issues |
 | `/stats` | Personal analytics |
@@ -46,7 +45,7 @@ Configure under **Settings → Discord** (not Support & Announcements).
 | Mode | Behavior |
 |---|---|
 | Ops phrases | Instant fixed handlers (`my stats`, queue, live, status, issues, discover trending, help) |
-| Media agent on | Discovery `/ask` uses a tool-calling agent: **web search** → Seerr/TMDB resolve → answer + request buttons |
+| Media agent on | Discovery `/ask` uses a tool-calling agent: **web search** → TMDB resolve → answer + request buttons |
 | Agent off / incomplete LLM config | Legacy phrase matchers + optional JSON intent LLM (title/person/theme shortcuts) |
 | Unclear (no agent) | Bot replies with `/help` suggestions |
 
@@ -82,9 +81,9 @@ Admin approve/decline stays in the web UI. Discord-as-login is out of scope.
 ```text
 Portal (web requests + membership)
     │
-    ├─► Seerr ──► Notifiarr / Seerr Discord  (media posts stay here)
+    ├─► Arr ──► Notifiarr Discord  (media posts stay here)
     │
-    └─► Discord bot ──► same Seerr / issues / analytics / status services
+    └─► Discord bot ──► same request / issues / analytics / status services
             ▲
             └── invite link shown in portal
 ```

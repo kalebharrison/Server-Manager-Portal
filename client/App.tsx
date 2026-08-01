@@ -8,7 +8,6 @@ import { applyLocalPortalPreferences, loadLocalPortalPreferences, USER_PREFERENC
 import { updateFavicon, Navigation } from './lazyScreens';
 import { AppRouteRenderer, RouteFallback } from './app/AppRouteRenderer';
 import { useAppRouting, useAppSession } from './app/useAppSession';
-import { DiscoverChatWidget } from './requests/DiscoverChatWidget';
 import { WhatsNewModal } from './shared/WhatsNewModal';
 import {
     getLastSeenVersion,
@@ -243,12 +242,6 @@ export const MainApp: React.FC = () => {
                     </div>
                 )}
             </div>
-            {!isPublicView && sessionInfo && (
-                <DiscoverChatWidget
-                    enabled={sessionInfo?.navFeatures?.request !== false}
-                    readOnly={false}
-                />
-            )}
         </div>
     );
 };

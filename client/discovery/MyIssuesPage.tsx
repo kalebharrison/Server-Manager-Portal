@@ -61,13 +61,13 @@ export const MyIssuesPage: React.FC<Props> = ({ navigate, pushToast, onCountsCha
 
             if (countData?.userMapped === false) {
                 setIssues([]);
-                setError('Your portal account is not linked to a Seerr user. Contact your admin.');
+                setError('Your portal account is not linked to a request profile. Contact your admin.');
                 return;
             }
 
             if (listData?.userMapped === false) {
                 setIssues([]);
-                setError(listData?.error || 'Your portal account is not linked to a Seerr user.');
+                setError(listData?.error || 'Your portal account is not linked to a request profile.');
                 return;
             }
 
