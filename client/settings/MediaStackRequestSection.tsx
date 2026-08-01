@@ -19,7 +19,7 @@ const PortalOwnershipImportPanel: React.FC<{
             if (data?.error) throw new Error(data.error);
             const s = data?.summary || {};
             addToast(
-                `Arr tags: ${s.itemsUpdated || 0} titles updated, ${s.tagsCreated || 0} portal tags added (${s.tagsAlreadyPresent || 0} already ok, ${s.scannedItems || 0} scanned).`,
+                `Arr tags: ${s.itemsUpdated || 0} titles updated, ${s.tagsCreated || 0} media-id tags added (${s.tagsAlreadyPresent || 0} already ok). Notify tags migrated: ${s.notifyTagsMigrated || 0}. Pruned portal rows: ${s.prunedPortalRows || 0}.`,
                 'success',
             );
         } catch (error: any) {
@@ -34,7 +34,11 @@ const PortalOwnershipImportPanel: React.FC<{
             <h3 className="font-bold text-text">Normalize Arr requester tags</h3>
             <div className="mt-1 mb-4">
                 <SettingHint>
-                    Older request tooling wrote requester tags like <code className="text-xs">16-i2ach</code>. This scan maps those (and bare usernames) to portal members and adds missing portal tags (<code className="text-xs">{'{id}-{username}'}</code>) on the Radarr/Sonarr items. It does not copy history into the portal JSON store.
+                    Arr is the source of truth for ownership and Notify. This scan maps legacy tags
+                    (e.g. <code className="text-xs">16-i2ach</code>) to members and ensures
+                    media-server tags (<code className="text-xs">{'{plexOrJellyfinId}-{username}'}</code>)
+                    plus migrates portal Notify lists to <code className="text-xs">n-…</code> Arr tags.
+                    It does not grow the portal JSON store with available history.
                 </SettingHint>
             </div>
             <button
@@ -54,10 +58,10 @@ export const MediaStackRequestSection: React.FC<{
 }> = ({ addToast }) => (
     <SettingsCollapseSection
         title="Discover & requests"
-        subtitle="Portal-native TMDB Discover + Arr requester tag tools"
+        subtitle="TMDB Discover; Arr tags own requester + notify"
     >
         <p className="text-sm text-muted mb-4">
-            Members use Discover powered by TMDB and your Radarr/Sonarr instances. No separate request app is required.
+            Portal JSON only holds pending/approval work. Available ownership and Notify subscribers live on Radarr/Sonarr tags.
         </p>
         <PortalOwnershipImportPanel addToast={addToast} />
     </SettingsCollapseSection>

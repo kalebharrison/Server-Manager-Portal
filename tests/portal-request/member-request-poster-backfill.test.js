@@ -20,8 +20,9 @@ test('listMemberRequests backfills missing posters for sparse Arr-imported rows'
         posterPath: null,
         status: 2,
         meta: {
+            // Still in-flight on Arr — available imported seeds are pruned from portal JSON.
             importedFromArrTag: true,
-            mediaStatus: 5,
+            mediaStatus: 3,
         },
     });
 
