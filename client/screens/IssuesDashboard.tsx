@@ -222,9 +222,6 @@ export const IssuesDashboard: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => 
                         {recent.map(mediaButton)}
                         {!recent.length && <p className="text-sm text-muted">No recent playback history is available.</p>}
                     </div>
-                    <p className="text-xs text-muted">
-                        Recently played is your account only. Use search for titles watched on another profile.
-                    </p>
                 </div>
             </section>
 
