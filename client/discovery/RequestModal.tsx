@@ -21,6 +21,10 @@ type Props = {
     /** Immediate header chrome from the parent so the modal paints before options load. */
     posterPath?: string | null;
     overview?: string | null;
+    /** Real admin session (not impersonating) — enables Request As. */
+    isAdmin?: boolean;
+    /** Default request-as user id (usually the admin's own id). */
+    currentUserId?: string | null;
     onClose: () => void;
     onSuccess: (message: string) => void;
     onError: (message: string) => void;
@@ -69,6 +73,8 @@ export const RequestModal: React.FC<Props> = ({
     title: fallbackTitle,
     posterPath: fallbackPosterPath,
     overview: fallbackOverview,
+    isAdmin = false,
+    currentUserId = null,
     onClose,
     onSuccess,
     onError,
@@ -87,6 +93,13 @@ export const RequestModal: React.FC<Props> = ({
     const [tagInput, setTagInput] = useState('');
     const [tagCreating, setTagCreating] = useState(false);
     const [tagSuggestionsOpen, setTagSuggestionsOpen] = useState(false);
+    const [requestUsers, setRequestUsers] = useState<Array<{
+        id: string;
+        displayName: string;
+        username?: string | null;
+        email?: string | null;
+    }>>([]);
+    const [requestAsUserId, setRequestAsUserId] = useState<string>('');
     const loadGenRef = useRef(0);
     const advancedSectionRef = useRef<HTMLDivElement>(null);
     const onErrorRef = useRef(onError);
@@ -260,6 +273,8 @@ export const RequestModal: React.FC<Props> = ({
         setLoading(true);
         setQualityForms({ hd: emptyQualityForm(), '4k': emptyQualityForm() });
         setTagInput('');
+        const selfId = String(currentUserId || '').trim();
+        setRequestAsUserId(selfId);
         try {
             const data = await apiFetch(
                 `/api/discovery/request-options?mediaType=${encodeURIComponent(mediaType)}&mediaId=${mediaId}`,
@@ -273,6 +288,32 @@ export const RequestModal: React.FC<Props> = ({
                     : mediaType,
             } as RequestOptionsPayload;
             setOptions(payload);
+
+            if (isAdmin) {
+                try {
+                    const usersRes = await apiFetch('/api/discovery/request-users');
+                    if (gen !== loadGenRef.current) return;
+                    const rows = Array.isArray(usersRes?.results) ? usersRes.results : [];
+                    const mapped = rows
+                        .map((row: any) => ({
+                            id: String(row?.id || '').trim(),
+                            displayName: String(row?.displayName || row?.username || row?.email || row?.id || 'User'),
+                            username: row?.username || null,
+                            email: row?.email || null,
+                        }))
+                        .filter((row: { id: string }) => row.id);
+                    setRequestUsers(mapped);
+                    if (selfId && mapped.some((row: { id: string }) => row.id === selfId)) {
+                        setRequestAsUserId(selfId);
+                    } else if (mapped[0]?.id) {
+                        setRequestAsUserId(mapped[0].id);
+                    }
+                } catch {
+                    setRequestUsers([]);
+                }
+            } else {
+                setRequestUsers([]);
+            }
 
             const initial = new Set<QualityKey>();
             const hdOk = payload.hasHdServer !== false
@@ -309,7 +350,7 @@ export const RequestModal: React.FC<Props> = ({
             setOptions(null);
             if (gen === loadGenRef.current) setLoading(false);
         }
-    }, [mediaId, mediaType]);
+    }, [currentUserId, isAdmin, mediaId, mediaType]);
 
     // Preload only the active quality first — load the other when the user switches tabs.
     useEffect(() => {
@@ -555,6 +596,10 @@ export const RequestModal: React.FC<Props> = ({
             mediaId,
             is4k: is4k || undefined,
         };
+        if (isAdmin && requestAsUserId) {
+            const selfId = String(currentUserId || '').trim();
+            if (requestAsUserId !== selfId) body.requestAsUserId = requestAsUserId;
+        }
         if (mediaType === 'tv') {
             body.seasons = allRequestableSelected && requestableSeasons.length === (options.seasons?.length || 0)
                 ? 'all'
@@ -831,6 +876,28 @@ export const RequestModal: React.FC<Props> = ({
                             {options.blockReason && !options.canRequest && (
                                 <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
                                     {options.blockReason}
+                                </div>
+                            )}
+
+                            {isAdmin && requestUsers.length > 0 && (
+                                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-white/40 mb-2">
+                                        Request as
+                                    </p>
+                                    <CustomSelect
+                                        value={requestAsUserId}
+                                        onChange={(value) => setRequestAsUserId(String(value || ''))}
+                                        options={requestUsers.map((user) => ({
+                                            value: user.id,
+                                            label: user.displayName
+                                                + (user.id === String(currentUserId || '')
+                                                    ? ' (you)'
+                                                    : (user.email ? ` · ${user.email}` : '')),
+                                        }))}
+                                    />
+                                    <p className="text-[11px] text-white/35 mt-2">
+                                        Defaults to you. Pick a member so they own the request and get the emails.
+                                    </p>
                                 </div>
                             )}
 

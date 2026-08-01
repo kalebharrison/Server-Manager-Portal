@@ -28,8 +28,9 @@ const DiscoveryDashboardInner: React.FC<{
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     mediaServerType?: string;
     isAdmin?: boolean;
+    currentUserId?: string | null;
     showPosterQualityBadges?: boolean;
-}> = ({ pushToast, mediaServerType = 'plex', showPosterQualityBadges = false }) => {
+}> = ({ pushToast, mediaServerType = 'plex', isAdmin = false, currentUserId = null, showPosterQualityBadges = false }) => {
     const { t, locale } = useDiscoverI18n();
     const [path, setPath] = useState(() => {
         if (typeof window !== 'undefined') return window.location.pathname;
@@ -276,6 +277,8 @@ const DiscoveryDashboardInner: React.FC<{
                 formatItem={formatItem}
                 pushToast={pushToast}
                 mediaServerType={mediaServerType}
+                isAdmin={isAdmin}
+                currentUserId={currentUserId}
             />
         );
     }
@@ -433,6 +436,7 @@ export const DiscoveryDashboard: React.FC<{
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     mediaServerType?: string;
     isAdmin?: boolean;
+    currentUserId?: string | null;
     showPosterQualityBadges?: boolean;
 }> = ({ pushToast: pushToastProp, ...props }) => {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);

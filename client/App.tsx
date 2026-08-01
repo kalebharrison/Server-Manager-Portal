@@ -214,7 +214,7 @@ export const MainApp: React.FC = () => {
                 {isImpersonating && (
                     <div className="w-full mb-4" style={{ maxWidth: contentMaxWidth }}>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-100 shadow-lg">
-                            <p className="text-sm font-medium">Viewing as <strong className="text-white">{sessionInfo?.impersonation?.targetUsername || sessionInfo?.session?.username}</strong>. Changes and requests are disabled.</p>
+                            <p className="text-sm font-medium">Viewing as <strong className="text-white">{sessionInfo?.impersonation?.targetUsername || sessionInfo?.session?.username}</strong>. Requests and notifications act as this user.</p>
                             <button type="button" onClick={onStopImpersonation} className="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-sm font-bold hover:bg-amber-500/30 whitespace-nowrap">Exit view</button>
                         </div>
                     </div>
@@ -246,7 +246,7 @@ export const MainApp: React.FC = () => {
             {!isPublicView && sessionInfo && (
                 <DiscoverChatWidget
                     enabled={sessionInfo?.navFeatures?.request !== false}
-                    readOnly={isImpersonating}
+                    readOnly={false}
                 />
             )}
         </div>

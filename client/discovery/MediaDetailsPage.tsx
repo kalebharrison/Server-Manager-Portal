@@ -68,7 +68,18 @@ export const MediaDetailsPage: React.FC<{
     formatItem: (item: any) => any;
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     mediaServerType?: string;
-}> = ({ mediaType, mediaId, onBack, formatItem, pushToast, mediaServerType = 'plex' }) => {
+    isAdmin?: boolean;
+    currentUserId?: string | null;
+}> = ({
+    mediaType,
+    mediaId,
+    onBack,
+    formatItem,
+    pushToast,
+    mediaServerType = 'plex',
+    isAdmin = false,
+    currentUserId = null,
+}) => {
     const { t, locale } = useDiscoverI18n();
     const { preferences } = useDiscoveryPreferences();
     const { profile: discoveryMe } = useDiscoveryMe(true);
@@ -454,6 +465,15 @@ export const MediaDetailsPage: React.FC<{
         () => (details ? resolveMediaAvailabilityState(details) : null),
         [details],
     );
+    // Someone else requested / title is downloading — offer Notify even if the
+    // options payload lagged or attribution was missing.
+    const showNotifyCta = canNotify
+        || notifying
+        || (
+            !!availability
+            && !availability.hasUserRequest
+            && (availability.kind === 'requested' || availability.kind === 'processing')
+        );
 
     const handleToggleNotify = async () => {
         if (notifyBusy) return;
@@ -707,7 +727,7 @@ export const MediaDetailsPage: React.FC<{
                     </div>
 
                     <div className={`grid gap-2.5 w-full ${canReportIssue && !requestButton.hide ? 'grid-cols-2 md:grid-cols-1' : 'grid-cols-1'}`}>
-                    {(canNotify || notifying) && (
+                    {showNotifyCta && (
                     <button
                         type="button"
                         onClick={() => { void handleToggleNotify(); }}
@@ -719,7 +739,7 @@ export const MediaDetailsPage: React.FC<{
                     </button>
                     )}
                     {/* Request CTA when actionable; disabled Requested/Available when Notify isn't the alt. */}
-                    {!requestButton.hide && (requestButton.variant === 'action' || !(canNotify || notifying)) && (
+                    {!requestButton.hide && (requestButton.variant === 'action' || !showNotifyCta) && (
                     <button
                         type="button"
                         onClick={() => setRequestModalOpen(true)}
@@ -1090,6 +1110,8 @@ export const MediaDetailsPage: React.FC<{
             title={title}
             posterPath={details.posterPath}
             overview={details.overview}
+            isAdmin={isAdmin}
+            currentUserId={currentUserId}
             onClose={() => setRequestModalOpen(false)}
             onSuccess={handleRequestSuccess}
             onError={(msg) => pushToast?.(msg, 'error')}
