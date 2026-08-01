@@ -37,6 +37,8 @@ test('buildRecentHistory collapses binge episodes after scanning past the raw li
     assert.equal(recent[0].watchedCount, 80);
     assert.equal(recent[1].title, 'Show B');
     assert.equal(recent[2].title, 'Some Movie');
+    assert.equal(recent[2].ratingKey, '999');
+    assert.equal(recent[2].key, '/library/metadata/999');
 });
 
 test('buildRecentHistory stops at distinct-title limit', () => {
