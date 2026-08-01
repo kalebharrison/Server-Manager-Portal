@@ -7,6 +7,9 @@ import {
     parseArrRequesterTagLabel,
     resolvePortalUserFromArrTag,
     resolvePortalOwnerFromArrTagLabels,
+    buildPortalRequesterTagForUser,
+    isPortalRequesterTagForUser,
+    collectPortalUsersFromArrTagLabels,
 } from '../../lib/portal-request/arrRequesterTags.js';
 
 test('sanitizeArrTagSegment lowercases and strips invalid chars', () => {
@@ -48,12 +51,21 @@ test('resolvePortalUserFromArrTag matches portal id, seerr id, and username', ()
     assert.equal(resolvePortalUserFromArrTag('anime', users), null);
 });
 
-test('resolvePortalOwnerFromArrTagLabels returns first mapped owner', () => {
+test('buildPortalRequesterTagForUser and isPortalRequesterTagForUser', () => {
+    const user = { id: '100', username: 'kalebharrison' };
+    assert.equal(buildPortalRequesterTagForUser(user), '100-kalebharrison');
+    assert.equal(isPortalRequesterTagForUser('100-kalebharrison', user), true);
+    assert.equal(isPortalRequesterTagForUser('1-kalebharrison', user), false);
+    assert.equal(isPortalRequesterTagForUser('kalebharrison', user), false);
+});
+
+test('collectPortalUsersFromArrTagLabels maps Seerr tags without requiring portal tags', () => {
     const users = [
-        { id: '1', username: 'kalebharrison' },
-        { id: '2', username: 'i2ach', seerrUserId: 16 },
+        { id: '100', username: 'kalebharrison' },
+        { id: '200', username: 'i2ach', seerrUserId: 16 },
     ];
-    const owner = resolvePortalOwnerFromArrTagLabels(['cinema', '16-i2ach', '1-kalebharrison'], users);
-    assert.equal(owner?.user?.id, '2');
-    assert.equal(owner?.tagLabel, '16-i2ach');
+    const map = collectPortalUsersFromArrTagLabels(['16-i2ach', 'cinema', 'kalebharrison'], users);
+    assert.equal(map.size, 2);
+    assert.equal(map.get('200')?.user.username, 'i2ach');
+    assert.equal(map.get('100')?.user.username, 'kalebharrison');
 });

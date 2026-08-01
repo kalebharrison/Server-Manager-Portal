@@ -157,8 +157,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setRequestAppUrl(initialSettings.requestAppUrl || '');
     setters.setRequestAppApiKey(initialSettings.requestAppApiKey || '');
     setters.setRequestAppMembershipSync(initialSettings.requestAppMembershipSync !== false);
-    setters.setRequestEngine(initialSettings.requestEngine === 'portal' ? 'portal' : 'seerr');
-    setters.setDiscoverySource(initialSettings.discoverySource === 'tmdb' ? 'tmdb' : 'seerr');
+    setters.setRequestEngine('portal');
+    setters.setDiscoverySource('tmdb');
     setters.setOmbiUrl(initialSettings.ombiUrl || '');
     setters.setOmbiApiKey(initialSettings.ombiApiKey || '');
     setters.setBrandingTheme(initialSettings.brandingTheme || 'plex');

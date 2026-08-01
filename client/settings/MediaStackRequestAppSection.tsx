@@ -34,13 +34,11 @@ const MembershipSyncSwitch: React.FC<{
 
 const PortalOwnershipImportPanel: React.FC<{
     addToast: (message: string, type?: 'success' | 'error') => void;
-    seerrConfigured: boolean;
-}> = ({ addToast, seerrConfigured }) => {
-    const [arrBusy, setArrBusy] = useState(false);
-    const [seerrBusy, setSeerrBusy] = useState(false);
+}> = ({ addToast }) => {
+    const [busy, setBusy] = useState(false);
 
-    const runArrImport = async () => {
-        setArrBusy(true);
+    const runNormalize = async () => {
+        setBusy(true);
         try {
             const data = await apiFetch('/api/portal-request/admin/import/arr-tags', {
                 method: 'POST',
@@ -49,63 +47,32 @@ const PortalOwnershipImportPanel: React.FC<{
             if (data?.error) throw new Error(data.error);
             const s = data?.summary || {};
             addToast(
-                `Arr tag import: ${s.imported || 0} added (${s.skippedExisting || 0} already present, ${s.scannedItems || 0} scanned).`,
+                `Arr tags: ${s.itemsUpdated || 0} titles updated, ${s.tagsCreated || 0} portal tags added (${s.tagsAlreadyPresent || 0} already ok, ${s.scannedItems || 0} scanned).`,
                 'success',
             );
         } catch (error: any) {
-            addToast(error?.message || 'Arr tag import failed', 'error');
+            addToast(error?.message || 'Arr tag normalize failed', 'error');
         } finally {
-            setArrBusy(false);
-        }
-    };
-
-    const runSeerrImport = async () => {
-        setSeerrBusy(true);
-        try {
-            const data = await apiFetch('/api/portal-request/admin/import/seerr-history', {
-                method: 'POST',
-                body: JSON.stringify({}),
-            });
-            if (data?.error) throw new Error(data.error);
-            const requests = data?.summary?.requests || {};
-            addToast(
-                `Seerr history import: ${requests.imported || 0} requests added (${requests.skippedExisting || 0} already present).`,
-                'success',
-            );
-        } catch (error: any) {
-            addToast(error?.message || 'Seerr history import failed', 'error');
-        } finally {
-            setSeerrBusy(false);
+            setBusy(false);
         }
     };
 
     return (
         <div className="mb-6 rounded-lg border border-border/50 bg-surface/40 p-4">
-            <h3 className="font-bold text-text">Ownership backfill</h3>
+            <h3 className="font-bold text-text">Normalize Arr requester tags</h3>
             <div className="mt-1 mb-4">
                 <SettingHint>
-                    Populate My Requests from existing Radarr/Sonarr requester tags, and optionally import open Seerr history. Safe to re-run — existing portal rows are skipped.
+                    Production Seerr wrote tags like <code className="text-xs">16-i2ach</code>. This scan maps those (and bare usernames) to portal members and adds missing portal tags (<code className="text-xs">{'{id}-{username}'}</code>) on the Radarr/Sonarr items. It does not copy history into the portal JSON store.
                 </SettingHint>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                    type="button"
-                    disabled={arrBusy}
-                    onClick={runArrImport}
-                    className="px-4 py-2 rounded-lg bg-plex text-white font-medium disabled:opacity-50"
-                >
-                    {arrBusy ? 'Scanning Arr…' : 'Import from Arr tags'}
-                </button>
-                <button
-                    type="button"
-                    disabled={seerrBusy || !seerrConfigured}
-                    onClick={runSeerrImport}
-                    className="px-4 py-2 rounded-lg border border-border bg-background text-text font-medium disabled:opacity-50"
-                    title={seerrConfigured ? undefined : 'Configure Seerr URL and API key first'}
-                >
-                    {seerrBusy ? 'Importing Seerr…' : 'Import Seerr history'}
-                </button>
-            </div>
+            <button
+                type="button"
+                disabled={busy}
+                onClick={runNormalize}
+                className="px-4 py-2 rounded-lg bg-plex text-white font-medium disabled:opacity-50"
+            >
+                {busy ? 'Scanning Arr…' : 'Normalize Arr tags'}
+            </button>
         </div>
     );
 };
@@ -135,16 +102,12 @@ export const MediaStackRequestAppSection: React.FC<{
     requestAppUrl,
     requestAppApiKey,
     requestAppMembershipSync,
-    requestEngine,
-    discoverySource,
     ombiUrl,
     ombiApiKey,
     onRequestAppTypeChange,
     onRequestAppUrlChange,
     onRequestAppApiKeyChange,
     onRequestAppMembershipSyncChange,
-    onRequestEngineChange,
-    onDiscoverySourceChange,
     onOmbiUrlChange,
     onOmbiApiKeyChange,
     addToast,
@@ -152,51 +115,16 @@ export const MediaStackRequestAppSection: React.FC<{
     <>
         <IntegrationHeading
             app={requestAppType === 'none' ? 'seerr' : requestAppType}
-            title="Primary Movie & TV Requester"
-            subtitle="Seerr or Jellyseerr powers the embedded request experience"
+            title="Discover & requests"
+            subtitle="Portal-native Discover (TMDB) and requests. Seerr below is only for Discord/Ask glue."
             className="mt-8"
         />
-        <div className="grid gap-4 md:grid-cols-2 mb-4">
-            <div>
-                <label htmlFor="requestEngine">Request Engine</label>
-                <CustomSelect
-                    id="requestEngine"
-                    value={requestEngine}
-                    onChange={(value) => onRequestEngineChange(value === 'portal' ? 'portal' : 'seerr')}
-                    options={[
-                        { label: 'Seerr (default)', value: 'seerr' },
-                        { label: 'Portal-native (opt-in)', value: 'portal' },
-                    ]}
-                />
-            </div>
-            <div>
-                <label htmlFor="discoverySource">Discovery Source</label>
-                <CustomSelect
-                    id="discoverySource"
-                    value={discoverySource}
-                    onChange={(value) => onDiscoverySourceChange(value === 'tmdb' ? 'tmdb' : 'seerr')}
-                    options={[
-                        { label: 'Seerr (default)', value: 'seerr' },
-                        { label: 'TMDB (Portal discovery)', value: 'tmdb' },
-                    ]}
-                />
-            </div>
+        <div className="mb-4 rounded-lg border border-border/40 bg-surface/30 p-3 text-xs text-muted">
+            Request engine and discovery are locked to <strong className="text-text">Portal + TMDB</strong>. There is no Seerr UI path on this release.
         </div>
-        {requestEngine === 'portal' && (
-            <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
-                Portal-native Discover uses TMDB. With auto-approve enabled, requests push straight to Radarr/Sonarr; otherwise they wait in the admin queue. Discord and Ask still use Seerr until those flows migrate.
-            </div>
-        )}
-        {requestEngine === 'portal' && (
-            <PortalOwnershipImportPanel
-                addToast={addToast}
-                seerrConfigured={['seerr', 'jellyseerr', 'overseerr'].includes(requestAppType)
-                    && !!String(requestAppUrl || '').trim()
-                    && !!String(requestAppApiKey || initialSettings?.requestAppApiKey || '').trim()}
-            />
-        )}
+        <PortalOwnershipImportPanel addToast={addToast} />
         <div className="mb-4">
-            <label htmlFor="requestAppType">Request App Type</label>
+            <label htmlFor="requestAppType">Legacy Seerr (Discord / Ask)</label>
             <CustomSelect
                 id="requestAppType"
                 value={requestAppType}
@@ -211,8 +139,8 @@ export const MediaStackRequestAppSection: React.FC<{
             <div className="mt-2">
                 <SettingHint>
                     {requestAppType === 'ombi'
-                        ? 'This legacy configuration remains usable for connection testing and status. Choose Seerr or Jellyseerr for embedded browsing and requests.'
-                        : 'Powers the embedded Request tab, request status, and issue reporting.'}
+                        ? 'This legacy configuration remains usable for connection testing and status.'
+                        : 'Optional. Kept so Discord alerts and Ask can still talk to Seerr until those flows move fully onto the portal.'}
                 </SettingHint>
             </div>
         </div>
