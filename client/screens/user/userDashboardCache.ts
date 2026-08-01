@@ -10,7 +10,7 @@ export const readCachedHomeLibrary = (key: string) => {
     }
 };
 
-export const analyticsCacheKey = (sessionInfo: any, days: number | 'all') => `homeAnalytics:${sessionInfo?.session?.accountId || sessionInfo?.session?.username || 'member'}:${days}`;
+export const analyticsCacheKey = (sessionInfo: any, days: number | 'all') => `homeAnalytics:v2:${sessionInfo?.session?.accountId || sessionInfo?.session?.username || 'member'}:${days}`;
 
 export const readCachedHomeAnalytics = (sessionInfo: any, days: number | 'all') => {
     try {
