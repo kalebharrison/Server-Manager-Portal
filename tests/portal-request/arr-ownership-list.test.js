@@ -90,17 +90,13 @@ test('listArrOwnershipDtosForUser returns Arr-owned titles without portal JSON',
     assert.match(String(rows[0].id), /^arr-movie-550/);
 });
 
-test('dual-linked users build both media-server tags', () => {
+test('dual-linked users still get one portal-id tag', () => {
     const user = {
         id: 'portal',
         plexId: '16297230',
         jellyfinId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         username: 'carrowayjm',
     };
-    assert.equal(buildPortalRequesterTagForUser(user, 'plex'), '16297230-carrowayjm');
-    assert.equal(buildNotifyTagForUser(user, 'plex'), 'n-16297230-carrowayjm');
-    assert.equal(
-        buildPortalRequesterTagForUser(user, 'jellyfin'),
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890-carrowayjm',
-    );
+    assert.equal(buildPortalRequesterTagForUser(user, 'plex'), 'portal-carrowayjm');
+    assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-portal-carrowayjm');
 });

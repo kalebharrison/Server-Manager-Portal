@@ -3,15 +3,12 @@ import assert from 'node:assert/strict';
 
 import {
     sanitizeArrTagSegment,
-    mediaUserIdsForTag,
     mediaUserIdForTag,
     buildPortalRequesterTagLabel,
     parseArrRequesterTagLabel,
     resolvePortalUserFromArrTag,
     resolvePortalOwnerFromArrTagLabels,
     resolveNotifyUsersFromArrTagLabels,
-    buildPortalRequesterTagsForUser,
-    buildNotifyTagsForUser,
     buildPortalRequesterTagForUser,
     buildNotifyTagForUser,
     isPortalRequesterTagForUser,
@@ -25,19 +22,11 @@ test('sanitizeArrTagSegment lowercases and strips invalid chars', () => {
     assert.equal(sanitizeArrTagSegment('Foo_Bar!'), 'foobar');
 });
 
-test('mediaUserIdsForTag includes both plex and jellyfin when linked', () => {
+test('mediaUserIdForTag uses portal id only (one tag set per user)', () => {
     const both = { id: 'portal-1', plexId: '100', jellyfinId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' };
-    assert.deepEqual(mediaUserIdsForTag(both), ['100', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890']);
-    assert.deepEqual(mediaUserIdsForTag({ id: 'portal-1', plexId: '100' }), ['100']);
-    assert.deepEqual(mediaUserIdsForTag({ id: 'portal-1' }), ['portal-1']);
-});
-
-test('mediaUserIdForTag prefers active media-server id with fallbacks', () => {
-    const both = { id: 'portal-1', plexId: '100', jellyfinId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' };
-    assert.equal(mediaUserIdForTag(both, 'plex'), '100');
-    assert.equal(mediaUserIdForTag(both, 'jellyfin'), 'a1b2c3d4-e5f6-7890-abcd-ef1234567890');
-    assert.equal(mediaUserIdForTag({ id: 'portal-1', jellyfinId: 'jf-1' }, 'plex'), 'jf-1');
-    assert.equal(mediaUserIdForTag({ id: 'portal-1', plexId: '100' }, 'jellyfin'), '100');
+    assert.equal(mediaUserIdForTag(both, 'plex'), 'portal-1');
+    assert.equal(mediaUserIdForTag(both, 'jellyfin'), 'portal-1');
+    assert.equal(mediaUserIdForTag({ id: 'portal-1', jellyfinId: 'jf-1' }, 'plex'), 'portal-1');
 });
 
 test('buildPortalRequesterTagLabel uses id + username', () => {
@@ -45,23 +34,15 @@ test('buildPortalRequesterTagLabel uses id + username', () => {
     assert.equal(buildPortalRequesterTagLabel('99', 'i2ach'), '99-i2ach');
 });
 
-test('buildPortalRequesterTagsForUser writes both ids for dual-linked users', () => {
+test('buildPortalRequesterTagForUser writes a single portal-id tag', () => {
     const user = {
         id: 'portal-9',
         plexId: '16297230',
         jellyfinId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         username: 'carrowayjm',
     };
-    assert.deepEqual(buildPortalRequesterTagsForUser(user), [
-        '16297230-carrowayjm',
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890-carrowayjm',
-    ]);
-    assert.deepEqual(buildNotifyTagsForUser(user), [
-        'n-16297230-carrowayjm',
-        'n-a1b2c3d4-e5f6-7890-abcd-ef1234567890-carrowayjm',
-    ]);
-    assert.equal(buildPortalRequesterTagForUser(user, 'plex'), '16297230-carrowayjm');
-    assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-a1b2c3d4-e5f6-7890-abcd-ef1234567890-carrowayjm');
+    assert.equal(buildPortalRequesterTagForUser(user, 'plex'), 'portal-9-carrowayjm');
+    assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-portal-9-carrowayjm');
 });
 
 test('parseArrRequesterTagLabel handles legacy, guid, notify, and bare forms', () => {
@@ -144,18 +125,10 @@ test('isPortalRequesterTagForUser and isNotifyTagForUser', () => {
         jellyfinId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         username: 'kalebharrison',
     };
-    assert.equal(isPortalRequesterTagForUser('100-kalebharrison', user, 'plex'), true);
-    assert.equal(
-        isPortalRequesterTagForUser('a1b2c3d4-e5f6-7890-abcd-ef1234567890-kalebharrison', user, 'plex'),
-        true,
-    );
-    assert.equal(isPortalRequesterTagForUser('portal-9-kalebharrison', user, 'plex'), false);
-    assert.equal(isNotifyTagForUser('n-100-kalebharrison', user, 'plex'), true);
-    assert.equal(
-        isNotifyTagForUser('n-a1b2c3d4-e5f6-7890-abcd-ef1234567890-kalebharrison', user, 'jellyfin'),
-        true,
-    );
-    assert.equal(isNotifyTagForUser('100-kalebharrison', user, 'plex'), false);
+    assert.equal(isPortalRequesterTagForUser('portal-9-kalebharrison', user), true);
+    assert.equal(isPortalRequesterTagForUser('100-kalebharrison', user), false);
+    assert.equal(isNotifyTagForUser('n-portal-9-kalebharrison', user), true);
+    assert.equal(isNotifyTagForUser('portal-9-kalebharrison', user), false);
 });
 
 test('collectPortalUsersFromArrTagLabels maps legacy tags without requiring portal tags', () => {
