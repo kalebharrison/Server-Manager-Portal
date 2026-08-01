@@ -98,8 +98,10 @@ export const RequestModal: React.FC<Props> = ({
         displayName: string;
         username?: string | null;
         email?: string | null;
+        plexId?: string | null;
     }>>([]);
     const [requestAsUserId, setRequestAsUserId] = useState<string>('');
+    const [selfRequestUserId, setSelfRequestUserId] = useState<string>('');
     const loadGenRef = useRef(0);
     const advancedSectionRef = useRef<HTMLDivElement>(null);
     const onErrorRef = useRef(onError);
@@ -300,13 +302,27 @@ export const RequestModal: React.FC<Props> = ({
                             displayName: String(row?.displayName || row?.username || row?.email || row?.id || 'User'),
                             username: row?.username || null,
                             email: row?.email || null,
+                            plexId: row?.plexId != null ? String(row.plexId) : null,
                         }))
                         .filter((row: { id: string }) => row.id);
                     setRequestUsers(mapped);
-                    if (selfId && mapped.some((row: { id: string }) => row.id === selfId)) {
-                        setRequestAsUserId(selfId);
-                    } else if (mapped[0]?.id) {
-                        setRequestAsUserId(mapped[0].id);
+                    // Prefer server-resolved "me" — never fall back to a random first member.
+                    const serverMe = String(usersRes?.currentUserId || '').trim();
+                    const propMe = String(currentUserId || '').trim();
+                    const meKeys = new Set(
+                        [serverMe, propMe]
+                            .map((value) => value.toLowerCase())
+                            .filter(Boolean),
+                    );
+                    const meRow = mapped.find((row) => (
+                        meKeys.has(row.id.toLowerCase())
+                        || (row.plexId && meKeys.has(row.plexId.toLowerCase()))
+                    )) || (serverMe || propMe ? null : mapped[0]);
+                    // Server sorts the current admin first; trust that when ids differ.
+                    const resolvedMe = meRow || mapped[0];
+                    if (resolvedMe?.id) {
+                        setSelfRequestUserId(resolvedMe.id);
+                        setRequestAsUserId(resolvedMe.id);
                     }
                 } catch {
                     setRequestUsers([]);
@@ -890,7 +906,7 @@ export const RequestModal: React.FC<Props> = ({
                                         options={requestUsers.map((user) => ({
                                             value: user.id,
                                             label: user.displayName
-                                                + (user.id === String(currentUserId || '')
+                                                + (user.id === selfRequestUserId
                                                     ? ' (you)'
                                                     : (user.email ? ` · ${user.email}` : '')),
                                         }))}
