@@ -102,7 +102,7 @@ test('dual-linked users still get one portal-id tag', () => {
     assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-portal');
 });
 
-test('normalizeArrRequesterTagsOnArr adds portal tags without removing Seerr/legacy', async () => {
+test('normalize corrects portal legacy tags but leaves Seerr tags alone', async () => {
     const user = { id: '100', plexId: '100', username: 'kaleb', seerrUserId: 16 };
     const config = {
         arrInstances: [{
@@ -173,12 +173,11 @@ test('normalizeArrRequesterTagsOnArr adds portal tags without removing Seerr/leg
 
     assert.equal(summary.itemsUpdated, 1);
     assert.ok(summary.tagsCreated >= 1);
+    assert.ok(summary.tagsCorrected >= 2);
     assert.ok(putBody);
     const labels = putBody.tags.map((id) => tags.find((tag) => tag.id === id)?.label);
-    assert.ok(labels.includes('100'));
-    assert.ok(labels.includes('n-100'));
+    assert.deepEqual(new Set(labels), new Set(['100', 'n-100', '16-kaleb', 'anime']));
+    assert.equal(labels.includes('100-kaleb'), false);
+    assert.equal(labels.includes('n-100-kaleb'), false);
     assert.ok(labels.includes('16-kaleb'));
-    assert.ok(labels.includes('100-kaleb'));
-    assert.ok(labels.includes('n-100-kaleb'));
-    assert.ok(labels.includes('anime'));
 });
