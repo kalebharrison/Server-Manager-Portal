@@ -44,7 +44,6 @@ const APP_ICONS: Record<string, string> = {
     sonarr: `${SELFHST_ICON_BASE}/sonarr.svg`,
     radarr: `${SELFHST_ICON_BASE}/radarr.svg`,
     tautulli: `${SELFHST_ICON_BASE}/tautulli.svg`,
-    ombi: `${SELFHST_ICON_BASE}/ombi.svg`,
     jellystat: 'https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/jellystat.png',
 };
 

@@ -91,8 +91,6 @@ export interface AppSettings {
     tvdbApiKey?: string;
     tvdbPin?: string;
     cacheRefreshMinutes?: number;
-    ombiUrl?: string;
-    ombiApiKey?: string;
     tautulliUrl?: string;
     tautulliApiKey?: string;
     jellystatUrl?: string;

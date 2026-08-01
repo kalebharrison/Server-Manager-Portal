@@ -26,7 +26,6 @@ type SettingsHydrationSetters = {
     setInactiveCleanupDays: (value: number) => void;
     setPublicDomain: (value: string) => void;
     setContactUrl: (value: string) => void;
-    setContactWhatsApp: (value: string) => void;
     setContactEmail: (value: string) => void;
     setDiscordEnabled: (value: boolean) => void;
     setDiscordInviteUrl: (value: string) => void;
@@ -53,8 +52,6 @@ type SettingsHydrationSetters = {
     setTautulliApiKey: (value: string) => void;
     setJellystatUrl: (value: string) => void;
     setJellystatApiKey: (value: string) => void;
-    setOmbiUrl: (value: string) => void;
-    setOmbiApiKey: (value: string) => void;
     setBrandingTheme: (value: string) => void;
     setCustomLogoUrl: (value: string) => void;
     setBackgroundImageUrl: (value: string) => void;
@@ -120,7 +117,6 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setInactiveCleanupDays(initialSettings.inactiveCleanupDays || 90);
     setters.setPublicDomain(initialSettings.publicDomain || 'https://portal.yourdomain.com');
     setters.setContactUrl(initialSettings.contactUrl || '');
-    setters.setContactWhatsApp(initialSettings.contactWhatsApp || '');
     setters.setContactEmail(initialSettings.contactEmail || '');
     setters.setDiscordEnabled(!!initialSettings.discordEnabled);
     setters.setDiscordInviteUrl(initialSettings.discordInviteUrl || '');
@@ -147,8 +143,6 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setTautulliApiKey(initialSettings.tautulliApiKey || '');
     setters.setJellystatUrl(initialSettings.jellystatUrl || '');
     setters.setJellystatApiKey(initialSettings.jellystatApiKey || '');
-    setters.setOmbiUrl(initialSettings.ombiUrl || '');
-    setters.setOmbiApiKey(initialSettings.ombiApiKey || '');
     setters.setBrandingTheme(initialSettings.brandingTheme || 'plex');
     setters.setCustomLogoUrl(initialSettings.customLogoUrl || '');
     setters.setBackgroundImageUrl(initialSettings.backgroundImageUrl || '');

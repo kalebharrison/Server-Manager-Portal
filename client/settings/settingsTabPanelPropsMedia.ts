@@ -48,15 +48,11 @@ export const buildMediaStackTabPanelProps = ({
     tautulliApiKey: values.tautulliApiKey,
     jellystatUrl: values.jellystatUrl,
     jellystatApiKey: values.jellystatApiKey,
-    ombiUrl: values.ombiUrl,
-    ombiApiKey: values.ombiApiKey,
     onArrInstancesChange: onChange('arrInstances'),
     onTautulliUrlChange: onChange('tautulliUrl'),
     onTautulliApiKeyChange: onChange('tautulliApiKey'),
     onJellystatUrlChange: onChange('jellystatUrl'),
     onJellystatApiKeyChange: onChange('jellystatApiKey'),
-    onOmbiUrlChange: onChange('ombiUrl'),
-    onOmbiApiKeyChange: onChange('ombiApiKey'),
     addToast,
 });
 

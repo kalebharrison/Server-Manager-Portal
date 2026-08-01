@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 
 import { apiFetch } from '../shared/api';
-import { IntegrationTestButton } from '../shared/IntegrationTestButton';
 import { SettingHint } from './SettingHint';
-import { IntegrationHeading, hasIntegrationCredentials } from './integrationDisplay';
+import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 const PortalOwnershipImportPanel: React.FC<{
     addToast: (message: string, type?: 'success' | 'error') => void;
@@ -31,7 +30,7 @@ const PortalOwnershipImportPanel: React.FC<{
     };
 
     return (
-        <div className="mb-6 rounded-lg border border-border/50 bg-surface/40 p-4">
+        <div className="rounded-lg border border-border/50 bg-surface/40 p-4">
             <h3 className="font-bold text-text">Normalize Arr requester tags</h3>
             <div className="mt-1 mb-4">
                 <SettingHint>
@@ -51,44 +50,16 @@ const PortalOwnershipImportPanel: React.FC<{
 };
 
 export const MediaStackRequestSection: React.FC<{
-    initialSettings: any;
-    ombiUrl: string;
-    ombiApiKey: string;
-    onOmbiUrlChange: (value: string) => void;
-    onOmbiApiKeyChange: (value: string) => void;
     addToast: (message: string, type?: 'success' | 'error') => void;
-}> = ({
-    initialSettings,
-    ombiUrl,
-    ombiApiKey,
-    onOmbiUrlChange,
-    onOmbiApiKeyChange,
-    addToast,
-}) => (
-    <>
-        <IntegrationHeading
-            app="tmdb"
-            title="Discover & requests"
-            subtitle="Portal-native Discover and requests, powered by TMDB and your Radarr/Sonarr instances."
-            className="mt-8"
-        />
+}> = ({ addToast }) => (
+    <SettingsCollapseSection
+        defaultOpen={false}
+        title="Discover & requests"
+        subtitle="Portal-native TMDB Discover + Arr requester tag tools"
+    >
+        <p className="text-sm text-muted mb-4">
+            Members use Discover powered by TMDB and your Radarr/Sonarr instances. No separate request app is required.
+        </p>
         <PortalOwnershipImportPanel addToast={addToast} />
-
-        <IntegrationHeading app="ombi" title="Ombi Music Requests" subtitle="Optional secondary requester for Lidarr workflows" className="mt-8" />
-        <div className="mb-4">
-            <label htmlFor="ombiUrl">Ombi URL</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="ombiUrl" type="text" value={ombiUrl} onChange={(event) => onOmbiUrlChange(event.target.value)} placeholder="http://localhost:3579" />
-            <div className="mt-2"><SettingHint>Handles music requests only. It does not replace the portal movie and TV requester.</SettingHint></div>
-        </div>
-        <div className="mb-4">
-            <label htmlFor="ombiApiKey">Ombi API Key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="ombiApiKey" type="password" value={ombiApiKey} onChange={(event) => onOmbiApiKeyChange(event.target.value)} placeholder="API key from Ombi settings" />
-        </div>
-        <IntegrationTestButton
-            type="ombi"
-            payload={{ ombiUrl, ombiApiKey }}
-            disabled={!hasIntegrationCredentials(ombiUrl, ombiApiKey, initialSettings.ombiUrl, initialSettings.ombiApiKey)}
-            onMessage={(message, ok) => addToast(message, ok ? 'success' : 'error')}
-        />
-    </>
+    </SettingsCollapseSection>
 );

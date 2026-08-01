@@ -7,10 +7,14 @@ const APP_ICONS: Record<string, string> = {
     radarr: `${SELFHST_ICON_BASE}/radarr.svg`,
     lidarr: `${SELFHST_ICON_BASE}/lidarr.svg`,
     tautulli: `${SELFHST_ICON_BASE}/tautulli.svg`,
-    ombi: `${SELFHST_ICON_BASE}/ombi.svg`,
     jellystat: 'https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/jellystat.png',
     tmdb: `${SELFHST_ICON_BASE}/tmdb.svg`,
-    tvdb: `${SELFHST_ICON_BASE}/the-tvdb.svg`,
+    // selfhst slug is `tvdb` (not `the-tvdb`); PNG fallback if SVG missing.
+    tvdb: `${SELFHST_ICON_BASE}/tvdb.svg`,
+};
+
+const APP_ICON_FALLBACKS: Record<string, string> = {
+    tvdb: 'https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/tvdb.png',
 };
 
 export const hasIntegrationCredentials = (
@@ -31,7 +35,14 @@ const ProgramIcon: React.FC<{ app: string; label: string }> = ({ app, label }) =
                 src={APP_ICONS[app]}
                 alt=""
                 className="w-5 h-5 object-contain"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                onError={(e) => {
+                    const fallback = APP_ICON_FALLBACKS[app];
+                    if (fallback && e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                        return;
+                    }
+                    e.currentTarget.style.display = 'none';
+                }}
             />
         ) : (
             <span className="text-[10px] font-black text-plex">{label.slice(0, 2).toUpperCase()}</span>
@@ -40,14 +51,22 @@ const ProgramIcon: React.FC<{ app: string; label: string }> = ({ app, label }) =
     </span>
 );
 
+export const IntegrationTitle: React.FC<{ app: string; title: string; subtitle?: string }> = ({
+    app,
+    title,
+    subtitle,
+}) => (
+    <div className="grid grid-cols-[2rem_1fr] gap-x-3 gap-y-0.5 min-w-0">
+        <div className="row-start-1 self-center">
+            <ProgramIcon app={app} label={title} />
+        </div>
+        <div className="col-start-2 row-start-1 text-base font-bold text-text leading-tight min-w-0">{title}</div>
+        {subtitle ? <p className="text-xs text-muted col-start-2 row-start-2">{subtitle}</p> : null}
+    </div>
+);
+
 export const IntegrationHeading: React.FC<{ app: string; title: string; subtitle?: string; className?: string }> = ({ app, title, subtitle, className = '' }) => (
     <div className={`integration-heading border-b border-border pb-3 mb-4 ${className}`}>
-        <div className="grid grid-cols-[2rem_1fr] gap-x-3 gap-y-0.5">
-            <div className="row-start-1 self-center">
-                <ProgramIcon app={app} label={title} />
-            </div>
-            <h3 className="integration-heading-title text-xl font-bold text-text leading-tight min-w-0 col-start-2 row-start-1">{title}</h3>
-            {subtitle && <p className="text-xs text-muted col-start-2 row-start-2">{subtitle}</p>}
-        </div>
+        <IntegrationTitle app={app} title={title} subtitle={subtitle} />
     </div>
 );

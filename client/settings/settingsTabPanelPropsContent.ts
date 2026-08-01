@@ -92,12 +92,10 @@ export const buildContactTabPanelProps = ({
     handlePushAnnouncement,
     isPushingAnnouncement,
 }: Pick<ContentTabPanelPropsInput, 'values' | 'onChange' | 'handlePushAnnouncement' | 'isPushingAnnouncement'>): SettingsTabPanelProps['contact'] => ({
-    contactWhatsApp: values.contactWhatsApp,
     contactEmail: values.contactEmail,
     contactUrl: values.contactUrl,
     announcement: values.announcement,
     isPushingAnnouncement,
-    onContactWhatsAppChange: onChange('contactWhatsApp'),
     onContactEmailChange: onChange('contactEmail'),
     onContactUrlChange: onChange('contactUrl'),
     onAnnouncementChange: onChange('announcement'),

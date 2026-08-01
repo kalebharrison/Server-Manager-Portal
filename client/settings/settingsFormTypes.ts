@@ -28,7 +28,6 @@ export type SettingsFormValues = {
     newsletterDay: number;
     publicDomain: string;
     contactUrl: string;
-    contactWhatsApp: string;
     contactEmail: string;
     discordEnabled: boolean;
     discordInviteUrl: string;
@@ -57,8 +56,6 @@ export type SettingsFormValues = {
     tautulliApiKey: string;
     jellystatUrl: string;
     jellystatApiKey: string;
-    ombiUrl: string;
-    ombiApiKey: string;
     dashboardLayout: DashboardLayoutConfig;
     customLogoUrl: string;
     backgroundImageUrl: string;

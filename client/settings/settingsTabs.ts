@@ -24,7 +24,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             { id: 'branding', label: 'Appearance', keywords: ['theme', 'logo', 'color', 'quality', 'badges', 'poster', 'hdr', 'codec', 'ui', 'animation', 'background'] },
             { id: 'home-layout', label: 'Home Page', keywords: ['dashboard', 'widgets', 'sections', 'home', 'layout', 'reorder', 'hide'] },
             { id: 'navigation', label: 'Navigation', keywords: ['menu', 'order', 'sidebar'] },
-            { id: 'contact', label: 'Support & Announcements', keywords: ['email', 'whatsapp', 'support', 'announcement', 'banner'] },
+            { id: 'contact', label: 'Support & Announcements', keywords: ['email', 'support', 'announcement', 'banner', 'contact'] },
             { id: 'discord', label: 'Discord', keywords: ['discord', 'bot', 'webhook', 'llm', 'ollama', 'ask', 'agent', 'searx', 'brave', 'tavily', 'requesty'] },
         ]
     },
@@ -32,11 +32,11 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
         title: 'Connections',
         tabs: [
             { id: 'plex', label: 'Plex / Jellyfin', keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct', 'privacy', 'usernames'] },
-            { id: 'mediastack', label: 'Apps & Automation', keywords: ['sonarr', 'radarr', 'tautulli', 'jellystat', 'requests', 'integrations'] },
-            { id: 'scanner', label: 'Scanner', keywords: ['autoscan', 'scanner', 'webhook', 'path rewrite', 'sonarr', 'radarr', 'lidarr', 'library refresh'] },
-            { id: 'upgrader', label: 'Library Upgrader', keywords: ['upgrade', 'hevc', 'codec', 'sonarr', 'radarr', 'quality profile'] },
+            { id: 'mediastack', label: 'Apps & Automation', keywords: ['sonarr', 'radarr', 'lidarr', 'tautulli', 'jellystat', 'requests', 'integrations', 'arr', 'discover'] },
             { id: 'metadata', label: 'Metadata', keywords: ['tmdb', 'tvdb', 'artwork', 'genres', 'discovery', 'metadata'] },
-            { id: 'status', label: 'Status Page', keywords: ['uptime', 'health', 'services', 'monitor'] }
+            { id: 'status', label: 'Status Page', keywords: ['uptime', 'health', 'services', 'monitor'] },
+            { id: 'scanner', label: 'Scanner (Admin Only)', keywords: ['autoscan', 'scanner', 'webhook', 'path rewrite', 'sonarr', 'radarr', 'lidarr', 'library refresh', 'admin'] },
+            { id: 'upgrader', label: 'Library Upgrader (Admin Only)', keywords: ['upgrade', 'hevc', 'codec', 'sonarr', 'radarr', 'quality profile', 'admin'] },
         ]
     },
     {

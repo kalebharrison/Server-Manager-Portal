@@ -43,21 +43,20 @@ test('status payload abstracts vendor defaults but preserves custom labels', () 
         services: [
             { id: 'sonarr', name: 'Sonarr', description: 'TV automation', groupId: 'downloads' },
             { id: 'radarr', name: 'Cinema Pipeline', description: 'Movie acquisition and upgrades', groupId: 'downloads' },
-            { id: 'ombi', name: 'Ombi', description: 'Requests portal', groupId: 'external' },
+            { id: 'tmdb', name: 'TMDB', description: 'Media metadata', groupId: 'external' },
         ],
     });
     assert.equal(payload.config.groups[0].name, 'Automation Health');
     assert.deepEqual(payload.config.services.map(({ name, description }) => ({ name, description })), [
         { name: 'TV Automation', description: 'TV release automation' },
         { name: 'Cinema Pipeline', description: 'Movie acquisition and upgrades' },
-        { name: 'Request Service', description: 'Media requests' },
+        { name: 'Media Metadata', description: 'Movie and TV discovery metadata' },
     ]);
 });
 
-test('default status config does not expose the request provider brand', () => {
+test('default status config does not auto-add retired Ombi monitors', () => {
     const config = createDefaultStatusConfig({ ombiUrl: 'http://requests:3579', ombiApiKey: 'ombi-key' });
-    assert.equal(config.services[0].name, 'Music Requests');
-    assert.equal(config.services[0].description, 'Music request service');
+    assert.equal(config.services.some((service) => service.id === 'ombi'), false);
 });
 
 test('built-in status URLs follow current application settings', () => {
@@ -100,13 +99,12 @@ test('metadata APIs and additional Arr instances receive distinct status monitor
     assert.deepEqual(payload.config.services.map((service) => service.name), ['TV Automation', 'Anime', 'Media Metadata', 'TV Metadata']);
 });
 
-test('Ombi music requests are monitored without exposing the provider name to members', () => {
-    const config = createDefaultStatusConfig({
-        ombiUrl: 'http://ombi:3579',
-        ombiApiKey: 'ombi-key',
-    });
-    const payload = createPublicStatusPayload(config);
-    assert.deepEqual(payload.config.services.map((service) => service.name), ['Music Requests']);
+test('reconcile strips retired Ombi monitors from stored status config', () => {
+    const result = reconcileBuiltInStatusConfig({
+        groups: [{ id: 'external', name: 'External Services', order: 3 }],
+        services: [{ id: 'ombi', name: 'Music Requests', url: 'http://ombi:3579', groupId: 'external' }],
+    }, {});
+    assert.equal(result.services.some((service) => service.id === 'ombi'), false);
 });
 
 test('stale generated Plex monitor is removed without a Plex URL', () => {

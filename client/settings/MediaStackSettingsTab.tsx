@@ -13,15 +13,11 @@ type MediaStackSettingsTabProps = {
     tautulliApiKey: string;
     jellystatUrl: string;
     jellystatApiKey: string;
-    ombiUrl: string;
-    ombiApiKey: string;
     onArrInstancesChange: (value: ArrInstance[]) => void;
     onTautulliUrlChange: (value: string) => void;
     onTautulliApiKeyChange: (value: string) => void;
     onJellystatUrlChange: (value: string) => void;
     onJellystatApiKeyChange: (value: string) => void;
-    onOmbiUrlChange: (value: string) => void;
-    onOmbiApiKeyChange: (value: string) => void;
     addToast: (message: string, type?: 'success' | 'error') => void;
 };
 
@@ -33,19 +29,15 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     tautulliApiKey,
     jellystatUrl,
     jellystatApiKey,
-    ombiUrl,
-    ombiApiKey,
     onArrInstancesChange,
     onTautulliUrlChange,
     onTautulliApiKeyChange,
     onJellystatUrlChange,
     onJellystatApiKeyChange,
-    onOmbiUrlChange,
-    onOmbiApiKeyChange,
     addToast,
 }) => (
-    <div className="mb-8 animate-fade-in">
-        {(['sonarr', 'radarr', 'lidarr'] as const).map((type, index) => (
+    <div className="mb-8 animate-fade-in space-y-4">
+        {(['sonarr', 'radarr', 'lidarr'] as const).map((type) => (
             <ArrInstancesPanel
                 key={type}
                 type={type}
@@ -55,7 +47,6 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
                     ...typedInstances,
                 ])}
                 onMessage={(message, ok) => addToast(message, ok ? 'success' : 'error')}
-                className={index === 0 ? '' : 'mt-8'}
             />
         ))}
 
@@ -73,13 +64,6 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             addToast={addToast}
         />
 
-        <MediaStackRequestSection
-            initialSettings={initialSettings}
-            ombiUrl={ombiUrl}
-            ombiApiKey={ombiApiKey}
-            onOmbiUrlChange={onOmbiUrlChange}
-            onOmbiApiKeyChange={onOmbiApiKeyChange}
-            addToast={addToast}
-        />
+        <MediaStackRequestSection addToast={addToast} />
     </div>
 );

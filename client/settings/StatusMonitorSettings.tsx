@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { CustomSelect } from '../shared/ui';
+import { SettingsCollapseSection } from './SettingsCollapseSection';
 import { useStatusMonitorConfig } from './useStatusMonitorConfig';
 
 export const StatusMonitorSettings: React.FC<{
@@ -23,9 +24,12 @@ export const StatusMonitorSettings: React.FC<{
     } = useStatusMonitorConfig({ config, onChange, appConfirm, addToast });
 
     return (
-        <div className="flex flex-col gap-8 w-full">
-            <div className="border-b border-border pb-6">
-                <h4 className="font-bold text-xl text-text mb-2">Public Access</h4>
+        <div className="flex flex-col gap-4 w-full">
+            <SettingsCollapseSection
+                defaultOpen
+                title="Public Access"
+                subtitle={publicStatusEnabled ? 'Visitors can view the status page' : 'Signed-in members only'}
+            >
                 <p className="text-sm text-muted mb-4">Allow visitors who are not signed in to view the status monitor page and status data.</p>
                 <button
                     type="button"
@@ -34,13 +38,16 @@ export const StatusMonitorSettings: React.FC<{
                 >
                     Public Status: {publicStatusEnabled ? 'Enabled' : 'Disabled'}
                 </button>
-            </div>
+            </SettingsCollapseSection>
 
-            <div>
-                <div className="flex justify-between items-center mb-4 border-b border-border pb-3">
-                    <h4 className="font-bold text-xl text-text">Service Groups</h4>
-                    <button onClick={addGroup} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-text rounded-md text-sm font-bold transition-colors">Add Group</button>
-                </div>
+            <SettingsCollapseSection
+                defaultOpen={localConfig.groups.length > 0}
+                title="Service Groups"
+                subtitle={`${localConfig.groups.length} group${localConfig.groups.length === 1 ? '' : 's'}`}
+                headerRight={(
+                    <button type="button" onClick={addGroup} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-text rounded-md text-sm font-bold transition-colors">Add Group</button>
+                )}
+            >
                 <p className="mb-4 text-sm text-muted">Group names become the section headings on the Status page.</p>
                 {localConfig.groups.map((group: any) => (
                     <div key={group.id} className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
@@ -55,13 +62,16 @@ export const StatusMonitorSettings: React.FC<{
                     </div>
                 ))}
                 {localConfig.groups.length === 0 && <p className="text-muted text-sm italic py-2">No groups defined. Create one to organize your services.</p>}
-            </div>
+            </SettingsCollapseSection>
 
-            <div>
-                <div className="flex justify-between items-center mb-4 border-b border-border pb-3">
-                    <h4 className="font-bold text-xl text-text">Monitored Services</h4>
-                    <button onClick={addService} className="px-4 py-2 bg-plex text-background hover:bg-plex-hover rounded-md text-sm font-bold transition-colors shadow-lg">Add Service</button>
-                </div>
+            <SettingsCollapseSection
+                defaultOpen={localConfig.services.length > 0}
+                title="Monitored Services"
+                subtitle={`${localConfig.services.length} service${localConfig.services.length === 1 ? '' : 's'}`}
+                headerRight={(
+                    <button type="button" onClick={addService} className="px-4 py-2 bg-plex text-background hover:bg-plex-hover rounded-md text-sm font-bold transition-colors shadow-lg">Add Service</button>
+                )}
+            >
                 <p className="mb-4 text-sm text-muted">These display fields control exactly what members see on the Status page. Connection URLs remain admin-only.</p>
                 <div className="flex flex-col gap-6">
                     {localConfig.services.map((service: any) => (
@@ -119,10 +129,13 @@ export const StatusMonitorSettings: React.FC<{
                     ))}
                 </div>
                 {localConfig.services.length === 0 && <p className="text-muted text-sm italic py-2">No services defined. Add some services to monitor.</p>}
-            </div>
+            </SettingsCollapseSection>
 
-            <div className="border-t border-border/40 pt-6 mt-2">
-                <h4 className="font-bold text-xl text-text mb-2">Reset Statistics</h4>
+            <SettingsCollapseSection
+                defaultOpen={false}
+                title="Reset Statistics"
+                subtitle="Clear historical uptime and latency data"
+            >
                 <p className="text-sm text-muted mb-4">Resetting the status statistics will clear all historical uptime and latency data for all monitored services. This action cannot be undone.</p>
                 <button
                     type="button"
@@ -131,7 +144,7 @@ export const StatusMonitorSettings: React.FC<{
                 >
                     Reset Uptime Data
                 </button>
-            </div>
+            </SettingsCollapseSection>
         </div>
     );
 };

@@ -2,8 +2,9 @@ import React from 'react';
 
 import { IntegrationTestButton } from '../shared/IntegrationTestButton';
 import { CustomSelect } from '../shared/ui';
-import { IntegrationHeading } from './integrationDisplay';
+import { IntegrationTitle } from './integrationDisplay';
 import { SettingHint } from './SettingHint';
+import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 type MetadataSettingsTabProps = {
     initialSettings: any;
@@ -30,44 +31,56 @@ export const MetadataSettingsTab: React.FC<MetadataSettingsTabProps> = ({
     onCacheRefreshMinutesChange,
     addToast,
 }) => (
-    <div className="mb-8 animate-fade-in">
-        <IntegrationHeading app="tmdb" title="TMDB" subtitle="Primary discovery, request, and artwork metadata" />
-        <div className="mb-4">
-            <label htmlFor="tmdbApiKey">TMDB API Key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tmdbApiKey" type="password" value={tmdbApiKey} onChange={(e) => onTmdbApiKeyChange(e.target.value)} placeholder="TMDB v3 API key" />
-            <div className="mt-2">
-                <SettingHint>Provides discovery, search, genres, request metadata, and optional portal artwork.</SettingHint>
+    <div className="mb-8 animate-fade-in space-y-4">
+        <SettingsCollapseSection
+            defaultOpen={!!String(tmdbApiKey || initialSettings?.tmdbApiKey || '').trim()}
+            title={<IntegrationTitle app="tmdb" title="TMDB" subtitle="Primary discovery, request, and artwork metadata" />}
+            subtitle={String(tmdbApiKey || initialSettings?.tmdbApiKey || '').trim() ? 'Configured' : 'Not configured'}
+        >
+            <div className="mb-4">
+                <label htmlFor="tmdbApiKey">TMDB API Key</label>
+                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tmdbApiKey" type="password" value={tmdbApiKey} onChange={(e) => onTmdbApiKeyChange(e.target.value)} placeholder="TMDB v3 API key" />
+                <div className="mt-2">
+                    <SettingHint>Provides discovery, search, genres, request metadata, and optional portal artwork.</SettingHint>
+                </div>
             </div>
-        </div>
-        <IntegrationTestButton
-            type="tmdb"
-            payload={{ tmdbApiKey }}
-            disabled={!String(tmdbApiKey || initialSettings.tmdbApiKey || '').trim()}
-            className="mb-8"
-            onMessage={(message, ok) => addToast(message, ok ? 'success' : 'error')}
-        />
+            <IntegrationTestButton
+                type="tmdb"
+                payload={{ tmdbApiKey }}
+                disabled={!String(tmdbApiKey || initialSettings.tmdbApiKey || '').trim()}
+                onMessage={(message, ok) => addToast(message, ok ? 'success' : 'error')}
+            />
+        </SettingsCollapseSection>
 
-        <IntegrationHeading app="tvdb" title="TVDB" subtitle="Optional TV-specific metadata enrichment" className="mt-8" />
-        <div className="mb-4">
-            <label htmlFor="tvdbApiKey">TVDB API Key</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tvdbApiKey" type="password" value={tvdbApiKey} onChange={(e) => onTvdbApiKeyChange(e.target.value)} placeholder="TVDB v4 API key" />
-            <div className="mt-2">
-                <SettingHint>Fills missing TV summaries, air dates, status, network, genres, and season details when a TVDB ID is available.</SettingHint>
+        <SettingsCollapseSection
+            defaultOpen={!!String(tvdbApiKey || initialSettings?.tvdbApiKey || '').trim()}
+            title={<IntegrationTitle app="tvdb" title="TVDB" subtitle="Optional TV-specific metadata enrichment" />}
+            subtitle={String(tvdbApiKey || initialSettings?.tvdbApiKey || '').trim() ? 'Configured' : 'Not configured'}
+        >
+            <div className="mb-4">
+                <label htmlFor="tvdbApiKey">TVDB API Key</label>
+                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tvdbApiKey" type="password" value={tvdbApiKey} onChange={(e) => onTvdbApiKeyChange(e.target.value)} placeholder="TVDB v4 API key" />
+                <div className="mt-2">
+                    <SettingHint>Fills missing TV summaries, air dates, status, network, genres, and season details when a TVDB ID is available.</SettingHint>
+                </div>
             </div>
-        </div>
-        <div className="mb-4">
-            <label htmlFor="tvdbPin">TVDB Subscriber PIN (optional)</label>
-            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tvdbPin" type="password" value={tvdbPin} onChange={(e) => onTvdbPinChange(e.target.value)} placeholder="Only required for subscriber-supported keys" />
-        </div>
-        <IntegrationTestButton
-            type="tvdb"
-            payload={{ tvdbApiKey, tvdbPin }}
-            disabled={!String(tvdbApiKey || initialSettings.tvdbApiKey || '').trim()}
-            onMessage={(message, ok) => addToast(message, ok ? 'success' : 'error')}
-        />
+            <div className="mb-4">
+                <label htmlFor="tvdbPin">TVDB Subscriber PIN (optional)</label>
+                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="tvdbPin" type="password" value={tvdbPin} onChange={(e) => onTvdbPinChange(e.target.value)} placeholder="Only required for subscriber-supported keys" />
+            </div>
+            <IntegrationTestButton
+                type="tvdb"
+                payload={{ tvdbApiKey, tvdbPin }}
+                disabled={!String(tvdbApiKey || initialSettings.tvdbApiKey || '').trim()}
+                onMessage={(message, ok) => addToast(message, ok ? 'success' : 'error')}
+            />
+        </SettingsCollapseSection>
 
-        <div className="mt-10 pt-8 border-t border-border">
-            <h3 className="text-lg font-semibold text-text mb-1">Background Cache</h3>
+        <SettingsCollapseSection
+            defaultOpen={false}
+            title="Background Cache"
+            subtitle="Library, calendar, discovery, and poster refresh"
+        >
             <p className="text-sm text-muted mb-4">Refreshes library, calendar, request discovery, and poster data before users open those pages.</p>
             <label htmlFor="cacheRefreshMinutes">Refresh Interval</label>
             <CustomSelect
@@ -79,6 +92,6 @@ export const MetadataSettingsTab: React.FC<MetadataSettingsTabProps> = ({
                 }))}
                 className="w-full sm:w-64"
             />
-        </div>
+        </SettingsCollapseSection>
     </div>
 );

@@ -24,7 +24,6 @@ type SettingsSavePayloadInput = {
     inactiveCleanupDays: number;
     publicDomain: string;
     contactUrl: string;
-    contactWhatsApp: string;
     contactEmail: string;
     discordEnabled: boolean;
     discordInviteUrl: string;
@@ -51,8 +50,6 @@ type SettingsSavePayloadInput = {
     tautulliApiKey: string;
     jellystatUrl: string;
     jellystatApiKey: string;
-    ombiUrl: string;
-    ombiApiKey: string;
     customLogoUrl: string;
     brandingTheme: string;
     backgroundImageUrl: string;

@@ -3,7 +3,8 @@ import { Plus, Star, Trash2 } from 'lucide-react';
 
 import { IntegrationTestButton } from '../shared/IntegrationTestButton';
 import type { ArrInstance, ArrType } from '../shared/types';
-import { IntegrationHeading } from './integrationDisplay';
+import { IntegrationTitle } from './integrationDisplay';
+import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 const LABELS: Record<ArrType, { title: string; subtitle: string; placeholder: string }> = {
     sonarr: { title: 'Sonarr', subtitle: 'TV series automation', placeholder: 'http://localhost:8989' },
@@ -58,14 +59,27 @@ export const ArrInstancesPanel: React.FC<Props> = ({ type, instances, onChange, 
         onChange(next);
     };
 
+    const enabledCount = instances.filter((instance) => instance.enabled).length;
+    const summary = instances.length === 0
+        ? 'Not configured'
+        : `${enabledCount} of ${instances.length} enabled`;
+
     return (
-        <section className={className}>
-            <div className="flex items-center justify-between gap-4">
-                <IntegrationHeading app={type} title={labels.title} subtitle={labels.subtitle} className="flex-1" />
-                <button type="button" onClick={() => onChange([...instances, createInstance(type, instances.length === 0)])} className="px-3 py-2 rounded-lg border border-border text-sm font-medium text-text hover:bg-white/5 transition-colors flex items-center gap-2 shrink-0">
+        <SettingsCollapseSection
+            className={className}
+            defaultOpen={instances.length > 0}
+            title={<IntegrationTitle app={type} title={labels.title} subtitle={labels.subtitle} />}
+            subtitle={summary}
+            headerRight={(
+                <button
+                    type="button"
+                    onClick={() => onChange([...instances, createInstance(type, instances.length === 0)])}
+                    className="px-3 py-2 rounded-lg border border-border text-sm font-medium text-text hover:bg-white/5 transition-colors flex items-center gap-2 shrink-0"
+                >
                     <Plus className="w-4 h-4" /> Add
                 </button>
-            </div>
+            )}
+        >
             {instances.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border p-5 text-sm text-muted text-center">No instances configured.</div>
             ) : (
@@ -169,6 +183,6 @@ export const ArrInstancesPanel: React.FC<Props> = ({ type, instances, onChange, 
                     ))}
                 </div>
             )}
-        </section>
+        </SettingsCollapseSection>
     );
 };
