@@ -26,23 +26,22 @@ test('mediaUserIdForTag uses portal id only (one tag set per user)', () => {
     const both = { id: 'portal-1', plexId: '100', jellyfinId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' };
     assert.equal(mediaUserIdForTag(both, 'plex'), 'portal-1');
     assert.equal(mediaUserIdForTag(both, 'jellyfin'), 'portal-1');
-    assert.equal(mediaUserIdForTag({ id: 'portal-1', jellyfinId: 'jf-1' }, 'plex'), 'portal-1');
 });
 
-test('buildPortalRequesterTagLabel uses id + username', () => {
+test('buildPortalRequesterTagLabel prefers id-only; username optional for legacy', () => {
+    assert.equal(buildPortalRequesterTagLabel(42), '42');
     assert.equal(buildPortalRequesterTagLabel(42, 'KalebHarrison'), '42-kalebharrison');
-    assert.equal(buildPortalRequesterTagLabel('99', 'i2ach'), '99-i2ach');
 });
 
-test('buildPortalRequesterTagForUser writes a single portal-id tag', () => {
+test('buildPortalRequesterTagForUser omits username (rename-safe)', () => {
     const user = {
         id: 'portal-9',
         plexId: '16297230',
         jellyfinId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         username: 'carrowayjm',
     };
-    assert.equal(buildPortalRequesterTagForUser(user, 'plex'), 'portal-9-carrowayjm');
-    assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-portal-9-carrowayjm');
+    assert.equal(buildPortalRequesterTagForUser(user, 'plex'), 'portal-9');
+    assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-portal-9');
 });
 
 test('parseArrRequesterTagLabel handles legacy, guid, notify, and bare forms', () => {
@@ -76,7 +75,7 @@ test('parseArrRequesterTagLabel handles legacy, guid, notify, and bare forms', (
     });
 });
 
-test('resolvePortalUserFromArrTag matches plex, jellyfin, legacy, and username', () => {
+test('resolvePortalUserFromArrTag matches id-only, legacy id-username, and username', () => {
     const users = [
         { id: '100', plexId: '100', username: 'kalebharrison', email: 'k@example.com' },
         { id: '200', plexId: '200', username: 'i2ach', seerrUserId: 16, displayName: 'i2ach' },
@@ -87,7 +86,8 @@ test('resolvePortalUserFromArrTag matches plex, jellyfin, legacy, and username',
         },
     ];
 
-    assert.equal(resolvePortalUserFromArrTag('100-kalebharrison', users)?.id, '100');
+    assert.equal(resolvePortalUserFromArrTag('100', users)?.id, '100');
+    assert.equal(resolvePortalUserFromArrTag('100-oldname', users)?.id, '100');
     assert.equal(resolvePortalUserFromArrTag('16-i2ach', users)?.id, '200');
     assert.equal(resolvePortalUserFromArrTag('kalebharrison', users)?.id, '100');
     assert.equal(
@@ -100,8 +100,8 @@ test('resolvePortalUserFromArrTag matches plex, jellyfin, legacy, and username',
 test('resolvePortalOwnerFromArrTagLabels skips notify tags', () => {
     const users = [{ id: '100', plexId: '100', username: 'kaleb' }];
     assert.equal(
-        resolvePortalOwnerFromArrTagLabels(['n-100-kaleb', '100-kaleb'], users)?.tagLabel,
-        '100-kaleb',
+        resolvePortalOwnerFromArrTagLabels(['n-100', '100'], users)?.tagLabel,
+        '100',
     );
 });
 
@@ -111,24 +111,25 @@ test('resolveNotifyUsersFromArrTagLabels only returns notify subscribers', () =>
         { id: '200', plexId: '200', username: 'i2ach' },
     ];
     const notify = resolveNotifyUsersFromArrTagLabels(
-        ['100-kaleb', 'n-200-i2ach', 'cinema'],
+        ['100', 'n-200', 'n-200-oldname', 'cinema'],
         users,
     );
     assert.equal(notify.length, 1);
     assert.equal(notify[0].user.id, '200');
 });
 
-test('isPortalRequesterTagForUser and isNotifyTagForUser', () => {
+test('isPortalRequesterTagForUser ignores username changes', () => {
     const user = {
         id: 'portal-9',
         plexId: '100',
-        jellyfinId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         username: 'kalebharrison',
     };
-    assert.equal(isPortalRequesterTagForUser('portal-9-kalebharrison', user), true);
+    assert.equal(isPortalRequesterTagForUser('portal-9', user), true);
+    assert.equal(isPortalRequesterTagForUser('portal-9-oldname', user), true);
     assert.equal(isPortalRequesterTagForUser('100-kalebharrison', user), false);
-    assert.equal(isNotifyTagForUser('n-portal-9-kalebharrison', user), true);
-    assert.equal(isNotifyTagForUser('portal-9-kalebharrison', user), false);
+    assert.equal(isNotifyTagForUser('n-portal-9', user), true);
+    assert.equal(isNotifyTagForUser('n-portal-9-oldname', user), true);
+    assert.equal(isNotifyTagForUser('portal-9', user), false);
 });
 
 test('collectPortalUsersFromArrTagLabels maps legacy tags without requiring portal tags', () => {

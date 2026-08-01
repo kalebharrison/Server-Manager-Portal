@@ -97,6 +97,6 @@ test('dual-linked users still get one portal-id tag', () => {
         jellyfinId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         username: 'carrowayjm',
     };
-    assert.equal(buildPortalRequesterTagForUser(user, 'plex'), 'portal-carrowayjm');
-    assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-portal-carrowayjm');
+    assert.equal(buildPortalRequesterTagForUser(user, 'plex'), 'portal');
+    assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-portal');
 });

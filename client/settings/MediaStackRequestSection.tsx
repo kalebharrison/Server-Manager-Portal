@@ -36,7 +36,7 @@ const PortalOwnershipImportPanel: React.FC<{
                 <SettingHint>
                     Arr is the source of truth for ownership and Notify. This scan maps legacy tags
                     (e.g. <code className="text-xs">16-i2ach</code>) to members and ensures one portal
-                    tag per user (<code className="text-xs">{'{userId}-{username}'}</code>), plus
+                    tag per user (<code className="text-xs">user id only</code> — rename-safe), plus
                     migrates portal Notify lists to <code className="text-xs">n-…</code> Arr tags.
                     It does not grow the portal JSON store with available history.
                 </SettingHint>
