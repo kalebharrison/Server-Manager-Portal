@@ -19,6 +19,16 @@ test('userOwnsArrRequesterLabel ignores notify tags', () => {
     assert.equal(userOwnsArrRequesterLabel('16-kaleb', user, [user]), false);
 });
 
+test('userOwnsArrRequesterLabel does not leak id-only tags across users with empty jellyfinId', () => {
+    const owner = { id: '100', plexId: '100', username: 'member', jellyfinId: null };
+    const admin = { id: '1', plexId: '999', username: 'admin', jellyfinId: null };
+    const users = [owner, admin];
+    assert.equal(userOwnsArrRequesterLabel('100', owner, users), true);
+    assert.equal(userOwnsArrRequesterLabel('100', admin, users), false);
+    assert.equal(userOwnsArrRequesterLabel('100-member', admin, users), false);
+    assert.equal(userOwnsArrRequesterLabel('member', admin, users), false);
+});
+
 test('listArrOwnershipDtosForUser returns Arr-owned titles without portal JSON', async () => {
     const user = { id: '100', plexId: '100', username: 'kaleb' };
     const config = {
