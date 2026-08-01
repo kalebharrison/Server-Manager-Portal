@@ -46,7 +46,9 @@ test('compactAnalyticsHistoryItem keeps aggregation fields only', () => {
         deviceID: 4,
         type: 'episode',
         ratingKey: '10',
-        grandparentKey: '5',
+        grandparentRatingKey: '5',
+        grandparentKey: '/library/metadata/5',
+        key: '/library/metadata/10',
         grandparentTitle: 'Show',
         title: 'Episode',
         Player: { product: 'Plex for TV', address: '1.2.3.4' },
@@ -57,6 +59,8 @@ test('compactAnalyticsHistoryItem keeps aggregation fields only', () => {
     assert.equal(compact.Player.product, 'Plex for TV');
     assert.equal(compact.junk, undefined);
     assert.equal(compact.historyKey, 'h1');
+    assert.equal(compact.grandparentRatingKey, '5');
+    assert.equal(compact.key, '/library/metadata/10');
 });
 
 test('matchesAnalyticsHistoryCache requires version and server identity', () => {
