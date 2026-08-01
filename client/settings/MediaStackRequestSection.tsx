@@ -19,7 +19,7 @@ const PortalOwnershipImportPanel: React.FC<{
             if (data?.error) throw new Error(data.error);
             const s = data?.summary || {};
             addToast(
-                `Arr tags: ${s.itemsUpdated || 0} titles updated, ${s.tagsCreated || 0} added, ${s.tagsRemoved || 0} legacy removed (${s.tagsAlreadyPresent || 0} already ok). Notify JSON→Arr: ${s.notifyTagsMigrated || 0}. Pruned portal rows: ${s.prunedPortalRows || 0}.`,
+                `Arr tags: ${s.itemsUpdated || 0} titles updated, ${s.tagsCreated || 0} portal tags added (${s.tagsAlreadyPresent || 0} already ok). Seerr/legacy tags left untouched. Notify JSON→Arr: ${s.notifyTagsMigrated || 0}. Pruned portal rows: ${s.prunedPortalRows || 0}.`,
                 'success',
             );
         } catch (error: any) {
@@ -34,13 +34,10 @@ const PortalOwnershipImportPanel: React.FC<{
             <h3 className="font-bold text-text">Normalize Arr requester tags</h3>
             <div className="mt-1 mb-4">
                 <SettingHint>
-                    Arr is the source of truth for ownership and Notify. This scan migrates legacy
-                    tags (e.g. <code className="text-xs">16-i2ach</code>,{' '}
-                    <code className="text-xs">{'{id}-{username}'}</code>) to one rename-safe portal
-                    tag per user (<code className="text-xs">user id</code> /{' '}
-                    <code className="text-xs">n-{'{user id}'}</code>), removes the superseded labels
-                    from each title, and migrates portal Notify lists onto Arr. Unrelated Arr tags
-                    are left alone.
+                    Arr is the source of truth for ownership and Notify. This scan finds Seerr/legacy
+                    requester tags and adds one rename-safe portal tag per user
+                    (<code className="text-xs">user id</code> / <code className="text-xs">n-{'{user id}'}</code>)
+                    alongside them. Existing Seerr and other Arr tags are never removed or rewritten.
                 </SettingHint>
             </div>
             <button
