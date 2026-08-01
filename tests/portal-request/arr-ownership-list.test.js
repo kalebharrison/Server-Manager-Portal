@@ -5,6 +5,7 @@ import {
     userOwnsArrRequesterLabel,
     listArrOwnershipDtosForUser,
     normalizeArrRequesterTagsOnArr,
+    isSeerrStyleRequesterTag,
 } from '../../lib/portal-request/arrTagOwnershipImport.js';
 import {
     buildNotifyTagForUser,
@@ -100,6 +101,15 @@ test('dual-linked users still get one portal-id tag', () => {
     };
     assert.equal(buildPortalRequesterTagForUser(user, 'plex'), 'portal');
     assert.equal(buildNotifyTagForUser(user, 'jellyfin'), 'n-portal');
+});
+
+test('isSeerrStyleRequesterTag matches only 1-2 digit Seerr prefixes', () => {
+    assert.equal(isSeerrStyleRequesterTag('16-i2ach'), true);
+    assert.equal(isSeerrStyleRequesterTag('9-kaleb'), true);
+    assert.equal(isSeerrStyleRequesterTag('100-kaleb'), false);
+    assert.equal(isSeerrStyleRequesterTag('n-16-i2ach'), false);
+    assert.equal(isSeerrStyleRequesterTag('anime'), false);
+    assert.equal(isSeerrStyleRequesterTag('100'), false);
 });
 
 test('normalize corrects portal legacy tags but leaves Seerr tags alone', async () => {

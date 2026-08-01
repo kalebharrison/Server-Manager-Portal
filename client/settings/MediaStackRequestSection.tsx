@@ -38,8 +38,9 @@ const PortalOwnershipImportPanel: React.FC<{
                     portal tags (<code className="text-xs">user id</code> /{' '}
                     <code className="text-xs">n-{'{user id}'}</code>) and corrects portal/media
                     legacy <code className="text-xs">{'{id}-{username}'}</code> labels onto that form.
-                    Seerr tags like <code className="text-xs">16-i2ach</code> are never removed or
-                    rewritten.
+                    Seerr tags (<code className="text-xs">1-2 digits</code> then{' '}
+                    <code className="text-xs">-username</code>, e.g. <code className="text-xs">16-i2ach</code>)
+                    are hard-excluded and never removed or rewritten.
                 </SettingHint>
             </div>
             <button
