@@ -90,7 +90,7 @@ test('listArrOwnershipDtosForUser returns Arr-owned titles without portal JSON',
     assert.match(String(rows[0].id), /^arr-movie-550/);
 });
 
-test('active media-server tag builders', () => {
+test('dual-linked users build both media-server tags', () => {
     const user = {
         id: 'portal',
         plexId: '16297230',
