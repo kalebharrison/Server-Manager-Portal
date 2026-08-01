@@ -33,7 +33,7 @@ See [`.env.example`](../.env.example) for the full template.
 | Area | What it controls |
 |---|---|
 | Media server | Plex or Jellyfin connection |
-| Apps & automation | Sonarr / Radarr / Lidarr, Tautulli / Jellystat, Ombi (music) |
+| Apps & automation | Sonarr / Radarr / Lidarr, Tautulli / Jellystat |
 | Access & privacy | Referrals, public login stats, status page visibility, stream privacy |
 | Branding | Theme, logo, animations, poster badges |
 | Support → Discord | Invite URL, optional channel webhook posts, `/request` bot token/guild (see [Discord plan](./discord-integration-plan.md)) |
