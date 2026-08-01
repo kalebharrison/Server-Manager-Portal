@@ -37,20 +37,22 @@ test('default status config keeps auto-resolved Plex monitor for a selected serv
     assert.equal(config.services.find(service => service.id === 'plex')?.url, '');
 });
 
-test('status payload abstracts vendor defaults but preserves custom labels', () => {
+test('status payload uses configured public labels and falls back when empty', () => {
     const payload = createPublicStatusPayload({
         groups: [{ id: 'downloads', name: 'Automation Health', order: 0 }],
         services: [
             { id: 'sonarr', name: 'Sonarr', description: 'TV automation', groupId: 'downloads' },
             { id: 'radarr', name: 'Cinema Pipeline', description: 'Movie acquisition and upgrades', groupId: 'downloads' },
             { id: 'tmdb', name: 'TMDB', description: 'Media metadata', groupId: 'external' },
+            { id: 'lidarr', name: '', description: '', groupId: 'downloads' },
         ],
     });
     assert.equal(payload.config.groups[0].name, 'Automation Health');
     assert.deepEqual(payload.config.services.map(({ name, description }) => ({ name, description })), [
-        { name: 'TV Automation', description: 'TV release automation' },
+        { name: 'Sonarr', description: 'TV automation' },
         { name: 'Cinema Pipeline', description: 'Movie acquisition and upgrades' },
-        { name: 'Media Metadata', description: 'Movie and TV discovery metadata' },
+        { name: 'TMDB', description: 'Media metadata' },
+        { name: 'Music Automation', description: 'Music release automation' },
     ]);
 });
 
@@ -77,12 +79,12 @@ test('built-in status URLs follow current application settings', () => {
     assert.equal(result.services.find(service => service.id === 'custom').url, 'http://custom:8080');
 });
 
-test('configured Lidarr is added to status monitoring with member-safe labels', () => {
+test('configured Lidarr is added to status monitoring and exposes stored labels', () => {
     const reconciled = reconcileBuiltInStatusConfig({ groups: [], services: [] }, { lidarrUrl: 'http://lidarr:8686', lidarrApiKey: 'secret' });
     const payload = createPublicStatusPayload(reconciled);
     assert.equal(reconciled.services[0].url, 'http://lidarr:8686');
-    assert.equal(payload.config.services[0].name, 'Music Automation');
-    assert.equal(payload.config.services[0].description, 'Music release automation');
+    assert.equal(payload.config.services[0].name, reconciled.services[0].name);
+    assert.equal(payload.config.services[0].description, reconciled.services[0].description);
 });
 
 test('metadata APIs and additional Arr instances receive distinct status monitors', () => {
@@ -96,7 +98,7 @@ test('metadata APIs and additional Arr instances receive distinct status monitor
     });
     assert.deepEqual(config.services.map((service) => service.id), ['sonarr', 'sonarr-tv-anime', 'tmdb', 'tvdb']);
     const payload = createPublicStatusPayload(config);
-    assert.deepEqual(payload.config.services.map((service) => service.name), ['TV Automation', 'Anime', 'Media Metadata', 'TV Metadata']);
+    assert.deepEqual(payload.config.services.map((service) => service.name), ['Sonarr', 'Anime', 'TMDB', 'TVDB']);
 });
 
 test('reconcile strips retired Ombi monitors from stored status config', () => {
