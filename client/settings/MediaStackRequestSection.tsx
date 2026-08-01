@@ -53,7 +53,6 @@ export const MediaStackRequestSection: React.FC<{
     addToast: (message: string, type?: 'success' | 'error') => void;
 }> = ({ addToast }) => (
     <SettingsCollapseSection
-        defaultOpen={false}
         title="Discover & requests"
         subtitle="Portal-native TMDB Discover + Arr requester tag tools"
     >

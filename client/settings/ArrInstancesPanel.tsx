@@ -67,7 +67,6 @@ export const ArrInstancesPanel: React.FC<Props> = ({ type, instances, onChange, 
     return (
         <SettingsCollapseSection
             className={className}
-            defaultOpen={instances.length > 0}
             title={<IntegrationTitle app={type} title={labels.title} subtitle={labels.subtitle} />}
             subtitle={summary}
             headerRight={(

@@ -26,7 +26,6 @@ export const StatusMonitorSettings: React.FC<{
     return (
         <div className="flex flex-col gap-4 w-full">
             <SettingsCollapseSection
-                defaultOpen
                 title="Public Access"
                 subtitle={publicStatusEnabled ? 'Visitors can view the status page' : 'Signed-in members only'}
             >
@@ -41,7 +40,6 @@ export const StatusMonitorSettings: React.FC<{
             </SettingsCollapseSection>
 
             <SettingsCollapseSection
-                defaultOpen={localConfig.groups.length > 0}
                 title="Service Groups"
                 subtitle={`${localConfig.groups.length} group${localConfig.groups.length === 1 ? '' : 's'}`}
                 headerRight={(
@@ -65,7 +63,6 @@ export const StatusMonitorSettings: React.FC<{
             </SettingsCollapseSection>
 
             <SettingsCollapseSection
-                defaultOpen={localConfig.services.length > 0}
                 title="Monitored Services"
                 subtitle={`${localConfig.services.length} service${localConfig.services.length === 1 ? '' : 's'}`}
                 headerRight={(
@@ -132,7 +129,6 @@ export const StatusMonitorSettings: React.FC<{
             </SettingsCollapseSection>
 
             <SettingsCollapseSection
-                defaultOpen={false}
                 title="Reset Statistics"
                 subtitle="Clear historical uptime and latency data"
             >

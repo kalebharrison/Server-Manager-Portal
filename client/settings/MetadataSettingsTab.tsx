@@ -33,7 +33,6 @@ export const MetadataSettingsTab: React.FC<MetadataSettingsTabProps> = ({
 }) => (
     <div className="mb-8 animate-fade-in space-y-4">
         <SettingsCollapseSection
-            defaultOpen={!!String(tmdbApiKey || initialSettings?.tmdbApiKey || '').trim()}
             title={<IntegrationTitle app="tmdb" title="TMDB" subtitle="Primary discovery, request, and artwork metadata" />}
             subtitle={String(tmdbApiKey || initialSettings?.tmdbApiKey || '').trim() ? 'Configured' : 'Not configured'}
         >
@@ -53,7 +52,6 @@ export const MetadataSettingsTab: React.FC<MetadataSettingsTabProps> = ({
         </SettingsCollapseSection>
 
         <SettingsCollapseSection
-            defaultOpen={!!String(tvdbApiKey || initialSettings?.tvdbApiKey || '').trim()}
             title={<IntegrationTitle app="tvdb" title="TVDB" subtitle="Optional TV-specific metadata enrichment" />}
             subtitle={String(tvdbApiKey || initialSettings?.tvdbApiKey || '').trim() ? 'Configured' : 'Not configured'}
         >
@@ -77,7 +75,6 @@ export const MetadataSettingsTab: React.FC<MetadataSettingsTabProps> = ({
         </SettingsCollapseSection>
 
         <SettingsCollapseSection
-            defaultOpen={false}
             title="Background Cache"
             subtitle="Library, calendar, discovery, and poster refresh"
         >

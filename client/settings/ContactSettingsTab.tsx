@@ -26,7 +26,6 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
 }) => (
     <div className="mb-8 animate-fade-in space-y-4">
         <SettingsCollapseSection
-            defaultOpen
             title="Contact Details"
             subtitle="Shown in the Need Help box on the user dashboard"
         >
@@ -50,7 +49,6 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
         </SettingsCollapseSection>
 
         <SettingsCollapseSection
-            defaultOpen={!!announcement.trim()}
             title="Portal Announcement"
             subtitle={announcement.trim() ? 'Banner text set' : 'No banner'}
         >

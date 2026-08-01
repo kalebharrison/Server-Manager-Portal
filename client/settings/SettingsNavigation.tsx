@@ -31,19 +31,19 @@ export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
             />
         </div>
 
-        <aside className="hidden md:flex md:flex-col w-72 shrink-0 h-fit sticky top-20 glass-card nav-shell p-6 shadow-2xl">
-            <label className="text-muted text-xs uppercase tracking-wider font-bold mb-2 block">Find Setting</label>
+        <aside className="hidden md:flex md:flex-col w-72 shrink-0 sticky top-20 max-h-[calc(100vh-6rem)] glass-card nav-shell p-6 shadow-2xl overflow-hidden">
+            <label className="text-muted text-xs uppercase tracking-wider font-bold mb-2 block shrink-0">Find Setting</label>
             <input
                 type="text"
                 placeholder="Search settings..."
                 value={settingsSearch}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-plex transition-colors mb-4"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-plex transition-colors mb-4 shrink-0"
             />
             {visibleTabGroups.length === 0 ? (
                 <p className="text-xs text-muted px-2 py-3">No settings sections found.</p>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 overflow-y-auto custom-scrollbar min-h-0 pr-1 -mr-1">
                     {visibleTabGroups.map(group => (
                         <div key={group.title}>
                             <p className="text-[10px] uppercase tracking-wider font-bold text-plex px-3 mb-1.5">{group.title}</p>
@@ -51,6 +51,7 @@ export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
                                 {group.tabs.map(tab => (
                                     <button
                                         key={tab.id}
+                                        type="button"
                                         onClick={() => onTabChange(tab.id)}
                                         className={`w-full text-left px-3 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
                                             ? 'nav-item-active'

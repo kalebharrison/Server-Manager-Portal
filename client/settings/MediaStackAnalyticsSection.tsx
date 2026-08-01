@@ -39,7 +39,6 @@ export const MediaStackAnalyticsSection: React.FC<{
         );
         return (
             <SettingsCollapseSection
-                defaultOpen={configured}
                 title={<IntegrationTitle app="tautulli" title="Tautulli" subtitle="Plex activity and analytics" />}
                 subtitle={configured ? 'Configured' : 'Not configured'}
             >
@@ -69,7 +68,6 @@ export const MediaStackAnalyticsSection: React.FC<{
     );
     return (
         <SettingsCollapseSection
-            defaultOpen={configured}
             title={<IntegrationTitle app="jellystat" title="Jellystat" subtitle="Jellyfin activity and analytics" />}
             subtitle={configured ? 'Configured' : 'Not configured'}
         >
