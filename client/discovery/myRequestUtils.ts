@@ -51,6 +51,17 @@ export const memberRequestDisplayStatus = (item: PortalRequestItem) => {
     return item.statusLabel || 'Unknown';
 };
 
+/** Footer/chip label for request qualities (HD, 4K, or HD + 4K). */
+export const requestQualityChipLabel = (item: PortalRequestItem) => {
+    const list = Array.isArray(item?.qualities)
+        ? item.qualities.map((q: string) => String(q || '').trim().toUpperCase()).filter(Boolean)
+        : [];
+    if (list.includes('HD') && list.includes('4K')) return 'HD + 4K';
+    if (list.includes('4K')) return '4K';
+    if (list.includes('HD')) return '';
+    return item?.is4k ? '4K' : '';
+};
+
 export const formatRequestRelativeTime = (value?: string | null) => {
     if (!value) return 'Unknown time';
     const date = new Date(value);

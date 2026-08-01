@@ -6,6 +6,7 @@ import { DiscoverStatusOverlay } from '../discovery/DiscoverStatusOverlay';
 import {
     memberRequestDisplayStatus,
     portalRequestToDiscoveryRowItem,
+    requestQualityChipLabel,
 } from '../discovery/myRequestUtils';
 import { resolveTmdbImageUrl } from '../discovery/tmdbImageUrl';
 import type { PortalRequestItem } from '../requests/types';
@@ -46,6 +47,7 @@ export const HomeMyRequestsSection: React.FC<Props> = ({ items }) => {
                     || resolveTmdbImageUrl(raw.posterPath || row.media?.posterPath, 'w342');
                 const availability = resolveMediaAvailabilityState(row);
                 const statusLabel = memberRequestDisplayStatus(raw);
+                const qualityChip = requestQualityChipLabel(raw);
                 const overlay = availability.kind !== 'none'
                     ? <DiscoverStatusOverlay state={availability} />
                     : null;
@@ -71,7 +73,9 @@ export const HomeMyRequestsSection: React.FC<Props> = ({ items }) => {
                             <div className="flex flex-col px-1">
                                 <p className="text-xs font-bold text-text truncate group-hover:text-plex transition-colors">{title}</p>
                                 <p className="text-[10px] text-muted font-semibold mt-0.5 truncate">
-                                    {statusLabel}{year ? ` · ${year}` : ''}
+                                    {statusLabel}
+                                    {qualityChip ? ` · ${qualityChip}` : ''}
+                                    {year ? ` · ${year}` : ''}
                                 </p>
                             </div>
                         )}

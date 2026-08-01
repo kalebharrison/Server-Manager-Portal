@@ -9,6 +9,7 @@ import {
     formatRequestRelativeTime,
     memberRequestDisplayStatus,
     memberRequestStatusClass,
+    requestQualityChipLabel,
 } from './myRequestUtils';
 import { discoveryTheme } from './discoveryThemeClasses';
 import { useDiscoverI18n, translateDiscoverStatus } from './i18n';
@@ -21,18 +22,25 @@ type Props = {
     onCountsChange?: () => void;
 };
 
-const RequestTypeBadge: React.FC<{ type: string; is4k: boolean }> = ({ type, is4k }) => (
-    <span className="inline-flex items-center gap-1.5">
-        <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-white/5 border border-border text-muted">
-            {type === 'tv' ? 'TV' : 'Movie'}
-        </span>
-        {is4k && (
-            <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-200">
-                4K
+const RequestTypeBadge: React.FC<{ type: string; is4k: boolean; qualities?: string[] }> = ({
+    type,
+    is4k,
+    qualities,
+}) => {
+    const qualityLabel = requestQualityChipLabel({ is4k, qualities });
+    return (
+        <span className="inline-flex items-center gap-1.5">
+            <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-white/5 border border-border text-muted">
+                {type === 'tv' ? 'TV' : 'Movie'}
             </span>
-        )}
-    </span>
-);
+            {qualityLabel ? (
+                <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-200">
+                    {qualityLabel}
+                </span>
+            ) : null}
+        </span>
+    );
+};
 
 export const MyRequestsPage: React.FC<Props> = ({ navigate, pushToast, onCountsChange }) => {
     const { t } = useDiscoverI18n();
@@ -236,7 +244,7 @@ export const MyRequestsPage: React.FC<Props> = ({ navigate, pushToast, onCountsC
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                                <RequestTypeBadge type={item.type} is4k={item.is4k} />
+                                                <RequestTypeBadge type={item.type} is4k={item.is4k} qualities={item.qualities} />
                                                 <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${memberRequestStatusClass(statusLabel)}`}>
                                                     {statusDisplay}
                                                 </span>

@@ -7,14 +7,14 @@ import {
     pickPreferredMemberRequest,
 } from '../../lib/portal-request/requestDtoHelpers.js';
 
-test('memberRequestDedupeKey separates HD and 4K', () => {
+test('memberRequestDedupeKey is per title (not per quality)', () => {
     assert.equal(
         memberRequestDedupeKey({ mediaType: 'movie', tmdbId: 1, is4k: false }),
-        'movie|1|hd',
+        'movie|1',
     );
     assert.equal(
         memberRequestDedupeKey({ type: 'movie', tmdbId: 1, is4k: true }),
-        'movie|1|4k',
+        'movie|1',
     );
 });
 
@@ -30,7 +30,7 @@ test('pickPreferredMemberRequest prefers live rows over Arr-import seeds', () =>
     assert.equal(pickPreferredMemberRequest(imported, live), live);
 });
 
-test('dedupeMemberRequestRows keeps one Clayface and both qualities when present', () => {
+test('dedupeMemberRequestRows merges HD+4K onto one card with qualities', () => {
     const rows = [
         {
             id: '10',
@@ -57,11 +57,11 @@ test('dedupeMemberRequestRows keeps one Clayface and both qualities when present
             is4k: true,
             status: 1,
             meta: {},
-            updatedAt: '2026-07-01T00:00:00.000Z',
+            updatedAt: '2026-06-01T00:00:00.000Z',
         },
     ];
     const deduped = dedupeMemberRequestRows(rows);
-    assert.equal(deduped.length, 2);
+    assert.equal(deduped.length, 1);
     assert.equal(deduped[0].id, '11');
-    assert.equal(deduped[1].id, '12');
+    assert.deepEqual(deduped[0].meta.requestQualities, { hd: true, '4k': true });
 });
