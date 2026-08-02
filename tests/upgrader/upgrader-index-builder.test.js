@@ -40,6 +40,7 @@ test('radarr index uses profile math when movie list score is zero', () => {
         titleSlug: 'example',
         hasFile: true,
         qualityProfileId: 1,
+        path: '/media/movies/Example',
         movieFile: {
             size: 10_000_000_000,
             customFormatScore: 0,
@@ -49,11 +50,17 @@ test('radarr index uses profile math when movie list score is zero', () => {
         },
     };
 
-    const item = buildRadarrIndexItem(instance, record, null, profile);
+    const item = buildRadarrIndexItem({
+        ...instance,
+        activeDirectory: '/media/movies',
+        activeAnimeDirectory: '/media/anime.movies',
+    }, record, null, profile);
     assert.equal(item.customFormatScore, 1600);
     assert.equal(item.avgCustomFormatScore, 1600);
     assert.equal(item.videoResolution, '4k');
     assert.equal(item.sourceTier, 'remux');
+    assert.equal(item.libraryName, 'Movies');
+    assert.equal(item.libraryKey, 'radarr:radarr-1:movies');
 });
 
 test('sonarr prefers embedded episodeFile custom format score', () => {

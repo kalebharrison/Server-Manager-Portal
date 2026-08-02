@@ -34,7 +34,7 @@ const groupByLibrary = <T extends { arrInstanceName?: string | null; libraryName
     };
 
     for (const lib of libraryOrder) {
-        const key = `${lib.type || 'arr'}:${lib.id || lib.name || 'unknown'}`;
+        const key = lib.id || `${lib.type || 'arr'}:${lib.name || 'unknown'}`;
         ensure(key, lib.name || (lib.type === 'radarr' ? 'Radarr' : lib.type === 'sonarr' ? 'Sonarr' : 'Library'));
     }
 
@@ -132,6 +132,20 @@ export const UpgraderDashboard: React.FC = () => {
 
             setStatus(statusData || null);
             setSummary(summaryData || null);
+            const indexedLibraries = Array.isArray(summaryData?.libraries)
+                ? summaryData.libraries.map((lib: any) => ({
+                    id: String(lib.key || lib.id),
+                    name: String(lib.name || 'Library'),
+                    type: String(lib.type || 'arr'),
+                }))
+                : [];
+            const configuredLibraries = Array.isArray(profilesData?.libraries)
+                ? profilesData.libraries.map((lib: any) => ({
+                    id: String(lib.key || lib.id),
+                    name: String(lib.name || 'Library'),
+                    type: String(lib.type || 'arr'),
+                }))
+                : [];
             const instanceList = Array.isArray(profilesData?.instances)
                 ? profilesData.instances.map((instance: any) => ({
                     id: String(instance.id),
@@ -139,7 +153,7 @@ export const UpgraderDashboard: React.FC = () => {
                     type: String(instance.type || 'arr'),
                 }))
                 : [];
-            setLibraries(instanceList);
+            setLibraries(indexedLibraries.length ? indexedLibraries : (configuredLibraries.length ? configuredLibraries : instanceList));
 
             const grabs = (Array.isArray(auditData?.entries) ? auditData.entries : [])
                 .filter((entry: UpgraderAuditEntry) => entry.action === 'upgrade' && entry.success !== false && !entry.dryRun)
@@ -219,8 +233,9 @@ export const UpgraderDashboard: React.FC = () => {
         () => groupByLibrary(
             recentGrabs.map((entry) => ({
                 ...entry,
-                libraryName: entry.arrInstanceName,
-                libraryKey: entry.arrInstanceId ? `${entry.arrType || 'arr'}:${entry.arrInstanceId}` : undefined,
+                libraryName: entry.libraryName || entry.arrInstanceName,
+                libraryKey: entry.libraryKey
+                    || (entry.arrInstanceId ? `${entry.arrType || 'arr'}:${entry.arrInstanceId}` : undefined),
             })),
             libraries,
         ),
@@ -241,7 +256,7 @@ export const UpgraderDashboard: React.FC = () => {
         }>();
 
         for (const lib of libraries) {
-            const key = `${lib.type || 'arr'}:${lib.id || lib.name || 'unknown'}`;
+            const key = lib.id || `${lib.type || 'arr'}:${lib.name || 'unknown'}`;
             byKey.set(key, {
                 key,
                 label: lib.name || (lib.type === 'radarr' ? 'Radarr' : 'Sonarr'),
@@ -428,6 +443,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                     {summary.upgradeCandidates ?? 0} titles with files on disk
                                                     {summary.avgCustomFormatScore != null ? ` · avg Arr score ${summary.avgCustomFormatScore}` : ''}
                                                     {' · '}min score gain {minDelta}
+                                                    {' · '}libraries are Sonarr/Radarr root folders
                                                 </p>
                                             )}
                                         </section>
@@ -437,7 +453,7 @@ export const UpgraderDashboard: React.FC = () => {
                                             <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
                                                 <li>
                                                     <span className="text-text font-semibold">Fair per library.</span>{' '}
-                                                    Each Sonarr/Radarr library gets a turn every cycle (round-robin). One library cannot monopolize the hunt.
+                                                    Each configured Arr root folder gets a turn every cycle (round-robin). Shared Sonarr/Radarr instances with multiple roots are hunted separately.
                                                 </li>
                                                 <li>
                                                     <span className="text-text font-semibold">Worst scores first inside each library.</span>{' '}

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
     buildHuntQueue,
     libraryKeyForItem,
+    libraryLabelForItem,
     nextCooldownUntil,
     pruneCooldowns,
 } from '../../lib/upgrader/upgrader-hunt-queue.js';
@@ -12,6 +13,64 @@ const item = (partial) => ({
     mediaType: 'movie',
     avgCustomFormatScore: 0,
     ...partial,
+});
+
+test('libraryKeyForItem prefers stamped root-folder library', () => {
+    assert.equal(
+        libraryKeyForItem({ libraryKey: 'radarr:r1:movies', arrType: 'radarr', arrInstanceId: 'r1' }),
+        'radarr:r1:movies',
+    );
+    assert.equal(libraryLabelForItem({ libraryName: 'Movies', arrInstanceName: 'Radarr' }), 'Movies');
+});
+
+test('buildHuntQueue splits shared Arr instance by stamped libraryKey', () => {
+    const items = [
+        item({
+            ratingKey: 'm1',
+            arrType: 'radarr',
+            arrInstanceId: 'radarr',
+            arrInstanceName: 'Radarr',
+            libraryKey: 'radarr:radarr:movies',
+            libraryName: 'Movies',
+            avgCustomFormatScore: 0,
+        }),
+        item({
+            ratingKey: 'm2',
+            arrType: 'radarr',
+            arrInstanceId: 'radarr',
+            arrInstanceName: 'Radarr',
+            libraryKey: 'radarr:radarr:anime-movies',
+            libraryName: 'Anime Movies',
+            avgCustomFormatScore: 0,
+        }),
+        item({
+            ratingKey: 's1',
+            arrType: 'sonarr',
+            arrInstanceId: 'sonarr',
+            mediaType: 'show',
+            episodeCount: 3,
+            libraryKey: 'sonarr:sonarr:tv-shows',
+            libraryName: 'Tv Shows',
+            avgCustomFormatScore: 1,
+        }),
+        item({
+            ratingKey: 's2',
+            arrType: 'sonarr',
+            arrInstanceId: 'sonarr',
+            mediaType: 'show',
+            episodeCount: 3,
+            libraryKey: 'sonarr:sonarr:anime-shows',
+            libraryName: 'Anime Shows',
+            avgCustomFormatScore: 1,
+        }),
+    ];
+    const planned = buildHuntQueue(items, { maxPerLibrary: 1, libraryCursor: 0 });
+    assert.equal(planned.libraries.length, 4);
+    assert.equal(planned.queue.length, 4);
+    assert.deepEqual(
+        planned.queue.map((entry) => entry.libraryName).sort(),
+        ['Anime Movies', 'Anime Shows', 'Movies', 'Tv Shows'],
+    );
 });
 
 test('libraryKeyForItem is per Sonarr/Radarr library', () => {

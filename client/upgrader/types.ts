@@ -41,6 +41,14 @@ export type UpgraderSummary = {
     arrUnmappedCount: number;
     estimatedReclaimableGB: number;
     minSizeGB: number;
+    libraries?: Array<{
+        id: string;
+        key: string;
+        name: string;
+        type: string;
+        indexed?: number;
+        withFiles?: number;
+    }>;
 };
 
 export type UpgraderItem = {
@@ -264,6 +272,8 @@ export type UpgraderAuditEntry = {
     arrInstanceId?: string;
     arrInstanceName?: string;
     arrType?: string;
+    libraryKey?: string | null;
+    libraryName?: string | null;
     currentProfileId?: number | null;
     currentProfileName?: string | null;
     targetProfileId?: number;
