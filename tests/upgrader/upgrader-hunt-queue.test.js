@@ -50,6 +50,36 @@ test('buildHuntQueue skips cooldowns and snoozes', () => {
     assert.deepEqual(planned.queue.map((entry) => entry.ratingKey), ['hot']);
 });
 
+test('buildHuntQueue skips scoreUnknown Sonarr rows', () => {
+    const items = [
+        item({
+            ratingKey: 'unknown',
+            arrType: 'sonarr',
+            arrInstanceId: 'sonarr',
+            mediaType: 'show',
+            episodeCount: 10,
+            scoreUnknown: true,
+            avgCustomFormatScore: null,
+        }),
+        item({
+            ratingKey: 'known',
+            arrType: 'sonarr',
+            arrInstanceId: 'sonarr',
+            mediaType: 'show',
+            episodeCount: 10,
+            avgCustomFormatScore: 50,
+        }),
+    ];
+    const planned = buildHuntQueue(items, { maxPerLibrary: 5 });
+    assert.deepEqual(planned.queue.map((entry) => entry.ratingKey), ['known']);
+});
+
+test('noUpgrade cooldown is 7 days', () => {
+    const now = Date.parse('2026-08-02T00:00:00.000Z');
+    const until = Date.parse(nextCooldownUntil('noUpgrade', now));
+    assert.equal(until - now, 7 * 24 * 60 * 60 * 1000);
+});
+
 test('pruneCooldowns drops expired entries', () => {
     const now = Date.parse('2026-08-02T12:00:00.000Z');
     const pruned = pruneCooldowns({

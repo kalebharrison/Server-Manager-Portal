@@ -445,7 +445,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                 </li>
                                                 <li>
                                                     <span className="text-text font-semibold">No repeat loops.</span>{' '}
-                                                    After a grab (~7 days) or a “nothing better” search (~36 hours), that title cools down so the next cycle moves on.
+                                                    After a grab or a “nothing better” search (~7 days), that title cools down so the next cycle moves on.
                                                 </li>
                                                 <li>
                                                     <span className="text-text font-semibold">TV targets the weakest season.</span>{' '}

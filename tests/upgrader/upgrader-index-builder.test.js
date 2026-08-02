@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRadarrIndexItem } from '../../lib/upgrader/upgrader-index-builder.js';
+import { buildRadarrIndexItem, buildSonarrIndexItem } from '../../lib/upgrader/upgrader-index-builder.js';
 import { calculateCustomFormatScore, resolveCustomFormatScore } from '../../lib/upgrader/upgrader-quality.js';
 
 const instance = { id: 'radarr-1', name: 'Radarr', url: 'http://radarr.local', type: 'radarr' };
+const sonarrInstance = { id: 'sonarr-1', name: 'Sonarr', url: 'http://sonarr.local', type: 'sonarr' };
 
 const profile = {
     id: 1,
@@ -53,4 +54,56 @@ test('radarr index uses profile math when movie list score is zero', () => {
     assert.equal(item.avgCustomFormatScore, 1600);
     assert.equal(item.videoResolution, '4k');
     assert.equal(item.sourceTier, 'remux');
+});
+
+test('sonarr prefers embedded episodeFile custom format score', () => {
+    const record = {
+        id: 7,
+        title: 'Preacher',
+        year: 2016,
+        titleSlug: 'preacher',
+        qualityProfileId: 1,
+        seasons: [{ seasonNumber: 1, statistics: { episodeFileCount: 1, sizeOnDisk: 1_000_000_000 } }],
+        statistics: { episodeFileCount: 1, sizeOnDisk: 1_000_000_000 },
+    };
+    const episodes = [{
+        id: 1,
+        hasFile: true,
+        episodeFileId: 99,
+        seasonNumber: 1,
+        episodeNumber: 1,
+        title: 'Pilot',
+        episodeFile: {
+            id: 99,
+            seasonNumber: 1,
+            size: 1_000_000_000,
+            customFormatScore: 1700,
+            customFormats: [{ id: 10 }, { id: 20 }],
+            quality: { quality: { name: 'WEBDL-1080p', resolution: 1080 } },
+            mediaInfo: { videoCodec: 'HEVC' },
+        },
+    }];
+
+    const item = buildSonarrIndexItem(sonarrInstance, record, [], episodes, profile);
+    assert.equal(item.scoreUnknown, false);
+    assert.equal(item.avgCustomFormatScore, 1700);
+    assert.equal(item.customFormatScore, 1700);
+    assert.equal(item.seasons[0].avgCustomFormatScore, 1700);
+});
+
+test('sonarr statistics-only fallback marks scoreUnknown instead of fake zero', () => {
+    const record = {
+        id: 8,
+        title: 'Frisky Dingo',
+        year: 2006,
+        titleSlug: 'frisky-dingo',
+        qualityProfileId: 1,
+        seasons: [{ seasonNumber: 1, statistics: { episodeFileCount: 13, sizeOnDisk: 5_000_000_000 } }],
+        statistics: { episodeFileCount: 13, sizeOnDisk: 5_000_000_000 },
+    };
+    const item = buildSonarrIndexItem(sonarrInstance, record, [], [], profile);
+    assert.equal(item.hasFile, true);
+    assert.equal(item.scoreUnknown, true);
+    assert.equal(item.avgCustomFormatScore, null);
+    assert.equal(item.seasons[0].scoreUnknown, true);
 });
