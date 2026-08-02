@@ -263,7 +263,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Arr instances</div>
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Libraries</div>
                                                     <div className="mt-1 text-lg font-bold text-text">
                                                         {arrInstanceCount || (status?.arrConfigured ? 'Configured' : 'None')}
                                                     </div>
@@ -282,16 +282,20 @@ export const UpgraderDashboard: React.FC = () => {
                                             <h2 className="text-sm font-bold uppercase tracking-wide text-muted">How it hunts</h2>
                                             <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
                                                 <li>
-                                                    <span className="text-text font-semibold">One queue across all libraries.</span>{' '}
-                                                    Every Sonarr/Radarr instance is merged, then sorted by lowest Arr score first — not round-robin per library.
+                                                    <span className="text-text font-semibold">Fair per library.</span>{' '}
+                                                    Each Sonarr/Radarr library gets a turn every cycle (round-robin). One library cannot monopolize the hunt.
                                                 </li>
                                                 <li>
-                                                    <span className="text-text font-semibold">Worst scores first.</span>{' '}
-                                                    Auto-hunt walks that list every ~20 minutes and skips snoozed/excluded titles.
+                                                    <span className="text-text font-semibold">Worst scores first inside each library.</span>{' '}
+                                                    Within a library it tries the lowest Arr scores first, capped per cycle so it keeps moving.
+                                                </li>
+                                                <li>
+                                                    <span className="text-text font-semibold">No repeat loops.</span>{' '}
+                                                    After a grab (~7 days) or a “nothing better” search (~36 hours), that title cools down so the next cycle moves on.
                                                 </li>
                                                 <li>
                                                     <span className="text-text font-semibold">TV targets the weakest season.</span>{' '}
-                                                    It searches interactive Arr releases for that season (or the movie).
+                                                    Interactive Arr release search for that season (or the movie) — not a whole-library Arr command.
                                                 </li>
                                                 <li>
                                                     <span className="text-text font-semibold">Never downgrade resolution.</span>{' '}
@@ -308,10 +312,6 @@ export const UpgraderDashboard: React.FC = () => {
                                                             .
                                                         </>
                                                     ) : '.'}
-                                                </li>
-                                                <li>
-                                                    <span className="text-text font-semibold">Grab until the hourly budget is used.</span>{' '}
-                                                    Then it waits for the next cycle.
                                                 </li>
                                             </ol>
                                         </section>
