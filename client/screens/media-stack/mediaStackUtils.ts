@@ -1,3 +1,5 @@
+export { groupOnTheWayDownloads } from '../../../lib/media-stack/on-the-way-group.js';
+
 export const clampMonthOffset = (offset: number) => Math.max(-24, Math.min(offset, 24));
 
 export const ymd = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -82,14 +84,18 @@ export const mapQueueRecords = (records: any[] = [], service: string) => records
     const downloaded = Math.max(0, total - remaining);
     const progress = total > 0 ? Math.max(0, Math.min(100, (downloaded / total) * 100)) : 0;
     const episode = item.episode || {};
+    const seasonNumber = Number(episode.seasonNumber ?? item.seasonNumber);
+    const episodeNumber = Number(episode.episodeNumber ?? item.episodeNumber);
+    const seriesId = Number(item.seriesId ?? item.series?.id ?? subject?.id);
+    const downloadId = String(item.downloadId || '').trim().toLowerCase() || null;
     const hasExistingFile = isTv
         ? episode.hasFile
         : isMusic
             ? (subject?.statistics?.trackFileCount > 0 ? true : subject?.statistics?.trackFileCount === 0 ? false : undefined)
             : subject?.hasFile;
     const acquisitionKind = hasExistingFile === true ? 'upgrade' : hasExistingFile === false ? 'new' : 'unknown';
-    const seasonEpisode = episode.seasonNumber !== undefined && episode.episodeNumber !== undefined
-        ? `S${String(episode.seasonNumber).padStart(2, '0')}E${String(episode.episodeNumber).padStart(2, '0')}`
+    const seasonEpisode = Number.isFinite(seasonNumber) && Number.isFinite(episodeNumber)
+        ? `S${String(seasonNumber).padStart(2, '0')}E${String(episodeNumber).padStart(2, '0')}`
         : '';
 
     return {
@@ -112,6 +118,10 @@ export const mapQueueRecords = (records: any[] = [], service: string) => records
         timeleft: item.timeleft || '',
         downloaded,
         total,
+        seriesId: Number.isFinite(seriesId) && seriesId > 0 ? seriesId : null,
+        seasonNumber: Number.isFinite(seasonNumber) ? seasonNumber : null,
+        episodeNumber: Number.isFinite(episodeNumber) ? episodeNumber : null,
+        downloadId,
     };
 });
 

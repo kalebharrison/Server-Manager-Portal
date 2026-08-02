@@ -5,6 +5,7 @@ import { apiFetch } from '../shared/api';
 import { discoverPosterGridClass } from '../shared/portalLayout';
 import { ScrollReveal } from '../shared/ui';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
+import { groupOnTheWayDownloads } from '../../lib/media-stack/on-the-way-group.js';
 import { mapQueueRecords } from './media-stack/mediaStackUtils';
 import { PosterImage } from './DiscoverContent';
 
@@ -79,11 +80,11 @@ export const DiscoverDownloadsSection: React.FC<{ useScrollRevealAnimations?: bo
         initialLoadRef.current = false;
         try {
             const queue = await apiFetch('/api/media-stack/queue', { cacheTtlMs: 15_000, forceRefresh });
-            const next = [
+            const next = groupOnTheWayDownloads([
                 ...mapQueueRecords(queueRecords(queue?.sonarr?.queue), 'Sonarr'),
                 ...mapQueueRecords(queueRecords(queue?.radarr?.queue), 'Radarr'),
                 ...mapQueueRecords(queueRecords(queue?.lidarr?.queue), 'Lidarr'),
-            ].filter((item) => item.hasMediaTitle && item.progress >= 0 && item.progress < 100);
+            ].filter((item) => item.hasMediaTitle && item.progress >= 0 && item.progress < 100));
             setDownloads(next);
         } catch {
             setDownloads([]);
