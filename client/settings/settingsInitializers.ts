@@ -93,6 +93,7 @@ type SettingsHydrationSetters = {
     setUpgraderHuntAvailableMovies: (value: boolean) => void;
     setUpgraderMinSizeGB: (value: number) => void;
     setUpgraderMaxActionsPerHour: (value: number) => void;
+    setUpgraderMaxDownloadsPerLibrary: (value: number) => void;
     setUpgraderMinScoreDelta: (value: number) => void;
     setUpgraderPreferences: (value: {
         preferDolbyVisionHdr: boolean;
