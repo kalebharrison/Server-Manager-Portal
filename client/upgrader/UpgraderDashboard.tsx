@@ -153,7 +153,11 @@ export const UpgraderDashboard: React.FC = () => {
                     type: String(instance.type || 'arr'),
                 }))
                 : [];
-            setLibraries(indexedLibraries.length ? indexedLibraries : (configuredLibraries.length ? configuredLibraries : instanceList));
+            // Prefer configured root-folder libraries when present so Overview matches Arr roots
+            // even before the first index refresh after a settings change.
+            setLibraries(configuredLibraries.length
+                ? configuredLibraries
+                : (indexedLibraries.length ? indexedLibraries : instanceList));
 
             const grabs = (Array.isArray(auditData?.entries) ? auditData.entries : [])
                 .filter((entry: UpgraderAuditEntry) => entry.action === 'upgrade' && entry.success !== false && !entry.dryRun)
@@ -245,62 +249,37 @@ export const UpgraderDashboard: React.FC = () => {
     const dryRunByLibrary = useMemo(() => {
         if (!dryRun) return [];
         const results = dryRun.results || [];
-        const byKey = new Map<string, {
-            key: string;
-            label: string;
-            available: number;
-            considered: number;
-            indexed: number;
-            withFiles: number;
-            items: UpgraderHuntResult[];
-        }>();
-
-        for (const lib of libraries) {
-            const key = lib.id || `${lib.type || 'arr'}:${lib.name || 'unknown'}`;
-            byKey.set(key, {
-                key,
-                label: lib.name || (lib.type === 'radarr' ? 'Radarr' : 'Sonarr'),
-                available: 0,
-                considered: 0,
-                indexed: 0,
-                withFiles: 0,
-                items: [],
-            });
-        }
-
-        for (const lib of (dryRun.libraries || [])) {
-            const existing = byKey.get(lib.key);
-            byKey.set(lib.key, {
+        // Hunt response is the source of truth — don't seed empty Arr-instance ghosts from Overview.
+        return (dryRun.libraries || [])
+            .map((lib) => ({
                 key: lib.key,
-                label: lib.label || existing?.label || 'Library',
+                label: lib.label || 'Library',
                 available: Number(lib.available || 0),
                 considered: Number(lib.considered || 0),
                 indexed: Number(lib.indexed || 0),
                 withFiles: Number(lib.withFiles || 0),
                 items: results.filter((entry) => entry.libraryKey === lib.key),
-            });
-        }
+            }))
+            .filter((group) => group.withFiles > 0 || group.available > 0 || group.considered > 0 || group.items.length > 0)
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [dryRun]);
 
-        // Results without a libraryStats row (older responses) still land in a group.
-        for (const entry of results) {
-            const key = entry.libraryKey || `name:${entry.libraryName || 'Library'}`;
-            if (!byKey.has(key)) {
-                byKey.set(key, {
-                    key,
-                    label: entry.libraryName || 'Library',
-                    available: 0,
-                    considered: 0,
-                    indexed: 0,
-                    withFiles: 0,
-                    items: [],
-                });
-            }
-            const group = byKey.get(key)!;
-            if (!group.items.some((item) => item === entry)) group.items.push(entry);
+    const emptyDryRunMessage = (group: {
+        withFiles: number;
+        available: number;
+        considered: number;
+    }) => {
+        if ((group.withFiles || 0) === 0) {
+            return 'No titles with files in the Quality Hunt index for this library. Click Refresh index, wait for it to finish, then dry-run again.';
         }
-
-        return [...byKey.values()].sort((a, b) => a.label.localeCompare(b.label));
-    }, [dryRun, libraries]);
+        if ((group.available || 0) === 0) {
+            return 'Titles are on disk, but none are hunt-eligible yet (scores still unknown, excluded, or cooling down).';
+        }
+        if ((group.considered || 0) === 0) {
+            return 'Eligible titles were queued, but this library was not searched (dry run stopped early). Try again.';
+        }
+        return 'Nothing sampled from this library. Try dry-run again.';
+    };
 
     const tabButtonClass = (tab: UpgraderTab) =>
         `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
@@ -543,9 +522,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                             </div>
                                                             {group.items.length === 0 && (
                                                                 <p className="text-xs text-muted">
-                                                                    {(group.withFiles || group.available || 0) === 0
-                                                                        ? 'No titles with files in the Quality Hunt index for this library. Click Refresh index, wait for it to finish, then dry-run again.'
-                                                                        : 'Eligible titles exist in the index but none were sampled (unexpected). Try dry-run again.'}
+                                                                    {emptyDryRunMessage(group)}
                                                                 </p>
                                                             )}
                                                             {would.length > 0 && (
