@@ -8,6 +8,8 @@ const APP_ICONS: Record<string, string> = {
     lidarr: `${SELFHST_ICON_BASE}/lidarr.svg`,
     tautulli: `${SELFHST_ICON_BASE}/tautulli.svg`,
     jellystat: 'https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/jellystat.png',
+    qbittorrent: `${SELFHST_ICON_BASE}/qbittorrent.svg`,
+    sabnzbd: `${SELFHST_ICON_BASE}/sabnzbd.svg`,
     tmdb: `${SELFHST_ICON_BASE}/tmdb.svg`,
     // selfhst slug is `tvdb` (not `the-tvdb`); PNG fallback if SVG missing.
     tvdb: `${SELFHST_ICON_BASE}/tvdb.svg`,

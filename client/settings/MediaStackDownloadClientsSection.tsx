@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { IntegrationTitle, hasIntegrationCredentials } from './integrationDisplay';
 import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
     onQcSabApiKeyChange: (value: string) => void;
 };
 
+const fieldClass = 'w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all';
+
 export const MediaStackDownloadClientsSection: React.FC<Props> = ({
     qcQbitUrl,
     qcQbitUsername,
@@ -28,74 +31,76 @@ export const MediaStackDownloadClientsSection: React.FC<Props> = ({
     onQcSabApiKeyChange,
 }) => {
     const qbitConfigured = !!String(qcQbitUrl || '').trim();
-    const sabConfigured = !!(String(qcSabUrl || '').trim() && String(qcSabApiKey || '').trim());
-    const subtitle = [
-        qbitConfigured ? 'qBittorrent' : null,
-        sabConfigured ? 'SABnzbd' : null,
-    ].filter(Boolean).join(' · ') || 'Not configured';
+    const sabConfigured = hasIntegrationCredentials(qcSabUrl, qcSabApiKey);
 
     return (
-        <SettingsCollapseSection
-            title="Download clients"
-            subtitle={subtitle}
-        >
-            <p className="text-sm text-muted mb-4">
-                Used by Quality Control for queue health, orphan cleanup, and blocked-extension sync.
-                Behavior (thresholds, automation, extension lists) stays under Settings → Quality Control.
-            </p>
-            <div id="download-clients" className="space-y-4 scroll-mt-24">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <>
+            <SettingsCollapseSection
+                title={<IntegrationTitle app="qbittorrent" title="qBittorrent" subtitle="Torrent client for Quality Control health and cleanup" />}
+                subtitle={qbitConfigured ? 'Configured' : 'Not configured'}
+            >
+                <div id="qbittorrent" className="space-y-4 scroll-mt-24">
                     <div>
-                        <label htmlFor="qcQbitUrl">qBittorrent URL</label>
+                        <label htmlFor="qcQbitUrl">URL</label>
                         <input
                             id="qcQbitUrl"
                             type="url"
-                            className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
+                            className={fieldClass}
                             value={qcQbitUrl}
-                            placeholder="http://192.168.1.10:8080"
+                            placeholder="http://qbittorrent:8080"
                             onChange={(event) => onQcQbitUrlChange(event.target.value)}
                         />
                     </div>
-                    <div>
-                        <label htmlFor="qcQbitUsername">qBittorrent username</label>
-                        <input
-                            id="qcQbitUsername"
-                            type="text"
-                            className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
-                            value={qcQbitUsername}
-                            autoComplete="off"
-                            onChange={(event) => onQcQbitUsernameChange(event.target.value)}
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="qcQbitUsername">Username</label>
+                            <input
+                                id="qcQbitUsername"
+                                type="text"
+                                className={fieldClass}
+                                value={qcQbitUsername}
+                                autoComplete="off"
+                                onChange={(event) => onQcQbitUsernameChange(event.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="qcQbitPassword">Password</label>
+                            <input
+                                id="qcQbitPassword"
+                                type="password"
+                                className={fieldClass}
+                                value={qcQbitPassword}
+                                placeholder="••••••••"
+                                autoComplete="off"
+                                onChange={(event) => onQcQbitPasswordChange(event.target.value)}
+                            />
+                        </div>
                     </div>
-                    <div className="md:col-span-2">
-                        <label htmlFor="qcQbitPassword">qBittorrent password</label>
-                        <input
-                            id="qcQbitPassword"
-                            type="password"
-                            className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
-                            value={qcQbitPassword}
-                            placeholder="••••••••"
-                            autoComplete="off"
-                            onChange={(event) => onQcQbitPasswordChange(event.target.value)}
-                        />
-                    </div>
+                </div>
+            </SettingsCollapseSection>
+
+            <SettingsCollapseSection
+                title={<IntegrationTitle app="sabnzbd" title="SABnzbd" subtitle="Usenet client for Quality Control health and cleanup" />}
+                subtitle={sabConfigured ? 'Configured' : 'Not configured'}
+            >
+                <div id="sabnzbd" className="space-y-4 scroll-mt-24">
                     <div>
-                        <label htmlFor="qcSabUrl">SABnzbd URL</label>
+                        <label htmlFor="qcSabUrl">URL</label>
                         <input
                             id="qcSabUrl"
                             type="url"
-                            className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
+                            className={fieldClass}
                             value={qcSabUrl}
-                            placeholder="http://192.168.1.10:8085"
+                            placeholder="http://sabnzbd:8080"
                             onChange={(event) => onQcSabUrlChange(event.target.value)}
                         />
                     </div>
                     <div>
-                        <label htmlFor="qcSabApiKey">SABnzbd API key</label>
+                        <label htmlFor="qcSabApiKey">API key</label>
                         <input
                             id="qcSabApiKey"
                             type="password"
-                            className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
+                            className={fieldClass}
                             value={qcSabApiKey}
                             placeholder="••••••••"
                             autoComplete="off"
@@ -103,7 +108,7 @@ export const MediaStackDownloadClientsSection: React.FC<Props> = ({
                         />
                     </div>
                 </div>
-            </div>
-        </SettingsCollapseSection>
+            </SettingsCollapseSection>
+        </>
     );
 };
