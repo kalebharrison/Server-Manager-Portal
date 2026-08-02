@@ -109,6 +109,7 @@ export type SettingsFormValues = {
     qcStalledHours: number;
     qcCompletedNotImportingMinutes: number;
     qcOrphanGraceMinutes: number;
+    qcMaxStrikes: number;
     qcResearchThrottleHours: number;
     qcSnoozeDefaultHours: number;
     qcDiscordDigestEnabled: boolean;

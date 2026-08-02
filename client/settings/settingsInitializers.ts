@@ -113,6 +113,7 @@ type SettingsHydrationSetters = {
     setQcStalledHours: (value: number) => void;
     setQcCompletedNotImportingMinutes: (value: number) => void;
     setQcOrphanGraceMinutes: (value: number) => void;
+    setQcMaxStrikes: (value: number) => void;
     setQcResearchThrottleHours: (value: number) => void;
     setQcSnoozeDefaultHours: (value: number) => void;
     setQcDiscordDigestEnabled: (value: boolean) => void;
@@ -247,10 +248,11 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityMaxPerCycle(Math.max(1, Number(initialSettings.qcIntegrityMaxPerCycle) || 25));
     setters.setQcIntegrityDecodeWindowSec(Math.max(1, Number(initialSettings.qcIntegrityDecodeWindowSec) || 10));
     setters.setQcIntegrityDecodeTimeoutMs(Math.max(1000, Number(initialSettings.qcIntegrityDecodeTimeoutMs) || 30000));
-    setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 30));
-    setters.setQcStalledHours(Math.max(1, Number(initialSettings.qcStalledHours) || 6));
-    setters.setQcCompletedNotImportingMinutes(Math.max(1, Number(initialSettings.qcCompletedNotImportingMinutes) || 60));
-    setters.setQcOrphanGraceMinutes(Math.max(0, Number(initialSettings.qcOrphanGraceMinutes ?? 45) || 0));
+    setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 10));
+    setters.setQcStalledHours(Math.max(1, Number(initialSettings.qcStalledHours) || 2));
+    setters.setQcCompletedNotImportingMinutes(Math.max(1, Number(initialSettings.qcCompletedNotImportingMinutes) || 20));
+    setters.setQcOrphanGraceMinutes(Math.max(0, Number(initialSettings.qcOrphanGraceMinutes ?? 15) || 0));
+    setters.setQcMaxStrikes(Math.max(1, Number(initialSettings.qcMaxStrikes) || 3));
     setters.setQcResearchThrottleHours(Math.max(1, Number(initialSettings.qcResearchThrottleHours) || 24));
     setters.setQcSnoozeDefaultHours(Math.max(1, Number(initialSettings.qcSnoozeDefaultHours) || 24));
     setters.setQcDiscordDigestEnabled(!!initialSettings.qcDiscordDigestEnabled);

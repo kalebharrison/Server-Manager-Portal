@@ -13,11 +13,21 @@ type QcDownloadItem = {
     sizeleft?: number;
     snoozed?: boolean;
     actionable?: boolean;
+    strikeEligible?: boolean;
+    strikes?: number;
+    maxStrikes?: number;
+    killReady?: boolean;
     safetyHold?: 'genericImport' | 'stallOutage' | string | null;
     status?: string | null;
     trackedDownloadState?: string | null;
     client?: { client?: string; state?: string; name?: string } | null;
-    would?: { action?: string; reason?: string } | null;
+    would?: {
+        action?: string;
+        reason?: string;
+        awardStrike?: boolean;
+        strikes?: number;
+        kill?: boolean;
+    } | null;
 };
 
 type Snapshot = {
@@ -79,9 +89,15 @@ export const QcDownloadsPanel: React.FC<Props> = ({
         if (dryPreview) return dryPreview;
         const items = Array.isArray(snapshot?.items) ? snapshot!.items! : [];
         const orphans = Array.isArray(snapshot?.orphans) ? snapshot!.orphans! : [];
-        return [...items, ...orphans].filter((item) => item.actionable || item.snoozed || item.reason);
+        return [...items, ...orphans].filter((item) => (
+            item.actionable || item.strikeEligible || item.snoozed || item.reason
+        ));
     }, [snapshot, dryPreview]);
 
+    const selectableKeys = useMemo(
+        () => rows.filter((item) => (item.actionable || item.strikeEligible) && item.key).map((item) => item.key),
+        [rows],
+    );
     const actionableKeys = useMemo(
         () => rows.filter((item) => item.actionable && item.key).map((item) => item.key),
         [rows],
@@ -106,7 +122,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
             const items = Array.isArray(data?.items) ? data.items : [];
             setDryPreview(items);
             onToast(
-                `Dry-run cleanup: ${data?.count ?? items.length} actionable item(s).`,
+                `Dry-run cleanup: ${data?.count ?? 0} would kill, ${data?.strikeCount ?? items.length} strike-eligible.`,
                 'success',
             );
         } catch (e: any) {
@@ -188,13 +204,13 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                         <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Download health</h2>
                         <p className="text-xs text-muted mt-1">
                             {dryPreview
-                                ? `Dry-run preview · ${dryPreview.length} would clean`
-                                : `${actionableKeys.length} actionable · ${snapshot?.metricsPreview?.actionableCount ?? rows.length} flagged`}
+                                ? `Dry-run preview · ${dryPreview.filter((item) => item.killReady || item.would?.kill).length} would kill · ${dryPreview.length} strike-eligible`
+                                : `${actionableKeys.length} ready to kill · ${selectableKeys.length} strike-eligible`}
                             {snapshot?.generatedAt ? ` · ${new Date(snapshot.generatedAt).toLocaleString()}` : ''}
                         </p>
                         <p className="text-[11px] text-muted mt-1 max-w-2xl">
-                            Cleanup only auto-selects doomed import failures (sample, blocked extension, invalid media, encrypted archive, etc.)
-                            and stalls when the downloader reports network up (qBit connection/DHT, SAB DNS/servers) — not during outages.
+                            Cleanup uses strikes: a problem must be seen across multiple healthy scans before a kill.
+                            Manual Live cleanup on a selection can still force-remove earlier. Stalls skip while qBit/SAB network looks down.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -223,7 +239,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                             disabled={busy || (actionableKeys.length === 0 && selected.size === 0)}
                         >
                             <Trash2 className="w-3.5 h-3.5" />
-                            {selected.size > 0 ? `Live cleanup (${selected.size})` : 'Live cleanup'}
+                            {selected.size > 0 ? `Force cleanup (${selected.size})` : 'Live cleanup'}
                         </button>
                     </div>
                 </div>
@@ -258,7 +274,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                 >
                                     <div className="flex flex-wrap items-start justify-between gap-2">
                                         <label className="flex items-start gap-2 min-w-0 flex-1 cursor-pointer">
-                                            {item.actionable && (
+                                            {(item.actionable || item.strikeEligible) && (
                                                 <input
                                                     type="checkbox"
                                                     className="mt-1 h-3.5 w-3.5 accent-plex shrink-0"
@@ -273,6 +289,10 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                 <div className="text-[11px] text-muted mt-0.5 break-words">
                                                     {[
                                                         item.reason || (item.would?.reason ?? null),
+                                                        (item.maxStrikes || item.would?.strikes != null)
+                                                            ? `strikes ${(item.would?.strikes ?? item.strikes ?? 0)}/${item.maxStrikes ?? 3}`
+                                                            : null,
+                                                        item.killReady || item.would?.kill ? 'ready' : null,
                                                         item.arrType,
                                                         item.upgrade ? 'upgrade' : null,
                                                         item.size ? formatSizeCeil(item.size) : null,

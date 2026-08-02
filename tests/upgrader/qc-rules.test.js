@@ -12,19 +12,72 @@ import {
     isSnoozed,
     isStallActionable,
     itemKey,
+    nextStrikeState,
+    strikeGapMsForReason,
     thresholdsFromConfig,
 } from '../../lib/upgrader/qc-rules.js';
 
 const hour = 60 * 60 * 1000;
 const minute = 60 * 1000;
 
-test('thresholdsFromConfig applies defaults', () => {
+test('thresholdsFromConfig applies per-strike defaults', () => {
     const t = thresholdsFromConfig({});
-    assert.equal(t.metaDlMinutes, 30);
-    assert.equal(t.stalledHours, 6);
-    assert.equal(t.completedNotImportingMinutes, 60);
+    assert.equal(t.metaDlMinutes, 10);
+    assert.equal(t.stalledHours, 2);
+    assert.equal(t.completedNotImportingMinutes, 20);
+    assert.equal(t.orphanGraceMinutes, 15);
+    assert.equal(t.maxStrikes, 3);
     assert.equal(t.researchThrottleHours, 24);
     assert.equal(t.snoozeDefaultHours, 24);
+});
+
+test('nextStrikeState awards first immediately then waits a full gap', () => {
+    const now = Date.now();
+    const gapMs = 2 * hour;
+    const first = nextStrikeState({
+        reason: QC_REASONS.stalled,
+        now,
+        gapMs,
+        maxStrikes: 3,
+        award: true,
+    });
+    assert.equal(first.count, 1);
+    assert.equal(first.killReady, false);
+    assert.equal(first.awarded, true);
+
+    const tooSoon = nextStrikeState({
+        existing: first,
+        reason: QC_REASONS.stalled,
+        now: now + minute,
+        gapMs,
+        maxStrikes: 3,
+        award: true,
+    });
+    assert.equal(tooSoon.count, 1);
+    assert.equal(tooSoon.awarded, false);
+
+    const second = nextStrikeState({
+        existing: first,
+        reason: QC_REASONS.stalled,
+        now: now + gapMs,
+        gapMs,
+        maxStrikes: 3,
+        award: true,
+    });
+    assert.equal(second.count, 2);
+    assert.equal(second.awarded, true);
+
+    const third = nextStrikeState({
+        existing: second,
+        reason: QC_REASONS.stalled,
+        now: now + (2 * gapMs),
+        gapMs,
+        maxStrikes: 3,
+        award: true,
+    });
+    assert.equal(third.count, 3);
+    assert.equal(third.killReady, true);
+    assert.equal(strikeGapMsForReason(QC_REASONS.stalled, thresholdsFromConfig({})), 2 * hour);
 });
 
 test('classifyQueueItem detects metaDL past threshold', () => {

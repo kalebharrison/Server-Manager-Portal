@@ -30,6 +30,7 @@ type Props = {
     qcStalledHours: number;
     qcCompletedNotImportingMinutes: number;
     qcOrphanGraceMinutes: number;
+    qcMaxStrikes: number;
     qcResearchThrottleHours: number;
     qcSnoozeDefaultHours: number;
     qcDiscordDigestEnabled: boolean;
@@ -59,6 +60,7 @@ type Props = {
     onQcStalledHoursChange: (value: number) => void;
     onQcCompletedNotImportingMinutesChange: (value: number) => void;
     onQcOrphanGraceMinutesChange: (value: number) => void;
+    onQcMaxStrikesChange: (value: number) => void;
     onQcResearchThrottleHoursChange: (value: number) => void;
     onQcSnoozeDefaultHoursChange: (value: number) => void;
     onQcDiscordDigestEnabledChange: (value: boolean) => void;
@@ -97,6 +99,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcStalledHours,
     qcCompletedNotImportingMinutes,
     qcOrphanGraceMinutes,
+    qcMaxStrikes,
     qcResearchThrottleHours,
     qcSnoozeDefaultHours,
     qcDiscordDigestEnabled,
@@ -126,6 +129,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onQcStalledHoursChange,
     onQcCompletedNotImportingMinutesChange,
     onQcOrphanGraceMinutesChange,
+    onQcMaxStrikesChange,
     onQcResearchThrottleHoursChange,
     onQcSnoozeDefaultHoursChange,
     onQcDiscordDigestEnabledChange,
@@ -231,9 +235,22 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         />
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <label className="text-sm font-semibold">MetaDL minutes
+                        <label className="text-sm font-semibold">Max strikes
                             <span className="block text-xs font-normal text-muted mt-1">
-                                qBit stuck fetching metadata this long before cleanup can remove it.
+                                Cleanup needs this many healthy observations of the same problem before a kill. Timers below are per strike.
+                            </span>
+                            <input
+                                type="number"
+                                min="1"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={qcMaxStrikes}
+                                disabled={!enabled}
+                                onChange={(event) => onQcMaxStrikesChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">MetaDL minutes / strike
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                qBit stuck in metaDL this long earns one strike (× max strikes ≈ total wait).
                             </span>
                             <input
                                 type="number"
@@ -244,10 +261,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 onChange={(event) => onQcMetaDlMinutesChange(Math.max(1, Number(event.target.value) || 1))}
                             />
                         </label>
-                        <label className="text-sm font-semibold">Stalled hours
+                        <label className="text-sm font-semibold">Stalled hours / strike
                             <span className="block text-xs font-normal text-muted mt-1">
-                                How long a download must stay stalled before it is actionable. Skipped while qBit/SAB
-                                network health looks down.
+                                Stalled this long earns one strike. Skipped while qBit/SAB network health looks down.
                             </span>
                             <input
                                 type="number"
@@ -258,9 +274,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 onChange={(event) => onQcStalledHoursChange(Math.max(1, Number(event.target.value) || 1))}
                             />
                         </label>
-                        <label className="text-sm font-semibold">Completed not importing (min)
+                        <label className="text-sm font-semibold">Completed not importing (min / strike)
                             <span className="block text-xs font-normal text-muted mt-1">
-                                Finished in the client but Arr still has not imported after this many minutes.
+                                Finished in the client but Arr still has not imported — per strike window.
                             </span>
                             <input
                                 type="number"
@@ -271,9 +287,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 onChange={(event) => onQcCompletedNotImportingMinutesChange(Math.max(1, Number(event.target.value) || 1))}
                             />
                         </label>
-                        <label className="text-sm font-semibold">Orphan grace (min)
+                        <label className="text-sm font-semibold">Orphan grace (min / strike)
                             <span className="block text-xs font-normal text-muted mt-1">
-                                Wait this long before killing client downloads with no Arr queue link (avoids racing fresh hunt grabs).
+                                No Arr link for this long earns one orphan strike (also protects fresh hunt grabs).
                             </span>
                             <input
                                 type="number"

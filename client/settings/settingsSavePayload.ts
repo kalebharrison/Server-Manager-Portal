@@ -110,6 +110,7 @@ type SettingsSavePayloadInput = {
     qcStalledHours: number;
     qcCompletedNotImportingMinutes: number;
     qcOrphanGraceMinutes: number;
+    qcMaxStrikes: number;
     qcResearchThrottleHours: number;
     qcSnoozeDefaultHours: number;
     qcDiscordDigestEnabled: boolean;
