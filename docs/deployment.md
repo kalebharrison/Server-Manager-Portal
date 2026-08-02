@@ -29,8 +29,8 @@ Library integrity validates Arr-known files with `ffprobe` / `ffmpeg` inside the
 volumes:
   - ../config:/app/config
   - ../backup:/app/backup
-  - /mnt/user/movies:/media/movies:ro
-  - /mnt/user/tv:/media/tv:ro
+  - /data/movies:/media/movies:ro
+  - /data/tv:/media/tv:ro
 ```
 
 Example path maps (Settings textarea):
@@ -98,39 +98,38 @@ PUBLIC_BASE_URL=https://media.example.com/portal
 
 The entrypoint optionally runs as `PUID`/`PGID` (default `1000:1000`) and ensures `/app/config` + `/app/backup` are writable by that user.
 
-## Production (Dockhand Git stack, unraid01)
+## Production / lab (Dockhand Git stacks)
 
-The live portal at `https://plex.lostwaldo.net` is **not** updated by manual `docker run` / `docker compose` on the host. Dockhand (git stack **151**, environment `unraid01-mtls`) owns the container via Compose project `server-manager-portal`.
+Live portals should be owned by Dockhand (or your compose orchestrator), **not** by ad-hoc `docker run` / `docker compose` on the host. Homelab hostnames, stack ids, and verify URLs stay in gitignored `.local/` — do not commit them here.
 
-| Item | Value |
+| Item | Typical value |
 |---|---|
-| Host | `unraid01` |
-| Container name | `server-manager-portal` |
-| Image tag | `ghcr.io/kalebharrison/server-manager-portal:main` |
-| Compose source | `docker_stacks` → `stacks/unraid01/enabled/server-manager-portal/` |
-| Stack has `repull_images = true` | floating `:main` tag is pulled on deploy |
-| Lab hostname | `https://plex-beta.lostwaldo.net` → stack `server-manager-portal-beta` (`:beta`) |
+| Prod image tag | `ghcr.io/<owner>/server-manager-portal:main` |
+| Lab image tag | `ghcr.io/<owner>/server-manager-portal:beta` |
+| Compose project (prod) | `server-manager-portal` |
+| Compose project (lab) | `server-manager-portal-beta` |
+| Stack has `repull_images = true` | floating tags are pulled on deploy |
 
 ### Normal production release flow
 
 1. Merge/promote to `main` (CI builds and pushes the GHCR `:main` image).
-2. Let Dockhand refresh stack **151** (webhook/CI or manual **Sync** then **Deploy**). Do **not** recreate the container on unraid01 by hand.
+2. Let Dockhand refresh the **prod** stack (webhook/CI or manual **Sync** then **Deploy**). Do **not** recreate the container on the host by hand.
 
 ### Lab / feature work (`beta`)
 
 1. Push to `beta` (CI builds `:beta`).
-2. Dockhand refreshes `server-manager-portal-beta` at `plex-beta.lostwaldo.net` (separate config under `/mnt/user/docker/server-manager-portal-beta/`).
+2. Deploy the **lab** stack (see `.local/notes.md` for stack id + verify URL).
 
 ### Orphan container / name conflict
 
-If someone runs `docker compose up` or `docker run` directly on unraid01, the container may lose `com.docker.compose.*` labels. Dockhand deploy then fails with *container name already in use*.
+If someone runs `docker compose up` or `docker run` directly on the host, the container may lose `com.docker.compose.*` labels. Dockhand deploy then fails with *container name already in use*.
 
 **Fix (minimal downtime):**
 
-1. Confirm stack 151 sync is clean (`POST /api/git/stacks/151/sync`).
-2. Remove only the orphan: `docker rm -f server-manager-portal` on unraid01 (config/backup/bind mounts under `/mnt/user/docker/server-manager-portal/` are untouched).
-3. Immediately `POST /api/git/stacks/151/deploy` so Dockhand recreates the container with the stack `stack.yaml`, `stack.env`, and `.env.dockhand`.
+1. Confirm the prod stack sync is clean (`POST /api/git/stacks/<prod-stack-id>/sync`).
+2. Remove only the orphan: `docker rm -f server-manager-portal` (config/backup bind mounts are untouched).
+3. Immediately `POST /api/git/stacks/<prod-stack-id>/deploy` so Dockhand recreates the container with the stack `stack.yaml`, `stack.env`, and `.env.dockhand`.
 
-**Verify:** `com.docker.compose.project=server-manager-portal` on the container, deploy succeeds twice in a row, `https://plex.lostwaldo.net` returns 200.
+**Verify:** `com.docker.compose.project=server-manager-portal` on the container, deploy succeeds twice in a row, prod URL returns 200.
 
 **Do not use Watchtower** for this stack; use Dockhand deploy so Compose ownership stays correct.

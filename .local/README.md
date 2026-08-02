@@ -14,8 +14,10 @@ Agents (and you) need a single place for:
 | File | Purpose |
 |---|---|
 | `stack.env` | Secrets + base URLs as env vars (copy from `stack.example.env`) |
-| `stack.json` | Non-secret inventory: hosts, roles, which notifier owns Discord (copy from `stack.example.json`) |
-| `notes.md` | Freeform “how I run this” notes |
+| `stack.json` | Non-secret inventory: hosts, roles, deploy stack ids, which notifier owns Discord (copy from `stack.example.json`) |
+| `notes.md` | Freeform “how I run this” notes (lab/prod URLs, Dockhand stack ids) |
+
+Put **all** personal hostnames, domains, and Dockhand stack ids here — never in tracked docs or Cursor rules.
 
 ```bash
 cp .local/stack.example.env .local/stack.env

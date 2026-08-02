@@ -47,7 +47,7 @@ export const DiscordLlmSection: React.FC<DiscordLlmSectionProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
                 <label htmlFor="discordLlmUrl">LLM base URL</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmUrl" type="url" value={discordLlmUrl} onChange={(event) => onDiscordLlmUrlChange(event.target.value)} placeholder="http://jetson01.lostwaldo.internal:11434/v1" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
+                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordLlmUrl" type="url" value={discordLlmUrl} onChange={(event) => onDiscordLlmUrlChange(event.target.value)} placeholder="http://llm.example.internal:11434/v1" disabled={!discordEnabled || !discordBotEnabled || !discordLlmEnabled} />
             </div>
             <div>
                 <label htmlFor="discordLlmModel">Model</label>

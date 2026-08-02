@@ -10,9 +10,10 @@ When finishing a fix or feature on this repo's `beta` branch:
 1. Commit (when the change is ready to ship).
 2. Push to `fork/beta`.
 3. Wait for the GitHub Actions Docker publish run for that SHA.
-4. Deploy stack **153** with `DOCKHAND_STACK_ID=153 ./.local/dockhand-deploy.sh`.
-5. Confirm portal HTTP 200 on https://plex-beta.lostwaldo.net/.
+4. Read lab deploy targets from gitignored `.local/notes.md` / `.local/stack.json` (stack id + verify URL). Deploy with:
+   `DOCKHAND_STACK_ID=<lab-stack-id> ./.local/dockhand-deploy.sh`
+5. Confirm portal HTTP 200 on the lab URL from `.local`.
 
 Do **not** ask "want me to deploy?" — just do it.
 
-Leave production / stack 151 alone unless the user explicitly asks.
+Leave production alone unless the user explicitly asks. Never commit hostnames, URLs, stack ids, or credentials from `.local/` into the repo.

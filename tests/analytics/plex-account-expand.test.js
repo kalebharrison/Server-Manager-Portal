@@ -7,11 +7,11 @@ import { filterHistoryByAccounts } from '../../lib/analytics/analytics-history.j
 test('expandLocalPlexAccountIds merges name matches with admin owner account 1', () => {
     const accounts = [
         { id: 1, name: 'Owner' },
-        { id: 7, name: 'kaleb' },
+        { id: 7, name: 'alice' },
         { id: 9, name: 'someoneelse' },
     ];
     const ids = expandLocalPlexAccountIds('7', accounts, {
-        username: 'kaleb',
+        username: 'alice',
         isAdmin: true,
     });
     assert.deepEqual(new Set(ids), new Set(['7', '1']));

@@ -1,6 +1,6 @@
-# Service replacement audit (unraid01)
+# Service replacement audit
 
-Snapshot after Wave 1–4 upstream ports on fork `beta` (lab: `plex-beta.lostwaldo.net`).
+Snapshot after Wave 1–4 upstream ports on fork `beta` (lab stack; see `.local/` for hostname).
 
 | Container | Portal coverage now | Recommendation |
 |---|---|---|

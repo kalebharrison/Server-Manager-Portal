@@ -6,7 +6,11 @@
     "publicUrl": "https://portal.example.com",
     "deploy": {
       "via": "dockhand",
-      "stackHint": "server-manager-portal"
+      "stackHint": "server-manager-portal",
+      "labStackId": 0,
+      "prodStackId": 0,
+      "labVerifyUrl": "https://portal-beta.example.com/",
+      "prodVerifyUrl": "https://portal.example.com/"
     }
   },
   "notifications": {
