@@ -5,9 +5,13 @@ import {
     classifyQueueItem,
     findDuplicates,
     findOrphans,
+    isDoomedImportFailure,
+    isGlobalStallOutage,
+    isReasonActionable,
     isResearchThrottled,
     isSeedingProtected,
     isSnoozed,
+    isStallActionable,
     itemKey,
     thresholdsFromConfig,
 } from '../../lib/upgrader/qc-rules.js';
@@ -60,6 +64,22 @@ test('classifyQueueItem detects stalled past threshold', () => {
     assert.equal(reason, QC_REASONS.stalled);
 });
 
+test('classifyQueueItem does not treat downloadClientUnavailable as stalled', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcStalledHours: 1 }),
+        clientItem: null,
+        arrItem: {
+            status: 'warning',
+            trackedDownloadState: 'downloadClientUnavailable',
+            added: new Date(now - 3 * hour).toISOString(),
+            statusMessages: [{ title: 'Download client is unavailable' }],
+        },
+    });
+    assert.equal(reason, null);
+});
+
 test('classifyQueueItem detects failedImport', () => {
     const reason = classifyQueueItem({
         now: Date.now(),
@@ -73,6 +93,81 @@ test('classifyQueueItem detects failedImport', () => {
         clientItem: { client: 'qbit', state: 'uploading', progress: 1 },
     });
     assert.equal(reason, QC_REASONS.failedImport);
+});
+
+test('only doomed import failures are actionable', () => {
+    const generic = {
+        status: 'completed',
+        trackedDownloadState: 'importFailed',
+        errorMessage: 'Failed to import download',
+    };
+    const doomed = {
+        status: 'completed',
+        trackedDownloadState: 'importFailed',
+        errorMessage: 'Not a valid media file (sample detected)',
+    };
+    assert.equal(isDoomedImportFailure(generic), false);
+    assert.equal(isDoomedImportFailure(doomed), true);
+    assert.equal(isReasonActionable({ reason: QC_REASONS.failedImport, arrItem: generic }), false);
+    assert.equal(isReasonActionable({ reason: QC_REASONS.failedImport, arrItem: doomed }), true);
+    assert.equal(isDoomedImportFailure({
+        trackedDownloadState: 'importFailed',
+        statusMessages: [{ messages: ['Unwanted extension found: exe'] }],
+    }), true);
+    assert.equal(isDoomedImportFailure({
+        trackedDownloadState: 'importFailed',
+        failMessage: 'Archive is encrypted / password protected',
+    }), true);
+});
+
+test('global stall outage holds stall kills when all active downloads are idle', () => {
+    const items = [
+        { client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.2, dlspeed: 0 },
+        { client: 'qbit', id: 'b', state: 'downloading', progress: 0.5, dlspeed: 0 },
+    ];
+    assert.equal(isGlobalStallOutage(items), true);
+    assert.equal(isStallActionable({
+        clientItem: items[0],
+        clients: { qbit: true, sab: false },
+        clientItems: items,
+        qbitConfigured: true,
+        sabConfigured: false,
+    }), false);
+
+    const recovering = [
+        { client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.2, dlspeed: 0 },
+        { client: 'qbit', id: 'b', state: 'downloading', progress: 0.5, dlspeed: 120000 },
+    ];
+    assert.equal(isGlobalStallOutage(recovering), false);
+    assert.equal(isStallActionable({
+        clientItem: recovering[0],
+        clients: { qbit: true, sab: false },
+        clientItems: recovering,
+        qbitConfigured: true,
+        sabConfigured: false,
+    }), true);
+});
+
+test('stall kills are held when download client is configured but unreachable', () => {
+    assert.equal(isStallActionable({
+        clientItem: { client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.1, dlspeed: 0 },
+        clients: { qbit: false, sab: false },
+        clientItems: [],
+        qbitConfigured: true,
+        sabConfigured: false,
+    }), false);
+});
+
+test('single stalled torrent remains actionable when client is healthy', () => {
+    const lonely = [{ client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.1, dlspeed: 0 }];
+    assert.equal(isGlobalStallOutage(lonely), false);
+    assert.equal(isStallActionable({
+        clientItem: lonely[0],
+        clients: { qbit: true, sab: false },
+        clientItems: lonely,
+        qbitConfigured: true,
+        sabConfigured: false,
+    }), true);
 });
 
 test('classifyQueueItem detects completedNotImporting past threshold', () => {

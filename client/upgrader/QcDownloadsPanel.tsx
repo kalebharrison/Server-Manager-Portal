@@ -13,6 +13,7 @@ type QcDownloadItem = {
     sizeleft?: number;
     snoozed?: boolean;
     actionable?: boolean;
+    safetyHold?: 'genericImport' | 'stallOutage' | string | null;
     status?: string | null;
     trackedDownloadState?: string | null;
     client?: { client?: string; state?: string; name?: string } | null;
@@ -39,6 +40,12 @@ const clientStateLabel = (item: QcDownloadItem) => {
     if (item.trackedDownloadState) return item.trackedDownloadState;
     if (item.status) return item.status;
     return '—';
+};
+
+const safetyHoldLabel = (hold?: QcDownloadItem['safetyHold']) => {
+    if (hold === 'genericImport') return 'held: not a doomed import failure';
+    if (hold === 'stallOutage') return 'held: client/network outage guard';
+    return null;
 };
 
 export const QcDownloadsPanel: React.FC<Props> = ({
@@ -185,6 +192,10 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                 : `${actionableKeys.length} actionable · ${snapshot?.metricsPreview?.actionableCount ?? rows.length} flagged`}
                             {snapshot?.generatedAt ? ` · ${new Date(snapshot.generatedAt).toLocaleString()}` : ''}
                         </p>
+                        <p className="text-[11px] text-muted mt-1 max-w-2xl">
+                            Cleanup only auto-selects doomed import failures (sample, blocked extension, invalid media, encrypted archive, etc.)
+                            and stalls when the download client looks healthy — not during ISP/client outages.
+                        </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <button
@@ -267,6 +278,10 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                         item.size ? formatSizeCeil(item.size) : null,
                                                         clientStateLabel(item),
                                                         item.snoozed ? 'snoozed' : null,
+                                                        safetyHoldLabel(item.safetyHold),
+                                                        !item.actionable && item.reason && !item.snoozed && !item.safetyHold
+                                                            ? 'not actionable'
+                                                            : null,
                                                         item.would?.action ? `would ${item.would.action}` : null,
                                                     ].filter(Boolean).join(' · ')}
                                                 </div>
