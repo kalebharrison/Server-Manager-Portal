@@ -87,6 +87,43 @@ test('configured Lidarr is added to status monitoring and exposes stored labels'
     assert.equal(payload.config.services[0].description, reconciled.services[0].description);
 });
 
+test('configured download clients appear on status with generic public names', () => {
+    const reconciled = reconcileBuiltInStatusConfig({ groups: [], services: [] }, {
+        qcQbitUrl: 'http://qbittorrent:8080',
+        qcSabUrl: 'http://sabnzbd:8080',
+        qcSabApiKey: 'secret',
+    });
+    const torrent = reconciled.services.find((service) => service.id === 'torrent');
+    const usenet = reconciled.services.find((service) => service.id === 'usenet');
+    assert.equal(torrent?.name, 'Torrent');
+    assert.equal(torrent?.url, 'http://qbittorrent:8080');
+    assert.equal(usenet?.name, 'Usenet');
+    assert.equal(usenet?.url, 'http://sabnzbd:8080');
+    const payload = createPublicStatusPayload({
+        groups: reconciled.groups,
+        services: [
+            { id: 'torrent', name: '', description: '', groupId: 'downloads' },
+            { id: 'usenet', name: '', description: '', groupId: 'downloads' },
+        ],
+    });
+    assert.deepEqual(payload.config.services.map(({ name, description }) => ({ name, description })), [
+        { name: 'Torrent', description: 'Torrent downloads' },
+        { name: 'Usenet', description: 'Usenet downloads' },
+    ]);
+});
+
+test('download client monitors are removed when clients are unconfigured', () => {
+    const result = reconcileBuiltInStatusConfig({
+        groups: [{ id: 'downloads', name: 'Download Clients', order: 2 }],
+        services: [
+            { id: 'torrent', name: 'Torrent', url: 'http://qbittorrent:8080', groupId: 'downloads' },
+            { id: 'usenet', name: 'Usenet', url: 'http://sabnzbd:8080', groupId: 'downloads' },
+        ],
+    }, {});
+    assert.equal(result.services.some((service) => service.id === 'torrent'), false);
+    assert.equal(result.services.some((service) => service.id === 'usenet'), false);
+});
+
 test('metadata APIs and additional Arr instances receive distinct status monitors', () => {
     const config = createDefaultStatusConfig({
         tmdbApiKey: 'tmdb-secret',
