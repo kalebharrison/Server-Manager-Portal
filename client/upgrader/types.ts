@@ -241,7 +241,14 @@ export type UpgraderHuntResponse = {
     wouldGrab?: number;
     searched?: number;
     skipped?: number;
-    libraries?: Array<{ key: string; label: string; considered: number; available: number }>;
+    libraries?: Array<{
+        key: string;
+        label: string;
+        considered?: number;
+        available?: number;
+        indexed?: number;
+        withFiles?: number;
+    }>;
     maxPerLibrary?: number;
 };
 

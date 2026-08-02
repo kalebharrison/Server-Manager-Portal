@@ -195,7 +195,7 @@ export const UpgraderDashboard: React.FC = () => {
         try {
             const result = await apiFetch('/api/upgrader/hunt', {
                 method: 'POST',
-                body: JSON.stringify({ dryRun: true, limit: 8 }),
+                body: JSON.stringify({ dryRun: true, limit: 2 }), // per-library sample size
             }) as UpgraderHuntResponse;
             setDryRun(result || null);
             if (!result?.ran) {
@@ -227,10 +227,65 @@ export const UpgraderDashboard: React.FC = () => {
         [recentGrabs, libraries],
     );
 
-    const dryRunByLibrary = useMemo(
-        () => groupByLibrary(dryRun?.results || [], libraries),
-        [dryRun, libraries],
-    );
+    const dryRunByLibrary = useMemo(() => {
+        if (!dryRun) return [];
+        const results = dryRun.results || [];
+        const byKey = new Map<string, {
+            key: string;
+            label: string;
+            available: number;
+            considered: number;
+            indexed: number;
+            withFiles: number;
+            items: UpgraderHuntResult[];
+        }>();
+
+        for (const lib of libraries) {
+            const key = `${lib.type || 'arr'}:${lib.id || lib.name || 'unknown'}`;
+            byKey.set(key, {
+                key,
+                label: lib.name || (lib.type === 'radarr' ? 'Radarr' : 'Sonarr'),
+                available: 0,
+                considered: 0,
+                indexed: 0,
+                withFiles: 0,
+                items: [],
+            });
+        }
+
+        for (const lib of (dryRun.libraries || [])) {
+            const existing = byKey.get(lib.key);
+            byKey.set(lib.key, {
+                key: lib.key,
+                label: lib.label || existing?.label || 'Library',
+                available: Number(lib.available || 0),
+                considered: Number(lib.considered || 0),
+                indexed: Number(lib.indexed || 0),
+                withFiles: Number(lib.withFiles || 0),
+                items: results.filter((entry) => entry.libraryKey === lib.key),
+            });
+        }
+
+        // Results without a libraryStats row (older responses) still land in a group.
+        for (const entry of results) {
+            const key = entry.libraryKey || `name:${entry.libraryName || 'Library'}`;
+            if (!byKey.has(key)) {
+                byKey.set(key, {
+                    key,
+                    label: entry.libraryName || 'Library',
+                    available: 0,
+                    considered: 0,
+                    indexed: 0,
+                    withFiles: 0,
+                    items: [],
+                });
+            }
+            const group = byKey.get(key)!;
+            if (!group.items.some((item) => item === entry)) group.items.push(entry);
+        }
+
+        return [...byKey.values()].sort((a, b) => a.label.localeCompare(b.label));
+    }, [dryRun, libraries]);
 
     const tabButtonClass = (tab: UpgraderTab) =>
         `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
@@ -467,8 +522,16 @@ export const UpgraderDashboard: React.FC = () => {
                                                                 <h3 className="text-sm font-bold text-text">{group.label}</h3>
                                                                 <span className="text-[11px] text-muted">
                                                                     {would.length} would grab · {skipped.length} skipped
+                                                                    {group.withFiles != null ? ` · ${group.withFiles} with files in index` : ''}
                                                                 </span>
                                                             </div>
+                                                            {group.items.length === 0 && (
+                                                                <p className="text-xs text-muted">
+                                                                    {(group.withFiles || group.available || 0) === 0
+                                                                        ? 'No titles with files in the Quality Hunt index for this library. Click Refresh index, wait for it to finish, then dry-run again.'
+                                                                        : 'Eligible titles exist in the index but none were sampled (unexpected). Try dry-run again.'}
+                                                                </p>
+                                                            )}
                                                             {would.length > 0 && (
                                                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                                                                     {would.map((entry: UpgraderHuntResult) => {
@@ -525,9 +588,6 @@ export const UpgraderDashboard: React.FC = () => {
                                                                         </div>
                                                                     ))}
                                                                 </div>
-                                                            )}
-                                                            {would.length === 0 && skipped.length === 0 && (
-                                                                <p className="text-xs text-muted">No titles from this library in the dry-run sample.</p>
                                                             )}
                                                         </div>
                                                     );
