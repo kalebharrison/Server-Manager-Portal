@@ -83,8 +83,34 @@ test('configured Lidarr is added to status monitoring and exposes stored labels'
     const reconciled = reconcileBuiltInStatusConfig({ groups: [], services: [] }, { lidarrUrl: 'http://lidarr:8686', lidarrApiKey: 'secret' });
     const payload = createPublicStatusPayload(reconciled);
     assert.equal(reconciled.services[0].url, 'http://lidarr:8686');
-    assert.equal(payload.config.services[0].name, reconciled.services[0].name);
-    assert.equal(payload.config.services[0].description, reconciled.services[0].description);
+    assert.equal(reconciled.services[0].name, 'Music Automation');
+    assert.equal(reconciled.services[0].groupId, 'automation');
+    assert.equal(payload.config.services[0].name, 'Music Automation');
+    assert.equal(payload.config.services[0].description, 'Music release automation');
+});
+
+test('product-named Lidarr is renamed to Music Automation and moved into Automations', () => {
+    const reconciled = reconcileBuiltInStatusConfig({
+        groups: [{ id: 'downloads', name: 'Download Clients', order: 2 }],
+        services: [
+            { id: 'sonarr', name: 'TV Automation', description: 'TV release automation', groupId: 'downloads', url: 'http://sonarr:8989' },
+            { id: 'lidarr', name: 'Lidarr', description: 'Music automation', groupId: 'downloads', url: 'http://old-lidarr:8686' },
+        ],
+    }, {
+        arrInstances: [
+            { id: 'tv', type: 'sonarr', name: 'Sonarr', url: 'http://sonarr:8989', apiKey: 'a', enabled: true, isDefault: true },
+            { id: 'music', type: 'lidarr', name: 'Lidarr', url: 'http://lidarr:8686', apiKey: 'b', enabled: true, isDefault: true },
+        ],
+    });
+    const lidarr = reconciled.services.find((service) => service.id === 'lidarr');
+    const sonarr = reconciled.services.find((service) => service.id === 'sonarr');
+    assert.equal(lidarr?.name, 'Music Automation');
+    assert.equal(lidarr?.description, 'Music release automation');
+    assert.equal(lidarr?.groupId, 'automation');
+    assert.equal(lidarr?.url, 'http://lidarr:8686');
+    assert.equal(sonarr?.name, 'TV Automation');
+    assert.equal(sonarr?.groupId, 'automation');
+    assert.ok(reconciled.groups.some((group) => group.id === 'automation' && group.name === 'Automations'));
 });
 
 test('configured download clients appear on status with generic public names', () => {
@@ -97,8 +123,10 @@ test('configured download clients appear on status with generic public names', (
     const usenet = reconciled.services.find((service) => service.id === 'usenet');
     assert.equal(torrent?.name, 'Torrent');
     assert.equal(torrent?.url, 'http://qbittorrent:8080');
+    assert.equal(torrent?.groupId, 'downloads');
     assert.equal(usenet?.name, 'Usenet');
     assert.equal(usenet?.url, 'http://sabnzbd:8080');
+    assert.equal(usenet?.groupId, 'downloads');
     const payload = createPublicStatusPayload({
         groups: reconciled.groups,
         services: [
@@ -134,8 +162,9 @@ test('metadata APIs and additional Arr instances receive distinct status monitor
         ],
     });
     assert.deepEqual(config.services.map((service) => service.id), ['sonarr', 'sonarr-tv-anime', 'tmdb', 'tvdb']);
+    assert.deepEqual(config.services.map((service) => service.groupId), ['automation', 'automation', 'external', 'external']);
     const payload = createPublicStatusPayload(config);
-    assert.deepEqual(payload.config.services.map((service) => service.name), ['Sonarr', 'Anime', 'TMDB', 'TVDB']);
+    assert.deepEqual(payload.config.services.map((service) => service.name), ['TV Automation', 'Anime', 'TMDB', 'TVDB']);
 });
 
 test('reconcile strips retired Ombi monitors from stored status config', () => {
