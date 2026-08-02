@@ -24,6 +24,8 @@ export type UpgraderStatus = {
 export type UpgraderSummary = {
     generatedAt: string | null;
     totalItems: number;
+    upgradeCandidates?: number;
+    avgCustomFormatScore?: number;
     nonHevcCount: number;
     hevcCount: number;
     nonHevc4kCount: number;

@@ -40,7 +40,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
             });
             setPrefs(next);
             onChanged?.();
-            addToast('Upgrader exclusions updated.', 'success');
+            addToast('Skip list updated.', 'success');
         } catch (e: any) {
             addToast(e.message || 'Failed to save exclusions', 'error');
         } finally {
@@ -77,7 +77,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
             <section className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
                 <h3 className="text-sm font-bold text-text">Snoozed titles</h3>
                 {activeSnoozed.length === 0 ? (
-                    <p className="text-xs text-muted">No snoozed titles. Snooze from the browse grid to hide items temporarily.</p>
+                    <p className="text-xs text-muted">Nothing snoozed. Use Snooze on a Library card to hide a title for 30 days.</p>
                 ) : activeSnoozed.map((entry) => (
                     <div key={entry.ratingKey} className="flex items-center justify-between gap-3 py-2 border-b border-border/40 last:border-b-0">
                         <div>
@@ -92,7 +92,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
             </section>
 
             <section className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                <h3 className="text-sm font-bold text-text">Excluded titles</h3>
+                <h3 className="text-sm font-bold text-text">Always skip</h3>
                 <div className="flex gap-2">
                     <input
                         type="text"

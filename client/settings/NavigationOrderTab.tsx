@@ -15,7 +15,7 @@ const NAV_LABELS: Record<string, string> = {
     request: 'Request Content',
     preferences: 'Preferences',
     scanner: 'Scanner (Admin Only)',
-    upgrader: 'Upgrader (Admin Only)',
+    upgrader: 'Quality Hunt (Admin Only)',
     settings: 'Settings (Admin Only)',
     logout: 'Logout',
 };

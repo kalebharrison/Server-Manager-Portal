@@ -37,7 +37,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onPreferencesChange,
 }) => (
     <div className="mb-8 animate-fade-in space-y-6">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Library Upgrader</h3>
+        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Quality Hunt</h3>
         <section id="upgrader" className="space-y-5 scroll-mt-24">
             <p className="text-sm text-muted">
                 Hunts Sonarr/Radarr libraries for higher custom-format scores (Remux, DV/HDR, Atmos) and can auto-grab upgrades.
@@ -46,15 +46,15 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
             <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                 <label className="flex items-center justify-between gap-4">
                     <span>
-                        <span className="block font-semibold">Enable Library Upgrader</span>
-                        <span className="block text-xs text-muted mt-1">Shows the admin Upgrader page and enables its API.</span>
+                        <span className="block font-semibold">Enable Quality Hunt</span>
+                        <span className="block text-xs text-muted mt-1">Shows the admin Quality Hunt page and enables its API.</span>
                     </span>
                     <input type="checkbox" className="h-4 w-4 accent-plex" checked={enabled} onChange={(event) => onEnabledChange(event.target.checked)} />
                 </label>
                 <label className="flex items-center justify-between gap-4">
                     <span>
-                        <span className="block font-semibold">Enable automated upgrades</span>
-                        <span className="block text-xs text-muted mt-1">Background hunt every ~20 minutes + allow manual grab from the Upgrader UI.</span>
+                        <span className="block font-semibold">Enable auto-hunt</span>
+                        <span className="block text-xs text-muted mt-1">Background hunt every ~20 minutes, plus manual “Grab better releases” in Quality Hunt.</span>
                     </span>
                     <input
                         type="checkbox"

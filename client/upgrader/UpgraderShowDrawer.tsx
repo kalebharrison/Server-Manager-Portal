@@ -331,7 +331,7 @@ export const UpgraderShowDrawer: React.FC<UpgraderShowDrawerProps> = ({
                         <div className="rounded-xl border border-border/60 bg-background/40 p-3 space-y-3">
                             <div>
                                 <p className="text-xs font-bold text-text">Sonarr quality profile</p>
-                                <p className="text-[11px] text-muted mt-0.5">Pick any profile for this series — not limited to your HEVC default.</p>
+                                <p className="text-[11px] text-muted mt-0.5">Optional: change this series’ Arr quality profile. Quality Hunt still grabs by score, not by profile name.</p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
                                 {profilesLoading ? (
@@ -374,7 +374,7 @@ export const UpgraderShowDrawer: React.FC<UpgraderShowDrawerProps> = ({
                                     className="text-[11px] font-bold text-green-300 hover:underline"
                                     onClick={() => setSelectedProfileId(String(arr.targetProfileId))}
                                 >
-                                    Quick pick: {arr.targetProfileName} (Settings HEVC default)
+                                    Quick pick: {arr.targetProfileName} (mapped target)
                                 </button>
                             )}
                         </div>

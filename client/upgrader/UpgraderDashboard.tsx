@@ -28,20 +28,13 @@ import {
     type UpgraderProfilesUrlState,
     type UpgraderTab,
 } from './upgraderUrlState';
-import { formatUpgraderCodecLabel, getDominantCodecShare, mergeUpgraderCodecCounts } from './codecUtils';
-
 import { UPGRADER_CODEC_OPTIONS, UPGRADER_RESOLUTION_OPTIONS, UPGRADER_FEATURE_OPTIONS, UPGRADER_QUALITY_OPTIONS } from './presets';
 
 const SORT_OPTIONS = [
-    { value: 'sizeGB', label: 'Largest first' },
-    { value: 'hevcFirst', label: 'Largest HEVC first' },
-    { value: 'h264First', label: 'Largest H.264 first' },
-    { value: 'av1First', label: 'Largest AV1 first' },
-    { value: 'watchCount', label: 'Most watched' },
-    { value: 'addedAt', label: 'Recently added' },
-    { value: 'daysSinceAdded', label: 'Oldest added' },
-    { value: 'staleAdded', label: 'Stale (old + unwatched)' },
+    { value: 'score', label: 'Lowest score first' },
+    { value: 'sizeGB', label: 'Largest files first' },
     { value: 'title', label: 'Title A–Z' },
+    { value: 'addedAt', label: 'Recently added' },
 ];
 
 const isUpgradableItem = (item: UpgraderItem) => {
@@ -112,7 +105,7 @@ export const UpgraderDashboard: React.FC = () => {
         try { return window.localStorage.getItem('upgrader_filters_expanded') === 'true'; } catch { return false; }
     });
     const [presetReady, setPresetReady] = useState(false);
-    const [sort, setSort] = useState(() => initialUrl.browse.sort || window.localStorage.getItem('upgrader_filters_sort') || 'sizeGB');
+    const [sort, setSort] = useState(() => initialUrl.browse.sort || window.localStorage.getItem('upgrader_filters_sort') || 'score');
     const [libraryId, setLibraryId] = useState(() => initialUrl.browse.library || window.localStorage.getItem('upgrader_filters_library') || 'all');
     const [mediaType, setMediaType] = useState(() => initialUrl.browse.type || window.localStorage.getItem('upgrader_filters_type') || 'all');
     const [search, setSearch] = useState(initialUrl.browse.search);
@@ -315,7 +308,7 @@ export const UpgraderDashboard: React.FC = () => {
 
     const openUpgradeModal = (targets: UpgraderItem[]) => {
         if (!status?.automationEnabled) {
-            addToast('Enable Upgrader automation in Settings first.', 'error');
+            addToast('Enable auto-hunt in Settings → Quality Hunt first.', 'error');
             return;
         }
         const upgradable = targets.filter((item) => isUpgradableItem(item));
@@ -360,17 +353,23 @@ export const UpgraderDashboard: React.FC = () => {
             `${summary.totalItems} titles indexed`,
             `index ${formatIndexAge(summary.generatedAt)}`,
         ];
-        if (summary.estimatedReclaimableGB > 0) {
-            chips.push(`~${summary.estimatedReclaimableGB} GB reclaimable`);
+        if (summary.upgradeCandidates != null) {
+            chips.push(`${summary.upgradeCandidates} with files`);
+        }
+        if (summary.avgCustomFormatScore != null) {
+            chips.push(`avg score ${summary.avgCustomFormatScore}`);
         }
         if (status?.automationEnabled) {
-            chips.push(`${status.recentUpgradeCount}/${status.maxActionsPerHour} upgrades this hour`);
+            chips.push(`auto-hunt on · ${status.recentUpgradeCount}/${status.maxActionsPerHour}/hr`);
+        } else {
+            chips.push('auto-hunt off');
         }
         return chips;
     }, [summary, status]);
 
     const totalPages = Math.max(1, Math.ceil(total / 48));
-    const automationReady = !!status?.automationEnabled && !!status?.profileMapConfigured;
+    const automationReady = !!status?.automationEnabled;
+    const advancedFilterCount = codecs.size + resolutions.size + features.size + qualities.size;
 
     const tabButtonClass = (tab: UpgraderTabId) =>
         `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
@@ -404,10 +403,11 @@ export const UpgraderDashboard: React.FC = () => {
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <ArrowUpCircle className="w-8 h-8 text-plex" />
-                            <h1 className="page-title">Upgrader</h1>
+                            <h1 className="page-title">Quality Hunt</h1>
                         </div>
                         <p className="text-sm text-muted max-w-2xl">
-                            Browse your Sonarr and Radarr libraries, filter by codec and quality, drill into series episodes, change quality profiles, and trigger searches.
+                            Find library titles with room to improve, then grab better Arr releases by custom-format score
+                            (Remux / DV+HDR / Atmos). Season packs are preferred for TV, but never if they would drop resolution.
                         </p>
                     </div>
                     {featureEnabled && (
@@ -418,16 +418,16 @@ export const UpgraderDashboard: React.FC = () => {
                             disabled={rebuilding || !!status?.rebuildInProgress}
                         >
                             <RefreshCw className={`w-4 h-4 ${rebuilding || status?.rebuildInProgress ? 'animate-spin' : ''}`} />
-                            {rebuilding || status?.rebuildInProgress ? 'Rebuilding…' : 'Rebuild Index'}
+                            {rebuilding || status?.rebuildInProgress ? 'Refreshing…' : 'Refresh library'}
                         </button>
                     )}
                 </div>
 
                 {!featureEnabled && (
                     <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
-                        <h3 className="text-xl font-bold text-plex mb-2">Upgrader Disabled</h3>
-                        <p className="text-sm text-muted mb-3">Library Upgrader is currently OFF.</p>
-                        <p className="text-xs text-muted mb-4">Enable it in Settings → Library Upgrader to hunt higher quality scores automatically.</p>
+                        <h3 className="text-xl font-bold text-plex mb-2">Quality Hunt is off</h3>
+                        <p className="text-sm text-muted mb-3">Turn it on to index Arr libraries and hunt better releases.</p>
+                        <p className="text-xs text-muted mb-4">Settings → Quality Hunt → enable, then save.</p>
                         <a
                             href={portalUrl('/settings#upgrader')}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-plex text-background font-bold no-underline hover:bg-plex-hover transition-colors"
@@ -454,32 +454,32 @@ export const UpgraderDashboard: React.FC = () => {
                                 )}
                                 {status?.arrConfigured && status.automationEnabled && (
                                     <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400">
-                                        Automation is ON
+                                        Auto-hunt ON
                                     </span>
                                 )}
                                 {status?.arrConfigured && !status.automationEnabled && (
-                                    <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400">
-                                        Manual Upgrades only
+                                    <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-200">
+                                        Browse only — enable auto-hunt in Settings to grab
                                     </span>
                                 )}
                             </div>
                         )}
 
                         <div className="flex flex-wrap gap-2">
-                            <button type="button" className={tabButtonClass('browse')} onClick={() => handleTabChange('browse')}>
-                                Browse
+                            <button type="button" className={tabButtonClass('browse')} onClick={() => handleTabChange('browse')} title="Library titles from Sonarr/Radarr">
+                                Library
                             </button>
-                            <button type="button" className={tabButtonClass('history')} onClick={() => handleTabChange('history')}>
+                            <button type="button" className={tabButtonClass('history')} onClick={() => handleTabChange('history')} title="What Quality Hunt grabbed or skipped">
                                 <History className="w-4 h-4" />
-                                History
+                                Activity
                             </button>
-                            <button type="button" className={tabButtonClass('exclusions')} onClick={() => handleTabChange('exclusions')}>
+                            <button type="button" className={tabButtonClass('exclusions')} onClick={() => handleTabChange('exclusions')} title="Titles the hunt should ignore">
                                 <Ban className="w-4 h-4" />
-                                Exclusions
+                                Skip list
                             </button>
-                            <button type="button" className={tabButtonClass('profiles')} onClick={() => handleTabChange('profiles')}>
+                            <button type="button" className={tabButtonClass('profiles')} onClick={() => handleTabChange('profiles')} title="Tune Arr custom formats / quality profiles so scores mean best-of-best">
                                 <Settings2 className="w-4 h-4" />
-                                Profiles
+                                Arr scores
                             </button>
                         </div>
 
@@ -514,123 +514,18 @@ export const UpgraderDashboard: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="flex flex-col gap-4 p-4 rounded-2xl border border-border/60 bg-card/40">
-                            <div className="flex flex-col w-full">
-                                <button
-                                    type="button"
-                                    onClick={() => setFiltersExpanded(!filtersExpanded)}
-                                    className="lg:hidden w-full py-2 mb-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors"
-                                >
-                                    <Filter className="w-4 h-4" />
-                                    {filtersExpanded ? 'Hide Filters' : 'Show Filters'}
-                                </button>
-                                
-                                <div className={`flex flex-row flex-wrap items-start gap-x-8 gap-y-3 ${filtersExpanded ? 'flex' : 'hidden lg:flex'}`}>
-                                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1 hidden lg:inline">Codec:</span>
-                                    {UPGRADER_CODEC_OPTIONS.map((option) => (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            onClick={() => {
-                                                setCodecs(prev => {
-                                                    const next = new Set(prev);
-                                                    if (next.has(option.id)) next.delete(option.id);
-                                                    else next.add(option.id);
-                                                    return next;
-                                                });
-                                                setPage(1);
-                                            }}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${codecs.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                    </div>
-                                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1 hidden lg:inline">Resolution:</span>
-                                    {UPGRADER_RESOLUTION_OPTIONS.map((option) => (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            onClick={() => {
-                                                setResolutions(prev => {
-                                                    const next = new Set(prev);
-                                                    if (next.has(option.id)) next.delete(option.id);
-                                                    else next.add(option.id);
-                                                    return next;
-                                                });
-                                                setPage(1);
-                                            }}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${resolutions.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                    </div>
-                                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1 hidden lg:inline">Features:</span>
-                                    {UPGRADER_FEATURE_OPTIONS.map((option) => (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            onClick={() => {
-                                                setFeatures(prev => {
-                                                    const next = new Set(prev);
-                                                    if (next.has(option.id)) next.delete(option.id);
-                                                    else next.add(option.id);
-                                                    return next;
-                                                });
-                                                setPage(1);
-                                            }}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${features.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                    </div>
-                                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1 hidden lg:inline">Quality:</span>
-                                    {UPGRADER_QUALITY_OPTIONS.map((option) => (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            onClick={() => {
-                                                setQualities(prev => {
-                                                    const next = new Set(prev);
-                                                    if (next.has(option.id)) next.delete(option.id);
-                                                    else next.add(option.id);
-                                                    return next;
-                                                });
-                                                setPage(1);
-                                            }}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${qualities.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                    </div>
+                        <div className="flex flex-col gap-3 p-4 rounded-2xl border border-border/60 bg-card/40">
+                            <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full">
+                                <div className="relative flex-1 w-full sm:min-w-[200px]">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                                    <input
+                                        type="search"
+                                        value={searchInput}
+                                        onChange={(e) => setSearchInput(e.target.value)}
+                                        placeholder="Search titles…"
+                                        className="w-full pl-9 pr-3 py-2 h-[38px] rounded-lg border border-border bg-background text-text text-sm outline-none focus:border-plex"
+                                    />
                                 </div>
-                            </div>
-                            <div className={`flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full pt-4 border-t border-white/5 ${filtersExpanded ? 'flex' : 'hidden lg:flex'}`}>
-                                <CustomSelect
-                                    value={gridSize}
-                                    onChange={(value) => setGridSize(normalizeUpgraderGridSize(value))}
-                                    options={UPGRADER_GRID_SIZE_OPTIONS}
-                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
-                                />
-                                <CustomSelect
-                                    value={sort}
-                                    onChange={(value) => { setSort(value); setPage(1); }}
-                                    options={SORT_OPTIONS}
-                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
-                                />
-                                <CustomSelect
-                                    value={libraryId}
-                                    onChange={(value) => { setLibraryId(value); setPage(1); }}
-                                    options={[{ value: 'all', label: 'All instances' }, ...libraries.map((lib) => ({ value: lib.id, label: `${lib.title} (${lib.count})` }))]}
-                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
-                                />
                                 <CustomSelect
                                     value={mediaType}
                                     onChange={(value) => { setMediaType(value); setPage(1); }}
@@ -641,17 +536,125 @@ export const UpgraderDashboard: React.FC = () => {
                                     ]}
                                     className="flex-1 w-full sm:w-auto min-w-[140px]"
                                 />
-                                <div className="relative flex-1 w-full sm:w-auto min-w-[140px]">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                                    <input
-                                        type="search"
-                                        value={searchInput}
-                                        onChange={(e) => setSearchInput(e.target.value)}
-                                        placeholder="Search titles…"
-                                        className="w-full pl-9 pr-3 py-2 h-[38px] rounded-lg border border-border bg-background text-text text-sm outline-none focus:border-plex"
-                                    />
-                                </div>
+                                <CustomSelect
+                                    value={libraryId}
+                                    onChange={(value) => { setLibraryId(value); setPage(1); }}
+                                    options={[{ value: 'all', label: 'All Arr instances' }, ...libraries.map((lib) => ({ value: lib.id, label: `${lib.title} (${lib.count})` }))]}
+                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
+                                />
+                                <CustomSelect
+                                    value={sort}
+                                    onChange={(value) => { setSort(value); setPage(1); }}
+                                    options={SORT_OPTIONS}
+                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
+                                />
+                                <CustomSelect
+                                    value={gridSize}
+                                    onChange={(value) => setGridSize(normalizeUpgraderGridSize(value))}
+                                    options={UPGRADER_GRID_SIZE_OPTIONS}
+                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setFiltersExpanded(!filtersExpanded)}
+                                    className="inline-flex items-center gap-2 px-3 py-2 h-[38px] rounded-lg border border-border bg-background text-sm font-semibold text-muted hover:text-text"
+                                >
+                                    <Filter className="w-4 h-4" />
+                                    {filtersExpanded ? 'Hide filters' : 'More filters'}
+                                    {advancedFilterCount > 0 && (
+                                        <span className="rounded-full bg-plex/20 text-plex px-1.5 text-[10px] font-bold">{advancedFilterCount}</span>
+                                    )}
+                                </button>
                             </div>
+
+                            {filtersExpanded && (
+                                <div className="flex flex-row flex-wrap items-start gap-x-8 gap-y-3 pt-3 border-t border-white/5">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1">Codec</span>
+                                        {UPGRADER_CODEC_OPTIONS.map((option) => (
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setCodecs((prev) => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(option.id)) next.delete(option.id);
+                                                        else next.add(option.id);
+                                                        return next;
+                                                    });
+                                                    setPage(1);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${codecs.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1">Resolution</span>
+                                        {UPGRADER_RESOLUTION_OPTIONS.map((option) => (
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setResolutions((prev) => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(option.id)) next.delete(option.id);
+                                                        else next.add(option.id);
+                                                        return next;
+                                                    });
+                                                    setPage(1);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${resolutions.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1">Features</span>
+                                        {UPGRADER_FEATURE_OPTIONS.map((option) => (
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setFeatures((prev) => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(option.id)) next.delete(option.id);
+                                                        else next.add(option.id);
+                                                        return next;
+                                                    });
+                                                    setPage(1);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${features.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1">Source</span>
+                                        {UPGRADER_QUALITY_OPTIONS.map((option) => (
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setQualities((prev) => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(option.id)) next.delete(option.id);
+                                                        else next.add(option.id);
+                                                        return next;
+                                                    });
+                                                    setPage(1);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${qualities.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {automationReady && selectedItems.length > 0 && (
@@ -667,7 +670,7 @@ export const UpgraderDashboard: React.FC = () => {
                                         onClick={() => openUpgradeModal(selectedItems)}
                                     >
                                         <ArrowUpFromLine className="w-3.5 h-3.5" />
-                                        Upgrade selected
+                                        Grab better releases
                                     </button>
                                 </div>
                             </div>
@@ -677,9 +680,9 @@ export const UpgraderDashboard: React.FC = () => {
                             <Loader isLoading />
                         ) : (status?.itemCount ?? 0) === 0 ? (
                             <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-8 text-center">
-                                <h3 className="text-xl font-bold text-yellow-200 mb-2">Index empty — rebuild from Sonarr/Radarr</h3>
+                                <h3 className="text-xl font-bold text-yellow-200 mb-2">Library index is empty</h3>
                                 <p className="text-sm text-muted mb-4">
-                                    Upgrader reads directly from your Sonarr and Radarr libraries. Click Rebuild Index to populate the browse grid.
+                                    Quality Hunt reads Sonarr/Radarr. Refresh the library index to populate titles and scores.
                                 </p>
                                 <button
                                     type="button"
@@ -688,13 +691,13 @@ export const UpgraderDashboard: React.FC = () => {
                                     disabled={rebuilding || !!status?.rebuildInProgress}
                                 >
                                     <RefreshCw className={`w-4 h-4 ${rebuilding ? 'animate-spin' : ''}`} />
-                                    Rebuild Index
+                                    Refresh library
                                 </button>
                             </div>
                         ) : total === 0 ? (
                             <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
-                                <h3 className="text-xl font-bold text-text mb-2">No matches for this filter</h3>
-                                <p className="text-sm text-muted">Try another preset, instance, or search term.</p>
+                                <h3 className="text-xl font-bold text-text mb-2">No matches</h3>
+                                <p className="text-sm text-muted">Clear filters or try another Arr instance / search.</p>
                             </div>
                         ) : (
                             <>
@@ -704,127 +707,32 @@ export const UpgraderDashboard: React.FC = () => {
                                         const canUpgrade = automationReady && isUpgradableItem(item);
                                         const isSelected = selectedKeys.has(item.ratingKey);
                                         const isShow = item.mediaType === 'show';
-                                        const epCount = (item as any).matchedEpisodeCount ?? item.nonHevcEpisodeCount ?? 0;
-                                        const isCodecFiltered = codecs.size > 0 || features.has('non_hevc');
-                                        const codecLabel = item.videoCodec
-                                            ? formatUpgraderCodecLabel(item.videoCodec)
-                                            : '';
-                                        const showCodecLabel = isShow ? (isCodecFiltered ? codecLabel : '') : codecLabel;
-                                        let gridBadgeText = '';
-                                        let listBadgeText = '';
-                                        if (isShow) {
-                                            const codecc = mergeUpgraderCodecCounts((item as any).codecCounts || {});
-                                            const ressc = (item as any).resCounts || {};
-                                            const parts: string[] = [];
-                                            
-                                            Object.entries(codecc).sort((a: any, b: any) => b[1] - a[1]).forEach(([c, count]) => {
-                                                parts.push(`${count} ${formatUpgraderCodecLabel(c)} eps`);
-                                            });
-                                            Object.entries(ressc).sort((a: any, b: any) => b[1] - a[1]).forEach(([r, count]) => {
-                                                let label = 'SD';
-                                                if (r === '1080') label = '1080p';
-                                                else if (r === '720') label = '720p';
-                                                else if (r === '4k') label = '4K';
-                                                parts.push(`${count} ${label} eps`);
-                                            });
-                                            const unknownCodecs = Number((item as any).unknownCodecCount || 0);
-                                            if (unknownCodecs > 0) {
-                                                parts.push(`${unknownCodecs} no mediaInfo`);
-                                            }
-                                            const snapshot = parts.join(' | ');
-
-                                            if (epCount > 0 && showCodecLabel) gridBadgeText = `${epCount} ${showCodecLabel} eps`;
-                                            else if (epCount > 0) gridBadgeText = `${epCount} eps`;
-                                            else if (showCodecLabel) gridBadgeText = `${showCodecLabel} eps`;
-                                            else gridBadgeText = 'Episodes';
-                                            if (epCount === 1) gridBadgeText = gridBadgeText.replace('eps', 'ep');
-                                            
-                                            listBadgeText = snapshot || gridBadgeText;
-                                        } else {
-                                            gridBadgeText = showCodecLabel || 'UNKNOWN';
-                                            listBadgeText = gridBadgeText;
-                                        }
-                                        
-                                        let dominantCodecPercentageLabel = '';
-                                        let dominantCodecColorClass = 'bg-white/10 border-white/20 text-gray-300';
-                                        
-                                        if (isShow) {
-                                            const onDisk = Number((item as any).onDiskFileCount || 0);
-                                            const share = getDominantCodecShare((item as any).codecCounts, onDisk);
-                                            if (share) {
-                                                dominantCodecPercentageLabel = `${share.percentLabel}% ${share.label}`;
-                                                const label = share.label;
-                                                if (label.includes('HEVC') || label.includes('AV1') || share.key === 'hevc' || share.key === 'av1') {
-                                                    dominantCodecColorClass = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
-                                                } else if (share.key === 'h264' || label.includes('H.264') || label.includes('AVC')) {
-                                                    dominantCodecColorClass = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
-                                                } else {
-                                                    dominantCodecColorClass = 'bg-blue-500/10 border-blue-500/20 text-blue-400';
-                                                }
-                                            } else if ((item as any).totalEpisodeCount > 0) {
-                                                const totalEps = (item as any).totalEpisodeCount;
-                                                const nonHevcEps = item.nonHevcEpisodeCount || 0;
-                                                const hevcEps = Math.max(0, totalEps - nonHevcEps);
-                                                if (hevcEps >= nonHevcEps) {
-                                                    const percent = Math.round((hevcEps / totalEps) * 100);
-                                                    dominantCodecPercentageLabel = `${percent}% HEVC`;
-                                                    dominantCodecColorClass = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
-                                                } else {
-                                                    const percent = Math.round((nonHevcEps / totalEps) * 100);
-                                                    const fallbackCodec = item.videoCodec
-                                                        ? formatUpgraderCodecLabel(item.videoCodec)
-                                                        : 'H.264';
-                                                    dominantCodecPercentageLabel = `${percent}% ${fallbackCodec}`;
-                                                    if (fallbackCodec.includes('AV1')) {
-                                                        dominantCodecColorClass = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
-                                                    } else {
-                                                        dominantCodecColorClass = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        const score = item.avgCustomFormatScore ?? item.customFormatScore ?? 0;
+                                        const resLabel = item.videoResolution === '4k' ? '4K' : (item.videoResolution || '').toUpperCase() || '—';
+                                        const sourceLabel = item.sourceTier && item.sourceTier !== 'unknown' ? item.sourceTier : '';
+                                        const epCount = item.totalEpisodeCount ?? item.episodeCount ?? 0;
+                                        const gridBadgeText = [
+                                            `score ${score}`,
+                                            resLabel !== '—' ? resLabel : null,
+                                            sourceLabel || null,
+                                            isShow && epCount ? `${epCount} eps` : null,
+                                        ].filter(Boolean).join(' · ');
+                                        const listBadgeText = [
+                                            gridBadgeText,
+                                            item.hasDolbyVision ? 'DV' : (item.hasHdr ? 'HDR' : null),
+                                        ].filter(Boolean).join(' · ');
+                                        const dominantCodecPercentageLabel = `score ${score}`;
+                                        const dominantCodecColorClass = score >= 100
+                                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                            : score >= 0
+                                                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                                : 'bg-red-500/10 border-red-500/20 text-red-300';
 
                                         const sizesToShow: { label: string; sizeGB: number }[] = [];
-                                        if (isShow && (item as any).codecSizesGB && codecs.size > 0) {
-                                            for (const reqCodec of Array.from(codecs)) {
-                                                let sizeForCodec = 0;
-                                                for (const [actualCodec, sizeGB] of Object.entries((item as any).codecSizesGB)) {
-                                                    const actUpper = actualCodec.toUpperCase();
-                                                    let familyStr = 'other';
-                                                    if (actUpper.includes('AV1') || actUpper.includes('AV01')) familyStr = 'av1';
-                                                    else if (actUpper.includes('HEVC') || actUpper.includes('265')) familyStr = 'hevc';
-                                                    else if (actUpper.includes('AVC') || actUpper.includes('264')) familyStr = 'h264';
-                                                    else if (actUpper.includes('VP9')) familyStr = 'vp9';
-                                                    
-                                                    if (familyStr === reqCodec) {
-                                                        sizeForCodec += (sizeGB as number);
-                                                    }
-                                                }
-                                                if (sizeForCodec > 0) {
-                                                    sizesToShow.push({ label: `${formatUpgraderCodecLabel(reqCodec)} eps`, sizeGB: sizeForCodec });
-                                                }
-                                            }
-                                        }
-                                        
-                                        if (sizesToShow.length === 0 && isShow && codecs.size > 0 && item.sizeGB > 0) {
-                                            const totalSize = item.sizeGB || 0;
-                                            const nonHevcSize = item.nonHevcEpisodeSizeGB || 0;
-                                            const hevcSize = Math.max(0, totalSize - nonHevcSize);
-                                            
-                                            // If multiple are selected, we can show fallback sizes for H264 and HEVC
-                                            if (codecs.has('h264') && nonHevcSize > 0) {
-                                                sizesToShow.push({ label: 'H.264 eps', sizeGB: nonHevcSize });
-                                            }
-                                            if (codecs.has('hevc') && hevcSize > 0) {
-                                                sizesToShow.push({ label: 'HEVC eps', sizeGB: hevcSize });
-                                            }
-                                        }
-                                        
-                                        if (sizesToShow.length === 0 && (((item.mediaType === 'show' && (item.nonHevcEpisodeSizeGB ?? 0) > 0) || item.sizeGB > 0))) {
-                                            const label = item.mediaType === 'show' ? (showCodecLabel ? `${showCodecLabel} eps` : '') : '';
+                                        if (Number(item.sizeGB || 0) > 0) {
                                             sizesToShow.push({
-                                                label,
-                                                sizeGB: item.mediaType === 'show' ? (item.nonHevcEpisodeSizeGB ?? 0) : item.sizeGB
+                                                label: isShow ? 'on disk' : '',
+                                                sizeGB: Number(item.sizeGB || 0),
                                             });
                                         }
                                         
@@ -1013,7 +921,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                                         }}
                                                                         className="text-[10px] font-bold text-plex hover:underline"
                                                                     >
-                                                                        Trigger Upgrade
+                                                                        Grab better
                                                                     </button>
                                                                 )}
                                                                 {automationReady && (
@@ -1021,7 +929,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                                         type="button"
                                                                         className="inline-flex items-center gap-1 text-[10px] font-bold text-muted hover:text-text"
                                                                         onClick={() => handleSnooze(item)}
-                                                                        title="Hide from Upgrader for 30 days"
+                                                                        title="Hide from Quality Hunt for 30 days"
                                                                     >
                                                                         <Clock className="w-3 h-3" />
                                                                         Snooze

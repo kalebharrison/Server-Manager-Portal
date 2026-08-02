@@ -5,13 +5,13 @@ import type { UpgraderAuditEntry } from './types';
 
 const actionLabel = (entry: UpgraderAuditEntry) => {
     switch (entry.action) {
-        case 'upgrade': return 'Profile upgrade';
+        case 'upgrade': return 'Grabbed better release';
         case 'profile_change': return 'Profile change';
         case 'series_search': return 'Series search';
         case 'episode_search': return 'Episode search';
         case 'movie_search': return 'Movie search';
         default:
-            if (entry.targetProfileId) return 'Profile upgrade';
+            if (entry.targetProfileId) return 'Profile change';
             if (entry.triggerSearch) return 'Search';
             return 'Action';
     }
@@ -51,7 +51,7 @@ export const UpgraderHistoryPanel: React.FC = () => {
         return (
             <div className="flex items-center justify-center gap-2 py-16 text-muted">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Loading upgrade history…
+                Loading activity…
             </div>
         );
     }
@@ -61,7 +61,7 @@ export const UpgraderHistoryPanel: React.FC = () => {
     if (!visible.length) {
         return (
             <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
-                <p className="text-sm text-muted">No upgrade or search actions recorded yet.</p>
+                <p className="text-sm text-muted">No grabs or searches yet. Auto-hunt and manual grabs show up here.</p>
             </div>
         );
     }
