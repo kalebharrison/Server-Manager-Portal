@@ -5,7 +5,6 @@ import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { CustomSelect, OverlayCheckbox } from '../shared/ui';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import { normalizeUpgraderGridSize, UPGRADER_GRID_SIZE_OPTIONS, UPGRADER_GRID_SIZE_STORAGE_KEY, upgraderPosterGridClass, upgraderPosterGridStyle, type UpgraderGridSize } from '../shared/portalLayout';
-import { DiscoverPosterCard } from '../screens/DiscoverContent';
 import type { ToastMessage } from '../shared/types';
 import { UpgraderUpgradeModal } from './UpgraderUpgradeModal';
 import { UpgraderShowDrawer } from './UpgraderShowDrawer';
@@ -403,8 +402,7 @@ export const UpgraderDashboard: React.FC = () => {
                             <h1 className="page-title">Quality Hunt</h1>
                         </div>
                         <p className="text-sm text-muted max-w-2xl">
-                            Your Sonarr/Radarr library. Each poster shows the Arr custom-format score for the file you already have —
-                            higher usually means better (Remux, DV/HDR, Atmos). Quality Hunt can search for a higher-scoring release and grab it.
+                            Upgrade machine for Sonarr/Radarr: look at what you already have, find a higher-scoring release, grab it.
                         </p>
                     </div>
                     {featureEnabled && (
@@ -419,6 +417,27 @@ export const UpgraderDashboard: React.FC = () => {
                         </button>
                     )}
                 </div>
+
+                {featureEnabled && activeTab === 'browse' && (
+                    <div className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+                        <ol className="grid gap-2 sm:grid-cols-3 text-sm text-muted list-decimal list-inside">
+                            <li><span className="text-text font-semibold">Browse</span> your Arr library below</li>
+                            <li><span className="text-text font-semibold">Score</span> = how Arr rates the file you have (higher is better)</li>
+                            <li><span className="text-text font-semibold">Grab</span> a better release when auto-hunt is on</li>
+                        </ol>
+                        {!status?.automationEnabled && (
+                            <p className="text-sm text-amber-200">
+                                Grabbing is off right now. Turn on <span className="font-semibold">Settings → Quality Hunt → Enable auto-hunt</span> to search/grab, or keep browsing.
+                            </p>
+                        )}
+                        {summary?.avgCustomFormatScore === 0 && (summary?.upgradeCandidates || 0) > 0 && (
+                            <p className="text-sm text-amber-200">
+                                Scores still look like 0 after refresh — hit <span className="font-semibold">Refresh library</span>.
+                                If they stay 0, open a movie in Radarr’s Files tab and check whether custom-format scores are set on your quality profile.
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 {!featureEnabled && (
                     <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
@@ -452,11 +471,6 @@ export const UpgraderDashboard: React.FC = () => {
                                 {status?.arrConfigured && status.automationEnabled && (
                                     <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400">
                                         Auto-hunt ON
-                                    </span>
-                                )}
-                                {status?.arrConfigured && !status.automationEnabled && (
-                                    <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-200">
-                                        Grabbing is off — Settings → Quality Hunt → Enable auto-hunt
                                     </span>
                                 )}
                             </div>
@@ -712,20 +726,24 @@ export const UpgraderDashboard: React.FC = () => {
                                             item.hasAtmos ? 'Atmos' : null,
                                         ].filter(Boolean);
                                         const qualityBits = [resLabel, sourceLabel, ...extras].filter(Boolean).join(' · ');
-                                        const scoreBadgeText = qualityBits ? `Arr ${score} · ${qualityBits}` : `Arr score ${score}`;
+                                        const scoreBadgeText = score !== 0
+                                            ? (qualityBits ? `${score} · ${qualityBits}` : `Score ${score}`)
+                                            : (qualityBits || 'No score');
                                         const scoreColorClass = score >= 100
                                             ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                                            : score > 0
+                                            : score !== 0
                                                 ? 'bg-amber-500/15 border-amber-500/30 text-amber-200'
                                                 : 'bg-black/75 border-white/20 text-white/80';
-
-                                        const sizesToShow: { label: string; sizeGB: number }[] = [];
-                                        if (Number(item.sizeGB || 0) > 0) {
-                                            sizesToShow.push({
-                                                label: isShow ? 'on disk' : '',
-                                                sizeGB: Number(item.sizeGB || 0),
-                                            });
-                                        }
+                                        const sizeLabel = Number(item.sizeGB || 0) > 0
+                                            ? (Number(item.sizeGB) < 1
+                                                ? `${Math.round(Number(item.sizeGB) * 1024)} MB`
+                                                : `${Math.round(Number(item.sizeGB) * 100) / 100} GB`)
+                                            : null;
+                                        const posterSrc = item.thumbUrl
+                                            ? resolvePortalAssetUrl(item.thumbUrl)
+                                            : (item.thumb
+                                                ? portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=200&height=300`)
+                                                : (item.posterFallbackUrl ? resolvePortalAssetUrl(item.posterFallbackUrl) : ''));
                                         
                                         if (gridSize === 'list') {
                                             return (
@@ -741,7 +759,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                         </div>
                                                     )}
                                                     <div className="w-full sm:w-24 shrink-0 aspect-[2/3] sm:aspect-auto sm:h-36 rounded-md overflow-hidden bg-black/50 relative border border-white/5 cursor-pointer" onClick={isShow ? () => handleOpenDrawer(item) : undefined}>
-                                                        <img src={item.thumbUrl ? resolvePortalAssetUrl(item.thumbUrl) : (item.thumb ? portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=200&height=300`) : item.posterFallbackUrl ? resolvePortalAssetUrl(item.posterFallbackUrl) : '')} alt={item.title} className="w-full h-full object-cover" />
+                                                        {posterSrc ? <img src={posterSrc} alt={item.title} className="w-full h-full object-cover" /> : null}
                                                     </div>
                                                     <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
                                                         <div className="flex items-start justify-between gap-4">
@@ -757,11 +775,11 @@ export const UpgraderDashboard: React.FC = () => {
                                                                     <span className="px-2 py-0.5 rounded-md bg-white/10 border border-white/5 text-xs font-semibold text-gray-300">
                                                                         {item.arrInstanceName || (item.arrType === 'radarr' ? 'Radarr' : 'Sonarr')}
                                                                     </span>
-                                                                    {sizesToShow.map((s, idx) => (
-                                                                        <span key={idx} className="px-2 py-0.5 rounded-md bg-white/10 border border-white/5 text-xs font-semibold text-gray-300">
-                                                                            {`${s.sizeGB < 1 ? Math.round(s.sizeGB * 1024) + ' MB' : Math.round(s.sizeGB * 100) / 100 + ' GB'}${s.label ? ` (${s.label})` : ''}`}
+                                                                    {sizeLabel && (
+                                                                        <span className="px-2 py-0.5 rounded-md bg-white/10 border border-white/5 text-xs font-semibold text-gray-300">
+                                                                            {sizeLabel}
                                                                         </span>
-                                                                    ))}
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                             <span className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full border ${scoreColorClass}`}>
@@ -801,103 +819,88 @@ export const UpgraderDashboard: React.FC = () => {
 
                                         const checkboxSize = gridSize === 'small' || gridSize === 'medium' ? 'sm' : 'md';
                                         return (
-                                            <div key={item.ratingKey} className="relative min-w-0">
-                                                {automationReady && (
-                                                    <div className="absolute top-1.5 left-1.5 z-20 upgrader-card-select">
-                                                        <OverlayCheckbox
-                                                            checked={isSelected}
-                                                            onChange={() => toggleSelected(item.ratingKey)}
-                                                            size={checkboxSize}
-                                                            title={isSelected ? 'Deselect' : 'Select for upgrade'}
-                                                        />
-                                                    </div>
-                                                )}
-                                                <span className={`absolute top-2 right-2 z-20 upgrader-card-badge text-[10px] font-bold px-2 py-1 rounded-full border ${scoreColorClass}`}>
-                                                    {scoreBadgeText}
-                                                </span>
-                                                <DiscoverPosterCard
-                                                    variant="home"
-                                                    showQualityBadges={false}
-                                                    item={{
-                                                        title: item.title,
-                                                        thumb: item.thumb,
-                                                        thumbUrl: item.thumbUrl || undefined,
-                                                        plexUrl: item.arrDeepUrl || '#',
-                                                        tags: [],
-                                                        year: item.year ?? undefined,
-                                                    }}
-                                                    footer={(
-                                                        <div className="px-1 space-y-1">
-                                                            {isShow ? (
-                                                                <button
-                                                                    type="button"
-                                                                    className="upgrader-card-title text-xs font-medium text-text line-clamp-2 leading-tight text-left hover:text-plex transition-colors"
-                                                                    onClick={() => handleOpenDrawer(item)}
-                                                                >
-                                                                    {item.title}{item.year ? ` (${item.year})` : ''}
-                                                                </button>
-                                                            ) : (
-                                                                <div className="upgrader-card-title text-xs font-medium text-text line-clamp-2 leading-tight">
-                                                                    {item.title}{item.year ? ` (${item.year})` : ''}
-                                                                </div>
-                                                            )}
-                                                            <div className="upgrader-card-meta flex flex-wrap gap-1.5 mt-2">
-                                                                <span className="px-1.5 py-0.5 rounded-md bg-white/10 border border-white/5 text-[10px] font-semibold text-gray-300">
-                                                                    {item.arrInstanceName || (item.arrType === 'radarr' ? 'Radarr' : 'Sonarr')}
-                                                                </span>
-                                                                {sizesToShow.map((s, idx) => (
-                                                                    <span key={idx} className="px-1.5 py-0.5 rounded-md bg-white/10 border border-white/5 text-[10px] font-semibold text-gray-300">
-                                                                        {`${s.sizeGB < 1 ? Math.round(s.sizeGB * 1024) + ' MB' : Math.round(s.sizeGB * 100) / 100 + ' GB'}${s.label ? ` (${s.label})` : ''}`}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                            <div className="upgrader-card-actions flex flex-wrap gap-x-2 gap-y-1">
-                                                                {isShow && (
-                                                                    <button
-                                                                        type="button"
-                                                                        className="text-[10px] font-bold text-muted hover:underline"
-                                                                        onClick={() => handleOpenDrawer(item)}
-                                                                    >
-                                                                        Episodes
-                                                                    </button>
-                                                                )}
-                                                                {item.arrDeepUrl && (
-                                                                    <a
-                                                                        href={item.arrDeepUrl}
-                                                                        target="_blank"
-                                                                        rel="noreferrer"
-                                                                        className="inline-block text-[10px] font-bold text-plex hover:underline"
-                                                                    >
-                                                                        Open in {item.arrType === 'radarr' ? 'Radarr' : 'Sonarr'}
-                                                                    </a>
-                                                                )}
-                                                                {canUpgrade && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            openUpgradeModal([item]);
-                                                                        }}
-                                                                        className="text-[10px] font-bold text-plex hover:underline"
-                                                                    >
-                                                                        Grab better
-                                                                    </button>
-                                                                )}
-                                                                {automationReady && (
-                                                                    <button
-                                                                        type="button"
-                                                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-muted hover:text-text"
-                                                                        onClick={() => handleSnooze(item)}
-                                                                        title="Hide from Quality Hunt for 30 days"
-                                                                    >
-                                                                        <Clock className="w-3 h-3" />
-                                                                        Snooze
-                                                                    </button>
-                                                                )}
-                                                            </div>
+                                            <div key={item.ratingKey} className="relative min-w-0 flex flex-col gap-2">
+                                                <div className="relative rounded-xl overflow-hidden bg-background border border-white/5 aspect-[2/3] w-full">
+                                                    {automationReady && (
+                                                        <div className="absolute top-1.5 left-1.5 z-20 upgrader-card-select">
+                                                            <OverlayCheckbox
+                                                                checked={isSelected}
+                                                                onChange={() => toggleSelected(item.ratingKey)}
+                                                                size={checkboxSize}
+                                                                title={isSelected ? 'Deselect' : 'Select for upgrade'}
+                                                            />
                                                         </div>
                                                     )}
-                                                />
+                                                    <span className={`absolute top-2 right-2 z-20 text-[10px] font-bold px-2 py-1 rounded-full border ${scoreColorClass}`}>
+                                                        {scoreBadgeText}
+                                                    </span>
+                                                    {posterSrc ? (
+                                                        <img src={posterSrc} alt={item.title} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center p-3 text-center bg-white/5">
+                                                            <span className="text-xs font-bold text-muted line-clamp-3">{item.title}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="px-1 space-y-1">
+                                                    {isShow ? (
+                                                        <button
+                                                            type="button"
+                                                            className="upgrader-card-title text-xs font-medium text-text line-clamp-2 leading-tight text-left hover:text-plex transition-colors"
+                                                            onClick={() => handleOpenDrawer(item)}
+                                                        >
+                                                            {item.title}{item.year ? ` (${item.year})` : ''}
+                                                        </button>
+                                                    ) : (
+                                                        <div className="upgrader-card-title text-xs font-medium text-text line-clamp-2 leading-tight">
+                                                            {item.title}{item.year ? ` (${item.year})` : ''}
+                                                        </div>
+                                                    )}
+                                                    <div className="text-[10px] text-muted">
+                                                        {[item.arrInstanceName || (item.arrType === 'radarr' ? 'Radarr' : 'Sonarr'), sizeLabel].filter(Boolean).join(' · ')}
+                                                    </div>
+                                                    <div className="upgrader-card-actions flex flex-wrap gap-x-2 gap-y-1">
+                                                        {isShow && (
+                                                            <button
+                                                                type="button"
+                                                                className="text-[10px] font-bold text-muted hover:underline"
+                                                                onClick={() => handleOpenDrawer(item)}
+                                                            >
+                                                                Episodes
+                                                            </button>
+                                                        )}
+                                                        {item.arrDeepUrl && (
+                                                            <a
+                                                                href={item.arrDeepUrl}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="inline-block text-[10px] font-bold text-plex hover:underline"
+                                                            >
+                                                                Open in {item.arrType === 'radarr' ? 'Radarr' : 'Sonarr'}
+                                                            </a>
+                                                        )}
+                                                        {canUpgrade && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openUpgradeModal([item])}
+                                                                className="text-[10px] font-bold text-plex hover:underline"
+                                                            >
+                                                                Grab better
+                                                            </button>
+                                                        )}
+                                                        {automationReady && (
+                                                            <button
+                                                                type="button"
+                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-muted hover:text-text"
+                                                                onClick={() => handleSnooze(item)}
+                                                                title="Hide from Quality Hunt for 30 days"
+                                                            >
+                                                                <Clock className="w-3 h-3" />
+                                                                Snooze
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         );
                                     })}
