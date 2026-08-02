@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, CheckCircle2, XCircle, Search, ArrowUpFromLine } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Search, ArrowUpFromLine, Trash2, Ban, Settings2 } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import type { UpgraderAuditEntry } from './types';
 
@@ -13,16 +13,46 @@ const actionLabel = (entry: UpgraderAuditEntry) => {
         case 'episode_search': return 'Episode search';
         case 'movie_search': return 'Movie search';
         case 'index_rebuilt': return 'Index rebuilt';
+        case 'qc_cleanup': return 'Cleanup removed download';
+        case 'qc_cleanup_live': return 'Live cleanup run';
+        case 'qc_cleanup_dry_run': return 'Cleanup dry run';
+        case 'qc_snooze': return 'Snoozed download';
+        case 'qc_clear_snooze': return 'Cleared download snooze';
+        case 'qc_extension_policy': return 'Updated blocked extensions';
         default:
             if (entry.targetProfileId) return 'Profile change';
             if (entry.triggerSearch) return 'Search';
-            return 'Action';
+            if (String(entry.action || '').startsWith('qc_')) return String(entry.action).replace(/^qc_/, 'QC ').replace(/_/g, ' ');
+            return entry.action || 'Action';
     }
+};
+
+const entryTitle = (entry: UpgraderAuditEntry & { key?: string; count?: number; killed?: number; extensions?: string[] }) => {
+    if (entry.title) return entry.title;
+    if (entry.ratingKey) return entry.ratingKey;
+    if (entry.key) return entry.key;
+    if (entry.action === 'qc_extension_policy' && Array.isArray(entry.extensions)) {
+        return `${entry.extensions.length} extension${entry.extensions.length === 1 ? '' : 's'}`;
+    }
+    if (entry.action === 'qc_cleanup_live' || entry.action === 'qc_cleanup_dry_run') {
+        const killed = entry.killed ?? entry.count;
+        if (killed != null) return `${killed} item${Number(killed) === 1 ? '' : 's'}`;
+    }
+    return 'Untitled';
 };
 
 const ActionIcon: React.FC<{ entry: UpgraderAuditEntry }> = ({ entry }) => {
     const failed = entry.success === false;
     if (failed) return <XCircle className="w-4 h-4 text-red-400 shrink-0" />;
+    if (entry.action === 'qc_cleanup' || entry.action === 'qc_cleanup_live') {
+        return <Trash2 className="w-4 h-4 text-amber-300 shrink-0" />;
+    }
+    if (entry.action === 'qc_snooze' || entry.action === 'qc_clear_snooze') {
+        return <Ban className="w-4 h-4 text-plex shrink-0" />;
+    }
+    if (entry.action === 'qc_extension_policy') {
+        return <Settings2 className="w-4 h-4 text-plex shrink-0" />;
+    }
     if (entry.action?.includes('search') || entry.triggerSearch) return <Search className="w-4 h-4 text-plex shrink-0" />;
     if (entry.action === 'upgrade' || entry.action === 'profile_change' || entry.targetProfileId) {
         return <ArrowUpFromLine className="w-4 h-4 text-green-400 shrink-0" />;
@@ -63,65 +93,80 @@ export const UpgraderHistoryPanel: React.FC = () => {
 
     if (!visible.length) {
         return (
-            <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
-                <p className="text-sm text-muted">No grabs or searches yet. Auto-hunt results show up here.</p>
+            <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center space-y-2">
+                <p className="text-sm font-semibold text-text">No activity yet</p>
+                <p className="text-sm text-muted max-w-md mx-auto">
+                    This log shows live hunt grabs/searches and download cleanups (remove + blocklist + re-search).
+                    Dry-run previews stay on Overview / Downloads.
+                </p>
             </div>
         );
     }
 
     return (
-        <div className="rounded-2xl border border-border/60 bg-card/40 overflow-hidden">
-            <div className="divide-y divide-border/50">
-                {visible.map((entry) => {
-                    const when = entryTime(entry);
-                    const hasScores = entry.currentScore != null && entry.candidateScore != null;
-                    return (
-                        <div key={entry.id} className="px-4 py-3">
-                            <div className="flex items-start gap-3">
-                                <ActionIcon entry={entry} />
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <div className="text-sm font-semibold text-text">{entry.title || entry.ratingKey}</div>
-                                        <div className="text-[11px] text-muted">
-                                            {when ? new Date(when).toLocaleString() : ''}
+        <div className="space-y-3">
+            <p className="text-xs text-muted px-1">
+                Live hunt grabs and Quality Control cleanups. Dry runs are not listed here.
+            </p>
+            <div className="rounded-2xl border border-border/60 bg-card/40 overflow-hidden">
+                <div className="divide-y divide-border/50">
+                    {visible.map((entry) => {
+                        const when = entryTime(entry);
+                        const hasScores = entry.currentScore != null && entry.candidateScore != null;
+                        const detail = entry as UpgraderAuditEntry & { key?: string; researched?: boolean; wastedBytes?: number };
+                        return (
+                            <div key={entry.id} className="px-4 py-3">
+                                <div className="flex items-start gap-3">
+                                    <ActionIcon entry={entry} />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <div className="text-sm font-semibold text-text">{entryTitle(detail)}</div>
+                                            <div className="text-[11px] text-muted">
+                                                {when ? new Date(when).toLocaleString() : ''}
+                                            </div>
                                         </div>
+                                        <div className="text-xs text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                                            <span className="font-semibold text-text/80">{actionLabel(entry)}</span>
+                                            {entry.reason && entry.action?.startsWith('qc_') && (
+                                                <span className="uppercase tracking-wide">{entry.reason}</span>
+                                            )}
+                                            {entry.arrInstanceName && <span>{entry.arrInstanceName}</span>}
+                                            {entry.arrType && entry.action?.startsWith('qc_') && <span>{entry.arrType}</span>}
+                                            {detail.researched ? <span>re-searched</span> : null}
+                                            {hasScores && (
+                                                <span>
+                                                    score {entry.currentScore} → {entry.candidateScore}
+                                                    {entry.candidateScore! > entry.currentScore!
+                                                        ? ` (+${entry.candidateScore! - entry.currentScore!})`
+                                                        : ''}
+                                                </span>
+                                            )}
+                                            {entry.seasonNumber != null && <span>S{entry.seasonNumber}</span>}
+                                            {entry.fullSeason ? <span>season pack</span> : null}
+                                            {entry.releaseTitle && <span className="truncate max-w-[240px]">{entry.releaseTitle}</span>}
+                                            {entry.currentProfileName && entry.targetProfileName && (
+                                                <span>
+                                                    {entry.currentProfileName} → {entry.targetProfileName}
+                                                </span>
+                                            )}
+                                            {!entry.currentProfileName && entry.targetProfileName && (
+                                                <span>→ {entry.targetProfileName}</span>
+                                            )}
+                                            {entry.episodeIds?.length ? (
+                                                <span>{entry.episodeIds.length} episode{entry.episodeIds.length === 1 ? '' : 's'}</span>
+                                            ) : null}
+                                            {entry.commandId ? <span>cmd {entry.commandId}</span> : null}
+                                            {entry.actor?.username ? <span>by {entry.actor.username}</span> : null}
+                                        </div>
+                                        {entry.success === false && entry.reason && !entry.action?.startsWith('qc_') && (
+                                            <p className="text-[11px] text-red-300 mt-1">{entry.reason}</p>
+                                        )}
                                     </div>
-                                    <div className="text-xs text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
-                                        <span className="font-semibold text-text/80">{actionLabel(entry)}</span>
-                                        {entry.arrInstanceName && <span>{entry.arrInstanceName}</span>}
-                                        {hasScores && (
-                                            <span>
-                                                score {entry.currentScore} → {entry.candidateScore}
-                                                {entry.candidateScore! > entry.currentScore!
-                                                    ? ` (+${entry.candidateScore! - entry.currentScore!})`
-                                                    : ''}
-                                            </span>
-                                        )}
-                                        {entry.seasonNumber != null && <span>S{entry.seasonNumber}</span>}
-                                        {entry.fullSeason ? <span>season pack</span> : null}
-                                        {entry.releaseTitle && <span className="truncate max-w-[240px]">{entry.releaseTitle}</span>}
-                                        {entry.currentProfileName && entry.targetProfileName && (
-                                            <span>
-                                                {entry.currentProfileName} → {entry.targetProfileName}
-                                            </span>
-                                        )}
-                                        {!entry.currentProfileName && entry.targetProfileName && (
-                                            <span>→ {entry.targetProfileName}</span>
-                                        )}
-                                        {entry.episodeIds?.length ? (
-                                            <span>{entry.episodeIds.length} episode{entry.episodeIds.length === 1 ? '' : 's'}</span>
-                                        ) : null}
-                                        {entry.commandId ? <span>cmd {entry.commandId}</span> : null}
-                                        {entry.actor?.username ? <span>by {entry.actor.username}</span> : null}
-                                    </div>
-                                    {entry.success === false && entry.reason && (
-                                        <p className="text-[11px] text-red-300 mt-1">{entry.reason}</p>
-                                    )}
                                 </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

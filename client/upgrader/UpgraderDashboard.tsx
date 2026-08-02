@@ -42,9 +42,9 @@ const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" />, title: 'Status and recent activity' },
     { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-4 h-4" />, title: 'How it hunts and dry-run preview' },
     { id: 'downloads', label: 'Downloads', icon: <Download className="w-4 h-4" />, title: 'Download health and cleanup' },
-    { id: 'clients', label: 'Clients', icon: <HardDrive className="w-4 h-4" />, title: 'qBittorrent / SABnzbd extension policy' },
-    { id: 'rules', label: 'Rules', icon: <Ban className="w-4 h-4" />, title: 'Thresholds and skip list' },
-    { id: 'activity', label: 'Activity', icon: <History className="w-4 h-4" />, title: 'What Quality Control grabbed or skipped' },
+    { id: 'clients', label: 'Clients', icon: <HardDrive className="w-4 h-4" />, title: 'Download client connection and blocked extensions' },
+    { id: 'rules', label: 'Rules', icon: <Ban className="w-4 h-4" />, title: 'Cleanup thresholds and skip list' },
+    { id: 'activity', label: 'Activity', icon: <History className="w-4 h-4" />, title: 'Live hunt grabs and cleanup history' },
 ];
 
 const groupByLibrary = <T extends { arrInstanceName?: string | null; libraryName?: string | null; arrType?: string | null; libraryKey?: string | null }>(

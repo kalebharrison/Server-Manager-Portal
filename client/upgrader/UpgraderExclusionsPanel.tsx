@@ -2,24 +2,67 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import type { ToastMessage } from '../shared/types';
-import type { UpgraderPreferences } from './types';
+
+type PrefsShape = {
+    excludedRatingKeys?: string[];
+    excludedTitles?: string[];
+    excludedLibraries?: string[];
+    snoozed?: Record<string, string> | Array<{ ratingKey: string; until: string | null }>;
+    downloadSnoozed?: Record<string, string>;
+    [key: string]: unknown;
+};
+
+type SnoozeRow = { key: string; until: string; kind: 'hunt' | 'download' };
 
 type UpgraderExclusionsPanelProps = {
     addToast: (message: string, type?: ToastMessage['type']) => void;
     onChanged?: () => void;
 };
 
+const activeSnoozeRows = (prefs: PrefsShape): SnoozeRow[] => {
+    const now = Date.now();
+    const rows: SnoozeRow[] = [];
+    const hunt = prefs.snoozed;
+    if (Array.isArray(hunt)) {
+        for (const entry of hunt) {
+            const until = entry?.until;
+            if (until && Date.parse(until) > now) {
+                rows.push({ key: String(entry.ratingKey), until, kind: 'hunt' });
+            }
+        }
+    } else if (hunt && typeof hunt === 'object') {
+        for (const [key, until] of Object.entries(hunt)) {
+            if (until && Date.parse(String(until)) > now) {
+                rows.push({ key, until: String(until), kind: 'hunt' });
+            }
+        }
+    }
+    const downloads = prefs.downloadSnoozed || {};
+    for (const [key, until] of Object.entries(downloads)) {
+        if (until && Date.parse(String(until)) > now) {
+            rows.push({ key, until: String(until), kind: 'download' });
+        }
+    }
+    return rows.sort((a, b) => Date.parse(a.until) - Date.parse(b.until));
+};
+
 export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = ({ addToast, onChanged }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [prefs, setPrefs] = useState<UpgraderPreferences | null>(null);
+    const [prefs, setPrefs] = useState<PrefsShape | null>(null);
     const [titleInput, setTitleInput] = useState('');
 
     const loadPrefs = useCallback(async () => {
         setLoading(true);
         try {
             const data = await apiFetch('/api/upgrader/preferences');
-            setPrefs(data?.upgrader || { exclusions: { ratingKeys: [], episodeKeys: [], titles: [], libraries: [] }, snoozed: [] });
+            setPrefs(data?.upgrader || {
+                excludedRatingKeys: [],
+                excludedTitles: [],
+                excludedLibraries: [],
+                snoozed: {},
+                downloadSnoozed: {},
+            });
         } catch (e: any) {
             addToast(e.message || 'Failed to load exclusions', 'error');
         } finally {
@@ -31,7 +74,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
         loadPrefs();
     }, [loadPrefs]);
 
-    const savePrefs = async (next: UpgraderPreferences) => {
+    const savePrefs = async (next: PrefsShape) => {
         setSaving(true);
         try {
             await apiFetch('/api/upgrader/preferences', {
@@ -48,7 +91,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
         }
     };
 
-    const unsnooze = async (ratingKey: string) => {
+    const unsnoozeHunt = async (ratingKey: string) => {
         try {
             await apiFetch('/api/upgrader/unsnooze', {
                 method: 'POST',
@@ -61,6 +104,19 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
         }
     };
 
+    const unsnoozeDownload = async (key: string) => {
+        try {
+            await apiFetch('/api/upgrader/qc/snooze/clear', {
+                method: 'POST',
+                body: JSON.stringify({ key }),
+            });
+            await loadPrefs();
+            onChanged?.();
+        } catch (e: any) {
+            addToast(e.message || 'Failed to clear download snooze', 'error');
+        }
+    };
+
     if (loading || !prefs) {
         return (
             <div className="flex items-center justify-center gap-2 py-16 text-muted">
@@ -70,21 +126,32 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
         );
     }
 
-    const activeSnoozed = (prefs.snoozed || []).filter((entry) => entry.until && Date.parse(entry.until) > Date.now());
+    const titles = Array.isArray(prefs.excludedTitles) ? prefs.excludedTitles : [];
+    const snoozedRows = activeSnoozeRows(prefs);
 
     return (
         <div className="space-y-6">
             <section className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                <h3 className="text-sm font-bold text-text">Snoozed titles</h3>
-                {activeSnoozed.length === 0 ? (
-                    <p className="text-xs text-muted">Nothing snoozed. Use Snooze on a Library card to hide a title for 30 days.</p>
-                ) : activeSnoozed.map((entry) => (
-                    <div key={entry.ratingKey} className="flex items-center justify-between gap-3 py-2 border-b border-border/40 last:border-b-0">
-                        <div>
-                            <div className="text-sm font-medium text-text">{entry.ratingKey}</div>
-                            <div className="text-[11px] text-muted">Until {entry.until ? new Date(entry.until).toLocaleString() : 'unknown'}</div>
+                <h3 className="text-sm font-bold text-text">Snoozed</h3>
+                <p className="text-xs text-muted">
+                    Hunt snoozes hide titles from auto-hunt. Download snoozes skip cleanup for a queue row.
+                </p>
+                {snoozedRows.length === 0 ? (
+                    <p className="text-xs text-muted">Nothing snoozed right now.</p>
+                ) : snoozedRows.map((entry) => (
+                    <div key={`${entry.kind}:${entry.key}`} className="flex items-center justify-between gap-3 py-2 border-b border-border/40 last:border-b-0">
+                        <div className="min-w-0">
+                            <div className="text-sm font-medium text-text truncate">{entry.key}</div>
+                            <div className="text-[11px] text-muted">
+                                {entry.kind === 'download' ? 'Download cleanup' : 'Hunt'}
+                                {' · '}Until {new Date(entry.until).toLocaleString()}
+                            </div>
                         </div>
-                        <button type="button" className="text-xs font-bold text-plex" onClick={() => unsnooze(entry.ratingKey)}>
+                        <button
+                            type="button"
+                            className="text-xs font-bold text-plex shrink-0"
+                            onClick={() => (entry.kind === 'download' ? unsnoozeDownload(entry.key) : unsnoozeHunt(entry.key))}
+                        >
                             Unsnooze
                         </button>
                     </div>
@@ -92,7 +159,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
             </section>
 
             <section className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                <h3 className="text-sm font-bold text-text">Always skip</h3>
+                <h3 className="text-sm font-bold text-text">Always skip (exact title)</h3>
                 <div className="flex gap-2">
                     <input
                         type="text"
@@ -110,10 +177,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
                             if (!title) return;
                             const next = {
                                 ...prefs,
-                                exclusions: {
-                                    ...prefs.exclusions,
-                                    titles: [...new Set([...(prefs.exclusions.titles || []), title])],
-                                },
+                                excludedTitles: [...new Set([...titles, title])],
                             };
                             setTitleInput('');
                             savePrefs(next);
@@ -122,9 +186,9 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
                         Add
                     </button>
                 </div>
-                {(prefs.exclusions.titles || []).length === 0 ? (
-                    <p className="text-xs text-muted">No title exclusions. Cleaner exclusions also apply.</p>
-                ) : (prefs.exclusions.titles || []).map((title) => (
+                {titles.length === 0 ? (
+                    <p className="text-xs text-muted">No title exclusions.</p>
+                ) : titles.map((title) => (
                     <div key={title} className="flex items-center justify-between gap-3 py-2 border-b border-border/40 last:border-b-0">
                         <span className="text-sm text-text">{title}</span>
                         <button
@@ -132,10 +196,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
                             className="text-xs font-bold text-red-300"
                             onClick={() => savePrefs({
                                 ...prefs,
-                                exclusions: {
-                                    ...prefs.exclusions,
-                                    titles: (prefs.exclusions.titles || []).filter((entry) => entry !== title),
-                                },
+                                excludedTitles: titles.filter((entry) => entry !== title),
                             })}
                         >
                             Remove

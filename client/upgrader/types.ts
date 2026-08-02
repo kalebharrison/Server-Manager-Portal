@@ -309,11 +309,15 @@ export type UpgraderAuditEntry = {
 };
 
 export type UpgraderPreferences = {
-    exclusions: {
+    excludedRatingKeys?: string[];
+    excludedTitles?: string[];
+    excludedLibraries?: string[];
+    snoozed?: Record<string, string> | Array<{ ratingKey: string; until: string | null; reason?: string | null }>;
+    downloadSnoozed?: Record<string, string>;
+    exclusions?: {
         ratingKeys: string[];
         episodeKeys: string[];
         titles: string[];
         libraries: string[];
     };
-    snoozed: Array<{ ratingKey: string; until: string | null; reason?: string | null }>;
 };

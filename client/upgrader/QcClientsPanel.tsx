@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, ExternalLink } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 
@@ -10,6 +10,7 @@ type ExtensionPolicy = {
     onlyQbit?: string[];
     onlySab?: string[];
     clients?: { qbit?: boolean; sab?: boolean };
+    errors?: { qbit?: string | null; sab?: string | null };
 };
 
 type Props = {
@@ -70,7 +71,11 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
         );
     }
 
-    const clientsConfigured = !!(policy?.clients?.qbit || policy?.clients?.sab);
+    const qbitConfigured = !!policy?.clients?.qbit;
+    const sabConfigured = !!policy?.clients?.sab;
+    const clientsConfigured = qbitConfigured || sabConfigured;
+    const sabEmpty = sabConfigured && !(policy?.sab?.length);
+    const qbitEmpty = qbitConfigured && !(policy?.qbit?.length);
 
     return (
         <div className="space-y-4">
@@ -88,46 +93,89 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                 </div>
             )}
 
+            <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Download clients</h2>
+                        <p className="text-xs text-muted mt-1">
+                            Connection settings live in Settings. This tab manages the shared blocked-extension list.
+                        </p>
+                    </div>
+                    <a
+                        href={portalUrl('/settings#mediastack')}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-plex no-underline hover:underline"
+                    >
+                        Edit credentials
+                        <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                        <div className="text-[11px] uppercase tracking-wide text-muted">qBittorrent</div>
+                        <div className={`mt-1 text-sm font-semibold ${qbitConfigured ? 'text-emerald-300' : 'text-muted'}`}>
+                            {qbitConfigured ? 'Configured' : 'Not configured'}
+                        </div>
+                        {policy?.errors?.qbit && (
+                            <p className="text-[11px] text-amber-200 mt-1">{policy.errors.qbit}</p>
+                        )}
+                    </div>
+                    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                        <div className="text-[11px] uppercase tracking-wide text-muted">SABnzbd</div>
+                        <div className={`mt-1 text-sm font-semibold ${sabConfigured ? 'text-emerald-300' : 'text-muted'}`}>
+                            {sabConfigured ? 'Configured' : 'Not configured'}
+                        </div>
+                        {policy?.errors?.sab && (
+                            <p className="text-[11px] text-amber-200 mt-1">{policy.errors.sab}</p>
+                        )}
+                    </div>
+                </div>
+            </section>
+
             <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
                 <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Blocked extensions</h2>
                 <p className="text-xs text-muted">
-                    Union list is pushed to both clients when you apply. Comma or newline separated (e.g. <code className="text-text">exe, bat, lnk</code>).
+                    Apply pushes one shared list to every configured client. Comma or newline separated
+                    (e.g. <code className="text-text">exe, bat, lnk</code>).
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                     <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                        <div className="text-[11px] uppercase tracking-wide text-muted mb-1">
-                            qBittorrent {policy?.clients?.qbit ? '' : '(not configured)'}
+                        <div className="text-[11px] uppercase tracking-wide text-muted mb-1">qBittorrent</div>
+                        <div className="text-text break-words">
+                            {qbitEmpty ? <span className="text-muted">Empty blacklist</span> : listLabel(policy?.qbit)}
                         </div>
-                        <div className="text-text break-words">{listLabel(policy?.qbit)}</div>
                     </div>
                     <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                        <div className="text-[11px] uppercase tracking-wide text-muted mb-1">
-                            SABnzbd {policy?.clients?.sab ? '' : '(not configured)'}
+                        <div className="text-[11px] uppercase tracking-wide text-muted mb-1">SABnzbd</div>
+                        <div className="text-text break-words">
+                            {sabEmpty
+                                ? <span className="text-muted">Empty — will match qBit after Apply</span>
+                                : listLabel(policy?.sab)}
                         </div>
-                        <div className="text-text break-words">{listLabel(policy?.sab)}</div>
                     </div>
                     <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                        <div className="text-[11px] uppercase tracking-wide text-muted mb-1">Union</div>
+                        <div className="text-[11px] uppercase tracking-wide text-muted mb-1">Shared list</div>
                         <div className="text-text break-words">{listLabel(policy?.union)}</div>
                     </div>
                 </div>
 
                 {((policy?.onlyQbit?.length || 0) > 0 || (policy?.onlySab?.length || 0) > 0) && (
                     <div className="rounded-xl border border-border/50 bg-background/30 px-3 py-3 space-y-1 text-xs text-muted">
+                        <p className="font-semibold text-text">Out of sync</p>
                         {(policy?.onlyQbit?.length || 0) > 0 && (
-                            <p><span className="font-semibold text-text">Only qBit:</span> {listLabel(policy?.onlyQbit)}</p>
+                            <p>Only on qBit right now: {listLabel(policy?.onlyQbit)}</p>
                         )}
                         {(policy?.onlySab?.length || 0) > 0 && (
-                            <p><span className="font-semibold text-text">Only SAB:</span> {listLabel(policy?.onlySab)}</p>
+                            <p>Only on SAB right now: {listLabel(policy?.onlySab)}</p>
                         )}
+                        <p>Hit Apply to push the shared list to both.</p>
                     </div>
                 )}
 
                 <label className="block text-sm font-semibold">
-                    Edit union list
+                    Edit shared list
                     <textarea
-                        className="mt-2 w-full min-h-[120px] p-3 rounded-lg border border-border bg-background text-text text-sm font-mono"
+                        className="mt-2 w-full min-h-[140px] p-3 rounded-lg border border-border bg-background text-text text-sm font-mono"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         placeholder="exe&#10;bat&#10;lnk"

@@ -57,6 +57,7 @@ export const QcRulesPanel: React.FC<Props> = ({ status, onToast, onChanged }) =>
                 <p className="text-xs text-muted">
                     Cleanup automation: {status?.cleanupAutomationEnabled ? 'On' : 'Off'}
                     {' · '}Clients: qBit {status?.clientsConfigured?.qbit ? '✓' : '—'}, SAB {status?.clientsConfigured?.sab ? '✓' : '—'}
+                    {' · '}Change thresholds in Settings → Quality Control.
                 </p>
             </section>
 
