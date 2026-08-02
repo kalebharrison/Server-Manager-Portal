@@ -200,7 +200,7 @@ export const UpgraderDashboard: React.FC = () => {
             setDryRun(result || null);
             if (!result?.ran) {
                 addToast(result?.reason || 'Dry run did not run.', 'error');
-            } else if (!(result.searched > 0)) {
+            } else if (!(Number(result.searched) > 0)) {
                 addToast(result.reason || 'Dry run found no eligible titles to search.', 'error');
             } else {
                 addToast(
