@@ -3,6 +3,8 @@ import { Loader2, CheckCircle2, XCircle, Search, ArrowUpFromLine } from 'lucide-
 import { apiFetch } from '../shared/api';
 import type { UpgraderAuditEntry } from './types';
 
+const entryTime = (entry: UpgraderAuditEntry) => entry.timestamp || entry.at || null;
+
 const actionLabel = (entry: UpgraderAuditEntry) => {
     switch (entry.action) {
         case 'upgrade': return 'Grabbed better release';
@@ -10,6 +12,7 @@ const actionLabel = (entry: UpgraderAuditEntry) => {
         case 'series_search': return 'Series search';
         case 'episode_search': return 'Episode search';
         case 'movie_search': return 'Movie search';
+        case 'index_rebuilt': return 'Index rebuilt';
         default:
             if (entry.targetProfileId) return 'Profile change';
             if (entry.triggerSearch) return 'Search';
@@ -56,12 +59,12 @@ export const UpgraderHistoryPanel: React.FC = () => {
         );
     }
 
-    const visible = entries.filter((entry) => !entry.dryRun);
+    const visible = entries.filter((entry) => !entry.dryRun && entry.action !== 'index_rebuilt');
 
     if (!visible.length) {
         return (
             <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
-                <p className="text-sm text-muted">No grabs or searches yet. Auto-hunt and manual grabs show up here.</p>
+                <p className="text-sm text-muted">No grabs or searches yet. Auto-hunt results show up here.</p>
             </div>
         );
     }
@@ -69,44 +72,56 @@ export const UpgraderHistoryPanel: React.FC = () => {
     return (
         <div className="rounded-2xl border border-border/60 bg-card/40 overflow-hidden">
             <div className="divide-y divide-border/50">
-                {visible.map((entry) => (
-                    <div key={entry.id} className="px-4 py-3">
-                        <div className="flex items-start gap-3">
-                            <ActionIcon entry={entry} />
-                            <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <div className="text-sm font-semibold text-text">{entry.title || entry.ratingKey}</div>
-                                    <div className="text-[11px] text-muted">
-                                        {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : ''}
+                {visible.map((entry) => {
+                    const when = entryTime(entry);
+                    const hasScores = entry.currentScore != null && entry.candidateScore != null;
+                    return (
+                        <div key={entry.id} className="px-4 py-3">
+                            <div className="flex items-start gap-3">
+                                <ActionIcon entry={entry} />
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div className="text-sm font-semibold text-text">{entry.title || entry.ratingKey}</div>
+                                        <div className="text-[11px] text-muted">
+                                            {when ? new Date(when).toLocaleString() : ''}
+                                        </div>
                                     </div>
+                                    <div className="text-xs text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                                        <span className="font-semibold text-text/80">{actionLabel(entry)}</span>
+                                        {entry.arrInstanceName && <span>{entry.arrInstanceName}</span>}
+                                        {hasScores && (
+                                            <span>
+                                                score {entry.currentScore} → {entry.candidateScore}
+                                                {entry.candidateScore! > entry.currentScore!
+                                                    ? ` (+${entry.candidateScore! - entry.currentScore!})`
+                                                    : ''}
+                                            </span>
+                                        )}
+                                        {entry.seasonNumber != null && <span>S{entry.seasonNumber}</span>}
+                                        {entry.fullSeason ? <span>season pack</span> : null}
+                                        {entry.releaseTitle && <span className="truncate max-w-[240px]">{entry.releaseTitle}</span>}
+                                        {entry.currentProfileName && entry.targetProfileName && (
+                                            <span>
+                                                {entry.currentProfileName} → {entry.targetProfileName}
+                                            </span>
+                                        )}
+                                        {!entry.currentProfileName && entry.targetProfileName && (
+                                            <span>→ {entry.targetProfileName}</span>
+                                        )}
+                                        {entry.episodeIds?.length ? (
+                                            <span>{entry.episodeIds.length} episode{entry.episodeIds.length === 1 ? '' : 's'}</span>
+                                        ) : null}
+                                        {entry.commandId ? <span>cmd {entry.commandId}</span> : null}
+                                        {entry.actor?.username ? <span>by {entry.actor.username}</span> : null}
+                                    </div>
+                                    {entry.success === false && entry.reason && (
+                                        <p className="text-[11px] text-red-300 mt-1">{entry.reason}</p>
+                                    )}
                                 </div>
-                                <div className="text-xs text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
-                                    <span className="font-semibold text-text/80">{actionLabel(entry)}</span>
-                                    {entry.arrInstanceName && <span>{entry.arrInstanceName}</span>}
-                                    {entry.currentProfileName && entry.targetProfileName && (
-                                        <span>
-                                            {entry.currentProfileName} → {entry.targetProfileName}
-                                        </span>
-                                    )}
-                                    {!entry.currentProfileName && entry.targetProfileName && (
-                                        <span>→ {entry.targetProfileName}</span>
-                                    )}
-                                    {!entry.currentProfileName && !entry.targetProfileName && entry.targetProfileId && (
-                                        <span>profile {entry.targetProfileId}</span>
-                                    )}
-                                    {entry.episodeIds?.length ? (
-                                        <span>{entry.episodeIds.length} episode{entry.episodeIds.length === 1 ? '' : 's'}</span>
-                                    ) : null}
-                                    {entry.commandId ? <span>cmd {entry.commandId}</span> : null}
-                                    {entry.actor?.username ? <span>by {entry.actor.username}</span> : null}
-                                </div>
-                                {entry.success === false && entry.reason && (
-                                    <p className="text-[11px] text-red-300 mt-1">{entry.reason}</p>
-                                )}
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

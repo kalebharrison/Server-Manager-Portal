@@ -1,56 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowUpCircle, RefreshCw, Search, Settings as SettingsIcon, ArrowUpFromLine, Layers, Clock, History, Ban, Filter, Settings2 } from 'lucide-react';
+import { ArrowUpCircle, RefreshCw, Settings as SettingsIcon, History, Ban, Settings2, LayoutDashboard } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
-import { CustomSelect, OverlayCheckbox } from '../shared/ui';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
-import { normalizeUpgraderGridSize, UPGRADER_GRID_SIZE_OPTIONS, UPGRADER_GRID_SIZE_STORAGE_KEY, upgraderPosterGridClass, upgraderPosterGridStyle, type UpgraderGridSize } from '../shared/portalLayout';
 import type { ToastMessage } from '../shared/types';
-import { UpgraderUpgradeModal } from './UpgraderUpgradeModal';
-import { UpgraderShowDrawer } from './UpgraderShowDrawer';
 import { UpgraderHistoryPanel } from './UpgraderHistoryPanel';
 import { UpgraderExclusionsPanel } from './UpgraderExclusionsPanel';
 import { UpgraderProfilesTab } from './UpgraderProfilesTab';
-import type {
-    UpgraderItem,
-    UpgraderCodec,
-    UpgraderResolution,
-    UpgraderFeature,
-    UpgraderQuality,
-    UpgraderQueueSummary,
-    UpgraderStatus,
-    UpgraderSummary,
-} from './types';
+import type { UpgraderAuditEntry, UpgraderStatus, UpgraderSummary } from './types';
 import {
     readUpgraderUrl,
     replaceUpgraderUrl,
     type UpgraderProfilesUrlState,
     type UpgraderTab,
 } from './upgraderUrlState';
-import { UPGRADER_CODEC_OPTIONS, UPGRADER_RESOLUTION_OPTIONS, UPGRADER_FEATURE_OPTIONS, UPGRADER_QUALITY_OPTIONS } from './presets';
-
-const SORT_OPTIONS = [
-    { value: 'score', label: 'Lowest score first' },
-    { value: 'sizeGB', label: 'Largest files first' },
-    { value: 'title', label: 'Title A–Z' },
-    { value: 'addedAt', label: 'Recently added' },
-];
-
-const isUpgradableItem = (item: UpgraderItem) => {
-    if (item.mediaType === 'show') return (item.totalEpisodeCount ?? item.episodeCount ?? 0) > 0;
-    return item.hasFile !== false;
-};
-
-type UpgraderTabId = UpgraderTab;
-
-const readStoredSet = <T extends string>(key: string): Set<T> => {
-    try {
-        const raw = window.localStorage.getItem(key);
-        return raw ? new Set(JSON.parse(raw) as T[]) : new Set();
-    } catch {
-        return new Set();
-    }
-};
 
 const formatIndexAge = (generatedAt: string | null) => {
     if (!generatedAt) return 'never built';
@@ -62,6 +25,8 @@ const formatIndexAge = (generatedAt: string | null) => {
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
 };
+
+const entryTime = (entry: UpgraderAuditEntry) => entry.timestamp || entry.at || null;
 
 const isUpgraderDisabledError = (error: unknown) => {
     const msg = String((error as Error)?.message || error || '').toLowerCase();
@@ -76,122 +41,21 @@ export const UpgraderDashboard: React.FC = () => {
     const [featureEnabled, setFeatureEnabled] = useState(false);
     const [status, setStatus] = useState<UpgraderStatus | null>(null);
     const [summary, setSummary] = useState<UpgraderSummary | null>(null);
-    const [queue, setQueue] = useState<UpgraderQueueSummary | null>(null);
-    const [items, setItems] = useState<UpgraderItem[]>([]);
-    const [total, setTotal] = useState(0);
-    const [libraries, setLibraries] = useState<Array<{ id: string; title: string; count: number }>>([]);
-    const [codecs, setCodecs] = useState<Set<UpgraderCodec>>(() => {
-        const fromUrl = initialUrl.browse.codecs;
-        if (fromUrl.length) return new Set(fromUrl as UpgraderCodec[]);
-        return readStoredSet<UpgraderCodec>('upgrader_filters_codecs');
-    });
-    const [resolutions, setResolutions] = useState<Set<UpgraderResolution>>(() => {
-        const fromUrl = initialUrl.browse.resolutions;
-        if (fromUrl.length) return new Set(fromUrl as UpgraderResolution[]);
-        return readStoredSet<UpgraderResolution>('upgrader_filters_resolutions');
-    });
-    const [features, setFeatures] = useState<Set<UpgraderFeature>>(() => {
-        const fromUrl = initialUrl.browse.features;
-        if (fromUrl.length) return new Set(fromUrl as UpgraderFeature[]);
-        return readStoredSet<UpgraderFeature>('upgrader_filters_features');
-    });
-    const [qualities, setQualities] = useState<Set<UpgraderQuality>>(() => {
-        const fromUrl = initialUrl.browse.qualities;
-        if (fromUrl.length) return new Set(fromUrl as UpgraderQuality[]);
-        return readStoredSet<UpgraderQuality>('upgrader_filters_qualities');
-    });
-    const [filtersExpanded, setFiltersExpanded] = useState(() => {
-        try { return window.localStorage.getItem('upgrader_filters_expanded') === 'true'; } catch { return false; }
-    });
-    const [presetReady, setPresetReady] = useState(false);
-    const [sort, setSort] = useState(() => initialUrl.browse.sort || window.localStorage.getItem('upgrader_filters_sort') || 'score');
-    const [libraryId, setLibraryId] = useState(() => initialUrl.browse.library || window.localStorage.getItem('upgrader_filters_library') || 'all');
-    const [mediaType, setMediaType] = useState(() => initialUrl.browse.type || window.localStorage.getItem('upgrader_filters_type') || 'all');
-    const [search, setSearch] = useState(initialUrl.browse.search);
-    const [searchInput, setSearchInput] = useState(initialUrl.browse.search);
-    const [page, setPage] = useState(initialUrl.browse.page);
-    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-    const [upgradeItems, setUpgradeItems] = useState<UpgraderItem[]>([]);
-    const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<UpgraderTabId>(initialUrl.tab);
+    const [recentGrabs, setRecentGrabs] = useState<UpgraderAuditEntry[]>([]);
+    const [activeTab, setActiveTab] = useState<UpgraderTab>(initialUrl.tab);
     const [profilesUrl, setProfilesUrl] = useState<UpgraderProfilesUrlState>(initialUrl.profiles);
-    const [showDrawerItem, setShowDrawerItem] = useState<UpgraderItem | null>(null);
-    const [drawerPosition, setDrawerPosition] = useState<'sidebar' | 'modal'>('sidebar');
-
-    const handleOpenDrawer = useCallback((item: UpgraderItem) => {
-        window.history.pushState({ drawerOpen: true }, '', window.location.href);
-        setShowDrawerItem(item);
-    }, []);
-
-    const handleCloseDrawer = useCallback(() => {
-        if (window.history.state?.drawerOpen) {
-            window.history.back();
-        } else {
-            setShowDrawerItem(null);
-        }
-    }, []);
-
-    useEffect(() => {
-        const onPopState = (e: PopStateEvent) => {
-            if (!e.state?.drawerOpen) {
-                setShowDrawerItem(null);
-            }
-        };
-        window.addEventListener('popstate', onPopState);
-        return () => window.removeEventListener('popstate', onPopState);
-    }, []);
-
-    const [gridSize, setGridSize] = useState<UpgraderGridSize>(() => {
-        if (typeof window === 'undefined') return 'medium';
-        return normalizeUpgraderGridSize(window.localStorage.getItem(UPGRADER_GRID_SIZE_STORAGE_KEY));
-    });
-
-    useEffect(() => {
-        window.localStorage.setItem(UPGRADER_GRID_SIZE_STORAGE_KEY, gridSize);
-        window.localStorage.setItem('upgrader_filters_codecs', JSON.stringify(Array.from(codecs)));
-        window.localStorage.setItem('upgrader_filters_resolutions', JSON.stringify(Array.from(resolutions)));
-        window.localStorage.setItem('upgrader_filters_features', JSON.stringify(Array.from(features)));
-        window.localStorage.setItem('upgrader_filters_qualities', JSON.stringify(Array.from(qualities)));
-        window.localStorage.setItem('upgrader_filters_expanded', String(filtersExpanded));
-        window.localStorage.setItem('upgrader_filters_sort', sort);
-        window.localStorage.setItem('upgrader_filters_library', libraryId);
-        window.localStorage.setItem('upgrader_filters_type', mediaType);
-    }, [gridSize, codecs, resolutions, features, qualities, filtersExpanded, sort, libraryId, mediaType]);
+    const [arrInstanceCount, setArrInstanceCount] = useState(0);
 
     const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
         setToasts((prev) => pushToast(prev, message, type === 'info' ? 'success' : type));
     }, []);
 
-    useEffect(() => {
-        apiFetch('/api/config')
-            .then((configData) => {
-                const defaultSort = configData?.settings?.upgraderDefaultSort;
-                const hasUrlSort = new URLSearchParams(window.location.search).has('sort');
-                if (!hasUrlSort && !window.localStorage.getItem('upgrader_filters_sort') && defaultSort) {
-                    setSort(defaultSort);
-                }
-            })
-            .catch(() => {})
-            .finally(() => setPresetReady(true));
-    }, []);
-
     const syncUpgraderUrl = useCallback(() => {
         replaceUpgraderUrl({
             tab: activeTab,
-            browse: {
-                codecs: Array.from(codecs),
-                resolutions: Array.from(resolutions),
-                features: Array.from(features),
-                qualities: Array.from(qualities),
-                library: libraryId,
-                type: mediaType,
-                sort,
-                search,
-                page,
-            },
             profiles: profilesUrl,
         });
-    }, [activeTab, codecs, resolutions, features, qualities, libraryId, mediaType, sort, search, page, profilesUrl]);
+    }, [activeTab, profilesUrl]);
 
     useEffect(() => {
         syncUpgraderUrl();
@@ -201,23 +65,13 @@ export const UpgraderDashboard: React.FC = () => {
         const onPopState = () => {
             const next = readUpgraderUrl();
             setActiveTab(next.tab);
-            setCodecs(new Set(next.browse.codecs as UpgraderCodec[]));
-            setResolutions(new Set(next.browse.resolutions as UpgraderResolution[]));
-            setFeatures(new Set(next.browse.features as UpgraderFeature[]));
-            setQualities(new Set(next.browse.qualities as UpgraderQuality[]));
-            setLibraryId(next.browse.library);
-            setMediaType(next.browse.type);
-            setSort(next.browse.sort);
-            setSearch(next.browse.search);
-            setSearchInput(next.browse.search);
-            setPage(next.browse.page);
             setProfilesUrl(next.profiles);
         };
         window.addEventListener('popstate', onPopState);
         return () => window.removeEventListener('popstate', onPopState);
     }, []);
 
-    const handleTabChange = useCallback((tab: UpgraderTabId) => {
+    const handleTabChange = useCallback((tab: UpgraderTab) => {
         setActiveTab(tab);
     }, []);
 
@@ -226,54 +80,42 @@ export const UpgraderDashboard: React.FC = () => {
     }, []);
 
     const loadData = useCallback(async (silent = false) => {
-        if (!presetReady) return;
         if (!silent) setLoading(true);
         try {
             const configData = await apiFetch('/api/config');
             const enabled = !!configData?.settings?.upgraderEnabled;
             setFeatureEnabled(enabled);
-            if (configData?.settings?.upgraderDrawerPosition) setDrawerPosition(configData.settings.upgraderDrawerPosition);
             if (!enabled) return;
 
-            const [statusData, summaryData, itemsData, queueData] = await Promise.all([
+            const [statusData, summaryData, auditData, profilesData] = await Promise.all([
                 apiFetch('/api/upgrader/status'),
                 apiFetch('/api/upgrader/summary'),
-                apiFetch(`/api/upgrader/items?codecs=${encodeURIComponent(Array.from(codecs).join(','))}&resolutions=${encodeURIComponent(Array.from(resolutions).join(','))}&features=${encodeURIComponent(Array.from(features).join(','))}&qualities=${encodeURIComponent(Array.from(qualities).join(','))}&libraryId=${encodeURIComponent(libraryId)}&mediaType=${encodeURIComponent(mediaType)}&search=${encodeURIComponent(search)}&sort=${encodeURIComponent(sort)}&page=${page}&limit=48`),
-                apiFetch('/api/upgrader/queue').catch(() => null),
+                apiFetch('/api/upgrader/audit?limit=40'),
+                apiFetch('/api/upgrader/profiles').catch(() => null),
             ]);
 
             setStatus(statusData || null);
             setSummary(summaryData || null);
-            setQueue(queueData || null);
-            setItems(Array.isArray(itemsData?.items) ? itemsData.items : []);
-            setTotal(Number(itemsData?.total || 0));
-            setLibraries(Array.isArray(itemsData?.libraries) ? itemsData.libraries : []);
+            setArrInstanceCount(Array.isArray(profilesData?.instances) ? profilesData.instances.length : 0);
+
+            const grabs = (Array.isArray(auditData?.entries) ? auditData.entries : [])
+                .filter((entry: UpgraderAuditEntry) => entry.action === 'upgrade' && entry.success !== false && !entry.dryRun)
+                .slice(0, 12);
+            setRecentGrabs(grabs);
         } catch (e: any) {
             if (isUpgraderDisabledError(e)) {
                 setFeatureEnabled(false);
                 return;
             }
-            addToast(e.message || 'Failed to load upgrader data', 'error');
+            addToast(e.message || 'Failed to load Quality Hunt', 'error');
         } finally {
             if (!silent) setLoading(false);
         }
-    }, [addToast, libraryId, mediaType, page, codecs, resolutions, features, qualities, presetReady, search, sort]);
+    }, [addToast]);
 
     useEffect(() => {
         loadData();
     }, [loadData]);
-
-    useEffect(() => {
-        const timer = window.setTimeout(() => {
-            setSearch(searchInput.trim());
-            setPage(1);
-        }, 300);
-        return () => window.clearTimeout(timer);
-    }, [searchInput]);
-
-    useEffect(() => {
-        setSelectedKeys(new Set());
-    }, [codecs, resolutions, features, qualities, libraryId, mediaType, search, page, sort]);
 
     useEffect(() => {
         if (status?.rebuildInProgress) {
@@ -281,7 +123,7 @@ export const UpgraderDashboard: React.FC = () => {
         } else if (rebuilding) {
             setRebuilding(false);
         }
-    }, [status?.rebuildInProgress]);
+    }, [status?.rebuildInProgress, rebuilding]);
 
     useEffect(() => {
         if (!rebuilding && !status?.rebuildInProgress) return undefined;
@@ -302,98 +144,20 @@ export const UpgraderDashboard: React.FC = () => {
         }
     };
 
-    const openUpgradeModal = (targets: UpgraderItem[]) => {
-        if (!status?.automationEnabled) {
-            addToast('Enable auto-hunt in Settings → Quality Hunt first.', 'error');
-            return;
-        }
-        const upgradable = targets.filter((item) => isUpgradableItem(item));
-        if (!upgradable.length) {
-            addToast('No on-disk titles selected.', 'error');
-            return;
-        }
-        setUpgradeItems(upgradable);
-        setUpgradeModalOpen(true);
-    };
-
-    const toggleSelected = (ratingKey: string) => {
-        setSelectedKeys((prev) => {
-            const next = new Set(prev);
-            if (next.has(ratingKey)) next.delete(ratingKey);
-            else next.add(ratingKey);
-            return next;
-        });
-    };
-
-    const handleSnooze = async (item: UpgraderItem, days = 30) => {
-        try {
-            await apiFetch('/api/upgrader/snooze', {
-                method: 'POST',
-                body: JSON.stringify({ ratingKey: item.ratingKey, days }),
-            });
-            addToast(`Snoozed “${item.title}” for ${days} days.`, 'success');
-            await loadData(true);
-        } catch (e: any) {
-            addToast(e.message || 'Failed to snooze title', 'error');
-        }
-    };
-
-    const selectedItems = useMemo(
-        () => items.filter((item) => selectedKeys.has(item.ratingKey)),
-        [items, selectedKeys],
-    );
-
-    const summaryChips = useMemo(() => {
-        if (!summary) return [];
-        const chips = [
-            `${summary.totalItems} titles indexed`,
-            `index ${formatIndexAge(summary.generatedAt)}`,
-        ];
-        if (summary.upgradeCandidates != null) {
-            chips.push(`${summary.upgradeCandidates} with files`);
-        }
-        if (summary.avgCustomFormatScore != null) {
-            chips.push(`avg Arr score ${summary.avgCustomFormatScore}`);
-        }
-        if (status?.automationEnabled) {
-            chips.push(`auto-grab on · ${status.recentUpgradeCount}/${status.maxActionsPerHour}/hr`);
-        } else {
-            chips.push('manual mode');
-        }
-        return chips;
-    }, [summary, status]);
-
-    const totalPages = Math.max(1, Math.ceil(total / 48));
-    const automationReady = !!status?.automationEnabled;
-    const advancedFilterCount = codecs.size + resolutions.size + features.size + qualities.size;
-
-    const tabButtonClass = (tab: UpgraderTabId) =>
+    const tabButtonClass = (tab: UpgraderTab) =>
         `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
             activeTab === tab ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'
         }`;
 
+    const maxActions = status?.maxActionsPerHour ?? 25;
+    const usedActions = status?.recentUpgradeCount ?? 0;
+    const remainingActions = Math.max(0, maxActions - usedActions);
+    const minDelta = status?.minScoreDelta ?? 10;
+    const prefs = status?.preferences;
+
     return (
-        <div className="w-full flex flex-col gap-6 pb-8">
+        <div className="page-shell">
             <ToastContainer toasts={toasts} setToasts={setToasts} />
-            <UpgraderUpgradeModal
-                isOpen={upgradeModalOpen}
-                items={upgradeItems}
-                onClose={() => setUpgradeModalOpen(false)}
-                onCompleted={() => loadData(true)}
-                addToast={addToast}
-            />
-            <UpgraderShowDrawer
-                show={showDrawerItem}
-                codecs={Array.from(codecs)}
-                resolutions={Array.from(resolutions)}
-                features={Array.from(features)}
-                qualities={Array.from(qualities)}
-                onClose={handleCloseDrawer}
-                addToast={addToast}
-                automationReady={automationReady}
-                onProfileChanged={() => loadData(true)}
-                position={drawerPosition}
-            />
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div>
@@ -402,7 +166,7 @@ export const UpgraderDashboard: React.FC = () => {
                             <h1 className="page-title">Quality Hunt</h1>
                         </div>
                         <p className="text-sm text-muted max-w-2xl">
-                            Upgrade machine for Sonarr/Radarr: look at what you already have, find a higher-scoring release, grab it.
+                            Hands-off Sonarr/Radarr upgrades. The hunt finds higher-scoring releases and grabs them on a schedule.
                         </p>
                     </div>
                     {featureEnabled && (
@@ -413,36 +177,15 @@ export const UpgraderDashboard: React.FC = () => {
                             disabled={rebuilding || !!status?.rebuildInProgress}
                         >
                             <RefreshCw className={`w-4 h-4 ${rebuilding || status?.rebuildInProgress ? 'animate-spin' : ''}`} />
-                            {rebuilding || status?.rebuildInProgress ? 'Refreshing…' : 'Refresh library'}
+                            {rebuilding || status?.rebuildInProgress ? 'Refreshing…' : 'Refresh index'}
                         </button>
                     )}
                 </div>
 
-                {featureEnabled && activeTab === 'browse' && (
-                    <div className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                        <ol className="grid gap-2 sm:grid-cols-3 text-sm text-muted list-decimal list-inside">
-                            <li><span className="text-text font-semibold">Browse</span> your Arr library below</li>
-                            <li><span className="text-text font-semibold">Score</span> = how Arr rates the file you have (higher is better)</li>
-                            <li><span className="text-text font-semibold">Grab</span> a better release when auto-hunt is on</li>
-                        </ol>
-                        {!status?.automationEnabled && (
-                            <p className="text-sm text-amber-200">
-                                Grabbing is off right now. Turn on <span className="font-semibold">Settings → Quality Hunt → Enable auto-hunt</span> to search/grab, or keep browsing.
-                            </p>
-                        )}
-                        {summary?.avgCustomFormatScore === 0 && (summary?.upgradeCandidates || 0) > 0 && (
-                            <p className="text-sm text-amber-200">
-                                Scores still look like 0 after refresh — hit <span className="font-semibold">Refresh library</span>.
-                                If they stay 0, open a movie in Radarr’s Files tab and check whether custom-format scores are set on your quality profile.
-                            </p>
-                        )}
-                    </div>
-                )}
-
                 {!featureEnabled && (
                     <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
                         <h3 className="text-xl font-bold text-plex mb-2">Quality Hunt is off</h3>
-                        <p className="text-sm text-muted mb-3">Turn it on to index Arr libraries and hunt better releases.</p>
+                        <p className="text-sm text-muted mb-3">Turn it on to index Arr libraries and run the auto-hunt.</p>
                         <p className="text-xs text-muted mb-4">Settings → Quality Hunt → enable, then save.</p>
                         <a
                             href={portalUrl('/settings#upgrader')}
@@ -456,29 +199,10 @@ export const UpgraderDashboard: React.FC = () => {
 
                 {featureEnabled && (
                     <>
-                        {summaryChips.length > 0 && activeTab === 'browse' && (
-                            <div className="flex flex-wrap gap-2">
-                                {summaryChips.map((chip) => (
-                                    <span key={chip} className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-text">
-                                        {chip}
-                                    </span>
-                                ))}
-                                {!status?.arrConfigured && (
-                                    <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-200">
-                                        No Sonarr/Radarr instances configured
-                                    </span>
-                                )}
-                                {status?.arrConfigured && status.automationEnabled && (
-                                    <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400">
-                                        Auto-hunt ON
-                                    </span>
-                                )}
-                            </div>
-                        )}
-
                         <div className="flex flex-wrap gap-2">
-                            <button type="button" className={tabButtonClass('browse')} onClick={() => handleTabChange('browse')} title="Library titles from Sonarr/Radarr">
-                                Library
+                            <button type="button" className={tabButtonClass('overview')} onClick={() => handleTabChange('overview')} title="Hunt status and recent grabs">
+                                <LayoutDashboard className="w-4 h-4" />
+                                Overview
                             </button>
                             <button type="button" className={tabButtonClass('history')} onClick={() => handleTabChange('history')} title="What Quality Hunt grabbed or skipped">
                                 <History className="w-4 h-4" />
@@ -488,446 +212,184 @@ export const UpgraderDashboard: React.FC = () => {
                                 <Ban className="w-4 h-4" />
                                 Skip list
                             </button>
-                            <button type="button" className={tabButtonClass('profiles')} onClick={() => handleTabChange('profiles')} title="Tune Arr custom formats / quality profiles so scores mean best-of-best">
+                            <button type="button" className={tabButtonClass('profiles')} onClick={() => handleTabChange('profiles')} title="Tune Arr custom formats / quality profiles">
                                 <Settings2 className="w-4 h-4" />
                                 Arr scores
                             </button>
                         </div>
 
-                        {activeTab === 'history' && <UpgraderHistoryPanel />}
-
-                        {activeTab === 'exclusions' && (
-                            <UpgraderExclusionsPanel addToast={addToast} onChanged={() => loadData(true)} />
-                        )}
-
-                        {activeTab === 'profiles' && (
-                            <UpgraderProfilesTab
-                                initialInstanceId={profilesUrl.instance}
-                                initialFormatPage={profilesUrl.formatPage}
-                                initialProfilePage={profilesUrl.profilePage}
-                                onUrlStateChange={handleProfilesUrlChange}
-                            />
-                        )}
-
-                        {activeTab === 'browse' && (
-                            <>
-                        {queue && queue.totalQueued > 0 && (
-                            <div className="rounded-xl border border-border/60 bg-card/40 px-4 py-3 flex flex-wrap items-center gap-3">
-                                <div className="flex items-center gap-2 text-sm font-semibold text-text">
-                                    <Layers className="w-4 h-4 text-plex" />
-                                    ARR queue: {queue.totalQueued} active
-                                </div>
-                                {queue.instances.filter((entry) => entry.total > 0).map((entry) => (
-                                    <span key={entry.instanceId} className="text-xs px-2 py-1 rounded-full bg-white/5 border border-white/10 text-muted">
-                                        {entry.instanceName}: {entry.total}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className="flex flex-col gap-3 p-4 rounded-2xl border border-border/60 bg-card/40">
-                            <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full">
-                                <div className="relative flex-1 w-full sm:min-w-[200px]">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                                    <input
-                                        type="search"
-                                        value={searchInput}
-                                        onChange={(e) => setSearchInput(e.target.value)}
-                                        placeholder="Search titles…"
-                                        className="w-full pl-9 pr-3 py-2 h-[38px] rounded-lg border border-border bg-background text-text text-sm outline-none focus:border-plex"
-                                    />
-                                </div>
-                                <CustomSelect
-                                    value={mediaType}
-                                    onChange={(value) => { setMediaType(value); setPage(1); }}
-                                    options={[
-                                        { value: 'all', label: 'Movies & shows' },
-                                        { value: 'movie', label: 'Movies only' },
-                                        { value: 'show', label: 'Shows only' },
-                                    ]}
-                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
-                                />
-                                <CustomSelect
-                                    value={libraryId}
-                                    onChange={(value) => { setLibraryId(value); setPage(1); }}
-                                    options={[{ value: 'all', label: 'All Arr instances' }, ...libraries.map((lib) => ({ value: lib.id, label: `${lib.title} (${lib.count})` }))]}
-                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
-                                />
-                                <CustomSelect
-                                    value={sort}
-                                    onChange={(value) => { setSort(value); setPage(1); }}
-                                    options={SORT_OPTIONS}
-                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
-                                />
-                                <CustomSelect
-                                    value={gridSize}
-                                    onChange={(value) => setGridSize(normalizeUpgraderGridSize(value))}
-                                    options={UPGRADER_GRID_SIZE_OPTIONS}
-                                    className="flex-1 w-full sm:w-auto min-w-[140px]"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setFiltersExpanded(!filtersExpanded)}
-                                    className="inline-flex items-center gap-2 px-3 py-2 h-[38px] rounded-lg border border-border bg-background text-sm font-semibold text-muted hover:text-text"
-                                >
-                                    <Filter className="w-4 h-4" />
-                                    {filtersExpanded ? 'Hide filters' : 'More filters'}
-                                    {advancedFilterCount > 0 && (
-                                        <span className="rounded-full bg-plex/20 text-plex px-1.5 text-[10px] font-bold">{advancedFilterCount}</span>
-                                    )}
-                                </button>
-                            </div>
-
-                            {filtersExpanded && (
-                                <div className="flex flex-row flex-wrap items-start gap-x-8 gap-y-3 pt-3 border-t border-white/5">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1">Codec</span>
-                                        {UPGRADER_CODEC_OPTIONS.map((option) => (
-                                            <button
-                                                key={option.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setCodecs((prev) => {
-                                                        const next = new Set(prev);
-                                                        if (next.has(option.id)) next.delete(option.id);
-                                                        else next.add(option.id);
-                                                        return next;
-                                                    });
-                                                    setPage(1);
-                                                }}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${codecs.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1">Resolution</span>
-                                        {UPGRADER_RESOLUTION_OPTIONS.map((option) => (
-                                            <button
-                                                key={option.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setResolutions((prev) => {
-                                                        const next = new Set(prev);
-                                                        if (next.has(option.id)) next.delete(option.id);
-                                                        else next.add(option.id);
-                                                        return next;
-                                                    });
-                                                    setPage(1);
-                                                }}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${resolutions.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1">Features</span>
-                                        {UPGRADER_FEATURE_OPTIONS.map((option) => (
-                                            <button
-                                                key={option.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setFeatures((prev) => {
-                                                        const next = new Set(prev);
-                                                        if (next.has(option.id)) next.delete(option.id);
-                                                        else next.add(option.id);
-                                                        return next;
-                                                    });
-                                                    setPage(1);
-                                                }}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${features.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider mr-1">Source</span>
-                                        {UPGRADER_QUALITY_OPTIONS.map((option) => (
-                                            <button
-                                                key={option.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setQualities((prev) => {
-                                                        const next = new Set(prev);
-                                                        if (next.has(option.id)) next.delete(option.id);
-                                                        else next.add(option.id);
-                                                        return next;
-                                                    });
-                                                    setPage(1);
-                                                }}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${qualities.has(option.id) ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'}`}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {automationReady && selectedItems.length > 0 && (
-                            <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-plex/30 bg-plex/10 px-4 py-3 backdrop-blur-md">
-                                <span className="text-sm font-semibold text-text">{selectedItems.length} selected</span>
-                                <div className="flex gap-2">
-                                    <button type="button" className="px-3 py-1.5 rounded-lg border border-border text-xs font-bold" onClick={() => setSelectedKeys(new Set())}>
-                                        Clear
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold"
-                                        onClick={() => openUpgradeModal(selectedItems)}
-                                    >
-                                        <ArrowUpFromLine className="w-3.5 h-3.5" />
-                                        Grab better releases
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
                         {loading ? (
                             <Loader isLoading />
-                        ) : (status?.itemCount ?? 0) === 0 ? (
-                            <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-8 text-center">
-                                <h3 className="text-xl font-bold text-yellow-200 mb-2">Library index is empty</h3>
-                                <p className="text-sm text-muted mb-4">
-                                    Quality Hunt reads Sonarr/Radarr. Refresh the library index to populate titles and scores.
-                                </p>
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-plex text-background font-bold"
-                                    onClick={handleRebuild}
-                                    disabled={rebuilding || !!status?.rebuildInProgress}
-                                >
-                                    <RefreshCw className={`w-4 h-4 ${rebuilding ? 'animate-spin' : ''}`} />
-                                    Refresh library
-                                </button>
-                            </div>
-                        ) : total === 0 ? (
-                            <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
-                                <h3 className="text-xl font-bold text-text mb-2">No matches</h3>
-                                <p className="text-sm text-muted">Clear filters or try another Arr instance / search.</p>
-                            </div>
                         ) : (
                             <>
-                                <p className="text-xs text-muted">{total} title{total === 1 ? '' : 's'} · page {page} of {totalPages}</p>
-                                <div className={upgraderPosterGridClass(gridSize)} style={upgraderPosterGridStyle(gridSize)}>
-                                    {items.map((item) => {
-                                        const canUpgrade = automationReady && isUpgradableItem(item);
-                                        const isSelected = selectedKeys.has(item.ratingKey);
-                                        const isShow = item.mediaType === 'show';
-                                        const score = item.avgCustomFormatScore ?? item.customFormatScore ?? 0;
-                                        const resLabel = item.videoResolution === '4k' ? '4K' : (item.videoResolution || '').toUpperCase() || '';
-                                        const sourceLabel = item.sourceTier && item.sourceTier !== 'unknown' ? item.sourceTier : '';
-                                        const extras = [
-                                            item.hasDolbyVision ? 'DV' : (item.hasHdr ? 'HDR' : null),
-                                            item.hasAtmos ? 'Atmos' : null,
-                                        ].filter(Boolean);
-                                        const qualityBits = [resLabel, sourceLabel, ...extras].filter(Boolean).join(' · ');
-                                        const scoreBadgeText = score !== 0
-                                            ? (qualityBits ? `${score} · ${qualityBits}` : `Score ${score}`)
-                                            : (qualityBits || 'No score');
-                                        const scoreColorClass = score >= 100
-                                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                                            : score !== 0
-                                                ? 'bg-amber-500/15 border-amber-500/30 text-amber-200'
-                                                : 'bg-black/75 border-white/20 text-white/80';
-                                        const sizeLabel = Number(item.sizeGB || 0) > 0
-                                            ? (Number(item.sizeGB) < 1
-                                                ? `${Math.round(Number(item.sizeGB) * 1024)} MB`
-                                                : `${Math.round(Number(item.sizeGB) * 100) / 100} GB`)
-                                            : null;
-                                        const posterSrc = item.thumbUrl
-                                            ? resolvePortalAssetUrl(item.thumbUrl)
-                                            : (item.thumb
-                                                ? portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=200&height=300`)
-                                                : (item.posterFallbackUrl ? resolvePortalAssetUrl(item.posterFallbackUrl) : ''));
-                                        
-                                        if (gridSize === 'list') {
-                                            return (
-                                                <div key={item.ratingKey} className="flex flex-col sm:flex-row gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors relative">
-                                                    {automationReady && (
-                                                        <div className="absolute top-2 left-2 z-20">
-                                                            <OverlayCheckbox
-                                                                checked={isSelected}
-                                                                onChange={() => toggleSelected(item.ratingKey)}
-                                                                size="md"
-                                                                title={isSelected ? 'Deselect' : 'Select for upgrade'}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <div className="w-full sm:w-24 shrink-0 aspect-[2/3] sm:aspect-auto sm:h-36 rounded-md overflow-hidden bg-black/50 relative border border-white/5 cursor-pointer" onClick={isShow ? () => handleOpenDrawer(item) : undefined}>
-                                                        {posterSrc ? <img src={posterSrc} alt={item.title} className="w-full h-full object-cover" /> : null}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
-                                                        <div className="flex items-start justify-between gap-4">
-                                                            <div>
-                                                                <button
-                                                                    type="button"
-                                                                    className={`text-lg font-bold text-text line-clamp-1 text-left ${isShow ? 'hover:text-plex transition-colors' : 'cursor-default'}`}
-                                                                    onClick={isShow ? () => handleOpenDrawer(item) : undefined}
-                                                                >
-                                                                    {item.title}{item.year ? ` (${item.year})` : ''}
-                                                                </button>
-                                                                <div className="flex flex-wrap gap-2 mt-2">
-                                                                    <span className="px-2 py-0.5 rounded-md bg-white/10 border border-white/5 text-xs font-semibold text-gray-300">
-                                                                        {item.arrInstanceName || (item.arrType === 'radarr' ? 'Radarr' : 'Sonarr')}
-                                                                    </span>
-                                                                    {sizeLabel && (
-                                                                        <span className="px-2 py-0.5 rounded-md bg-white/10 border border-white/5 text-xs font-semibold text-gray-300">
-                                                                            {sizeLabel}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <span className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full border ${scoreColorClass}`}>
-                                                                {scoreBadgeText}
-                                                            </span>
-                                                        </div>
-                                                        {item.overview && (
-                                                            <div className="mt-2 text-xs text-muted line-clamp-2 md:line-clamp-3">
-                                                                {item.overview}
-                                                            </div>
-                                                        )}
-                                                        <div className="mt-auto pt-3 flex flex-wrap items-center gap-4">
-                                                            {isShow && (
-                                                                <button
-                                                                    type="button"
-                                                                    className="text-xs font-bold text-gray-300 hover:text-white transition-colors"
-                                                                    onClick={() => handleOpenDrawer(item)}
-                                                                >
-                                                                    View Episodes
-                                                                </button>
-                                                            )}
-                                                            {item.arrDeepUrl && (
-                                                                <a
-                                                                    href={item.arrDeepUrl}
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
-                                                                    className="text-xs font-bold text-plex hover:text-orange-400 transition-colors"
-                                                                >
-                                                                    Open in {item.arrType === 'radarr' ? 'Radarr' : 'Sonarr'}
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
+                                {activeTab === 'overview' && (
+                                    <div className="flex flex-col gap-6">
+                                        {!status?.automationEnabled && (
+                                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                <p className="text-sm text-amber-100">
+                                                    Auto-hunt is off. Nothing will be grabbed until you enable it.
+                                                </p>
+                                                <a
+                                                    href={portalUrl('/settings#upgrader')}
+                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
+                                                >
+                                                    <SettingsIcon className="w-3.5 h-3.5" />
+                                                    Enable in Settings
+                                                </a>
+                                            </div>
+                                        )}
 
-                                        const checkboxSize = gridSize === 'small' || gridSize === 'medium' ? 'sm' : 'md';
-                                        return (
-                                            <div key={item.ratingKey} className="relative min-w-0 flex flex-col gap-2">
-                                                <div className="relative rounded-xl overflow-hidden bg-background border border-white/5 aspect-[2/3] w-full">
-                                                    {automationReady && (
-                                                        <div className="absolute top-1.5 left-1.5 z-20 upgrader-card-select">
-                                                            <OverlayCheckbox
-                                                                checked={isSelected}
-                                                                onChange={() => toggleSelected(item.ratingKey)}
-                                                                size={checkboxSize}
-                                                                title={isSelected ? 'Deselect' : 'Select for upgrade'}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <span className={`absolute top-2 right-2 z-20 text-[10px] font-bold px-2 py-1 rounded-full border ${scoreColorClass}`}>
-                                                        {scoreBadgeText}
-                                                    </span>
-                                                    {posterSrc ? (
-                                                        <img src={posterSrc} alt={item.title} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center p-3 text-center bg-white/5">
-                                                            <span className="text-xs font-bold text-muted line-clamp-3">{item.title}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="px-1 space-y-1">
-                                                    {isShow ? (
-                                                        <button
-                                                            type="button"
-                                                            className="upgrader-card-title text-xs font-medium text-text line-clamp-2 leading-tight text-left hover:text-plex transition-colors"
-                                                            onClick={() => handleOpenDrawer(item)}
-                                                        >
-                                                            {item.title}{item.year ? ` (${item.year})` : ''}
-                                                        </button>
-                                                    ) : (
-                                                        <div className="upgrader-card-title text-xs font-medium text-text line-clamp-2 leading-tight">
-                                                            {item.title}{item.year ? ` (${item.year})` : ''}
-                                                        </div>
-                                                    )}
-                                                    <div className="text-[10px] text-muted">
-                                                        {[item.arrInstanceName || (item.arrType === 'radarr' ? 'Radarr' : 'Sonarr'), sizeLabel].filter(Boolean).join(' · ')}
+                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
+                                            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Status</h2>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Auto-hunt</div>
+                                                    <div className={`mt-1 text-lg font-bold ${status?.automationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
+                                                        {status?.automationEnabled ? 'On' : 'Off'}
                                                     </div>
-                                                    <div className="upgrader-card-actions flex flex-wrap gap-x-2 gap-y-1">
-                                                        {isShow && (
-                                                            <button
-                                                                type="button"
-                                                                className="text-[10px] font-bold text-muted hover:underline"
-                                                                onClick={() => handleOpenDrawer(item)}
-                                                            >
-                                                                Episodes
-                                                            </button>
-                                                        )}
-                                                        {item.arrDeepUrl && (
-                                                            <a
-                                                                href={item.arrDeepUrl}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="inline-block text-[10px] font-bold text-plex hover:underline"
-                                                            >
-                                                                Open in {item.arrType === 'radarr' ? 'Radarr' : 'Sonarr'}
-                                                            </a>
-                                                        )}
-                                                        {canUpgrade && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openUpgradeModal([item])}
-                                                                className="text-[10px] font-bold text-plex hover:underline"
-                                                            >
-                                                                Grab better
-                                                            </button>
-                                                        )}
-                                                        {automationReady && (
-                                                            <button
-                                                                type="button"
-                                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-muted hover:text-text"
-                                                                onClick={() => handleSnooze(item)}
-                                                                title="Hide from Quality Hunt for 30 days"
-                                                            >
-                                                                <Clock className="w-3 h-3" />
-                                                                Snooze
-                                                            </button>
-                                                        )}
+                                                </div>
+                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Grabs this hour</div>
+                                                    <div className="mt-1 text-lg font-bold text-text">
+                                                        {usedActions}/{maxActions}
+                                                        <span className="ml-1 text-xs font-semibold text-muted">({remainingActions} left)</span>
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Index</div>
+                                                    <div className="mt-1 text-lg font-bold text-text">
+                                                        {summary?.totalItems ?? status?.itemCount ?? 0}
+                                                        <span className="ml-1 text-xs font-semibold text-muted">· {formatIndexAge(summary?.generatedAt || status?.generatedAt || null)}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Arr instances</div>
+                                                    <div className="mt-1 text-lg font-bold text-text">
+                                                        {arrInstanceCount || (status?.arrConfigured ? 'Configured' : 'None')}
                                                     </div>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                                {totalPages > 1 && (
-                                    <div className="flex items-center justify-center gap-3">
-                                        <button
-                                            type="button"
-                                            className="px-3 py-1.5 rounded-lg border border-border text-sm disabled:opacity-40"
-                                            disabled={page <= 1}
-                                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                        >
-                                            Previous
-                                        </button>
-                                        <span className="text-sm text-muted">{page} / {totalPages}</span>
-                                        <button
-                                            type="button"
-                                            className="px-3 py-1.5 rounded-lg border border-border text-sm disabled:opacity-40"
-                                            disabled={page >= totalPages}
-                                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                        >
-                                            Next
-                                        </button>
+                                            {summary && (
+                                                <p className="text-xs text-muted">
+                                                    {summary.upgradeCandidates ?? 0} titles with files on disk
+                                                    {summary.avgCustomFormatScore != null ? ` · avg Arr score ${summary.avgCustomFormatScore}` : ''}
+                                                    {' · '}min score gain {minDelta}
+                                                </p>
+                                            )}
+                                        </section>
+
+                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
+                                            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">How it hunts</h2>
+                                            <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
+                                                <li>
+                                                    <span className="text-text font-semibold">One queue across all libraries.</span>{' '}
+                                                    Every Sonarr/Radarr instance is merged, then sorted by lowest Arr score first — not round-robin per library.
+                                                </li>
+                                                <li>
+                                                    <span className="text-text font-semibold">Worst scores first.</span>{' '}
+                                                    Auto-hunt walks that list every ~20 minutes and skips snoozed/excluded titles.
+                                                </li>
+                                                <li>
+                                                    <span className="text-text font-semibold">TV targets the weakest season.</span>{' '}
+                                                    It searches interactive Arr releases for that season (or the movie).
+                                                </li>
+                                                <li>
+                                                    <span className="text-text font-semibold">Never downgrade resolution.</span>{' '}
+                                                    A 1080p season pack cannot beat a 4K season floor. Score must beat current by at least {minDelta}
+                                                    {prefs ? (
+                                                        <>
+                                                            {', with portal boosts for '}
+                                                            {[
+                                                                prefs.preferDolbyVisionHdr !== false ? 'DV/HDR' : null,
+                                                                prefs.preferAtmos !== false ? 'Atmos' : null,
+                                                                prefs.preferRemux !== false ? 'Remux' : null,
+                                                                prefs.preferSeasonPacks !== false ? 'season packs' : null,
+                                                            ].filter(Boolean).join(', ') || 'your enabled prefs'}
+                                                            .
+                                                        </>
+                                                    ) : '.'}
+                                                </li>
+                                                <li>
+                                                    <span className="text-text font-semibold">Grab until the hourly budget is used.</span>{' '}
+                                                    Then it waits for the next cycle.
+                                                </li>
+                                            </ol>
+                                        </section>
+
+                                        <section className="space-y-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Just hunted</h2>
+                                                <button
+                                                    type="button"
+                                                    className="text-xs font-bold text-plex hover:underline"
+                                                    onClick={() => handleTabChange('history')}
+                                                >
+                                                    Full activity
+                                                </button>
+                                            </div>
+                                            {recentGrabs.length === 0 ? (
+                                                <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
+                                                    <p className="text-sm text-muted">
+                                                        No grabs yet. When auto-hunt queues a better release, it shows up here with a poster.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                                    {recentGrabs.map((entry) => {
+                                                        const thumb = entry.thumbUrl ? resolvePortalAssetUrl(entry.thumbUrl) : '';
+                                                        const when = entryTime(entry);
+                                                        const delta = entry.currentScore != null && entry.candidateScore != null
+                                                            ? entry.candidateScore - entry.currentScore
+                                                            : null;
+                                                        return (
+                                                            <div key={entry.id} className="min-w-0 flex flex-col gap-2">
+                                                                <div className="relative rounded-xl overflow-hidden bg-background border border-white/5 aspect-[2/3] w-full">
+                                                                    {thumb ? (
+                                                                        <img src={thumb} alt={entry.title} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="w-full h-full flex items-center justify-center p-3 text-center bg-white/5">
+                                                                            <span className="text-xs font-bold text-muted line-clamp-3">{entry.title}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {delta != null && (
+                                                                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-300">
+                                                                            +{delta}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="px-0.5 space-y-0.5">
+                                                                    <div className="text-xs font-medium text-text line-clamp-2 leading-tight">{entry.title}</div>
+                                                                    <div className="text-[10px] text-muted line-clamp-2">
+                                                                        {[
+                                                                            entry.arrInstanceName,
+                                                                            entry.releaseTitle,
+                                                                            when ? new Date(when).toLocaleString() : null,
+                                                                        ].filter(Boolean).join(' · ')}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </section>
                                     </div>
                                 )}
-                            </>
-                        )}
+
+                                {activeTab === 'history' && <UpgraderHistoryPanel />}
+
+                                {activeTab === 'exclusions' && (
+                                    <UpgraderExclusionsPanel addToast={addToast} onChanged={() => loadData(true)} />
+                                )}
+
+                                {activeTab === 'profiles' && (
+                                    <UpgraderProfilesTab
+                                        initialInstanceId={profilesUrl.instance}
+                                        initialFormatPage={profilesUrl.formatPage}
+                                        initialProfilePage={profilesUrl.profilePage}
+                                        onUrlStateChange={handleProfilesUrlChange}
+                                    />
+                                )}
                             </>
                         )}
                     </>

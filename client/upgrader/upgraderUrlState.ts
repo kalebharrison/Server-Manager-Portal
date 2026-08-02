@@ -1,18 +1,6 @@
 import { portalUrl } from '../shared/basePath';
 
-export type UpgraderTab = 'browse' | 'history' | 'exclusions' | 'profiles';
-
-export type UpgraderBrowseUrlState = {
-    codecs: string[];
-    resolutions: string[];
-    features: string[];
-    qualities: string[];
-    library: string;
-    type: string;
-    sort: string;
-    search: string;
-    page: number;
-};
+export type UpgraderTab = 'overview' | 'history' | 'exclusions' | 'profiles';
 
 export type UpgraderProfilesUrlState = {
     instance: string;
@@ -22,25 +10,10 @@ export type UpgraderProfilesUrlState = {
 
 export type UpgraderUrlState = {
     tab: UpgraderTab;
-    browse: UpgraderBrowseUrlState;
     profiles: UpgraderProfilesUrlState;
 };
 
-const VALID_TABS = new Set<UpgraderTab>(['browse', 'history', 'exclusions', 'profiles']);
-
-const splitList = (raw: string | null) => (raw ? raw.split(',').map((v) => v.trim()).filter(Boolean) : []);
-
-export const defaultBrowseUrlState = (): UpgraderBrowseUrlState => ({
-    codecs: [],
-    resolutions: [],
-    features: [],
-    qualities: [],
-    library: 'all',
-    type: 'all',
-    sort: 'sizeGB',
-    search: '',
-    page: 1,
-});
+const VALID_TABS = new Set<UpgraderTab>(['overview', 'history', 'exclusions', 'profiles']);
 
 export const defaultProfilesUrlState = (): UpgraderProfilesUrlState => ({
     instance: '',
@@ -51,21 +24,12 @@ export const defaultProfilesUrlState = (): UpgraderProfilesUrlState => ({
 export const parseUpgraderUrl = (search = ''): UpgraderUrlState => {
     const params = new URLSearchParams(search);
     const tabRaw = params.get('tab');
-    const tab = VALID_TABS.has(tabRaw as UpgraderTab) ? (tabRaw as UpgraderTab) : 'browse';
+    // Legacy Library browse URLs land on Overview.
+    const normalized = tabRaw === 'browse' || !tabRaw ? 'overview' : tabRaw;
+    const tab = VALID_TABS.has(normalized as UpgraderTab) ? (normalized as UpgraderTab) : 'overview';
 
     return {
         tab,
-        browse: {
-            codecs: splitList(params.get('codecs')),
-            resolutions: splitList(params.get('resolutions')),
-            features: splitList(params.get('features')),
-            qualities: splitList(params.get('qualities')),
-            library: params.get('library') || 'all',
-            type: params.get('type') || 'all',
-            sort: params.get('sort') || 'sizeGB',
-            search: params.get('search') || '',
-            page: Math.max(1, Number(params.get('page')) || 1),
-        },
         profiles: {
             instance: params.get('instance') || '',
             formatPage: Math.max(1, Number(params.get('formatPage')) || 1),
@@ -77,20 +41,9 @@ export const parseUpgraderUrl = (search = ''): UpgraderUrlState => {
 export const buildUpgraderSearch = (state: UpgraderUrlState): string => {
     const params = new URLSearchParams();
 
-    if (state.tab !== 'browse') params.set('tab', state.tab);
+    if (state.tab !== 'overview') params.set('tab', state.tab);
 
-    if (state.tab === 'browse') {
-        const b = state.browse;
-        if (b.codecs.length) params.set('codecs', b.codecs.join(','));
-        if (b.resolutions.length) params.set('resolutions', b.resolutions.join(','));
-        if (b.features.length) params.set('features', b.features.join(','));
-        if (b.qualities.length) params.set('qualities', b.qualities.join(','));
-        if (b.library !== 'all') params.set('library', b.library);
-        if (b.type !== 'all') params.set('type', b.type);
-        if (b.sort !== 'sizeGB') params.set('sort', b.sort);
-        if (b.search) params.set('search', b.search);
-        if (b.page > 1) params.set('page', String(b.page));
-    } else if (state.tab === 'profiles') {
+    if (state.tab === 'profiles') {
         const p = state.profiles;
         if (p.instance) params.set('instance', p.instance);
         if (p.formatPage > 1) params.set('formatPage', String(p.formatPage));

@@ -15,10 +15,17 @@ export type UpgraderStatus = {
     automationEnabled: boolean;
     profileMapConfigured: boolean;
     maxActionsPerHour: number;
+    minScoreDelta?: number;
     recentUpgradeCount: number;
     defaultPreset: string;
     defaultSort: UpgraderSort;
     minSizeGB: number;
+    preferences?: {
+        preferDolbyVisionHdr?: boolean;
+        preferAtmos?: boolean;
+        preferRemux?: boolean;
+        preferSeasonPacks?: boolean;
+    };
 };
 
 export type UpgraderSummary = {
@@ -207,8 +214,9 @@ export type UpgraderUpgradePreviewResult = {
 
 export type UpgraderAuditEntry = {
     id: string;
-    timestamp: string;
-    action?: 'upgrade' | 'profile_change' | 'series_search' | 'episode_search' | 'movie_search' | string;
+    at?: string;
+    timestamp?: string;
+    action?: 'upgrade' | 'profile_change' | 'series_search' | 'episode_search' | 'movie_search' | 'index_rebuilt' | string;
     success?: boolean;
     reason?: string | null;
     ratingKey: string;
@@ -220,6 +228,12 @@ export type UpgraderAuditEntry = {
     currentProfileName?: string | null;
     targetProfileId?: number;
     targetProfileName?: string | null;
+    currentScore?: number | null;
+    candidateScore?: number | null;
+    releaseTitle?: string | null;
+    fullSeason?: boolean;
+    seasonNumber?: number | null;
+    thumbUrl?: string | null;
     episodeIds?: number[];
     triggerSearch?: boolean;
     commandId?: string | null;
