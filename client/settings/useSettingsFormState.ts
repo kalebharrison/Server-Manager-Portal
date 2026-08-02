@@ -105,6 +105,8 @@ export const useSettingsFormState = () => {
         upgraderAutomationEnabled: values.upgraderAutomationEnabled,
         upgraderMinSizeGB: values.upgraderMinSizeGB,
         upgraderMaxActionsPerHour: values.upgraderMaxActionsPerHour,
+        upgraderMinScoreDelta: values.upgraderMinScoreDelta,
+        upgraderPreferences: values.upgraderPreferences,
         dashboardLayout: dashboardLayoutRef.current,
     }), [values]);
 

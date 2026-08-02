@@ -91,6 +91,13 @@ type SettingsHydrationSetters = {
     setUpgraderAutomationEnabled: (value: boolean) => void;
     setUpgraderMinSizeGB: (value: number) => void;
     setUpgraderMaxActionsPerHour: (value: number) => void;
+    setUpgraderMinScoreDelta: (value: number) => void;
+    setUpgraderPreferences: (value: {
+        preferDolbyVisionHdr: boolean;
+        preferAtmos: boolean;
+        preferRemux: boolean;
+        preferSeasonPacks: boolean;
+    }) => void;
     setTestRecipient: (value: string) => void;
     setServers: (value: any[]) => void;
     dashboardLayoutRef: React.MutableRefObject<DashboardLayoutConfig>;
@@ -188,6 +195,13 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setUpgraderAutomationEnabled(!!initialSettings.upgraderAutomationEnabled);
     setters.setUpgraderMinSizeGB(Math.max(0, Number(initialSettings.upgraderMinSizeGB) || 5));
     setters.setUpgraderMaxActionsPerHour(Math.max(1, Number(initialSettings.upgraderMaxActionsPerHour) || 25));
+    setters.setUpgraderMinScoreDelta(Math.max(0, Number(initialSettings.upgraderMinScoreDelta ?? 10) || 0));
+    setters.setUpgraderPreferences({
+        preferDolbyVisionHdr: initialSettings.upgraderPreferences?.preferDolbyVisionHdr !== false,
+        preferAtmos: initialSettings.upgraderPreferences?.preferAtmos !== false,
+        preferRemux: initialSettings.upgraderPreferences?.preferRemux !== false,
+        preferSeasonPacks: initialSettings.upgraderPreferences?.preferSeasonPacks !== false,
+    });
     const layout = normalizeSectionLayout(initialSettings.dashboardLayout);
     setters.dashboardLayoutRef.current = layout;
     setters.setDashboardLayout(layout);

@@ -45,11 +45,8 @@ const SORT_OPTIONS = [
 ];
 
 const isUpgradableItem = (item: UpgraderItem) => {
-    if (item.mediaType === 'show') {
-        if ((item.totalEpisodeCount ?? 0) > 0) return (item.nonHevcEpisodeCount ?? 0) > 0;
-        return !item.isHevc;
-    }
-    return !item.isHevc;
+    if (item.mediaType === 'show') return (item.totalEpisodeCount ?? item.episodeCount ?? 0) > 0;
+    return item.hasFile !== false;
 };
 
 type UpgraderTabId = UpgraderTab;
@@ -321,13 +318,9 @@ export const UpgraderDashboard: React.FC = () => {
             addToast('Enable Upgrader automation in Settings first.', 'error');
             return;
         }
-        if (!status?.profileMapConfigured) {
-            addToast('Configure HEVC quality profiles per ARR instance in Settings.', 'error');
-            return;
-        }
         const upgradable = targets.filter((item) => isUpgradableItem(item));
         if (!upgradable.length) {
-            addToast('No valid titles selected.', 'error');
+            addToast('No on-disk titles selected.', 'error');
             return;
         }
         setUpgradeItems(upgradable);
@@ -434,7 +427,7 @@ export const UpgraderDashboard: React.FC = () => {
                     <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
                         <h3 className="text-xl font-bold text-plex mb-2">Upgrader Disabled</h3>
                         <p className="text-sm text-muted mb-3">Library Upgrader is currently OFF.</p>
-                        <p className="text-xs text-muted mb-4">Enable it in Settings → Library Upgrader, then click Save Settings.</p>
+                        <p className="text-xs text-muted mb-4">Enable it in Settings → Library Upgrader to hunt higher quality scores automatically.</p>
                         <a
                             href={portalUrl('/settings#upgrader')}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-plex text-background font-bold no-underline hover:bg-plex-hover transition-colors"

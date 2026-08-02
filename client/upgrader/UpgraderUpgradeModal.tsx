@@ -21,7 +21,6 @@ export const UpgraderUpgradeModal: React.FC<UpgraderUpgradeModalProps> = ({
     const [loadingPreview, setLoadingPreview] = useState(false);
     const [running, setRunning] = useState(false);
     const [preview, setPreview] = useState<UpgraderUpgradePreviewResult | null>(null);
-    const [triggerSearch, setTriggerSearch] = useState(true);
 
     useEffect(() => {
         if (!isOpen || !items.length) {
@@ -55,13 +54,12 @@ export const UpgraderUpgradeModal: React.FC<UpgraderUpgradeModalProps> = ({
                 method: 'POST',
                 body: JSON.stringify({
                     ratingKeys: items.map((item) => item.ratingKey),
-                    triggerSearch,
                 }),
             });
             const succeeded = Number(result?.totals?.succeeded || 0);
             const failed = Number(result?.totals?.failed || 0);
             if (succeeded > 0) {
-                addToast(`Upgrade started for ${succeeded} title${succeeded === 1 ? '' : 's'}.`, 'success');
+                addToast(`Queued ${succeeded} quality upgrade${succeeded === 1 ? '' : 's'}.`, 'success');
             }
             if (failed > 0) {
                 addToast(`${failed} title${failed === 1 ? '' : 's'} could not be upgraded.`, 'error');
@@ -84,9 +82,9 @@ export const UpgraderUpgradeModal: React.FC<UpgraderUpgradeModalProps> = ({
             <div className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl border border-border/80 bg-card shadow-2xl flex flex-col">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
                     <div>
-                        <h3 className="text-lg font-bold text-text">Upgrade to HEVC</h3>
+                        <h3 className="text-lg font-bold text-text">Quality score upgrade</h3>
                         <p className="text-xs text-muted mt-1">
-                            Changes ARR quality profiles and optionally triggers a search. You still pick releases in ARR.
+                            Searches Arr for higher custom-format scores (with DV/HDR, Atmos, Remux boosts). Season packs never downgrade resolution.
                         </p>
                     </div>
                     <button type="button" onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-muted hover:text-text">
@@ -98,7 +96,7 @@ export const UpgraderUpgradeModal: React.FC<UpgraderUpgradeModalProps> = ({
                     {loadingPreview ? (
                         <div className="flex items-center justify-center gap-2 py-10 text-muted">
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            Building preview…
+                            Searching for better releases…
                         </div>
                     ) : (
                         <>
@@ -109,8 +107,22 @@ export const UpgraderUpgradeModal: React.FC<UpgraderUpgradeModalProps> = ({
                                         <div key={entry.ratingKey} className="rounded-lg border border-green-500/20 bg-green-500/5 px-3 py-2 text-sm">
                                             <div className="font-semibold text-text">{entry.title}</div>
                                             <div className="text-xs text-muted mt-1">
-                                                {entry.arrInstanceName} · {entry.currentProfileName || 'Unknown profile'} → {entry.targetProfileName || `Profile ${entry.targetProfileId}`}
+                                                {entry.arrInstanceName}
+                                                {' · '}
+                                                score {entry.currentScore ?? '—'} → {entry.candidateScore ?? '—'}
+                                                {entry.scoreDelta != null ? ` (+${entry.scoreDelta})` : ''}
+                                                {entry.resolution ? ` · ${entry.resolution}` : ''}
+                                                {entry.source ? `/${entry.source}` : ''}
+                                                {entry.fullSeason ? ' · season pack' : ''}
                                             </div>
+                                            {!!entry.boostReasons?.length && (
+                                                <div className="text-[11px] text-green-200/80 mt-1">
+                                                    Boosts: {entry.boostReasons.join(', ')}
+                                                </div>
+                                            )}
+                                            {entry.releaseTitle && (
+                                                <div className="text-[11px] text-muted mt-1 truncate">{entry.releaseTitle}</div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -132,22 +144,9 @@ export const UpgraderUpgradeModal: React.FC<UpgraderUpgradeModalProps> = ({
                         </>
                     )}
 
-                    <label className="flex items-start gap-3 rounded-lg border border-border/60 bg-background/40 px-3 py-3 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={triggerSearch}
-                            onChange={(e) => setTriggerSearch(e.target.checked)}
-                            className="mt-1"
-                        />
-                        <span className="text-sm">
-                            <span className="font-semibold text-text block">Trigger ARR search after profile change</span>
-                            <span className="text-xs text-muted">Recommended. ARR will search for better releases using the new profile.</span>
-                        </span>
-                    </label>
-
                     <div className="flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-100">
                         <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span>This updates Sonarr/Radarr settings for selected titles. Review the preview carefully before confirming.</span>
+                        <span>Confirming grabs the best ranked release in Sonarr/Radarr immediately. Review scores and quality tiers carefully.</span>
                     </div>
                 </div>
 
@@ -162,7 +161,7 @@ export const UpgraderUpgradeModal: React.FC<UpgraderUpgradeModalProps> = ({
                         onClick={handleConfirm}
                     >
                         {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                        {running ? 'Upgrading…' : `Confirm ${actionable.length || items.length} upgrade${actionable.length === 1 ? '' : 's'}`}
+                        {running ? 'Grabbing…' : `Grab ${actionable.length || items.length} upgrade${actionable.length === 1 ? '' : 's'}`}
                     </button>
                 </div>
             </div>

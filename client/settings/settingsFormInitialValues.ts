@@ -88,5 +88,12 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     upgraderAutomationEnabled: false,
     upgraderMinSizeGB: 5,
     upgraderMaxActionsPerHour: 25,
+    upgraderMinScoreDelta: 10,
+    upgraderPreferences: {
+        preferDolbyVisionHdr: true,
+        preferAtmos: true,
+        preferRemux: true,
+        preferSeasonPacks: true,
+    },
     logoFile: null,
 });

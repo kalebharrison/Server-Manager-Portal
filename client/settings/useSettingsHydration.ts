@@ -114,6 +114,8 @@ export const useSettingsHydration = ({
             setUpgraderAutomationEnabled: set('upgraderAutomationEnabled'),
             setUpgraderMinSizeGB: set('upgraderMinSizeGB'),
             setUpgraderMaxActionsPerHour: set('upgraderMaxActionsPerHour'),
+            setUpgraderMinScoreDelta: set('upgraderMinScoreDelta'),
+            setUpgraderPreferences: set('upgraderPreferences'),
             setDashboardLayout: set('dashboardLayout'),
             setTestRecipient: set('testRecipient'),
             setServers: set('servers'),

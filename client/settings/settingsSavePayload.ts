@@ -88,6 +88,13 @@ type SettingsSavePayloadInput = {
     upgraderAutomationEnabled: boolean;
     upgraderMinSizeGB: number;
     upgraderMaxActionsPerHour: number;
+    upgraderMinScoreDelta: number;
+    upgraderPreferences: {
+        preferDolbyVisionHdr: boolean;
+        preferAtmos: boolean;
+        preferRemux: boolean;
+        preferSeasonPacks: boolean;
+    };
     dashboardLayout: DashboardLayoutConfig;
 };
 

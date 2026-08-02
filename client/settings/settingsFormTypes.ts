@@ -87,6 +87,13 @@ export type SettingsFormValues = {
     upgraderAutomationEnabled: boolean;
     upgraderMinSizeGB: number;
     upgraderMaxActionsPerHour: number;
+    upgraderMinScoreDelta: number;
+    upgraderPreferences: {
+        preferDolbyVisionHdr: boolean;
+        preferAtmos: boolean;
+        preferRemux: boolean;
+        preferSeasonPacks: boolean;
+    };
     logoFile: File | null;
 };
 

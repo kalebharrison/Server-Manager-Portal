@@ -61,10 +61,14 @@ export const buildUpgraderTabPanelProps = ({
     automationEnabled: values.upgraderAutomationEnabled,
     minSizeGB: values.upgraderMinSizeGB,
     maxActionsPerHour: values.upgraderMaxActionsPerHour,
+    minScoreDelta: values.upgraderMinScoreDelta,
+    preferences: values.upgraderPreferences,
     onEnabledChange: onChange('upgraderEnabled'),
     onAutomationEnabledChange: onChange('upgraderAutomationEnabled'),
     onMinSizeGBChange: onChange('upgraderMinSizeGB'),
     onMaxActionsPerHourChange: onChange('upgraderMaxActionsPerHour'),
+    onMinScoreDeltaChange: onChange('upgraderMinScoreDelta'),
+    onPreferencesChange: onChange('upgraderPreferences'),
 });
 
 export const buildBroadcastTabPanelProps = ({

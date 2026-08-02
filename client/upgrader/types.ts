@@ -55,6 +55,11 @@ export type UpgraderItem = {
     isHevc: boolean;
     hasHdr: boolean;
     hasDolbyVision: boolean;
+    hasFile?: boolean;
+    episodeCount?: number;
+    customFormatScore?: number;
+    avgCustomFormatScore?: number;
+    sourceTier?: string;
     totalEpisodeCount?: number;
     nonHevcEpisodeCount?: number;
     nonHevcEpisodeSizeGB?: number;
@@ -181,6 +186,14 @@ export type UpgraderUpgradePreviewEntry = {
     currentProfileName?: string | null;
     targetProfileId?: number;
     targetProfileName?: string | null;
+    currentScore?: number;
+    candidateScore?: number;
+    scoreDelta?: number;
+    boostReasons?: string[];
+    fullSeason?: boolean;
+    resolution?: string;
+    source?: string;
+    releaseTitle?: string | null;
 };
 
 export type UpgraderUpgradePreviewResult = {
