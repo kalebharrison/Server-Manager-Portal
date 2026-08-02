@@ -47,6 +47,8 @@ test('radarr index uses profile math when movie list score is zero', () => {
         qualityProfileId: 1,
         path: '/media/movies/Example',
         movieFile: {
+            id: 99,
+            path: '/media/movies/Example/Example.mkv',
             size: 10_000_000_000,
             customFormatScore: 0,
             customFormats: [{ id: 10, name: 'Remux' }, { id: 20, name: 'DV' }, { id: 30, name: 'Atmos' }],
@@ -66,6 +68,8 @@ test('radarr index uses profile math when movie list score is zero', () => {
     assert.equal(item.sourceTier, 'remux');
     assert.equal(item.libraryName, 'Movies');
     assert.equal(item.libraryKey, 'radarr:radarr-1:movies');
+    assert.equal(item.movieFileId, 99);
+    assert.equal(item.filePath, '/media/movies/Example/Example.mkv');
 });
 
 test('sonarr prefers embedded episodeFile custom format score', () => {

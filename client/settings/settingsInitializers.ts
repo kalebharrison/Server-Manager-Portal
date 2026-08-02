@@ -101,6 +101,13 @@ type SettingsHydrationSetters = {
         preferSeasonPacks: boolean;
     }) => void;
     setQcCleanupAutomationEnabled: (value: boolean) => void;
+    setQcIntegrityEnabled: (value: boolean) => void;
+    setQcIntegrityAutomationEnabled: (value: boolean) => void;
+    setQcIntegrityRequireAudio: (value: boolean) => void;
+    setQcIntegrityPathMaps: (value: Array<{ from: string; to: string }>) => void;
+    setQcIntegrityMaxPerCycle: (value: number) => void;
+    setQcIntegrityDecodeWindowSec: (value: number) => void;
+    setQcIntegrityDecodeTimeoutMs: (value: number) => void;
     setQcMetaDlMinutes: (value: number) => void;
     setQcStalledHours: (value: number) => void;
     setQcCompletedNotImportingMinutes: (value: number) => void;
@@ -221,6 +228,22 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
         preferSeasonPacks: initialSettings.upgraderPreferences?.preferSeasonPacks !== false,
     });
     setters.setQcCleanupAutomationEnabled(!!initialSettings.qcCleanupAutomationEnabled);
+    setters.setQcIntegrityEnabled(!!initialSettings.qcIntegrityEnabled);
+    setters.setQcIntegrityAutomationEnabled(!!initialSettings.qcIntegrityAutomationEnabled);
+    setters.setQcIntegrityRequireAudio(initialSettings.qcIntegrityRequireAudio !== false);
+    setters.setQcIntegrityPathMaps(
+        Array.isArray(initialSettings.qcIntegrityPathMaps)
+            ? initialSettings.qcIntegrityPathMaps
+                .map((entry: { from?: string; to?: string }) => ({
+                    from: String(entry?.from || '').trim(),
+                    to: String(entry?.to || '').trim(),
+                }))
+                .filter((entry: { from: string; to: string }) => entry.from && entry.to)
+            : [],
+    );
+    setters.setQcIntegrityMaxPerCycle(Math.max(1, Number(initialSettings.qcIntegrityMaxPerCycle) || 25));
+    setters.setQcIntegrityDecodeWindowSec(Math.max(1, Number(initialSettings.qcIntegrityDecodeWindowSec) || 10));
+    setters.setQcIntegrityDecodeTimeoutMs(Math.max(1000, Number(initialSettings.qcIntegrityDecodeTimeoutMs) || 30000));
     setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 30));
     setters.setQcStalledHours(Math.max(1, Number(initialSettings.qcStalledHours) || 6));
     setters.setQcCompletedNotImportingMinutes(Math.max(1, Number(initialSettings.qcCompletedNotImportingMinutes) || 60));

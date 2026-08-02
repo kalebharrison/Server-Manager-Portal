@@ -11,6 +11,7 @@ import {
     Download,
     HardDrive,
     Crosshair,
+    ShieldCheck,
 } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
@@ -21,6 +22,7 @@ import { UpgraderHistoryPanel } from './UpgraderHistoryPanel';
 import { UpgraderProfilesTab } from './UpgraderProfilesTab';
 import { QcClientsPanel } from './QcClientsPanel';
 import { QcDownloadsPanel } from './QcDownloadsPanel';
+import { QcIntegrityPanel } from './QcIntegrityPanel';
 import { QcRulesPanel } from './QcRulesPanel';
 import type {
     UpgraderAuditEntry,
@@ -41,6 +43,7 @@ type LibraryGroup<T> = { key: string; label: string; items: T[] };
 const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode; title: string }> = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" />, title: 'Status and recent activity' },
     { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-4 h-4" />, title: 'How it hunts and dry-run preview' },
+    { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-4 h-4" />, title: 'Validate library files and replace corrupt ones' },
     { id: 'downloads', label: 'Downloads', icon: <Download className="w-4 h-4" />, title: 'Download health and cleanup' },
     { id: 'clients', label: 'Clients', icon: <HardDrive className="w-4 h-4" />, title: 'Download client connection and blocked extensions' },
     { id: 'rules', label: 'Rules', icon: <Ban className="w-4 h-4" />, title: 'Cleanup thresholds and skip list' },
@@ -455,6 +458,16 @@ export const UpgraderDashboard: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Integrity</div>
+                                                    <div className={`mt-1 text-lg font-bold ${status?.integrityEnabled ? (status?.integrityAutomationEnabled ? 'text-emerald-300' : 'text-amber-200') : 'text-amber-200'}`}>
+                                                        {!status?.integrityEnabled
+                                                            ? 'Off'
+                                                            : status?.integrityAutomationEnabled
+                                                                ? 'Auto'
+                                                                : 'Manual'}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
                                                     <div className="text-[11px] uppercase tracking-wide text-muted">Grabs this hour</div>
                                                     <div className="mt-1 text-lg font-bold text-text">
                                                         {usedActions}/{maxActions}
@@ -611,6 +624,13 @@ export const UpgraderDashboard: React.FC = () => {
                                             )}
                                         </section>
                                     </div>
+                                )}
+
+                                {activeTab === 'integrity' && (
+                                    <QcIntegrityPanel
+                                        onToast={addToast}
+                                        integrityEnabled={!!status?.integrityEnabled}
+                                    />
                                 )}
 
                                 {activeTab === 'hunt' && (

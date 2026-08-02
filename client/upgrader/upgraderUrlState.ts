@@ -3,6 +3,7 @@ import { portalUrl } from '../shared/basePath';
 export type UpgraderTab =
     | 'overview'
     | 'hunt'
+    | 'integrity'
     | 'downloads'
     | 'clients'
     | 'rules'
@@ -25,6 +26,7 @@ export type UpgraderUrlState = {
 const VALID_TABS = new Set<UpgraderTab>([
     'overview',
     'hunt',
+    'integrity',
     'downloads',
     'clients',
     'rules',

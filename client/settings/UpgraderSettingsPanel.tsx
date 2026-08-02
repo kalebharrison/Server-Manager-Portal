@@ -18,6 +18,13 @@ type Props = {
     minScoreDelta: number;
     preferences: Prefs;
     qcCleanupAutomationEnabled: boolean;
+    integrityEnabled: boolean;
+    integrityAutomationEnabled: boolean;
+    integrityRequireAudio: boolean;
+    integrityPathMaps: Array<{ from: string; to: string }>;
+    integrityMaxPerCycle: number;
+    integrityDecodeWindowSec: number;
+    integrityDecodeTimeoutMs: number;
     qcMetaDlMinutes: number;
     qcStalledHours: number;
     qcCompletedNotImportingMinutes: number;
@@ -38,6 +45,13 @@ type Props = {
     onMinScoreDeltaChange: (value: number) => void;
     onPreferencesChange: (value: Prefs) => void;
     onQcCleanupAutomationEnabledChange: (value: boolean) => void;
+    onIntegrityEnabledChange: (value: boolean) => void;
+    onIntegrityAutomationEnabledChange: (value: boolean) => void;
+    onIntegrityRequireAudioChange: (value: boolean) => void;
+    onIntegrityPathMapsChange: (value: Array<{ from: string; to: string }>) => void;
+    onIntegrityMaxPerCycleChange: (value: number) => void;
+    onIntegrityDecodeWindowSecChange: (value: number) => void;
+    onIntegrityDecodeTimeoutMsChange: (value: number) => void;
     onQcMetaDlMinutesChange: (value: number) => void;
     onQcStalledHoursChange: (value: number) => void;
     onQcCompletedNotImportingMinutesChange: (value: number) => void;
@@ -67,6 +81,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     minScoreDelta,
     preferences,
     qcCleanupAutomationEnabled,
+    integrityEnabled,
+    integrityAutomationEnabled,
+    integrityRequireAudio,
+    integrityPathMaps,
+    integrityMaxPerCycle,
+    integrityDecodeWindowSec,
+    integrityDecodeTimeoutMs,
     qcMetaDlMinutes,
     qcStalledHours,
     qcCompletedNotImportingMinutes,
@@ -87,6 +108,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onMinScoreDeltaChange,
     onPreferencesChange,
     onQcCleanupAutomationEnabledChange,
+    onIntegrityEnabledChange,
+    onIntegrityAutomationEnabledChange,
+    onIntegrityRequireAudioChange,
+    onIntegrityPathMapsChange,
+    onIntegrityMaxPerCycleChange,
+    onIntegrityDecodeWindowSecChange,
+    onIntegrityDecodeTimeoutMsChange,
     onQcMetaDlMinutesChange,
     onQcStalledHoursChange,
     onQcCompletedNotImportingMinutesChange,
@@ -382,6 +410,113 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             </label>
                         ))}
                     </div>
+                </div>
+
+                <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                    <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h4>
+                    <p className="text-xs text-muted">
+                        Validates Arr-known media files with ffprobe plus short ffmpeg decode at start, middle, and near-end.
+                        Requires media mounted read-only into this container and path maps from Arr paths to container paths.
+                    </p>
+                    <label className="flex items-center justify-between gap-4">
+                        <span>
+                            <span className="block font-semibold">Enable integrity scans</span>
+                            <span className="block text-xs text-muted mt-1">Unlocks the Integrity tab and API.</span>
+                        </span>
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-plex"
+                            disabled={!enabled}
+                            checked={integrityEnabled && enabled}
+                            onChange={(event) => onIntegrityEnabledChange(event.target.checked)}
+                        />
+                    </label>
+                    <label className="flex items-center justify-between gap-4">
+                        <span>
+                            <span className="block font-semibold">Enable integrity automation</span>
+                            <span className="block text-xs text-muted mt-1">
+                                Background scan can delete bad files and trigger Arr re-search. Default off — use dry-run first.
+                            </span>
+                        </span>
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-plex"
+                            disabled={!enabled || !integrityEnabled}
+                            checked={integrityAutomationEnabled && integrityEnabled && enabled}
+                            onChange={(event) => onIntegrityAutomationEnabledChange(event.target.checked)}
+                        />
+                    </label>
+                    <label className="flex items-center justify-between gap-4">
+                        <span className="text-sm font-semibold">Require audio stream</span>
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-plex"
+                            disabled={!enabled || !integrityEnabled}
+                            checked={integrityRequireAudio && integrityEnabled && enabled}
+                            onChange={(event) => onIntegrityRequireAudioChange(event.target.checked)}
+                        />
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <label className="text-sm font-semibold">Max files per cycle
+                            <input
+                                type="number"
+                                min="1"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityMaxPerCycle}
+                                disabled={!enabled || !integrityEnabled}
+                                onChange={(event) => onIntegrityMaxPerCycleChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Decode window (sec)
+                            <input
+                                type="number"
+                                min="1"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityDecodeWindowSec}
+                                disabled={!enabled || !integrityEnabled}
+                                onChange={(event) => onIntegrityDecodeWindowSecChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Decode timeout (ms)
+                            <input
+                                type="number"
+                                min="1000"
+                                step="1000"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityDecodeTimeoutMs}
+                                disabled={!enabled || !integrityEnabled}
+                                onChange={(event) => onIntegrityDecodeTimeoutMsChange(Math.max(1000, Number(event.target.value) || 1000))}
+                            />
+                        </label>
+                    </div>
+                    <label className="text-sm font-semibold block">
+                        Path maps (Arr path → container path)
+                        <span className="block text-xs font-normal text-muted mt-1">
+                            One map per line as <code className="text-text">/arr/movies=/media/movies</code>
+                        </span>
+                        <textarea
+                            className="mt-2 w-full min-h-[90px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
+                            disabled={!enabled || !integrityEnabled}
+                            value={(integrityPathMaps || []).map((entry) => `${entry.from}=${entry.to}`).join('\n')}
+                            placeholder={'/movies=/media/movies\n/tv=/media/tv'}
+                            onChange={(event) => {
+                                const maps = event.target.value
+                                    .split('\n')
+                                    .map((line) => line.trim())
+                                    .filter(Boolean)
+                                    .map((line) => {
+                                        const splitAt = line.includes('=') ? line.indexOf('=') : line.indexOf('→');
+                                        if (splitAt < 0) return null;
+                                        const from = line.slice(0, splitAt).trim();
+                                        const to = line.slice(splitAt + 1).trim();
+                                        if (!from || !to) return null;
+                                        return { from, to };
+                                    })
+                                    .filter(Boolean) as Array<{ from: string; to: string }>;
+                                onIntegrityPathMapsChange(maps);
+                            }}
+                        />
+                    </label>
                 </div>
             </section>
         </div>

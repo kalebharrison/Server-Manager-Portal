@@ -14,6 +14,25 @@ export type UpgraderStatus = {
     arrConfigured: boolean;
     automationEnabled: boolean;
     cleanupAutomationEnabled?: boolean;
+    integrityEnabled?: boolean;
+    integrityAutomationEnabled?: boolean;
+    integrity?: {
+        scanning?: boolean;
+        setup?: {
+            enabled?: boolean;
+            automationEnabled?: boolean;
+            ready?: boolean;
+            tools?: { ffprobe?: boolean; ffmpeg?: boolean };
+            pathMapCount?: number;
+        };
+        lastScan?: {
+            at?: string;
+            scanned?: number;
+            skipped?: number;
+            passed?: number;
+            findingCount?: number;
+        } | null;
+    } | null;
     qcMetrics?: {
         wastedBytes?: number;
         killsByReason?: Record<string, number>;

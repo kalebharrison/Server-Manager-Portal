@@ -97,6 +97,13 @@ export type SettingsFormValues = {
         preferSeasonPacks: boolean;
     };
     qcCleanupAutomationEnabled: boolean;
+    qcIntegrityEnabled: boolean;
+    qcIntegrityAutomationEnabled: boolean;
+    qcIntegrityRequireAudio: boolean;
+    qcIntegrityPathMaps: Array<{ from: string; to: string }>;
+    qcIntegrityMaxPerCycle: number;
+    qcIntegrityDecodeWindowSec: number;
+    qcIntegrityDecodeTimeoutMs: number;
     qcMetaDlMinutes: number;
     qcStalledHours: number;
     qcCompletedNotImportingMinutes: number;

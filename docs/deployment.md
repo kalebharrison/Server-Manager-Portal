@@ -20,6 +20,28 @@ Open `http://localhost:2121` and complete the setup wizard.
 | `./config` | `/app/config` | Settings, users, caches, logs |
 | `./backup` | `/app/backup` | Rolling backup snapshots |
 
+### Optional: Quality Control integrity (media mounts)
+
+Library integrity validates Arr-known files with `ffprobe` / `ffmpeg` inside the portal container. Mount media **read-only** and configure Arr→container path maps in Settings → Quality Control → Library integrity.
+
+```yaml
+# example compose additions
+volumes:
+  - ../config:/app/config
+  - ../backup:/app/backup
+  - /mnt/user/movies:/media/movies:ro
+  - /mnt/user/tv:/media/tv:ro
+```
+
+Example path maps (Settings textarea):
+
+```text
+/movies=/media/movies
+/tv=/media/tv
+```
+
+Without these mounts/maps, Integrity stays available in the UI but scans report paths as not visible.
+
 ## Published image
 
 Images publish from the `beta` and `main` branches:

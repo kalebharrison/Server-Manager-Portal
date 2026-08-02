@@ -20,6 +20,9 @@ services:
     volumes:
       - ../config:/app/config
       - ../backup:/app/backup
+      # Optional QC integrity (read-only media + Settings path maps):
+      # - /mnt/user/movies:/media/movies:ro
+      # - /mnt/user/tv:/media/tv:ro
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:2121/api/config/public').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
