@@ -164,10 +164,19 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
 
                 <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                     <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
+                    <p className="text-xs text-muted">
+                        Removes doomed queue items from Sonarr/Radarr/Lidarr (blocklist + skip Arr auto-redownload),
+                        deletes them from qBit/SAB, then triggers <span className="text-text">one</span> re-search per title.
+                        Stalls are held when the downloader reports network down. Import failures only auto-clean for
+                        clear junk (sample, blocked extension, invalid media, encrypted archive, etc.).
+                        Manual cleanup on the Downloads tab still works when automation is off.
+                    </p>
                     <label className="flex items-center justify-between gap-4">
                         <span>
                             <span className="block font-semibold">Enable cleanup automation</span>
-                            <span className="block text-xs text-muted mt-1">Periodically remove doomed downloads from Arr + clients. Manual cleanup still works when off.</span>
+                            <span className="block text-xs text-muted mt-1">
+                                Run the cleanup pass on a timer. Leave off if you only want dry-run / manual live cleanup.
+                            </span>
                         </span>
                         <input
                             type="checkbox"
@@ -179,6 +188,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <label className="text-sm font-semibold">MetaDL minutes
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                qBit stuck fetching metadata this long before cleanup can remove it.
+                            </span>
                             <input
                                 type="number"
                                 min="1"
@@ -189,6 +201,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                         <label className="text-sm font-semibold">Stalled hours
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                How long a download must stay stalled before it is actionable. Skipped while qBit/SAB
+                                network health looks down.
+                            </span>
                             <input
                                 type="number"
                                 min="1"
@@ -199,6 +215,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                         <label className="text-sm font-semibold">Completed not importing (min)
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                Finished in the client but Arr still has not imported after this many minutes.
+                            </span>
                             <input
                                 type="number"
                                 min="1"
@@ -209,6 +228,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                         <label className="text-sm font-semibold">Research throttle (hours)
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                Minimum wait before QC asks Arr to search the same movie/episode/album again after a cleanup.
+                            </span>
                             <input
                                 type="number"
                                 min="1"
@@ -219,6 +241,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                         <label className="text-sm font-semibold">Snooze default (hours)
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                How long “Snooze” on the Downloads tab hides a row from cleanup.
+                            </span>
                             <input
                                 type="number"
                                 min="1"

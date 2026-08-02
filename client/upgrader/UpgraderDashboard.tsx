@@ -175,10 +175,15 @@ export const UpgraderDashboard: React.FC = () => {
             const instanceList = Array.isArray(profilesData?.instances)
                 ? profilesData.instances.map((instance: any) => ({
                     id: String(instance.id),
-                    name: String(instance.name || (instance.type === 'radarr' ? 'Radarr' : 'Sonarr')),
+                    name: String(instance.name || (
+                        instance.type === 'radarr' ? 'Radarr'
+                            : instance.type === 'lidarr' ? 'Lidarr'
+                                : 'Sonarr'
+                    )),
                     type: String(instance.type || 'arr'),
                 }))
                 : [];
+            // Prefer configured Arr libraries (includes Lidarr). Fall back to indexed / instances.
             setLibraries(configuredLibraries.length
                 ? configuredLibraries
                 : (indexedLibraries.length ? indexedLibraries : instanceList));
