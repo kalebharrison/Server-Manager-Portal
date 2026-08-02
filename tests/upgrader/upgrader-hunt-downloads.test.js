@@ -54,6 +54,23 @@ test('countDownloadsByLibrary uses unique downloadIds and index library keys', (
     assert.equal(downloadSlotKey({ downloadId: 'AAA' }), 'dl:aaa');
 });
 
+test('downloadSlotKey collapses season-pack episode rows without downloadId', () => {
+    const a = downloadSlotKey({
+        id: 1,
+        title: 'Catch-22.S01.2160p',
+        seriesId: 42,
+        arrInstanceId: 'sonarr-1',
+    });
+    const b = downloadSlotKey({
+        id: 2,
+        title: 'Catch-22.S01.2160p',
+        seriesId: 42,
+        arrInstanceId: 'sonarr-1',
+    });
+    assert.equal(a, b);
+    assert.match(a, /^pack:sonarr-1:42:/);
+});
+
 test('libraryKeyForQueueRecord falls back to root-folder classify', () => {
     const instance = {
         id: 'radarr-1',

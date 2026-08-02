@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     classifyUpgraderLibrary,
+    friendlyLibraryName,
     humanizeRootLabel,
     librariesForArrInstance,
     slugifyRootPath,
@@ -79,4 +80,19 @@ test('librariesForArrInstance lists one entry per configured root', () => {
     });
     assert.equal(single.length, 1);
     assert.equal(single[0].name, 'Radarr Main');
+});
+
+test('Lidarr defaults to Music (or path label)', () => {
+    assert.equal(friendlyLibraryName({ type: 'lidarr', name: 'Lidarr' }), 'Music');
+    assert.equal(friendlyLibraryName({ type: 'lidarr', name: 'Lidarr' }, 'Audio'), 'Audio');
+    assert.equal(friendlyLibraryName({ type: 'lidarr', name: 'Jazz Vault' }), 'Jazz Vault');
+
+    const libs = librariesForArrInstance({
+        id: 'l1',
+        type: 'lidarr',
+        name: 'Lidarr',
+        activeDirectory: '/media/music',
+    });
+    assert.equal(libs.length, 1);
+    assert.equal(libs[0].name, 'Music');
 });

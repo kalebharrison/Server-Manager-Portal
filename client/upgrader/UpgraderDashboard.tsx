@@ -41,13 +41,13 @@ import {
 type LibraryGroup<T> = { key: string; label: string; items: T[] };
 
 const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode; title: string }> = [
-    { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" />, title: 'Active downloads, timing, and recent activity' },
-    { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-4 h-4" />, title: 'How it hunts and dry-run preview' },
-    { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-4 h-4" />, title: 'Validate library files and replace corrupt ones' },
-    { id: 'downloads', label: 'Downloads', icon: <Download className="w-4 h-4" />, title: 'Download health, strikes, and cleanup' },
-    { id: 'clients', label: 'Clients', icon: <HardDrive className="w-4 h-4" />, title: 'Download client connection and blocked extensions' },
-    { id: 'rules', label: 'Rules', icon: <Ban className="w-4 h-4" />, title: 'Full policy: timing, caps, hunt targets, skip list' },
-    { id: 'activity', label: 'Activity', icon: <History className="w-4 h-4" />, title: 'Live hunt grabs and cleanup history' },
+    { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-3.5 h-3.5" />, title: 'Active downloads, timing, and recent activity' },
+    { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'How it hunts and dry-run preview' },
+    { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-3.5 h-3.5" />, title: 'Validate library files and replace corrupt ones' },
+    { id: 'downloads', label: 'Downloads', icon: <Download className="w-3.5 h-3.5" />, title: 'Download health, strikes, and cleanup' },
+    { id: 'clients', label: 'Clients', icon: <HardDrive className="w-3.5 h-3.5" />, title: 'Download client connection and blocked extensions' },
+    { id: 'rules', label: 'Rules', icon: <Ban className="w-3.5 h-3.5" />, title: 'Full policy: timing, caps, hunt targets, skip list' },
+    { id: 'activity', label: 'Activity', icon: <History className="w-3.5 h-3.5" />, title: 'Live hunt grabs and cleanup history' },
 ];
 
 const groupByLibrary = <T extends { arrInstanceName?: string | null; libraryName?: string | null; arrType?: string | null; libraryKey?: string | null }>(
@@ -60,13 +60,20 @@ const groupByLibrary = <T extends { arrInstanceName?: string | null; libraryName
         return groups.get(key)!;
     };
 
+    const fallbackLabel = (type?: string | null) => (
+        type === 'radarr' ? 'Radarr'
+            : type === 'sonarr' ? 'Sonarr'
+                : type === 'lidarr' ? 'Music'
+                    : 'Library'
+    );
+
     for (const lib of libraryOrder) {
         const key = lib.id || `${lib.type || 'arr'}:${lib.name || 'unknown'}`;
-        ensure(key, lib.name || (lib.type === 'radarr' ? 'Radarr' : lib.type === 'sonarr' ? 'Sonarr' : 'Library'));
+        ensure(key, lib.name || fallbackLabel(lib.type));
     }
 
     for (const entry of entries) {
-        const label = entry.libraryName || entry.arrInstanceName || (entry.arrType === 'radarr' ? 'Radarr' : entry.arrType === 'sonarr' ? 'Sonarr' : 'Library');
+        const label = entry.libraryName || entry.arrInstanceName || fallbackLabel(entry.arrType);
         const key = entry.libraryKey || `name:${label}`;
         ensure(key, label).items.push(entry);
     }
@@ -164,14 +171,14 @@ export const UpgraderDashboard: React.FC = () => {
             const indexedLibraries = Array.isArray(summaryData?.libraries)
                 ? summaryData.libraries.map((lib: any) => ({
                     id: String(lib.key || lib.id),
-                    name: String(lib.name || 'Library'),
+                    name: String(lib.name || 'Library').replace(/^Lidarr$/i, 'Music'),
                     type: String(lib.type || 'arr'),
                 }))
                 : [];
             const configuredLibraries = Array.isArray(profilesData?.libraries)
                 ? profilesData.libraries.map((lib: any) => ({
                     id: String(lib.key || lib.id),
-                    name: String(lib.name || 'Library'),
+                    name: String(lib.name || 'Library').replace(/^Lidarr$/i, 'Music'),
                     type: String(lib.type || 'arr'),
                 }))
                 : [];
@@ -180,13 +187,13 @@ export const UpgraderDashboard: React.FC = () => {
                     id: String(instance.id),
                     name: String(instance.name || (
                         instance.type === 'radarr' ? 'Radarr'
-                            : instance.type === 'lidarr' ? 'Lidarr'
+                            : instance.type === 'lidarr' ? 'Music'
                                 : 'Sonarr'
-                    )),
+                    )).replace(/^Lidarr$/i, 'Music'),
                     type: String(instance.type || 'arr'),
                 }))
                 : [];
-            // Prefer configured Arr libraries (includes Lidarr). Fall back to indexed / instances.
+            // Prefer configured Arr libraries (includes Music). Fall back to indexed / instances.
             setLibraries(configuredLibraries.length
                 ? configuredLibraries
                 : (indexedLibraries.length ? indexedLibraries : instanceList));
@@ -313,8 +320,10 @@ export const UpgraderDashboard: React.FC = () => {
     };
 
     const tabButtonClass = (tab: UpgraderTab) =>
-        `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
-            activeTab === tab ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'
+        `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
+            activeTab === tab
+                ? 'bg-plex text-background shadow-sm'
+                : 'text-muted hover:text-text hover:bg-white/5'
         }`;
 
     const maxActions = status?.maxActionsPerHour ?? 25;
@@ -333,35 +342,35 @@ export const UpgraderDashboard: React.FC = () => {
     return (
         <div className="page-shell">
             <ToastContainer toasts={toasts} setToasts={setToasts} />
-            <div className="flex flex-col gap-6">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <ArrowUpCircle className="w-8 h-8 text-plex" />
-                            <h1 className="page-title">Quality Control</h1>
+            <div className="flex flex-col gap-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2.5">
+                            <ArrowUpCircle className="w-6 h-6 text-plex shrink-0" />
+                            <h1 className="page-title text-2xl md:text-3xl">Quality Control</h1>
                         </div>
-                        <p className="text-sm text-muted max-w-2xl">
-                            Download health and Sonarr/Radarr/Lidarr upgrades. Hunt better releases and clean doomed queues.
+                        <p className="text-xs text-muted mt-1 sm:pl-[2.125rem]">
+                            Hunt better releases and clean doomed downloads.
                         </p>
                     </div>
                     {featureEnabled && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 shrink-0">
                             <button
                                 type="button"
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border text-text font-bold hover:border-plex/40 transition-colors disabled:opacity-50"
+                                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40 transition-colors disabled:opacity-50"
                                 onClick={handleDryRun}
                                 disabled={dryRunning || rebuilding || !!status?.rebuildInProgress}
                             >
-                                <FlaskConical className={`w-4 h-4 ${dryRunning ? 'animate-pulse' : ''}`} />
+                                <FlaskConical className={`w-3.5 h-3.5 ${dryRunning ? 'animate-pulse' : ''}`} />
                                 {dryRunning ? 'Dry run…' : 'Dry run hunt'}
                             </button>
                             <button
                                 type="button"
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-plex text-background font-bold hover:bg-plex-hover transition-colors disabled:opacity-50"
+                                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold hover:bg-plex-hover transition-colors disabled:opacity-50"
                                 onClick={handleRebuild}
                                 disabled={rebuilding || !!status?.rebuildInProgress}
                             >
-                                <RefreshCw className={`w-4 h-4 ${rebuilding || status?.rebuildInProgress ? 'animate-spin' : ''}`} />
+                                <RefreshCw className={`w-3.5 h-3.5 ${rebuilding || status?.rebuildInProgress ? 'animate-spin' : ''}`} />
                                 {rebuilding || status?.rebuildInProgress ? 'Refreshing…' : 'Refresh index'}
                             </button>
                         </div>
@@ -385,7 +394,7 @@ export const UpgraderDashboard: React.FC = () => {
 
                 {featureEnabled && (
                     <>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="inline-flex flex-wrap gap-0.5 p-1 rounded-xl border border-border/60 bg-card/40 w-fit max-w-full">
                             {CHROME_TABS.map((tab) => (
                                 <button
                                     key={tab.id}
@@ -405,7 +414,7 @@ export const UpgraderDashboard: React.FC = () => {
                                     onClick={() => handleTabChange('profiles')}
                                     title="Tune Arr custom formats / quality profiles"
                                 >
-                                    <Settings2 className="w-4 h-4" />
+                                    <Settings2 className="w-3.5 h-3.5" />
                                     Arr scores
                                 </button>
                             )}
@@ -732,7 +741,7 @@ export const UpgraderDashboard: React.FC = () => {
                                             <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
                                                 <li>
                                                     <span className="text-text font-semibold">Fair per library.</span>{' '}
-                                                    Each configured Arr root folder gets a turn every cycle (round-robin). Shared Sonarr/Radarr/Lidarr instances with multiple roots are hunted separately. Hunts also stop grabbing for a library once it already has {status?.maxDownloadsPerLibrary ?? 5} in-flight Arr downloads.
+                                                    Each configured Arr root folder gets a turn every cycle (round-robin). Shared Arr instances with multiple roots are hunted separately. Hunts also stop grabbing for a library once it already has {status?.maxDownloadsPerLibrary ?? 5} in-flight Arr downloads.
                                                 </li>
                                                 <li>
                                                     <span className="text-text font-semibold">Worst scores first inside each library.</span>{' '}

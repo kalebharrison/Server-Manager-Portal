@@ -8,6 +8,8 @@ type QcDownloadItem = {
     title?: string;
     reason?: string | null;
     arrType?: string | null;
+    arrInstanceId?: string | null;
+    downloadId?: string | null;
     upgrade?: boolean;
     size?: number;
     sizeleft?: number;
@@ -20,7 +22,7 @@ type QcDownloadItem = {
     safetyHold?: 'genericImport' | 'stallOutage' | string | null;
     status?: string | null;
     trackedDownloadState?: string | null;
-    client?: { client?: string; state?: string; name?: string } | null;
+    client?: { client?: string; state?: string; name?: string; hash?: string } | null;
     would?: {
         action?: string;
         reason?: string;
@@ -37,6 +39,15 @@ type Snapshot = {
     generatedAt?: string;
     dryRun?: boolean;
     count?: number;
+};
+
+type GroupedRow = {
+    groupKey: string;
+    keys: string[];
+    item: QcDownloadItem;
+    episodeCount: number;
+    anySelectable: boolean;
+    allSnoozed: boolean;
 };
 
 type Props = {
@@ -57,6 +68,32 @@ const safetyHoldLabel = (hold?: QcDownloadItem['safetyHold']) => {
     if (hold === 'stallOutage') return 'held: client/network outage guard';
     return null;
 };
+
+/** Collapse Sonarr season-pack episode rows into one download. */
+const downloadUiGroupKey = (item: QcDownloadItem) => {
+    const downloadId = String(item.downloadId || '').trim().toLowerCase();
+    if (downloadId) return `dl:${downloadId}`;
+    const hash = String(item.client?.hash || '').trim().toLowerCase();
+    if (hash) return `hash:${hash}`;
+    const clientName = String(item.client?.name || '').trim().toLowerCase();
+    if (clientName) return `client:${item.arrType || ''}:${item.arrInstanceId || ''}:${clientName}`;
+    const title = String(item.title || '').trim().toLowerCase();
+    if (title) return `title:${item.arrType || ''}:${item.arrInstanceId || ''}:${title}`;
+    return `key:${item.key}`;
+};
+
+const pickRepresentative = (items: QcDownloadItem[]) => (
+    [...items].sort((a, b) => {
+        const as = Number(a.would?.strikes ?? a.strikes ?? 0);
+        const bs = Number(b.would?.strikes ?? b.strikes ?? 0);
+        if (bs !== as) return bs - as;
+        if (Boolean(a.killReady || a.would?.kill) !== Boolean(b.killReady || b.would?.kill)) {
+            return (a.killReady || a.would?.kill) ? -1 : 1;
+        }
+        if (Boolean(a.actionable) !== Boolean(b.actionable)) return a.actionable ? -1 : 1;
+        return 0;
+    })[0]
+);
 
 export const QcDownloadsPanel: React.FC<Props> = ({
     onToast,
@@ -94,20 +131,48 @@ export const QcDownloadsPanel: React.FC<Props> = ({
         ));
     }, [snapshot, dryPreview]);
 
+    const groupedRows = useMemo((): GroupedRow[] => {
+        const map = new Map<string, QcDownloadItem[]>();
+        for (const item of rows) {
+            const groupKey = downloadUiGroupKey(item);
+            if (!map.has(groupKey)) map.set(groupKey, []);
+            map.get(groupKey)!.push(item);
+        }
+        return [...map.entries()].map(([groupKey, items]) => {
+            const keys = items.map((item) => item.key).filter(Boolean);
+            return {
+                groupKey,
+                keys,
+                item: pickRepresentative(items),
+                episodeCount: items.length,
+                anySelectable: items.some((item) => item.actionable || item.strikeEligible),
+                allSnoozed: items.every((item) => item.snoozed),
+            };
+        });
+    }, [rows]);
+
     const selectableKeys = useMemo(
-        () => rows.filter((item) => (item.actionable || item.strikeEligible) && item.key).map((item) => item.key),
-        [rows],
+        () => groupedRows.filter((row) => row.anySelectable).flatMap((row) => row.keys),
+        [groupedRows],
     );
     const actionableKeys = useMemo(
         () => rows.filter((item) => item.actionable && item.key).map((item) => item.key),
         [rows],
     );
+    const selectedGroupCount = useMemo(
+        () => groupedRows.filter((row) => row.keys.some((key) => selected.has(key))).length,
+        [groupedRows, selected],
+    );
 
-    const toggleKey = (key: string) => {
+    const toggleGroup = (keys: string[]) => {
         setSelected((prev) => {
             const next = new Set(prev);
-            if (next.has(key)) next.delete(key);
-            else next.add(key);
+            const allSelected = keys.length > 0 && keys.every((key) => next.has(key));
+            if (allSelected) {
+                for (const key of keys) next.delete(key);
+            } else {
+                for (const key of keys) next.add(key);
+            }
             return next;
         });
     };
@@ -134,7 +199,9 @@ export const QcDownloadsPanel: React.FC<Props> = ({
 
     const handleLiveCleanup = async () => {
         const keys = selected.size > 0 ? [...selected] : undefined;
-        const label = keys ? `${keys.length} selected` : 'all actionable';
+        const label = keys
+            ? `${selectedGroupCount || keys.length} selected download${(selectedGroupCount || keys.length) === 1 ? '' : 's'}`
+            : 'all actionable';
         if (!window.confirm(`Live cleanup will remove ${label} doomed downloads from Arr + clients. Continue?`)) {
             return;
         }
@@ -161,12 +228,12 @@ export const QcDownloadsPanel: React.FC<Props> = ({
         }
     };
 
-    const handleSnooze = async (key: string) => {
+    const handleSnooze = async (keys: string[]) => {
         try {
-            await apiFetch('/api/upgrader/qc/snooze', {
+            await Promise.all(keys.map((key) => apiFetch('/api/upgrader/qc/snooze', {
                 method: 'POST',
                 body: JSON.stringify({ key, hours: snoozeDefaultHours }),
-            });
+            })));
             onToast(`Snoozed for ${snoozeDefaultHours}h.`, 'success');
             await loadSnapshot(true);
         } catch (e: any) {
@@ -174,12 +241,12 @@ export const QcDownloadsPanel: React.FC<Props> = ({
         }
     };
 
-    const handleClearSnooze = async (key: string) => {
+    const handleClearSnooze = async (keys: string[]) => {
         try {
-            await apiFetch('/api/upgrader/qc/snooze/clear', {
+            await Promise.all(keys.map((key) => apiFetch('/api/upgrader/qc/snooze/clear', {
                 method: 'POST',
                 body: JSON.stringify({ key }),
-            });
+            })));
             onToast('Snooze cleared.', 'success');
             await loadSnapshot(true);
         } catch (e: any) {
@@ -205,12 +272,12 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                         <p className="text-xs text-muted mt-1">
                             {dryPreview
                                 ? `Dry-run preview · ${dryPreview.filter((item) => item.killReady || item.would?.kill).length} would kill · ${dryPreview.length} strike-eligible`
-                                : `${actionableKeys.length} ready to kill · ${selectableKeys.length} strike-eligible`}
+                                : `${actionableKeys.length} ready to kill · ${selectableKeys.length} strike-eligible · ${groupedRows.length} downloads`}
                             {snapshot?.generatedAt ? ` · ${new Date(snapshot.generatedAt).toLocaleString()}` : ''}
                         </p>
                         <p className="text-[11px] text-muted mt-1 max-w-2xl">
                             Cleanup uses strikes: a problem must be seen across multiple healthy scans before a kill.
-                            Manual Live cleanup on a selection can still force-remove earlier. Stalls skip while qBit/SAB network looks down.
+                            Season packs are grouped as one download. Manual Live cleanup on a selection can still force-remove earlier.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -239,7 +306,9 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                             disabled={busy || (actionableKeys.length === 0 && selected.size === 0)}
                         >
                             <Trash2 className="w-3.5 h-3.5" />
-                            {selected.size > 0 ? `Force cleanup (${selected.size})` : 'Live cleanup'}
+                            {selected.size > 0
+                                ? `Force cleanup (${selectedGroupCount || selected.size})`
+                                : 'Live cleanup'}
                         </button>
                     </div>
                 </div>
@@ -254,18 +323,18 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                     </button>
                 )}
 
-                {rows.length === 0 ? (
+                {groupedRows.length === 0 ? (
                     <p className="text-sm text-muted py-6 text-center">
                         No flagged downloads. Queues look healthy.
                     </p>
                 ) : (
                     <div className="space-y-2">
-                        {rows.map((item) => {
-                            const key = item.key || item.title || '';
-                            const isSelected = selected.has(key);
+                        {groupedRows.map((row) => {
+                            const { item, keys, episodeCount } = row;
+                            const isSelected = keys.length > 0 && keys.every((key) => selected.has(key));
                             return (
                                 <div
-                                    key={key}
+                                    key={row.groupKey}
                                     className={`rounded-lg border px-3 py-2 ${
                                         item.actionable
                                             ? 'border-amber-500/25 bg-amber-500/5'
@@ -274,12 +343,12 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                 >
                                     <div className="flex flex-wrap items-start justify-between gap-2">
                                         <label className="flex items-start gap-2 min-w-0 flex-1 cursor-pointer">
-                                            {(item.actionable || item.strikeEligible) && (
+                                            {row.anySelectable && (
                                                 <input
                                                     type="checkbox"
                                                     className="mt-1 h-3.5 w-3.5 accent-plex shrink-0"
                                                     checked={isSelected}
-                                                    onChange={() => toggleKey(key)}
+                                                    onChange={() => toggleGroup(keys)}
                                                 />
                                             )}
                                             <div className="min-w-0">
@@ -288,6 +357,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                 </div>
                                                 <div className="text-[11px] text-muted mt-0.5 break-words">
                                                     {[
+                                                        episodeCount > 1 ? `${episodeCount} episodes` : null,
                                                         item.reason || (item.would?.reason ?? null),
                                                         (item.maxStrikes || item.would?.strikes != null)
                                                             ? `strikes ${(item.would?.strikes ?? item.strikes ?? 0)}/${item.maxStrikes ?? 3}`
@@ -308,11 +378,11 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                             </div>
                                         </label>
                                         <div className="flex items-center gap-2 shrink-0">
-                                            {item.snoozed ? (
+                                            {row.allSnoozed ? (
                                                 <button
                                                     type="button"
                                                     className="inline-flex items-center gap-1 text-[11px] font-bold text-plex"
-                                                    onClick={() => handleClearSnooze(key)}
+                                                    onClick={() => handleClearSnooze(keys)}
                                                 >
                                                     <X className="w-3 h-3" />
                                                     Clear snooze
@@ -321,7 +391,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                 <button
                                                     type="button"
                                                     className="inline-flex items-center gap-1 text-[11px] font-bold text-muted hover:text-text"
-                                                    onClick={() => handleSnooze(key)}
+                                                    onClick={() => handleSnooze(keys)}
                                                 >
                                                     <Clock className="w-3 h-3" />
                                                     Snooze {snoozeDefaultHours}h
