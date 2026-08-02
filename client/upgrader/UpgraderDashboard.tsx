@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
-import { formatSizeCeil } from '../shared/format';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
 import { UpgraderHistoryPanel } from './UpgraderHistoryPanel';
@@ -23,6 +22,7 @@ import { UpgraderProfilesTab } from './UpgraderProfilesTab';
 import { QcClientsPanel } from './QcClientsPanel';
 import { QcDownloadsPanel } from './QcDownloadsPanel';
 import { QcIntegrityPanel } from './QcIntegrityPanel';
+import { QcPolicySummary } from './QcPolicySummary';
 import { QcRulesPanel } from './QcRulesPanel';
 import type {
     UpgraderAuditEntry,
@@ -41,12 +41,12 @@ import {
 type LibraryGroup<T> = { key: string; label: string; items: T[] };
 
 const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode; title: string }> = [
-    { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" />, title: 'Status and recent activity' },
+    { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" />, title: 'Active downloads, timing, and recent activity' },
     { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-4 h-4" />, title: 'How it hunts and dry-run preview' },
     { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-4 h-4" />, title: 'Validate library files and replace corrupt ones' },
-    { id: 'downloads', label: 'Downloads', icon: <Download className="w-4 h-4" />, title: 'Download health and cleanup' },
+    { id: 'downloads', label: 'Downloads', icon: <Download className="w-4 h-4" />, title: 'Download health, strikes, and cleanup' },
     { id: 'clients', label: 'Clients', icon: <HardDrive className="w-4 h-4" />, title: 'Download client connection and blocked extensions' },
-    { id: 'rules', label: 'Rules', icon: <Ban className="w-4 h-4" />, title: 'Cleanup thresholds and skip list' },
+    { id: 'rules', label: 'Rules', icon: <Ban className="w-4 h-4" />, title: 'Full policy: timing, caps, hunt targets, skip list' },
     { id: 'activity', label: 'Activity', icon: <History className="w-4 h-4" />, title: 'Live hunt grabs and cleanup history' },
 ];
 
@@ -324,7 +324,11 @@ export const UpgraderDashboard: React.FC = () => {
     const prefs = status?.preferences;
     const killsByReason = status?.qcMetrics?.killsByReason || {};
     const killEntries = Object.entries(killsByReason).filter(([, n]) => Number(n) > 0);
-    const wastedBytes = Number(status?.qcMetrics?.wastedBytes || 0);
+    const activeByLibrary = Array.isArray(status?.activeDownloadsByLibrary)
+        ? status!.activeDownloadsByLibrary!
+        : [];
+    const activeDownloadTotal = Number(status?.activeDownloadTotal) || 0;
+    const downloadCap = Math.max(1, Number(status?.maxDownloadsPerLibrary) || 5);
 
     return (
         <div className="page-shell">
@@ -413,49 +417,60 @@ export const UpgraderDashboard: React.FC = () => {
                             <>
                                 {activeTab === 'overview' && (
                                     <div className="flex flex-col gap-6">
-                                        {!status?.automationEnabled && (
-                                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                                <p className="text-sm text-amber-100">
-                                                    Auto-hunt is off. Nothing will be grabbed until you enable it.
-                                                </p>
-                                                <a
-                                                    href={portalUrl('/settings#upgrader')}
-                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
-                                                >
-                                                    <SettingsIcon className="w-3.5 h-3.5" />
-                                                    Open Settings
-                                                </a>
-                                            </div>
-                                        )}
-                                        {!status?.cleanupAutomationEnabled && (
-                                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                                <p className="text-sm text-amber-100">
-                                                    Download cleanup automation is off. Manual cleanup still works on the Downloads tab.
-                                                </p>
-                                                <a
-                                                    href={portalUrl('/settings#upgrader')}
-                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
-                                                >
-                                                    <SettingsIcon className="w-3.5 h-3.5" />
-                                                    Open Settings
-                                                </a>
+                                        {(!status?.automationEnabled || !status?.cleanupAutomationEnabled) && (
+                                            <div className="space-y-3">
+                                                {!status?.automationEnabled && (
+                                                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                        <p className="text-sm text-amber-100">
+                                                            Auto-hunt is off. Nothing will be grabbed until you enable it.
+                                                        </p>
+                                                        <a
+                                                            href={portalUrl('/settings#upgrader')}
+                                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
+                                                        >
+                                                            <SettingsIcon className="w-3.5 h-3.5" />
+                                                            Open Settings
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                {!status?.cleanupAutomationEnabled && (
+                                                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                        <p className="text-sm text-amber-100">
+                                                            Download cleanup automation is off. Manual cleanup still works on the Downloads tab.
+                                                        </p>
+                                                        <a
+                                                            href={portalUrl('/settings#upgrader')}
+                                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
+                                                        >
+                                                            <SettingsIcon className="w-3.5 h-3.5" />
+                                                            Open Settings
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
                                         <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
-                                            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Status</h2>
+                                            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Automation</h2>
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
                                                     <div className="text-[11px] uppercase tracking-wide text-muted">Auto-hunt</div>
                                                     <div className={`mt-1 text-lg font-bold ${status?.automationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
                                                         {status?.automationEnabled ? 'On' : 'Off'}
                                                     </div>
+                                                    <p className="mt-1 text-[11px] text-muted">
+                                                        Missing TV {status?.huntMissingEpisodes === false ? 'off' : 'on'}
+                                                        {' · '}Movies {status?.huntAvailableMovies === false ? 'off' : 'on'}
+                                                    </p>
                                                 </div>
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
                                                     <div className="text-[11px] uppercase tracking-wide text-muted">Cleanup</div>
                                                     <div className={`mt-1 text-lg font-bold ${status?.cleanupAutomationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
                                                         {status?.cleanupAutomationEnabled ? 'On' : 'Off'}
                                                     </div>
+                                                    <p className="mt-1 text-[11px] text-muted">
+                                                        {status?.qcThresholds?.maxStrikes ?? 3} strikes to kill
+                                                    </p>
                                                 </div>
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
                                                     <div className="text-[11px] uppercase tracking-wide text-muted">Integrity</div>
@@ -466,6 +481,13 @@ export const UpgraderDashboard: React.FC = () => {
                                                                 ? 'Auto'
                                                                 : 'Manual'}
                                                     </div>
+                                                    <p className="mt-1 text-[11px] text-muted">
+                                                        {status?.integrity?.setup?.ready
+                                                            ? 'Tools ready'
+                                                            : status?.integrityEnabled
+                                                                ? 'Check mounts/tools'
+                                                                : 'Disabled'}
+                                                    </p>
                                                 </div>
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
                                                     <div className="text-[11px] uppercase tracking-wide text-muted">Grabs this hour</div>
@@ -473,15 +495,16 @@ export const UpgraderDashboard: React.FC = () => {
                                                         {usedActions}/{maxActions}
                                                         <span className="ml-1 text-xs font-semibold text-muted">({remainingActions} left)</span>
                                                     </div>
-                                                </div>
-                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Wasted bytes</div>
-                                                    <div className="mt-1 text-lg font-bold text-text">
-                                                        {formatSizeCeil(wastedBytes)}
-                                                    </div>
+                                                    <p className="mt-1 text-[11px] text-muted">
+                                                        Cap {downloadCap} DLs / library
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Active downloads</div>
+                                                    <div className="mt-1 text-lg font-bold text-text">{activeDownloadTotal}</div>
+                                                </div>
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
                                                     <div className="text-[11px] uppercase tracking-wide text-muted">Index</div>
                                                     <div className="mt-1 text-lg font-bold text-text">
@@ -505,12 +528,63 @@ export const UpgraderDashboard: React.FC = () => {
                                             </div>
                                             {summary && (
                                                 <p className="text-xs text-muted">
-                                                    {summary.upgradeCandidates ?? 0} titles with files on disk
+                                                    {summary.upgradeCandidates ?? 0} titles with files
                                                     {summary.avgCustomFormatScore != null ? ` · avg Arr score ${summary.avgCustomFormatScore}` : ''}
                                                     {' · '}min score gain {minDelta}
-                                                    {summary.scoreUnknownCount ? ` · ${summary.scoreUnknownCount} shows still unscored` : ''}
+                                                    {summary.scoreUnknownCount ? ` · ${summary.scoreUnknownCount} shows unscored` : ''}
                                                 </p>
                                             )}
+                                        </section>
+
+                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
+                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <div>
+                                                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Active downloads by library</h2>
+                                                    <p className="text-xs text-muted mt-1">
+                                                        In-flight Arr queue items vs hunt cap ({downloadCap} / library).
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="text-xs font-bold text-plex hover:underline"
+                                                    onClick={() => handleTabChange('downloads')}
+                                                >
+                                                    Open Downloads
+                                                </button>
+                                            </div>
+                                            {activeByLibrary.length === 0 ? (
+                                                <p className="text-xs text-muted">No library download counts yet. Refresh after Arr queues are reachable.</p>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    {activeByLibrary.map((lib) => {
+                                                        const pct = Math.min(100, Math.round((lib.active / Math.max(1, lib.cap)) * 100));
+                                                        const atCap = lib.active >= lib.cap;
+                                                        return (
+                                                            <div key={lib.key} className="rounded-xl border border-border/50 bg-background/40 px-3 py-2.5">
+                                                                <div className="flex items-center justify-between gap-3 text-xs">
+                                                                    <span className="font-semibold text-text truncate">{lib.label}</span>
+                                                                    <span className={`font-bold shrink-0 ${atCap ? 'text-amber-200' : 'text-text'}`}>
+                                                                        {lib.active}/{lib.cap}
+                                                                        <span className="ml-1 font-semibold text-muted">
+                                                                            ({lib.remaining} free)
+                                                                        </span>
+                                                                    </span>
+                                                                </div>
+                                                                <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                                                    <div
+                                                                        className={`h-full rounded-full ${atCap ? 'bg-amber-400' : 'bg-plex'}`}
+                                                                        style={{ width: `${pct}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </section>
+
+                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
+                                            <QcPolicySummary status={status} compact />
                                         </section>
 
                                         <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
@@ -554,6 +628,14 @@ export const UpgraderDashboard: React.FC = () => {
                                             >
                                                 <Download className="w-3.5 h-3.5" />
                                                 Downloads
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
+                                                onClick={() => handleTabChange('rules')}
+                                            >
+                                                <Ban className="w-3.5 h-3.5" />
+                                                Full policy
                                             </button>
                                             <button
                                                 type="button"

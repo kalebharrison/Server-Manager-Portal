@@ -16,6 +16,8 @@ export type UpgraderStatus = {
     cleanupAutomationEnabled?: boolean;
     integrityEnabled?: boolean;
     integrityAutomationEnabled?: boolean;
+    huntMissingEpisodes?: boolean;
+    huntAvailableMovies?: boolean;
     integrity?: {
         scanning?: boolean;
         setup?: {
@@ -34,7 +36,6 @@ export type UpgraderStatus = {
         } | null;
     } | null;
     qcMetrics?: {
-        wastedBytes?: number;
         killsByReason?: Record<string, number>;
         lastCleanupAt?: string | null;
     };
@@ -42,9 +43,19 @@ export type UpgraderStatus = {
         metaDlMinutes: number;
         stalledHours: number;
         completedNotImportingMinutes: number;
+        orphanGraceMinutes?: number;
+        maxStrikes?: number;
         researchThrottleHours: number;
         snoozeDefaultHours: number;
     };
+    activeDownloadsByLibrary?: Array<{
+        key: string;
+        label: string;
+        active: number;
+        cap: number;
+        remaining: number;
+    }>;
+    activeDownloadTotal?: number;
     clientsConfigured?: { qbit: boolean; sab: boolean };
     discordDigestEnabled?: boolean;
     preferImportDiscordOnly?: boolean;

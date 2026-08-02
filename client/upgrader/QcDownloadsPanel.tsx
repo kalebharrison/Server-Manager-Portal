@@ -33,7 +33,7 @@ type QcDownloadItem = {
 type Snapshot = {
     items?: QcDownloadItem[];
     orphans?: QcDownloadItem[];
-    metricsPreview?: { actionableCount?: number; wastedBytes?: number };
+    metricsPreview?: { actionableCount?: number; strikeEligibleCount?: number };
     generatedAt?: string;
     dryRun?: boolean;
     count?: number;
