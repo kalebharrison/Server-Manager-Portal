@@ -194,7 +194,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                         </p>
                         <p className="text-[11px] text-muted mt-1 max-w-2xl">
                             Cleanup only auto-selects doomed import failures (sample, blocked extension, invalid media, encrypted archive, etc.)
-                            and stalls when the download client looks healthy — not during ISP/client outages.
+                            and stalls when the downloader reports network up (qBit connection/DHT, SAB DNS/servers) — not during outages.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">

@@ -6,7 +6,6 @@ import {
     findDuplicates,
     findOrphans,
     isDoomedImportFailure,
-    isGlobalStallOutage,
     isReasonActionable,
     isResearchThrottled,
     isSeedingProtected,
@@ -120,54 +119,44 @@ test('only doomed import failures are actionable', () => {
     }), true);
 });
 
-test('global stall outage holds stall kills when all active downloads are idle', () => {
-    const items = [
-        { client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.2, dlspeed: 0 },
-        { client: 'qbit', id: 'b', state: 'downloading', progress: 0.5, dlspeed: 0 },
-    ];
-    assert.equal(isGlobalStallOutage(items), true);
-    assert.equal(isStallActionable({
-        clientItem: items[0],
-        clients: { qbit: true, sab: false },
-        clientItems: items,
-        qbitConfigured: true,
-        sabConfigured: false,
-    }), false);
-
-    const recovering = [
-        { client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.2, dlspeed: 0 },
-        { client: 'qbit', id: 'b', state: 'downloading', progress: 0.5, dlspeed: 120000 },
-    ];
-    assert.equal(isGlobalStallOutage(recovering), false);
-    assert.equal(isStallActionable({
-        clientItem: recovering[0],
-        clients: { qbit: true, sab: false },
-        clientItems: recovering,
-        qbitConfigured: true,
-        sabConfigured: false,
-    }), true);
-});
-
 test('stall kills are held when download client is configured but unreachable', () => {
     assert.equal(isStallActionable({
         clientItem: { client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.1, dlspeed: 0 },
         clients: { qbit: false, sab: false },
-        clientItems: [],
+        networkHealth: { qbit: { ok: false, reason: 'unreachable' } },
         qbitConfigured: true,
         sabConfigured: false,
     }), false);
 });
 
-test('single stalled torrent remains actionable when client is healthy', () => {
-    const lonely = [{ client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.1, dlspeed: 0 }];
-    assert.equal(isGlobalStallOutage(lonely), false);
+test('stall kills are held when qBit reports network down even if multiple torrents are idle', () => {
     assert.equal(isStallActionable({
-        clientItem: lonely[0],
+        clientItem: { client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.2, dlspeed: 0 },
         clients: { qbit: true, sab: false },
-        clientItems: lonely,
+        networkHealth: { qbit: { ok: false, reason: 'dht_dead', dhtNodes: 0 } },
+        qbitConfigured: true,
+        sabConfigured: false,
+    }), false);
+});
+
+test('stall kills proceed when downloader network is up even if all speeds are zero', () => {
+    assert.equal(isStallActionable({
+        clientItem: { client: 'qbit', id: 'a', state: 'stalledDL', progress: 0.2, dlspeed: 0 },
+        clients: { qbit: true, sab: false },
+        networkHealth: { qbit: { ok: true, connectionStatus: 'firewalled', dhtNodes: 40 } },
         qbitConfigured: true,
         sabConfigured: false,
     }), true);
+});
+
+test('stall kills are held when SAB DNS/servers look down', () => {
+    assert.equal(isStallActionable({
+        clientItem: { client: 'sab', id: 'nzo1', state: 'Downloading', progress: 0.1 },
+        clients: { qbit: false, sab: true },
+        networkHealth: { sab: { ok: false, reason: 'dns_failed', dnslookup: 'Failed' } },
+        qbitConfigured: false,
+        sabConfigured: true,
+    }), false);
 });
 
 test('classifyQueueItem detects completedNotImporting past threshold', () => {
