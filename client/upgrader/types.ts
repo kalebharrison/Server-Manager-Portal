@@ -212,6 +212,38 @@ export type UpgraderUpgradePreviewResult = {
     totals: { succeeded: number; failed: number };
 };
 
+export type UpgraderHuntResult = {
+    ratingKey: string;
+    title: string;
+    success: boolean;
+    dryRun?: boolean;
+    grabbed?: boolean;
+    skipped?: boolean;
+    reason?: string | null;
+    arrInstanceName?: string | null;
+    libraryName?: string | null;
+    libraryKey?: string | null;
+    thumbUrl?: string | null;
+    currentScore?: number | null;
+    candidateScore?: number | null;
+    scoreDelta?: number | null;
+    releaseTitle?: string | null;
+    fullSeason?: boolean;
+    seasonNumber?: number | null;
+};
+
+export type UpgraderHuntResponse = {
+    ran: boolean;
+    dryRun?: boolean;
+    reason?: string;
+    results: UpgraderHuntResult[];
+    grabbed?: number;
+    wouldGrab?: number;
+    searched?: number;
+    libraries?: Array<{ key: string; label: string; considered: number; available: number }>;
+    maxPerLibrary?: number;
+};
+
 export type UpgraderAuditEntry = {
     id: string;
     at?: string;

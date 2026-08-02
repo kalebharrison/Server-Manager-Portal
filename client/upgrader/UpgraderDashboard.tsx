@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowUpCircle, RefreshCw, Settings as SettingsIcon, History, Ban, Settings2, LayoutDashboard } from 'lucide-react';
+import { ArrowUpCircle, RefreshCw, Settings as SettingsIcon, History, Ban, Settings2, LayoutDashboard, FlaskConical } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
@@ -7,13 +7,47 @@ import type { ToastMessage } from '../shared/types';
 import { UpgraderHistoryPanel } from './UpgraderHistoryPanel';
 import { UpgraderExclusionsPanel } from './UpgraderExclusionsPanel';
 import { UpgraderProfilesTab } from './UpgraderProfilesTab';
-import type { UpgraderAuditEntry, UpgraderStatus, UpgraderSummary } from './types';
+import type {
+    UpgraderAuditEntry,
+    UpgraderHuntResponse,
+    UpgraderHuntResult,
+    UpgraderStatus,
+    UpgraderSummary,
+} from './types';
 import {
     readUpgraderUrl,
     replaceUpgraderUrl,
     type UpgraderProfilesUrlState,
     type UpgraderTab,
 } from './upgraderUrlState';
+
+type LibraryGroup<T> = { key: string; label: string; items: T[] };
+
+const groupByLibrary = <T extends { arrInstanceName?: string | null; libraryName?: string | null; arrType?: string | null; libraryKey?: string | null }>(
+    entries: T[],
+    libraryOrder: Array<{ id?: string; name?: string; type?: string }> = [],
+): LibraryGroup<T>[] => {
+    const groups = new Map<string, LibraryGroup<T>>();
+    const ensure = (key: string, label: string) => {
+        if (!groups.has(key)) groups.set(key, { key, label, items: [] });
+        return groups.get(key)!;
+    };
+
+    for (const lib of libraryOrder) {
+        const key = `${lib.type || 'arr'}:${lib.id || lib.name || 'unknown'}`;
+        ensure(key, lib.name || (lib.type === 'radarr' ? 'Radarr' : lib.type === 'sonarr' ? 'Sonarr' : 'Library'));
+    }
+
+    for (const entry of entries) {
+        const label = entry.libraryName || entry.arrInstanceName || (entry.arrType === 'radarr' ? 'Radarr' : entry.arrType === 'sonarr' ? 'Sonarr' : 'Library');
+        const key = entry.libraryKey || `name:${label}`;
+        ensure(key, label).items.push(entry);
+    }
+
+    const ordered = [...groups.values()];
+    ordered.sort((a, b) => a.label.localeCompare(b.label));
+    return ordered;
+};
 
 const formatIndexAge = (generatedAt: string | null) => {
     if (!generatedAt) return 'never built';
@@ -42,9 +76,11 @@ export const UpgraderDashboard: React.FC = () => {
     const [status, setStatus] = useState<UpgraderStatus | null>(null);
     const [summary, setSummary] = useState<UpgraderSummary | null>(null);
     const [recentGrabs, setRecentGrabs] = useState<UpgraderAuditEntry[]>([]);
+    const [libraries, setLibraries] = useState<Array<{ id: string; name: string; type: string }>>([]);
+    const [dryRun, setDryRun] = useState<UpgraderHuntResponse | null>(null);
+    const [dryRunning, setDryRunning] = useState(false);
     const [activeTab, setActiveTab] = useState<UpgraderTab>(initialUrl.tab);
     const [profilesUrl, setProfilesUrl] = useState<UpgraderProfilesUrlState>(initialUrl.profiles);
-    const [arrInstanceCount, setArrInstanceCount] = useState(0);
 
     const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
         setToasts((prev) => pushToast(prev, message, type === 'info' ? 'success' : type));
@@ -96,11 +132,18 @@ export const UpgraderDashboard: React.FC = () => {
 
             setStatus(statusData || null);
             setSummary(summaryData || null);
-            setArrInstanceCount(Array.isArray(profilesData?.instances) ? profilesData.instances.length : 0);
+            const instanceList = Array.isArray(profilesData?.instances)
+                ? profilesData.instances.map((instance: any) => ({
+                    id: String(instance.id),
+                    name: String(instance.name || (instance.type === 'radarr' ? 'Radarr' : 'Sonarr')),
+                    type: String(instance.type || 'arr'),
+                }))
+                : [];
+            setLibraries(instanceList);
 
             const grabs = (Array.isArray(auditData?.entries) ? auditData.entries : [])
                 .filter((entry: UpgraderAuditEntry) => entry.action === 'upgrade' && entry.success !== false && !entry.dryRun)
-                .slice(0, 12);
+                .slice(0, 48);
             setRecentGrabs(grabs);
         } catch (e: any) {
             if (isUpgraderDisabledError(e)) {
@@ -144,6 +187,46 @@ export const UpgraderDashboard: React.FC = () => {
         }
     };
 
+    const handleDryRun = async () => {
+        setDryRunning(true);
+        try {
+            const result = await apiFetch('/api/upgrader/hunt', {
+                method: 'POST',
+                body: JSON.stringify({ dryRun: true }),
+            }) as UpgraderHuntResponse;
+            setDryRun(result || null);
+            if (!result?.ran) {
+                addToast(result?.reason || 'Dry run did not run.', 'error');
+            } else {
+                addToast(
+                    `Dry run: ${result.wouldGrab || 0} would grab · ${result.searched || 0} searched across ${(result.libraries || []).length} libraries.`,
+                    'success',
+                );
+            }
+        } catch (e: any) {
+            addToast(e.message || 'Dry run failed', 'error');
+        } finally {
+            setDryRunning(false);
+        }
+    };
+
+    const grabsByLibrary = useMemo(
+        () => groupByLibrary(
+            recentGrabs.map((entry) => ({
+                ...entry,
+                libraryName: entry.arrInstanceName,
+                libraryKey: entry.arrInstanceId ? `${entry.arrType || 'arr'}:${entry.arrInstanceId}` : undefined,
+            })),
+            libraries,
+        ),
+        [recentGrabs, libraries],
+    );
+
+    const dryRunByLibrary = useMemo(() => {
+        const actionable = (dryRun?.results || []).filter((entry) => entry.success);
+        return groupByLibrary(actionable, libraries);
+    }, [dryRun, libraries]);
+
     const tabButtonClass = (tab: UpgraderTab) =>
         `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
             activeTab === tab ? 'bg-plex text-background border-plex' : 'bg-white/5 text-muted border-white/10 hover:text-text'
@@ -170,15 +253,26 @@ export const UpgraderDashboard: React.FC = () => {
                         </p>
                     </div>
                     {featureEnabled && (
-                        <button
-                            type="button"
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-plex text-background font-bold hover:bg-plex-hover transition-colors disabled:opacity-50"
-                            onClick={handleRebuild}
-                            disabled={rebuilding || !!status?.rebuildInProgress}
-                        >
-                            <RefreshCw className={`w-4 h-4 ${rebuilding || status?.rebuildInProgress ? 'animate-spin' : ''}`} />
-                            {rebuilding || status?.rebuildInProgress ? 'Refreshing…' : 'Refresh index'}
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border text-text font-bold hover:border-plex/40 transition-colors disabled:opacity-50"
+                                onClick={handleDryRun}
+                                disabled={dryRunning || rebuilding || !!status?.rebuildInProgress}
+                            >
+                                <FlaskConical className={`w-4 h-4 ${dryRunning ? 'animate-pulse' : ''}`} />
+                                {dryRunning ? 'Dry run…' : 'Dry run'}
+                            </button>
+                            <button
+                                type="button"
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-plex text-background font-bold hover:bg-plex-hover transition-colors disabled:opacity-50"
+                                onClick={handleRebuild}
+                                disabled={rebuilding || !!status?.rebuildInProgress}
+                            >
+                                <RefreshCw className={`w-4 h-4 ${rebuilding || status?.rebuildInProgress ? 'animate-spin' : ''}`} />
+                                {rebuilding || status?.rebuildInProgress ? 'Refreshing…' : 'Refresh index'}
+                            </button>
+                        </div>
                     )}
                 </div>
 
@@ -265,7 +359,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
                                                     <div className="text-[11px] uppercase tracking-wide text-muted">Libraries</div>
                                                     <div className="mt-1 text-lg font-bold text-text">
-                                                        {arrInstanceCount || (status?.arrConfigured ? 'Configured' : 'None')}
+                                                        {libraries.length || (status?.arrConfigured ? 'Configured' : 'None')}
                                                     </div>
                                                 </div>
                                             </div>
@@ -316,7 +410,88 @@ export const UpgraderDashboard: React.FC = () => {
                                             </ol>
                                         </section>
 
-                                        <section className="space-y-3">
+                                        {dryRun?.ran && (
+                                            <section className="space-y-4">
+                                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                                    <div>
+                                                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Dry run preview</h2>
+                                                        <p className="text-xs text-muted mt-1">
+                                                            No grabs were sent. {dryRun.wouldGrab || 0} would grab · {dryRun.searched || 0} searched
+                                                            {(dryRun.libraries || []).length ? ` · ${(dryRun.libraries || []).length} libraries` : ''}.
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        className="text-xs font-bold text-muted hover:text-text"
+                                                        onClick={() => setDryRun(null)}
+                                                    >
+                                                        Clear preview
+                                                    </button>
+                                                </div>
+                                                {dryRunByLibrary.every((group) => group.items.length === 0) ? (
+                                                    <div className="rounded-2xl border border-border/60 bg-card/40 p-6 text-center">
+                                                        <p className="text-sm text-muted">Nothing better found in this cycle’s queue.</p>
+                                                    </div>
+                                                ) : (
+                                                    dryRunByLibrary.map((group) => (
+                                                        <div key={`dry-${group.key}`} className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <h3 className="text-sm font-bold text-text">{group.label}</h3>
+                                                                <span className="text-[11px] text-muted">{group.items.length} would grab</span>
+                                                            </div>
+                                                            {group.items.length === 0 ? (
+                                                                <p className="text-xs text-muted">No upgrades found for this library in the dry run.</p>
+                                                            ) : (
+                                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                                                    {group.items.map((entry: UpgraderHuntResult) => {
+                                                                        const thumb = entry.thumbUrl ? resolvePortalAssetUrl(entry.thumbUrl) : '';
+                                                                        const delta = entry.scoreDelta ?? (
+                                                                            entry.currentScore != null && entry.candidateScore != null
+                                                                                ? entry.candidateScore - entry.currentScore
+                                                                                : null
+                                                                        );
+                                                                        return (
+                                                                            <div key={`dry-${entry.ratingKey}-${entry.releaseTitle || ''}`} className="min-w-0 flex flex-col gap-2">
+                                                                                <div className="relative rounded-xl overflow-hidden bg-background border border-amber-500/20 aspect-[2/3] w-full">
+                                                                                    {thumb ? (
+                                                                                        <img src={thumb} alt={entry.title} className="w-full h-full object-cover" />
+                                                                                    ) : (
+                                                                                        <div className="w-full h-full flex items-center justify-center p-3 text-center bg-white/5">
+                                                                                            <span className="text-xs font-bold text-muted line-clamp-3">{entry.title}</span>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-1 rounded-full border bg-amber-500/15 border-amber-500/30 text-amber-100">
+                                                                                        Would grab
+                                                                                    </span>
+                                                                                    {delta != null && (
+                                                                                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-300">
+                                                                                            +{delta}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="px-0.5 space-y-0.5">
+                                                                                    <div className="text-xs font-medium text-text line-clamp-2 leading-tight">{entry.title}</div>
+                                                                                    <div className="text-[10px] text-muted line-clamp-2">
+                                                                                        {[
+                                                                                            entry.currentScore != null && entry.candidateScore != null
+                                                                                                ? `${entry.currentScore} → ${entry.candidateScore}`
+                                                                                                : null,
+                                                                                            entry.releaseTitle,
+                                                                                        ].filter(Boolean).join(' · ')}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </section>
+                                        )}
+
+                                        <section className="space-y-4">
                                             <div className="flex items-center justify-between gap-3">
                                                 <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Just hunted</h2>
                                                 <button
@@ -327,50 +502,63 @@ export const UpgraderDashboard: React.FC = () => {
                                                     Full activity
                                                 </button>
                                             </div>
-                                            {recentGrabs.length === 0 ? (
+                                            {grabsByLibrary.length === 0 ? (
                                                 <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
                                                     <p className="text-sm text-muted">
-                                                        No grabs yet. When auto-hunt queues a better release, it shows up here with a poster.
+                                                        No libraries indexed yet. Refresh the index, or run a dry run to preview candidates.
                                                     </p>
                                                 </div>
                                             ) : (
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                                                    {recentGrabs.map((entry) => {
-                                                        const thumb = entry.thumbUrl ? resolvePortalAssetUrl(entry.thumbUrl) : '';
-                                                        const when = entryTime(entry);
-                                                        const delta = entry.currentScore != null && entry.candidateScore != null
-                                                            ? entry.candidateScore - entry.currentScore
-                                                            : null;
-                                                        return (
-                                                            <div key={entry.id} className="min-w-0 flex flex-col gap-2">
-                                                                <div className="relative rounded-xl overflow-hidden bg-background border border-white/5 aspect-[2/3] w-full">
-                                                                    {thumb ? (
-                                                                        <img src={thumb} alt={entry.title} className="w-full h-full object-cover" />
-                                                                    ) : (
-                                                                        <div className="w-full h-full flex items-center justify-center p-3 text-center bg-white/5">
-                                                                            <span className="text-xs font-bold text-muted line-clamp-3">{entry.title}</span>
+                                                grabsByLibrary.map((group) => (
+                                                    <div key={group.key} className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <h3 className="text-sm font-bold text-text">{group.label}</h3>
+                                                            <span className="text-[11px] text-muted">
+                                                                {group.items.length ? `${group.items.length} recent` : 'No recent grabs'}
+                                                            </span>
+                                                        </div>
+                                                        {group.items.length === 0 ? (
+                                                            <p className="text-xs text-muted">Nothing grabbed from this library yet.</p>
+                                                        ) : (
+                                                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                                                {group.items.slice(0, 12).map((entry) => {
+                                                                    const thumb = entry.thumbUrl ? resolvePortalAssetUrl(entry.thumbUrl) : '';
+                                                                    const when = entryTime(entry);
+                                                                    const delta = entry.currentScore != null && entry.candidateScore != null
+                                                                        ? entry.candidateScore - entry.currentScore
+                                                                        : null;
+                                                                    return (
+                                                                        <div key={entry.id} className="min-w-0 flex flex-col gap-2">
+                                                                            <div className="relative rounded-xl overflow-hidden bg-background border border-white/5 aspect-[2/3] w-full">
+                                                                                {thumb ? (
+                                                                                    <img src={thumb} alt={entry.title} className="w-full h-full object-cover" />
+                                                                                ) : (
+                                                                                    <div className="w-full h-full flex items-center justify-center p-3 text-center bg-white/5">
+                                                                                        <span className="text-xs font-bold text-muted line-clamp-3">{entry.title}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                                {delta != null && (
+                                                                                    <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-300">
+                                                                                        +{delta}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="px-0.5 space-y-0.5">
+                                                                                <div className="text-xs font-medium text-text line-clamp-2 leading-tight">{entry.title}</div>
+                                                                                <div className="text-[10px] text-muted line-clamp-2">
+                                                                                    {[
+                                                                                        entry.releaseTitle,
+                                                                                        when ? new Date(when).toLocaleString() : null,
+                                                                                    ].filter(Boolean).join(' · ')}
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
-                                                                    )}
-                                                                    {delta != null && (
-                                                                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-300">
-                                                                            +{delta}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="px-0.5 space-y-0.5">
-                                                                    <div className="text-xs font-medium text-text line-clamp-2 leading-tight">{entry.title}</div>
-                                                                    <div className="text-[10px] text-muted line-clamp-2">
-                                                                        {[
-                                                                            entry.arrInstanceName,
-                                                                            entry.releaseTitle,
-                                                                            when ? new Date(when).toLocaleString() : null,
-                                                                        ].filter(Boolean).join(' · ')}
-                                                                    </div>
-                                                                </div>
+                                                                    );
+                                                                })}
                                                             </div>
-                                                        );
-                                                    })}
-                                                </div>
+                                                        )}
+                                                    </div>
+                                                ))
                                             )}
                                         </section>
                                     </div>
