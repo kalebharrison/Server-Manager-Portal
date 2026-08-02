@@ -423,6 +423,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                     {summary.avgCustomFormatScore != null ? ` · avg Arr score ${summary.avgCustomFormatScore}` : ''}
                                                     {' · '}min score gain {minDelta}
                                                     {' · '}libraries are Sonarr/Radarr root folders
+                                                    {summary.scoreUnknownCount ? ` · ${summary.scoreUnknownCount} shows still unscored` : ''}
                                                 </p>
                                             )}
                                         </section>

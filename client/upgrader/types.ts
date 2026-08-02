@@ -49,6 +49,7 @@ export type UpgraderSummary = {
         indexed?: number;
         withFiles?: number;
     }>;
+    scoreUnknownCount?: number;
 };
 
 export type UpgraderItem = {
