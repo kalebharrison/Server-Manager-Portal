@@ -98,12 +98,56 @@ test('sonarr prefers embedded episodeFile custom format score', () => {
     assert.equal(item.seasons[0].avgCustomFormatScore, 1700);
 });
 
-test('sonarr statistics-only fallback marks scoreUnknown instead of fake zero', () => {
+test('sonarr episode-files-only path scores without episode list', () => {
     const record = {
-        id: 8,
+        id: 9,
         title: 'Frisky Dingo',
         year: 2006,
         titleSlug: 'frisky-dingo',
+        qualityProfileId: 1,
+        path: '/media/tv.shows/Frisky Dingo',
+        seasons: [{ seasonNumber: 1, statistics: { episodeFileCount: 2, sizeOnDisk: 2_000_000_000 } }],
+        statistics: { episodeFileCount: 2, sizeOnDisk: 2_000_000_000 },
+    };
+    const episodeFiles = [
+        {
+            id: 1,
+            seriesId: 9,
+            seasonNumber: 1,
+            size: 1_000_000_000,
+            customFormatScore: 1700,
+            customFormats: [{ id: 10 }, { id: 20 }],
+            quality: { quality: { name: 'WEBDL-1080p', resolution: 1080 } },
+            mediaInfo: { videoCodec: 'HEVC' },
+        },
+        {
+            id: 2,
+            seriesId: 9,
+            seasonNumber: 1,
+            size: 1_000_000_000,
+            customFormatScore: 1500,
+            customFormats: [{ id: 10 }],
+            quality: { quality: { name: 'WEBDL-1080p', resolution: 1080 } },
+            mediaInfo: { videoCodec: 'HEVC' },
+        },
+    ];
+    const item = buildSonarrIndexItem({
+        ...sonarrInstance,
+        activeDirectory: '/media/tv.shows',
+        activeAnimeDirectory: '/media/anime.shows',
+    }, record, episodeFiles, [], profile);
+    assert.equal(item.scoreUnknown, false);
+    assert.equal(item.avgCustomFormatScore, 1600);
+    assert.equal(item.libraryName, 'Tv Shows');
+    assert.equal(item.seasons[0].avgCustomFormatScore, 1600);
+});
+
+test('sonarr statistics-only fallback marks scoreUnknown instead of fake zero', () => {
+    const record = {
+        id: 8,
+        title: 'Missing Files Show',
+        year: 2006,
+        titleSlug: 'missing-files-show',
         qualityProfileId: 1,
         seasons: [{ seasonNumber: 1, statistics: { episodeFileCount: 13, sizeOnDisk: 5_000_000_000 } }],
         statistics: { episodeFileCount: 13, sizeOnDisk: 5_000_000_000 },
