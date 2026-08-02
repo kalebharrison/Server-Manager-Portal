@@ -109,6 +109,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     qcMetaDlMinutes: 30,
     qcStalledHours: 6,
     qcCompletedNotImportingMinutes: 60,
+    qcOrphanGraceMinutes: 45,
     qcResearchThrottleHours: 24,
     qcSnoozeDefaultHours: 24,
     qcDiscordDigestEnabled: false,

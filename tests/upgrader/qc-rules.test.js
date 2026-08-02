@@ -232,6 +232,49 @@ test('findOrphans skips known downloadIds and seeding protected', () => {
     assert.equal(orphans[0].reason, QC_REASONS.orphan);
 });
 
+test('findOrphans grace and recent-hunt protection prevent false kills', () => {
+    const now = Date.now();
+    const orphans = findOrphans({
+        now,
+        minAgeMs: 45 * 60 * 1000,
+        protectedReleaseTokens: ['willyswonderland2021uhdbluray2160p'],
+        arrDownloadIds: [],
+        clientItems: [
+            {
+                id: 'fresh',
+                hash: 'fresh',
+                name: 'The.Addams.Family.2.2021.BDREMUX.2160p.seleZen.mkv',
+                client: 'qbit',
+                state: 'downloading',
+                progress: 0.01,
+                added_on: Math.floor(now / 1000) - 60,
+            },
+            {
+                id: 'hunt',
+                hash: 'hunt',
+                name: 'Willys.Wonderland.2021.UHD.BluRay.2160p.DTS-HD.MA.5.1.DV.HDR.HEVC.REMUX-SHiTRiPS',
+                client: 'qbit',
+                state: 'downloading',
+                progress: 0.2,
+                added_on: Math.floor(now / 1000) - (2 * 60 * 60),
+            },
+            {
+                id: 'old',
+                hash: 'old',
+                name: 'Truly.Orphaned.2007.1080p.mkv',
+                client: 'qbit',
+                state: 'downloading',
+                progress: 0.1,
+                added_on: Math.floor(now / 1000) - (3 * 60 * 60),
+            },
+        ],
+    });
+    assert.equal(orphans.length, 2);
+    assert.equal(orphans.find((row) => row.id === 'fresh')?.withinGrace, true);
+    assert.equal(orphans.find((row) => row.id === 'hunt'), undefined);
+    assert.equal(orphans.find((row) => row.id === 'old')?.withinGrace, false);
+});
+
 test('isSeedingProtected only for completed qbit upload states', () => {
     assert.equal(isSeedingProtected({ client: 'qbit', state: 'uploading', progress: 1 }), true);
     assert.equal(isSeedingProtected({ client: 'qbit', state: 'stalledUP', progress: 1 }), true);

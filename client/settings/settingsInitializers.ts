@@ -112,6 +112,7 @@ type SettingsHydrationSetters = {
     setQcMetaDlMinutes: (value: number) => void;
     setQcStalledHours: (value: number) => void;
     setQcCompletedNotImportingMinutes: (value: number) => void;
+    setQcOrphanGraceMinutes: (value: number) => void;
     setQcResearchThrottleHours: (value: number) => void;
     setQcSnoozeDefaultHours: (value: number) => void;
     setQcDiscordDigestEnabled: (value: boolean) => void;
@@ -249,6 +250,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 30));
     setters.setQcStalledHours(Math.max(1, Number(initialSettings.qcStalledHours) || 6));
     setters.setQcCompletedNotImportingMinutes(Math.max(1, Number(initialSettings.qcCompletedNotImportingMinutes) || 60));
+    setters.setQcOrphanGraceMinutes(Math.max(0, Number(initialSettings.qcOrphanGraceMinutes ?? 45) || 0));
     setters.setQcResearchThrottleHours(Math.max(1, Number(initialSettings.qcResearchThrottleHours) || 24));
     setters.setQcSnoozeDefaultHours(Math.max(1, Number(initialSettings.qcSnoozeDefaultHours) || 24));
     setters.setQcDiscordDigestEnabled(!!initialSettings.qcDiscordDigestEnabled);

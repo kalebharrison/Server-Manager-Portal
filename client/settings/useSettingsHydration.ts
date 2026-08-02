@@ -130,6 +130,7 @@ export const useSettingsHydration = ({
             setQcMetaDlMinutes: set('qcMetaDlMinutes'),
             setQcStalledHours: set('qcStalledHours'),
             setQcCompletedNotImportingMinutes: set('qcCompletedNotImportingMinutes'),
+            setQcOrphanGraceMinutes: set('qcOrphanGraceMinutes'),
             setQcResearchThrottleHours: set('qcResearchThrottleHours'),
             setQcSnoozeDefaultHours: set('qcSnoozeDefaultHours'),
             setQcDiscordDigestEnabled: set('qcDiscordDigestEnabled'),

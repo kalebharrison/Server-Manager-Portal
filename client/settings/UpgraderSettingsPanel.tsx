@@ -29,6 +29,7 @@ type Props = {
     qcMetaDlMinutes: number;
     qcStalledHours: number;
     qcCompletedNotImportingMinutes: number;
+    qcOrphanGraceMinutes: number;
     qcResearchThrottleHours: number;
     qcSnoozeDefaultHours: number;
     qcDiscordDigestEnabled: boolean;
@@ -57,6 +58,7 @@ type Props = {
     onQcMetaDlMinutesChange: (value: number) => void;
     onQcStalledHoursChange: (value: number) => void;
     onQcCompletedNotImportingMinutesChange: (value: number) => void;
+    onQcOrphanGraceMinutesChange: (value: number) => void;
     onQcResearchThrottleHoursChange: (value: number) => void;
     onQcSnoozeDefaultHoursChange: (value: number) => void;
     onQcDiscordDigestEnabledChange: (value: boolean) => void;
@@ -94,6 +96,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcMetaDlMinutes,
     qcStalledHours,
     qcCompletedNotImportingMinutes,
+    qcOrphanGraceMinutes,
     qcResearchThrottleHours,
     qcSnoozeDefaultHours,
     qcDiscordDigestEnabled,
@@ -122,6 +125,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onQcMetaDlMinutesChange,
     onQcStalledHoursChange,
     onQcCompletedNotImportingMinutesChange,
+    onQcOrphanGraceMinutesChange,
     onQcResearchThrottleHoursChange,
     onQcSnoozeDefaultHoursChange,
     onQcDiscordDigestEnabledChange,
@@ -265,6 +269,19 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 value={qcCompletedNotImportingMinutes}
                                 disabled={!enabled}
                                 onChange={(event) => onQcCompletedNotImportingMinutesChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Orphan grace (min)
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                Wait this long before killing client downloads with no Arr queue link (avoids racing fresh hunt grabs).
+                            </span>
+                            <input
+                                type="number"
+                                min="0"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={qcOrphanGraceMinutes}
+                                disabled={!enabled}
+                                onChange={(event) => onQcOrphanGraceMinutesChange(Math.max(0, Number(event.target.value) || 0))}
                             />
                         </label>
                         <label className="text-sm font-semibold">Research throttle (hours)

@@ -121,6 +121,7 @@ export const useSettingsFormState = () => {
         qcMetaDlMinutes: values.qcMetaDlMinutes,
         qcStalledHours: values.qcStalledHours,
         qcCompletedNotImportingMinutes: values.qcCompletedNotImportingMinutes,
+        qcOrphanGraceMinutes: values.qcOrphanGraceMinutes,
         qcResearchThrottleHours: values.qcResearchThrottleHours,
         qcSnoozeDefaultHours: values.qcSnoozeDefaultHours,
         qcDiscordDigestEnabled: values.qcDiscordDigestEnabled,
