@@ -32,7 +32,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
         title: 'Connections',
         tabs: [
             { id: 'plex', label: 'Plex / Jellyfin', keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct', 'privacy', 'usernames'] },
-            { id: 'mediastack', label: 'Apps & Automation', keywords: ['sonarr', 'radarr', 'lidarr', 'tautulli', 'jellystat', 'requests', 'integrations', 'arr', 'discover'] },
+            { id: 'mediastack', label: 'Apps & Automation', keywords: ['sonarr', 'radarr', 'lidarr', 'tautulli', 'jellystat', 'requests', 'integrations', 'arr', 'discover', 'qbittorrent', 'qbit', 'sabnzbd', 'sab', 'download client'] },
             { id: 'metadata', label: 'Metadata', keywords: ['tmdb', 'tvdb', 'artwork', 'genres', 'discovery', 'metadata'] },
             { id: 'status', label: 'Status Page', keywords: ['uptime', 'health', 'services', 'monitor'] },
             { id: 'scanner', label: 'Scanner (Admin Only)', keywords: ['autoscan', 'scanner', 'webhook', 'path rewrite', 'sonarr', 'radarr', 'lidarr', 'library refresh', 'admin'] },

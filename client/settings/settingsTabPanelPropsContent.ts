@@ -72,8 +72,6 @@ export const buildUpgraderTabPanelProps = ({
     qcDiscordDigestEnabled: values.qcDiscordDigestEnabled,
     qcPreferImportDiscordOnly: values.qcPreferImportDiscordOnly,
     qcQbitUrl: values.qcQbitUrl,
-    qcQbitUsername: values.qcQbitUsername,
-    qcQbitPassword: values.qcQbitPassword,
     qcSabUrl: values.qcSabUrl,
     qcSabApiKey: values.qcSabApiKey,
     qcBlockedExtensions: values.qcBlockedExtensions,
@@ -91,11 +89,6 @@ export const buildUpgraderTabPanelProps = ({
     onQcSnoozeDefaultHoursChange: onChange('qcSnoozeDefaultHours'),
     onQcDiscordDigestEnabledChange: onChange('qcDiscordDigestEnabled'),
     onQcPreferImportDiscordOnlyChange: onChange('qcPreferImportDiscordOnly'),
-    onQcQbitUrlChange: onChange('qcQbitUrl'),
-    onQcQbitUsernameChange: onChange('qcQbitUsername'),
-    onQcQbitPasswordChange: onChange('qcQbitPassword'),
-    onQcSabUrlChange: onChange('qcSabUrl'),
-    onQcSabApiKeyChange: onChange('qcSabApiKey'),
     onQcBlockedExtensionsChange: onChange('qcBlockedExtensions'),
 });
 
