@@ -134,7 +134,8 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
             <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
                 <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Blocked extensions</h2>
                 <p className="text-xs text-muted">
-                    Apply pushes one shared list to every configured client. Comma or newline separated
+                    Apply pushes one shared list to every configured client (qBit excluded filenames,
+                    SAB unwanted extensions). Comma or newline separated
                     (e.g. <code className="text-text">exe, bat, lnk</code>).
                 </p>
 
