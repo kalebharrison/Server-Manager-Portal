@@ -420,7 +420,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
                                                 >
                                                     <SettingsIcon className="w-3.5 h-3.5" />
-                                                    Enable in Settings
+                                                    Open Settings
                                                 </a>
                                             </div>
                                         )}
@@ -431,8 +431,9 @@ export const UpgraderDashboard: React.FC = () => {
                                                 </p>
                                                 <a
                                                     href={portalUrl('/settings#upgrader')}
-                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text no-underline hover:border-plex/40 shrink-0"
+                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
                                                 >
+                                                    <SettingsIcon className="w-3.5 h-3.5" />
                                                     Open Settings
                                                 </a>
                                             </div>
