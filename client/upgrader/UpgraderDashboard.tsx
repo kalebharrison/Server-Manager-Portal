@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowUpCircle, RefreshCw, Settings as SettingsIcon, History, Ban, Settings2, LayoutDashboard, FlaskConical } from 'lucide-react';
 import { apiFetch } from '../shared/api';
-import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
+import { portalUrl } from '../shared/basePath';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
 import { UpgraderHistoryPanel } from './UpgraderHistoryPanel';
@@ -527,43 +527,27 @@ export const UpgraderDashboard: React.FC = () => {
                                                                 </p>
                                                             )}
                                                             {would.length > 0 && (
-                                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                                                <div className="space-y-2">
                                                                     {would.map((entry: UpgraderHuntResult) => {
-                                                                        const thumb = entry.thumbUrl ? resolvePortalAssetUrl(entry.thumbUrl) : '';
                                                                         const delta = entry.scoreDelta ?? (
                                                                             entry.currentScore != null && entry.candidateScore != null
                                                                                 ? entry.candidateScore - entry.currentScore
                                                                                 : null
                                                                         );
                                                                         return (
-                                                                            <div key={`dry-${entry.ratingKey}-${entry.releaseTitle || ''}`} className="min-w-0 flex flex-col gap-2">
-                                                                                <div className="relative rounded-xl overflow-hidden bg-background border border-amber-500/20 aspect-[2/3] w-full">
-                                                                                    {thumb ? (
-                                                                                        <img src={thumb} alt={entry.title} className="w-full h-full object-cover" />
-                                                                                    ) : (
-                                                                                        <div className="w-full h-full flex items-center justify-center p-3 text-center bg-white/5">
-                                                                                            <span className="text-xs font-bold text-muted line-clamp-3">{entry.title}</span>
-                                                                                        </div>
-                                                                                    )}
-                                                                                    <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-1 rounded-full border bg-amber-500/15 border-amber-500/30 text-amber-100">
-                                                                                        Would grab
-                                                                                    </span>
-                                                                                    {delta != null && (
-                                                                                        <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-300">
-                                                                                            +{delta}
-                                                                                        </span>
-                                                                                    )}
+                                                                            <div key={`dry-${entry.ratingKey}-${entry.releaseTitle || ''}`} className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+                                                                                <div className="flex items-center justify-between gap-2">
+                                                                                    <div className="text-xs font-semibold text-text">{entry.title}</div>
+                                                                                    <span className="text-[10px] font-bold text-amber-200 shrink-0">Would grab</span>
                                                                                 </div>
-                                                                                <div className="px-0.5 space-y-0.5">
-                                                                                    <div className="text-xs font-medium text-text line-clamp-2 leading-tight">{entry.title}</div>
-                                                                                    <div className="text-[10px] text-muted line-clamp-2">
-                                                                                        {[
-                                                                                            entry.currentScore != null && entry.candidateScore != null
-                                                                                                ? `${entry.currentScore} → ${entry.candidateScore}`
-                                                                                                : null,
-                                                                                            entry.releaseTitle,
-                                                                                        ].filter(Boolean).join(' · ')}
-                                                                                    </div>
+                                                                                <div className="text-[11px] text-muted mt-0.5">
+                                                                                    {[
+                                                                                        entry.currentScore != null && entry.candidateScore != null
+                                                                                            ? `${entry.currentScore} → ${entry.candidateScore}`
+                                                                                            : null,
+                                                                                        delta != null ? `+${delta}` : null,
+                                                                                        entry.releaseTitle,
+                                                                                    ].filter(Boolean).join(' · ')}
                                                                                 </div>
                                                                             </div>
                                                                         );
@@ -618,37 +602,25 @@ export const UpgraderDashboard: React.FC = () => {
                                                         {group.items.length === 0 ? (
                                                             <p className="text-xs text-muted">Nothing grabbed from this library yet.</p>
                                                         ) : (
-                                                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                                            <div className="space-y-2">
                                                                 {group.items.slice(0, 12).map((entry) => {
-                                                                    const thumb = entry.thumbUrl ? resolvePortalAssetUrl(entry.thumbUrl) : '';
                                                                     const when = entryTime(entry);
                                                                     const delta = entry.currentScore != null && entry.candidateScore != null
                                                                         ? entry.candidateScore - entry.currentScore
                                                                         : null;
                                                                     return (
-                                                                        <div key={entry.id} className="min-w-0 flex flex-col gap-2">
-                                                                            <div className="relative rounded-xl overflow-hidden bg-background border border-white/5 aspect-[2/3] w-full">
-                                                                                {thumb ? (
-                                                                                    <img src={thumb} alt={entry.title} className="w-full h-full object-cover" />
-                                                                                ) : (
-                                                                                    <div className="w-full h-full flex items-center justify-center p-3 text-center bg-white/5">
-                                                                                        <span className="text-xs font-bold text-muted line-clamp-3">{entry.title}</span>
-                                                                                    </div>
-                                                                                )}
+                                                                        <div key={entry.id} className="rounded-lg border border-border/50 bg-background/40 px-3 py-2">
+                                                                            <div className="flex items-center justify-between gap-2">
+                                                                                <div className="text-xs font-semibold text-text">{entry.title}</div>
                                                                                 {delta != null && (
-                                                                                    <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-300">
-                                                                                        +{delta}
-                                                                                    </span>
+                                                                                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">+{delta}</span>
                                                                                 )}
                                                                             </div>
-                                                                            <div className="px-0.5 space-y-0.5">
-                                                                                <div className="text-xs font-medium text-text line-clamp-2 leading-tight">{entry.title}</div>
-                                                                                <div className="text-[10px] text-muted line-clamp-2">
-                                                                                    {[
-                                                                                        entry.releaseTitle,
-                                                                                        when ? new Date(when).toLocaleString() : null,
-                                                                                    ].filter(Boolean).join(' · ')}
-                                                                                </div>
+                                                                            <div className="text-[11px] text-muted mt-0.5">
+                                                                                {[
+                                                                                    entry.releaseTitle,
+                                                                                    when ? new Date(when).toLocaleString() : null,
+                                                                                ].filter(Boolean).join(' · ')}
                                                                             </div>
                                                                         </div>
                                                                     );
