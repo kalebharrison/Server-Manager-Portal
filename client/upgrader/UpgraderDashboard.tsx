@@ -736,25 +736,36 @@ export const UpgraderDashboard: React.FC = () => {
                                                             {would.length > 0 && (
                                                                 <div className="space-y-2">
                                                                     {would.map((entry: UpgraderHuntResult) => {
+                                                                        const isMissing = entry.huntPath === 'missing' || entry.action === 'missing_search';
                                                                         const delta = entry.scoreDelta ?? (
                                                                             entry.currentScore != null && entry.candidateScore != null
                                                                                 ? entry.candidateScore - entry.currentScore
                                                                                 : null
                                                                         );
                                                                         return (
-                                                                            <div key={`dry-${entry.ratingKey}-${entry.releaseTitle || ''}`} className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+                                                                            <div key={`dry-${entry.ratingKey}-${entry.releaseTitle || entry.reason || ''}`} className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
                                                                                 <div className="flex items-center justify-between gap-2">
                                                                                     <div className="text-xs font-semibold text-text">{entry.title}</div>
-                                                                                    <span className="text-[10px] font-bold text-amber-200 shrink-0">Would grab</span>
+                                                                                    <span className="text-[10px] font-bold text-amber-200 shrink-0">
+                                                                                        {isMissing ? 'Would search missing' : 'Would grab'}
+                                                                                    </span>
                                                                                 </div>
                                                                                 <div className="text-[11px] text-muted mt-0.5">
-                                                                                    {[
-                                                                                        entry.currentScore != null && entry.candidateScore != null
-                                                                                            ? `${entry.currentScore} → ${entry.candidateScore}`
-                                                                                            : null,
-                                                                                        delta != null ? `+${delta}` : null,
-                                                                                        entry.releaseTitle,
-                                                                                    ].filter(Boolean).join(' · ')}
+                                                                                    {isMissing
+                                                                                        ? [
+                                                                                            entry.missingAiredCount != null
+                                                                                                ? `${entry.missingAiredCount} missing aired`
+                                                                                                : null,
+                                                                                            entry.reason,
+                                                                                            entry.releaseTitle,
+                                                                                        ].filter(Boolean).join(' · ')
+                                                                                        : [
+                                                                                            entry.currentScore != null && entry.candidateScore != null
+                                                                                                ? `${entry.currentScore} → ${entry.candidateScore}`
+                                                                                                : null,
+                                                                                            delta != null ? `+${delta}` : null,
+                                                                                            entry.releaseTitle,
+                                                                                        ].filter(Boolean).join(' · ')}
                                                                                 </div>
                                                                             </div>
                                                                         );

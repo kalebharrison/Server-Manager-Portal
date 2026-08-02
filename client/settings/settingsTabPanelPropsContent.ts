@@ -59,6 +59,8 @@ export const buildUpgraderTabPanelProps = ({
 }: Pick<ContentTabPanelPropsInput, 'values' | 'onChange'>): SettingsTabPanelProps['upgrader'] => ({
     enabled: values.upgraderEnabled,
     automationEnabled: values.upgraderAutomationEnabled,
+    huntMissingEpisodes: values.upgraderHuntMissingEpisodes,
+    huntAvailableMovies: values.upgraderHuntAvailableMovies,
     minSizeGB: values.upgraderMinSizeGB,
     maxActionsPerHour: values.upgraderMaxActionsPerHour,
     minScoreDelta: values.upgraderMinScoreDelta,
@@ -77,6 +79,8 @@ export const buildUpgraderTabPanelProps = ({
     qcBlockedExtensions: values.qcBlockedExtensions,
     onEnabledChange: onChange('upgraderEnabled'),
     onAutomationEnabledChange: onChange('upgraderAutomationEnabled'),
+    onHuntMissingEpisodesChange: onChange('upgraderHuntMissingEpisodes'),
+    onHuntAvailableMoviesChange: onChange('upgraderHuntAvailableMovies'),
     onMinSizeGBChange: onChange('upgraderMinSizeGB'),
     onMaxActionsPerHourChange: onChange('upgraderMaxActionsPerHour'),
     onMinScoreDeltaChange: onChange('upgraderMinScoreDelta'),

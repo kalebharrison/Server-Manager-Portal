@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRadarrIndexItem, buildSonarrIndexItem } from '../../lib/upgrader/upgrader-index-builder.js';
+import {
+    buildRadarrIndexItem,
+    buildSonarrIndexItem,
+    countMissingAiredEpisodes,
+    isMovieDigitallyAvailable,
+} from '../../lib/upgrader/upgrader-index-builder.js';
 import { calculateCustomFormatScore, resolveCustomFormatScore } from '../../lib/upgrader/upgrader-quality.js';
 
 const instance = { id: 'radarr-1', name: 'Radarr', url: 'http://radarr.local', type: 'radarr' };
@@ -157,4 +162,119 @@ test('sonarr statistics-only fallback marks scoreUnknown instead of fake zero', 
     assert.equal(item.scoreUnknown, true);
     assert.equal(item.avgCustomFormatScore, null);
     assert.equal(item.seasons[0].scoreUnknown, true);
+});
+
+test('radarr stamps huntMissingEligible for digitally available movies without files', () => {
+    const now = Date.parse('2026-08-02T00:00:00.000Z');
+    const digital = buildRadarrIndexItem(instance, {
+        id: 1,
+        title: 'Streaming Ready',
+        year: 2026,
+        titleSlug: 'streaming-ready',
+        monitored: true,
+        hasFile: false,
+        digitalRelease: '2026-07-01T00:00:00Z',
+        isAvailable: false,
+    }, null, profile, { now });
+    assert.equal(digital.huntMissingEligible, true);
+    assert.equal(digital.digitallyAvailable, true);
+    assert.ok(digital.digitalRelease);
+
+    const cinemaOnly = buildRadarrIndexItem(instance, {
+        id: 2,
+        title: 'Cinema Only',
+        year: 2026,
+        titleSlug: 'cinema-only',
+        monitored: true,
+        hasFile: false,
+        inCinemas: '2026-07-01T00:00:00Z',
+        isAvailable: false,
+    }, null, profile, { now });
+    assert.equal(cinemaOnly.huntMissingEligible, false);
+    assert.equal(cinemaOnly.digitallyAvailable, false);
+
+    const availableFallback = buildRadarrIndexItem(instance, {
+        id: 3,
+        title: 'Available Flag',
+        year: 2025,
+        titleSlug: 'available-flag',
+        monitored: true,
+        hasFile: false,
+        isAvailable: true,
+    }, null, profile, { now });
+    assert.equal(availableFallback.huntMissingEligible, true);
+});
+
+test('sonarr stamps missingAiredCount from episode air dates', () => {
+    const now = Date.parse('2026-08-02T00:00:00.000Z');
+    const record = {
+        id: 11,
+        title: 'Gap Show',
+        year: 2024,
+        titleSlug: 'gap-show',
+        monitored: true,
+        qualityProfileId: 1,
+        statistics: { episodeFileCount: 1, episodeCount: 3, sizeOnDisk: 1_000_000_000 },
+    };
+    const episodes = [
+        {
+            id: 1,
+            monitored: true,
+            hasFile: true,
+            episodeFileId: 10,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            airDateUtc: '2026-01-01T00:00:00Z',
+            episodeFile: {
+                id: 10,
+                seasonNumber: 1,
+                size: 1_000_000_000,
+                customFormatScore: 100,
+                quality: { quality: { name: 'WEBDL-1080p', resolution: 1080 } },
+                mediaInfo: { videoCodec: 'HEVC' },
+            },
+        },
+        {
+            id: 2,
+            monitored: true,
+            hasFile: false,
+            episodeFileId: 0,
+            seasonNumber: 1,
+            episodeNumber: 2,
+            airDateUtc: '2026-02-01T00:00:00Z',
+        },
+        {
+            id: 3,
+            monitored: true,
+            hasFile: false,
+            episodeFileId: 0,
+            seasonNumber: 1,
+            episodeNumber: 3,
+            airDateUtc: '2026-12-01T00:00:00Z',
+        },
+        {
+            id: 4,
+            monitored: false,
+            hasFile: false,
+            seasonNumber: 1,
+            episodeNumber: 4,
+            airDateUtc: '2026-03-01T00:00:00Z',
+        },
+    ];
+    const counted = countMissingAiredEpisodes(episodes, now);
+    assert.equal(counted.missingAiredCount, 1);
+    assert.equal(counted.availableAt, '2026-02-01T00:00:00.000Z');
+
+    const item = buildSonarrIndexItem(sonarrInstance, record, [], episodes, profile, { now });
+    assert.equal(item.missingAiredCount, 1);
+    assert.equal(item.huntMissingEligible, true);
+    assert.equal(item.availableAt, '2026-02-01T00:00:00.000Z');
+});
+
+test('isMovieDigitallyAvailable prefers digitalRelease over cinema', () => {
+    const now = Date.parse('2026-08-02T00:00:00.000Z');
+    assert.equal(isMovieDigitallyAvailable({ digitalRelease: '2026-07-01T00:00:00Z', isAvailable: false }, now), true);
+    assert.equal(isMovieDigitallyAvailable({ digitalRelease: '2026-09-01T00:00:00Z', isAvailable: true }, now), false);
+    assert.equal(isMovieDigitallyAvailable({ isAvailable: true }, now), true);
+    assert.equal(isMovieDigitallyAvailable({ inCinemas: '2026-01-01T00:00:00Z', isAvailable: false }, now), false);
 });

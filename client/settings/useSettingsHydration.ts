@@ -112,6 +112,8 @@ export const useSettingsHydration = ({
             setScanner: set('scanner'),
             setUpgraderEnabled: set('upgraderEnabled'),
             setUpgraderAutomationEnabled: set('upgraderAutomationEnabled'),
+            setUpgraderHuntMissingEpisodes: set('upgraderHuntMissingEpisodes'),
+            setUpgraderHuntAvailableMovies: set('upgraderHuntAvailableMovies'),
             setUpgraderMinSizeGB: set('upgraderMinSizeGB'),
             setUpgraderMaxActionsPerHour: set('upgraderMaxActionsPerHour'),
             setUpgraderMinScoreDelta: set('upgraderMinScoreDelta'),

@@ -133,6 +133,93 @@ test('buildHuntQueue skips scoreUnknown Sonarr rows', () => {
     assert.deepEqual(planned.queue.map((entry) => entry.ratingKey), ['known']);
 });
 
+test('buildHuntQueue includes missing path and alternates with upgrades', () => {
+    const items = [
+        item({
+            ratingKey: 'miss-old',
+            arrType: 'radarr',
+            arrInstanceId: 'radarr',
+            libraryKey: 'radarr:radarr:movies',
+            libraryName: 'Movies',
+            hasFile: false,
+            huntMissingEligible: true,
+            availableAt: '2024-01-01T00:00:00.000Z',
+        }),
+        item({
+            ratingKey: 'upg-low',
+            arrType: 'radarr',
+            arrInstanceId: 'radarr',
+            libraryKey: 'radarr:radarr:movies',
+            libraryName: 'Movies',
+            hasFile: true,
+            avgCustomFormatScore: 10,
+        }),
+        item({
+            ratingKey: 'miss-new',
+            arrType: 'radarr',
+            arrInstanceId: 'radarr',
+            libraryKey: 'radarr:radarr:movies',
+            libraryName: 'Movies',
+            hasFile: false,
+            huntMissingEligible: true,
+            availableAt: '2025-01-01T00:00:00.000Z',
+        }),
+        item({
+            ratingKey: 'upg-high',
+            arrType: 'radarr',
+            arrInstanceId: 'radarr',
+            libraryKey: 'radarr:radarr:movies',
+            libraryName: 'Movies',
+            hasFile: true,
+            avgCustomFormatScore: 90,
+        }),
+    ];
+    const planned = buildHuntQueue(items, { maxPerLibrary: 4, huntAvailableMovies: true });
+    assert.deepEqual(
+        planned.queue.map((entry) => entry.ratingKey),
+        ['miss-old', 'upg-low', 'miss-new', 'upg-high'],
+    );
+    assert.equal(planned.queue[0].huntPath, 'missing');
+    assert.equal(planned.queue[1].huntPath, 'upgrade');
+});
+
+test('buildHuntQueue respects hunt missing toggles', () => {
+    const items = [
+        item({
+            ratingKey: 'movie-miss',
+            arrType: 'radarr',
+            arrInstanceId: 'radarr',
+            hasFile: false,
+            huntMissingEligible: true,
+            availableAt: '2024-01-01T00:00:00.000Z',
+        }),
+        item({
+            ratingKey: 'show-miss',
+            arrType: 'sonarr',
+            arrInstanceId: 'sonarr',
+            mediaType: 'show',
+            hasFile: false,
+            episodeCount: 0,
+            huntMissingEligible: true,
+            missingAiredCount: 3,
+            availableAt: '2024-01-01T00:00:00.000Z',
+        }),
+    ];
+    const none = buildHuntQueue(items, {
+        maxPerLibrary: 5,
+        huntMissingEpisodes: false,
+        huntAvailableMovies: false,
+    });
+    assert.deepEqual(none.queue.map((entry) => entry.ratingKey), []);
+
+    const showsOnly = buildHuntQueue(items, {
+        maxPerLibrary: 5,
+        huntMissingEpisodes: true,
+        huntAvailableMovies: false,
+    });
+    assert.deepEqual(showsOnly.queue.map((entry) => entry.ratingKey), ['show-miss']);
+});
+
 test('noUpgrade cooldown is 7 days', () => {
     const now = Date.parse('2026-08-02T00:00:00.000Z');
     const until = Date.parse(nextCooldownUntil('noUpgrade', now));

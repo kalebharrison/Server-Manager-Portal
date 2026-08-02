@@ -103,6 +103,8 @@ export const useSettingsFormState = () => {
         scanner: values.scanner,
         upgraderEnabled: values.upgraderEnabled,
         upgraderAutomationEnabled: values.upgraderAutomationEnabled,
+        upgraderHuntMissingEpisodes: values.upgraderHuntMissingEpisodes,
+        upgraderHuntAvailableMovies: values.upgraderHuntAvailableMovies,
         upgraderMinSizeGB: values.upgraderMinSizeGB,
         upgraderMaxActionsPerHour: values.upgraderMaxActionsPerHour,
         upgraderMinScoreDelta: values.upgraderMinScoreDelta,

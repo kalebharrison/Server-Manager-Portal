@@ -11,6 +11,8 @@ type Prefs = {
 type Props = {
     enabled: boolean;
     automationEnabled: boolean;
+    huntMissingEpisodes: boolean;
+    huntAvailableMovies: boolean;
     minSizeGB: number;
     maxActionsPerHour: number;
     minScoreDelta: number;
@@ -29,6 +31,8 @@ type Props = {
     qcBlockedExtensions: string[];
     onEnabledChange: (value: boolean) => void;
     onAutomationEnabledChange: (value: boolean) => void;
+    onHuntMissingEpisodesChange: (value: boolean) => void;
+    onHuntAvailableMoviesChange: (value: boolean) => void;
     onMinSizeGBChange: (value: number) => void;
     onMaxActionsPerHourChange: (value: number) => void;
     onMinScoreDeltaChange: (value: number) => void;
@@ -56,6 +60,8 @@ const parseExtensionsText = (value: string) => [
 export const UpgraderSettingsPanel: React.FC<Props> = ({
     enabled,
     automationEnabled,
+    huntMissingEpisodes,
+    huntAvailableMovies,
     minSizeGB,
     maxActionsPerHour,
     minScoreDelta,
@@ -74,6 +80,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcBlockedExtensions,
     onEnabledChange,
     onAutomationEnabledChange,
+    onHuntMissingEpisodesChange,
+    onHuntAvailableMoviesChange,
     onMinSizeGBChange,
     onMaxActionsPerHourChange,
     onMinScoreDeltaChange,
@@ -290,6 +298,38 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
 
                 <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                     <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Hunt preferences</h4>
+                    <div className="space-y-3">
+                        <label className="flex items-center justify-between gap-4">
+                            <span className="text-sm font-semibold">
+                                Hunt missing aired episodes
+                                <span className="block text-xs text-muted mt-1 font-normal">
+                                    Search monitored TV episodes that have already aired but have no file.
+                                </span>
+                            </span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-plex"
+                                disabled={!enabled}
+                                checked={huntMissingEpisodes && enabled}
+                                onChange={(event) => onHuntMissingEpisodesChange(event.target.checked)}
+                            />
+                        </label>
+                        <label className="flex items-center justify-between gap-4">
+                            <span className="text-sm font-semibold">
+                                Hunt digitally available movies
+                                <span className="block text-xs text-muted mt-1 font-normal">
+                                    Search monitored movies after digital/streaming release when no file is on disk.
+                                </span>
+                            </span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-plex"
+                                disabled={!enabled}
+                                checked={huntAvailableMovies && enabled}
+                                onChange={(event) => onHuntAvailableMoviesChange(event.target.checked)}
+                            />
+                        </label>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <label className="text-sm font-semibold">Minimum file size (GB)
                             <input

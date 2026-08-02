@@ -245,6 +245,9 @@ export type UpgraderHuntResult = {
     grabbed?: boolean;
     skipped?: boolean;
     reason?: string | null;
+    huntPath?: 'missing' | 'upgrade' | string | null;
+    action?: string | null;
+    missingAiredCount?: number | null;
     arrInstanceName?: string | null;
     libraryName?: string | null;
     libraryKey?: string | null;

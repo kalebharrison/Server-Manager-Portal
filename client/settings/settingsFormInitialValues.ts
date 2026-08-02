@@ -86,6 +86,8 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     scanner: defaultScannerSettings(),
     upgraderEnabled: false,
     upgraderAutomationEnabled: false,
+    upgraderHuntMissingEpisodes: true,
+    upgraderHuntAvailableMovies: true,
     upgraderMinSizeGB: 5,
     upgraderMaxActionsPerHour: 25,
     upgraderMinScoreDelta: 10,

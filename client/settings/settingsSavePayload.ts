@@ -86,6 +86,8 @@ type SettingsSavePayloadInput = {
     scanner: ScannerSettings;
     upgraderEnabled: boolean;
     upgraderAutomationEnabled: boolean;
+    upgraderHuntMissingEpisodes: boolean;
+    upgraderHuntAvailableMovies: boolean;
     upgraderMinSizeGB: number;
     upgraderMaxActionsPerHour: number;
     upgraderMinScoreDelta: number;

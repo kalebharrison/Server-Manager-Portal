@@ -8,6 +8,7 @@ const entryTime = (entry: UpgraderAuditEntry) => entry.timestamp || entry.at || 
 const actionLabel = (entry: UpgraderAuditEntry) => {
     switch (entry.action) {
         case 'upgrade': return 'Grabbed better release';
+        case 'missing_search': return 'Grabbed missing';
         case 'profile_change': return 'Profile change';
         case 'series_search': return 'Series search';
         case 'episode_search': return 'Episode search';
