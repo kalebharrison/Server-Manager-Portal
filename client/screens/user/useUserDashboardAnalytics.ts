@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { apiFetch } from '../../shared/api';
+import { useVisibleInterval } from '../../shared/useVisibleInterval';
 import { resolveHomeAnalyticsDays } from '../../shared/userProfile';
 import { buildJellyfinHomeAnalytics } from './userDashboardUtils';
 import { analyticsCacheKey, readCachedHomeAnalytics } from './userDashboardCache';
+
+const HOME_ANALYTICS_REFRESH_MS = 5 * 60 * 1000;
 
 type UseUserDashboardAnalyticsOptions = {
     sessionInfo: any;
@@ -27,42 +30,54 @@ export const useUserDashboardAnalytics = ({
         setAnalyticsDays(resolveHomeAnalyticsDays(user));
     }, [user?.homeAnalyticsDays]);
 
-    useEffect(() => {
-        let cancelled = false;
-        const fetchAnalytics = async () => {
-            if (!sessionInfo?.session?.isAdmin && !user) {
-                setAnalyticsLoading(false);
-                return;
-            }
-            const cached = readCachedHomeAnalytics(sessionInfo, analyticsDays);
-            if (cached) setAnalytics(cached);
-            try {
-                setAnalyticsLoading(!cached);
+    const fetchAnalytics = useCallback(async (options: { quiet?: boolean } = {}) => {
+        if (!sessionInfo?.session?.isAdmin && !user) {
+            setAnalyticsLoading(false);
+            return;
+        }
+        const cached = readCachedHomeAnalytics(sessionInfo, analyticsDays);
+        if (cached && !options.quiet) setAnalytics(cached);
+        try {
+            if (!options.quiet) setAnalyticsLoading(!cached);
+            setAnalyticsError(null);
+            const res = isJellyfinPortal
+                ? buildJellyfinHomeAnalytics(await apiFetch(`/api/jellystat/analytics?days=${analyticsDays}`, {
+                    forceRefresh: true,
+                    cacheTtlMs: 0,
+                }))
+                : await apiFetch(`/api/plex/analytics/me?days=${analyticsDays}`, {
+                    forceRefresh: true,
+                    cacheTtlMs: 0,
+                });
+            setAnalytics(res);
+            sessionStorage.setItem(analyticsCacheKey(sessionInfo, analyticsDays), JSON.stringify(res));
+        } catch (e: any) {
+            const message = e?.message || 'Failed to load your analytics';
+            if (!cached) {
+                setAnalyticsError(message);
+                setAnalytics(null);
+                onErrorToast(message);
+            } else {
                 setAnalyticsError(null);
-                const res = isJellyfinPortal
-                    ? buildJellyfinHomeAnalytics(await apiFetch(`/api/jellystat/analytics?days=${analyticsDays}`))
-                    : await apiFetch(`/api/plex/analytics/me?days=${analyticsDays}`);
-                if (cancelled) return;
-                setAnalytics(res);
-                sessionStorage.setItem(analyticsCacheKey(sessionInfo, analyticsDays), JSON.stringify(res));
-            } catch (e: any) {
-                if (!cancelled) {
-                    const message = e?.message || 'Failed to load your analytics';
-                    if (!cached) {
-                        setAnalyticsError(message);
-                        setAnalytics(null);
-                        onErrorToast(message);
-                    } else {
-                        setAnalyticsError(null);
-                    }
-                }
-            } finally {
-                if (!cancelled) setAnalyticsLoading(false);
             }
-        };
-        fetchAnalytics();
-        return () => { cancelled = true; };
-    }, [user, sessionInfo.session.isAdmin, analyticsDays, isJellyfinPortal, onErrorToast]);
+        } finally {
+            setAnalyticsLoading(false);
+        }
+    }, [
+        user,
+        sessionInfo?.session?.isAdmin,
+        sessionInfo?.session?.accountId,
+        sessionInfo?.session?.username,
+        analyticsDays,
+        isJellyfinPortal,
+        onErrorToast,
+    ]);
+
+    useEffect(() => {
+        void fetchAnalytics();
+    }, [fetchAnalytics]);
+
+    useVisibleInterval(() => { void fetchAnalytics({ quiet: true }); }, HOME_ANALYTICS_REFRESH_MS);
 
     return {
         analytics,

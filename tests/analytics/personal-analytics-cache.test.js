@@ -24,3 +24,24 @@ test('personal analytics snapshots persist by server, account, and period', asyn
     assert.equal(persisted.totalPlays, 1);
     assert.equal(builds, 1);
 });
+
+test('stale personal analytics awaits a rebuild instead of returning old data', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'portal-personal-analytics-stale-'));
+    const cachePath = path.join(dir, 'cache.json');
+    const identity = { serverIdentifier: 'server-1', accountId: '7', period: 30 };
+    let builds = 0;
+
+    const cache = createPersonalAnalyticsCache({
+        cachePath,
+        loadFile,
+        saveFile,
+        refreshIntervalMs: 25,
+    });
+    const first = await cache.get(identity, async () => ({ totalPlays: ++builds }));
+    assert.equal(first.totalPlays, 1);
+
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    const second = await cache.get(identity, async () => ({ totalPlays: ++builds }));
+    assert.equal(second.totalPlays, 2);
+    assert.equal(builds, 2);
+});
