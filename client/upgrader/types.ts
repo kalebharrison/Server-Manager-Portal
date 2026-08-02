@@ -13,6 +13,22 @@ export type UpgraderStatus = {
     plexConfigured: boolean;
     arrConfigured: boolean;
     automationEnabled: boolean;
+    cleanupAutomationEnabled?: boolean;
+    qcMetrics?: {
+        wastedBytes?: number;
+        killsByReason?: Record<string, number>;
+        lastCleanupAt?: string | null;
+    };
+    qcThresholds?: {
+        metaDlMinutes: number;
+        stalledHours: number;
+        completedNotImportingMinutes: number;
+        researchThrottleHours: number;
+        snoozeDefaultHours: number;
+    };
+    clientsConfigured?: { qbit: boolean; sab: boolean };
+    discordDigestEnabled?: boolean;
+    preferImportDiscordOnly?: boolean;
     profileMapConfigured: boolean;
     maxActionsPerHour: number;
     minScoreDelta?: number;

@@ -33,7 +33,7 @@ export const buildNavItemsConfig = (onLogout: () => void): Record<string, NavIte
     'mediastack': { label: 'Calendar', icon: Layers, route: 'mediastack', adminOnly: false },
     'request': { label: 'Request Content', icon: Sparkles, route: 'request', adminOnly: false },
     'scanner': { label: 'Scanner', icon: Radar, route: 'scanner', adminOnly: true },
-    'upgrader': { label: 'Quality Hunt', icon: ArrowUpCircle, route: 'upgrader', adminOnly: true },
+    'upgrader': { label: 'Quality Control', icon: ArrowUpCircle, route: 'upgrader', adminOnly: true },
     'preferences': { label: 'Preferences', icon: SlidersHorizontal, route: 'preferences', adminOnly: false },
     'settings': { label: 'Settings', icon: Settings, route: 'settings', adminOnly: true },
     'logout': { label: 'Logout', icon: LogOut, route: '', adminOnly: false, onClick: onLogout }

@@ -1,0 +1,174 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+    QC_REASONS,
+    classifyQueueItem,
+    findDuplicates,
+    findOrphans,
+    isResearchThrottled,
+    isSeedingProtected,
+    isSnoozed,
+    itemKey,
+    thresholdsFromConfig,
+} from '../../lib/upgrader/qc-rules.js';
+
+const hour = 60 * 60 * 1000;
+const minute = 60 * 1000;
+
+test('thresholdsFromConfig applies defaults', () => {
+    const t = thresholdsFromConfig({});
+    assert.equal(t.metaDlMinutes, 30);
+    assert.equal(t.stalledHours, 6);
+    assert.equal(t.completedNotImportingMinutes, 60);
+    assert.equal(t.researchThrottleHours, 24);
+    assert.equal(t.snoozeDefaultHours, 24);
+});
+
+test('classifyQueueItem detects metaDL past threshold', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcMetaDlMinutes: 30 }),
+        clientItem: {
+            client: 'qbit',
+            state: 'metaDL',
+            added_on: Math.floor((now - 45 * minute) / 1000),
+            progress: 0,
+        },
+        arrItem: { status: 'downloading' },
+    });
+    assert.equal(reason, QC_REASONS.metaDL);
+});
+
+test('classifyQueueItem detects stalled past threshold', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcStalledHours: 6 }),
+        clientItem: {
+            client: 'qbit',
+            state: 'stalledDL',
+            added_on: Math.floor((now - 7 * hour) / 1000),
+            progress: 0.2,
+            dlspeed: 0,
+        },
+        arrItem: {
+            status: 'warning',
+            statusMessages: [{ title: 'Download stalled' }],
+        },
+    });
+    assert.equal(reason, QC_REASONS.stalled);
+});
+
+test('classifyQueueItem detects failedImport', () => {
+    const reason = classifyQueueItem({
+        now: Date.now(),
+        thresholds: thresholdsFromConfig(),
+        arrItem: {
+            status: 'completed',
+            trackedDownloadStatus: 'warning',
+            trackedDownloadState: 'importFailed',
+            errorMessage: 'Failed to import download',
+        },
+        clientItem: { client: 'qbit', state: 'uploading', progress: 1 },
+    });
+    assert.equal(reason, QC_REASONS.failedImport);
+});
+
+test('classifyQueueItem detects completedNotImporting past threshold', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 60 }),
+        arrItem: {
+            status: 'completed',
+            trackedDownloadState: 'importPending',
+            added: new Date(now - 90 * minute).toISOString(),
+        },
+        clientItem: {
+            client: 'qbit',
+            state: 'uploading',
+            progress: 1,
+            completion_on: Math.floor((now - 90 * minute) / 1000),
+        },
+    });
+    assert.equal(reason, QC_REASONS.completedNotImporting);
+});
+
+test('classifyQueueItem returns null when healthy', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig(),
+        arrItem: { status: 'downloading', trackedDownloadState: 'downloading' },
+        clientItem: {
+            client: 'qbit',
+            state: 'downloading',
+            progress: 0.4,
+            dlspeed: 500000,
+            added_on: Math.floor(now / 1000),
+        },
+    });
+    assert.equal(reason, null);
+});
+
+test('findDuplicates keeps best progress and marks losers', () => {
+    const dupes = findDuplicates([
+        { id: 1, movieId: 10, size: 100, sizeleft: 80 },
+        { id: 2, movieId: 10, size: 100, sizeleft: 10 },
+        { id: 3, movieId: 11, size: 50, sizeleft: 0 },
+    ]);
+    assert.equal(dupes.length, 1);
+    assert.equal(dupes[0].id, 1);
+    assert.equal(dupes[0].reason, QC_REASONS.duplicate);
+    assert.equal(dupes[0].duplicateOf, 2);
+});
+
+test('findDuplicates groups sonarr episodes', () => {
+    const dupes = findDuplicates([
+        { id: 1, seriesId: 5, episodeId: 9, size: 10, sizeleft: 5 },
+        { id: 2, seriesId: 5, episodeId: 9, size: 20, sizeleft: 0 },
+        { id: 3, seriesId: 5, episodeId: 10, size: 20, sizeleft: 0 },
+    ]);
+    assert.equal(dupes.length, 1);
+    assert.equal(dupes[0].id, 1);
+});
+
+test('findOrphans skips known downloadIds and seeding protected', () => {
+    const orphans = findOrphans({
+        arrDownloadIds: ['AAA', 'bbb'],
+        clientItems: [
+            { id: 'aaa', hash: 'aaa', client: 'qbit', state: 'downloading', progress: 0.5 },
+            { id: 'ccc', hash: 'ccc', client: 'qbit', state: 'downloading', progress: 0.1 },
+            { id: 'ddd', hash: 'ddd', client: 'qbit', state: 'uploading', progress: 1 },
+        ],
+    });
+    assert.equal(orphans.length, 1);
+    assert.equal(orphans[0].id, 'ccc');
+    assert.equal(orphans[0].reason, QC_REASONS.orphan);
+});
+
+test('isSeedingProtected only for completed qbit upload states', () => {
+    assert.equal(isSeedingProtected({ client: 'qbit', state: 'uploading', progress: 1 }), true);
+    assert.equal(isSeedingProtected({ client: 'qbit', state: 'stalledUP', progress: 1 }), true);
+    assert.equal(isSeedingProtected({ client: 'qbit', state: 'forcedUP', progress: 1 }), true);
+    assert.equal(isSeedingProtected({ client: 'qbit', state: 'uploading', progress: 0.9 }), false);
+    assert.equal(isSeedingProtected({ client: 'sab', state: 'Completed', progress: 1 }), false);
+});
+
+test('isSnoozed and isResearchThrottled honor until timestamps', () => {
+    const now = Date.now();
+    const prefs = {
+        downloadSnoozed: { 'qbit:abc': new Date(now + hour).toISOString() },
+        researchCooldowns: { 'some title': new Date(now + hour).toISOString() },
+    };
+    assert.equal(isSnoozed(prefs, 'qbit:abc', now), true);
+    assert.equal(isSnoozed(prefs, 'qbit:abc', now + 2 * hour), false);
+    assert.equal(isResearchThrottled(prefs, 'Some Title', now), true);
+    assert.equal(isResearchThrottled(prefs, 'other', now), false);
+});
+
+test('itemKey is stable for client and arr items', () => {
+    assert.equal(itemKey({ client: 'qbit', id: 'AbC' }), 'qbit:abc');
+    assert.equal(itemKey({ arrType: 'radarr', arrInstanceId: 'r1', arrQueueId: 9 }), 'arr:radarr:r1:9');
+});

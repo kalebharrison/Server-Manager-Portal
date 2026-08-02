@@ -95,6 +95,20 @@ type SettingsSavePayloadInput = {
         preferRemux: boolean;
         preferSeasonPacks: boolean;
     };
+    qcCleanupAutomationEnabled: boolean;
+    qcMetaDlMinutes: number;
+    qcStalledHours: number;
+    qcCompletedNotImportingMinutes: number;
+    qcResearchThrottleHours: number;
+    qcSnoozeDefaultHours: number;
+    qcDiscordDigestEnabled: boolean;
+    qcPreferImportDiscordOnly: boolean;
+    qcQbitUrl: string;
+    qcQbitUsername: string;
+    qcQbitPassword: string;
+    qcSabUrl: string;
+    qcSabApiKey: string;
+    qcBlockedExtensions: string[];
     dashboardLayout: DashboardLayoutConfig;
 };
 

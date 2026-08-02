@@ -1,6 +1,15 @@
 import { portalUrl } from '../shared/basePath';
 
-export type UpgraderTab = 'overview' | 'history' | 'exclusions' | 'profiles';
+export type UpgraderTab =
+    | 'overview'
+    | 'hunt'
+    | 'downloads'
+    | 'clients'
+    | 'rules'
+    | 'activity'
+    | 'profiles'
+    | 'history'
+    | 'exclusions';
 
 export type UpgraderProfilesUrlState = {
     instance: string;
@@ -13,7 +22,25 @@ export type UpgraderUrlState = {
     profiles: UpgraderProfilesUrlState;
 };
 
-const VALID_TABS = new Set<UpgraderTab>(['overview', 'history', 'exclusions', 'profiles']);
+const VALID_TABS = new Set<UpgraderTab>([
+    'overview',
+    'hunt',
+    'downloads',
+    'clients',
+    'rules',
+    'activity',
+    'profiles',
+    'history',
+    'exclusions',
+]);
+
+const normalizeTab = (raw: string | null): UpgraderTab => {
+    if (!raw || raw === 'browse') return 'overview';
+    if (raw === 'history') return 'activity';
+    if (raw === 'exclusions') return 'rules';
+    if (VALID_TABS.has(raw as UpgraderTab)) return raw as UpgraderTab;
+    return 'overview';
+};
 
 export const defaultProfilesUrlState = (): UpgraderProfilesUrlState => ({
     instance: '',
@@ -23,10 +50,7 @@ export const defaultProfilesUrlState = (): UpgraderProfilesUrlState => ({
 
 export const parseUpgraderUrl = (search = ''): UpgraderUrlState => {
     const params = new URLSearchParams(search);
-    const tabRaw = params.get('tab');
-    // Legacy Library browse URLs land on Overview.
-    const normalized = tabRaw === 'browse' || !tabRaw ? 'overview' : tabRaw;
-    const tab = VALID_TABS.has(normalized as UpgraderTab) ? (normalized as UpgraderTab) : 'overview';
+    const tab = normalizeTab(params.get('tab'));
 
     return {
         tab,

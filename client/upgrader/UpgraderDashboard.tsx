@@ -1,12 +1,27 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowUpCircle, RefreshCw, Settings as SettingsIcon, History, Ban, Settings2, LayoutDashboard, FlaskConical } from 'lucide-react';
+import {
+    ArrowUpCircle,
+    RefreshCw,
+    Settings as SettingsIcon,
+    History,
+    Ban,
+    Settings2,
+    LayoutDashboard,
+    FlaskConical,
+    Download,
+    HardDrive,
+    Crosshair,
+} from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
+import { formatSizeCeil } from '../shared/format';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
 import { UpgraderHistoryPanel } from './UpgraderHistoryPanel';
-import { UpgraderExclusionsPanel } from './UpgraderExclusionsPanel';
 import { UpgraderProfilesTab } from './UpgraderProfilesTab';
+import { QcClientsPanel } from './QcClientsPanel';
+import { QcDownloadsPanel } from './QcDownloadsPanel';
+import { QcRulesPanel } from './QcRulesPanel';
 import type {
     UpgraderAuditEntry,
     UpgraderHuntResponse,
@@ -22,6 +37,15 @@ import {
 } from './upgraderUrlState';
 
 type LibraryGroup<T> = { key: string; label: string; items: T[] };
+
+const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode; title: string }> = [
+    { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" />, title: 'Status and recent activity' },
+    { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-4 h-4" />, title: 'How it hunts and dry-run preview' },
+    { id: 'downloads', label: 'Downloads', icon: <Download className="w-4 h-4" />, title: 'Download health and cleanup' },
+    { id: 'clients', label: 'Clients', icon: <HardDrive className="w-4 h-4" />, title: 'qBittorrent / SABnzbd extension policy' },
+    { id: 'rules', label: 'Rules', icon: <Ban className="w-4 h-4" />, title: 'Thresholds and skip list' },
+    { id: 'activity', label: 'Activity', icon: <History className="w-4 h-4" />, title: 'What Quality Control grabbed or skipped' },
+];
 
 const groupByLibrary = <T extends { arrInstanceName?: string | null; libraryName?: string | null; arrType?: string | null; libraryKey?: string | null }>(
     entries: T[],
@@ -64,7 +88,9 @@ const entryTime = (entry: UpgraderAuditEntry) => entry.timestamp || entry.at || 
 
 const isUpgraderDisabledError = (error: unknown) => {
     const msg = String((error as Error)?.message || error || '').toLowerCase();
-    return msg.includes('library upgrader is disabled') || msg.includes('plex-only');
+    return msg.includes('library upgrader is disabled')
+        || msg.includes('quality control is disabled')
+        || msg.includes('plex-only');
 };
 
 export const UpgraderDashboard: React.FC = () => {
@@ -153,8 +179,6 @@ export const UpgraderDashboard: React.FC = () => {
                     type: String(instance.type || 'arr'),
                 }))
                 : [];
-            // Prefer configured root-folder libraries when present so Overview matches Arr roots
-            // even before the first index refresh after a settings change.
             setLibraries(configuredLibraries.length
                 ? configuredLibraries
                 : (indexedLibraries.length ? indexedLibraries : instanceList));
@@ -168,7 +192,7 @@ export const UpgraderDashboard: React.FC = () => {
                 setFeatureEnabled(false);
                 return;
             }
-            addToast(e.message || 'Failed to load Quality Hunt', 'error');
+            addToast(e.message || 'Failed to load Quality Control', 'error');
         } finally {
             if (!silent) setLoading(false);
         }
@@ -206,14 +230,14 @@ export const UpgraderDashboard: React.FC = () => {
     };
 
     const handleDryRun = async () => {
-        setActiveTab('overview');
+        setActiveTab('hunt');
         setDryRunning(true);
         setDryRun(null);
         addToast('Dry run started — searching Arr for a small sample per library…', 'info');
         try {
             const result = await apiFetch('/api/upgrader/hunt', {
                 method: 'POST',
-                body: JSON.stringify({ dryRun: true, limit: 2 }), // per-library sample size
+                body: JSON.stringify({ dryRun: true, limit: 2 }),
             }) as UpgraderHuntResponse;
             setDryRun(result || null);
             if (!result?.ran) {
@@ -249,7 +273,6 @@ export const UpgraderDashboard: React.FC = () => {
     const dryRunByLibrary = useMemo(() => {
         if (!dryRun) return [];
         const results = dryRun.results || [];
-        // Hunt response is the source of truth — don't seed empty Arr-instance ghosts from Overview.
         return (dryRun.libraries || [])
             .map((lib) => ({
                 key: lib.key,
@@ -270,7 +293,7 @@ export const UpgraderDashboard: React.FC = () => {
         considered: number;
     }) => {
         if ((group.withFiles || 0) === 0) {
-            return 'No titles with files in the Quality Hunt index for this library. Click Refresh index, wait for it to finish, then dry-run again.';
+            return 'No titles with files in the Quality Control index for this library. Click Refresh index, wait for it to finish, then dry-run again.';
         }
         if ((group.available || 0) === 0) {
             return 'Titles are on disk, but none are hunt-eligible yet (scores still unknown, excluded, or cooling down).';
@@ -291,6 +314,9 @@ export const UpgraderDashboard: React.FC = () => {
     const remainingActions = Math.max(0, maxActions - usedActions);
     const minDelta = status?.minScoreDelta ?? 10;
     const prefs = status?.preferences;
+    const killsByReason = status?.qcMetrics?.killsByReason || {};
+    const killEntries = Object.entries(killsByReason).filter(([, n]) => Number(n) > 0);
+    const wastedBytes = Number(status?.qcMetrics?.wastedBytes || 0);
 
     return (
         <div className="page-shell">
@@ -300,10 +326,10 @@ export const UpgraderDashboard: React.FC = () => {
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <ArrowUpCircle className="w-8 h-8 text-plex" />
-                            <h1 className="page-title">Quality Hunt</h1>
+                            <h1 className="page-title">Quality Control</h1>
                         </div>
                         <p className="text-sm text-muted max-w-2xl">
-                            Hands-off Sonarr/Radarr upgrades. The hunt finds higher-scoring releases and grabs them on a schedule.
+                            Download health and Sonarr/Radarr/Lidarr upgrades. Hunt better releases and clean doomed queues.
                         </p>
                     </div>
                     {featureEnabled && (
@@ -315,7 +341,7 @@ export const UpgraderDashboard: React.FC = () => {
                                 disabled={dryRunning || rebuilding || !!status?.rebuildInProgress}
                             >
                                 <FlaskConical className={`w-4 h-4 ${dryRunning ? 'animate-pulse' : ''}`} />
-                                {dryRunning ? 'Dry run…' : 'Dry run'}
+                                {dryRunning ? 'Dry run…' : 'Dry run hunt'}
                             </button>
                             <button
                                 type="button"
@@ -332,9 +358,9 @@ export const UpgraderDashboard: React.FC = () => {
 
                 {!featureEnabled && (
                     <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
-                        <h3 className="text-xl font-bold text-plex mb-2">Quality Hunt is off</h3>
-                        <p className="text-sm text-muted mb-3">Turn it on to index Arr libraries and run the auto-hunt.</p>
-                        <p className="text-xs text-muted mb-4">Settings → Quality Hunt → enable, then save.</p>
+                        <h3 className="text-xl font-bold text-plex mb-2">Quality Control is off</h3>
+                        <p className="text-sm text-muted mb-3">Turn it on to index Arr libraries, hunt upgrades, and monitor download health.</p>
+                        <p className="text-xs text-muted mb-4">Settings → Quality Control → enable, then save.</p>
                         <a
                             href={portalUrl('/settings#upgrader')}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-plex text-background font-bold no-underline hover:bg-plex-hover transition-colors"
@@ -348,22 +374,29 @@ export const UpgraderDashboard: React.FC = () => {
                 {featureEnabled && (
                     <>
                         <div className="flex flex-wrap gap-2">
-                            <button type="button" className={tabButtonClass('overview')} onClick={() => handleTabChange('overview')} title="Hunt status and recent grabs">
-                                <LayoutDashboard className="w-4 h-4" />
-                                Overview
-                            </button>
-                            <button type="button" className={tabButtonClass('history')} onClick={() => handleTabChange('history')} title="What Quality Hunt grabbed or skipped">
-                                <History className="w-4 h-4" />
-                                Activity
-                            </button>
-                            <button type="button" className={tabButtonClass('exclusions')} onClick={() => handleTabChange('exclusions')} title="Titles the hunt should ignore">
-                                <Ban className="w-4 h-4" />
-                                Skip list
-                            </button>
-                            <button type="button" className={tabButtonClass('profiles')} onClick={() => handleTabChange('profiles')} title="Tune Arr custom formats / quality profiles">
-                                <Settings2 className="w-4 h-4" />
-                                Arr scores
-                            </button>
+                            {CHROME_TABS.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    className={tabButtonClass(tab.id)}
+                                    onClick={() => handleTabChange(tab.id)}
+                                    title={tab.title}
+                                >
+                                    {tab.icon}
+                                    {tab.label}
+                                </button>
+                            ))}
+                            {activeTab === 'profiles' && (
+                                <button
+                                    type="button"
+                                    className={tabButtonClass('profiles')}
+                                    onClick={() => handleTabChange('profiles')}
+                                    title="Tune Arr custom formats / quality profiles"
+                                >
+                                    <Settings2 className="w-4 h-4" />
+                                    Arr scores
+                                </button>
+                            )}
                         </div>
 
                         {loading ? (
@@ -386,6 +419,19 @@ export const UpgraderDashboard: React.FC = () => {
                                                 </a>
                                             </div>
                                         )}
+                                        {!status?.cleanupAutomationEnabled && (
+                                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                <p className="text-sm text-amber-100">
+                                                    Download cleanup automation is off. Manual cleanup still works on the Downloads tab.
+                                                </p>
+                                                <a
+                                                    href={portalUrl('/settings#upgrader')}
+                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text no-underline hover:border-plex/40 shrink-0"
+                                                >
+                                                    Open Settings
+                                                </a>
+                                            </div>
+                                        )}
 
                                         <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
                                             <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Status</h2>
@@ -397,12 +443,26 @@ export const UpgraderDashboard: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Cleanup</div>
+                                                    <div className={`mt-1 text-lg font-bold ${status?.cleanupAutomationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
+                                                        {status?.cleanupAutomationEnabled ? 'On' : 'Off'}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
                                                     <div className="text-[11px] uppercase tracking-wide text-muted">Grabs this hour</div>
                                                     <div className="mt-1 text-lg font-bold text-text">
                                                         {usedActions}/{maxActions}
                                                         <span className="ml-1 text-xs font-semibold text-muted">({remainingActions} left)</span>
                                                     </div>
                                                 </div>
+                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Wasted bytes</div>
+                                                    <div className="mt-1 text-lg font-bold text-text">
+                                                        {formatSizeCeil(wastedBytes)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                                 <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
                                                     <div className="text-[11px] uppercase tracking-wide text-muted">Index</div>
                                                     <div className="mt-1 text-lg font-bold text-text">
@@ -416,24 +476,155 @@ export const UpgraderDashboard: React.FC = () => {
                                                         {libraries.length || (status?.arrConfigured ? 'Configured' : 'None')}
                                                     </div>
                                                 </div>
+                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Clients</div>
+                                                    <div className="mt-1 text-sm font-bold text-text">
+                                                        qBit {status?.clientsConfigured?.qbit ? '✓' : '—'}
+                                                        {' · '}SAB {status?.clientsConfigured?.sab ? '✓' : '—'}
+                                                    </div>
+                                                </div>
                                             </div>
                                             {summary && (
                                                 <p className="text-xs text-muted">
                                                     {summary.upgradeCandidates ?? 0} titles with files on disk
                                                     {summary.avgCustomFormatScore != null ? ` · avg Arr score ${summary.avgCustomFormatScore}` : ''}
                                                     {' · '}min score gain {minDelta}
-                                                    {' · '}libraries are Sonarr/Radarr root folders
                                                     {summary.scoreUnknownCount ? ` · ${summary.scoreUnknownCount} shows still unscored` : ''}
                                                 </p>
                                             )}
                                         </section>
 
                                         <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
-                                            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">How it hunts</h2>
+                                            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Kills by reason</h2>
+                                            {killEntries.length === 0 ? (
+                                                <p className="text-xs text-muted">No cleanup kills recorded yet.</p>
+                                            ) : (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {killEntries.map(([reason, count]) => (
+                                                        <span
+                                                            key={reason}
+                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-background/40 px-2.5 py-1 text-xs"
+                                                        >
+                                                            <span className="font-semibold text-text">{reason}</span>
+                                                            <span className="text-muted">{count}</span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {status?.qcMetrics?.lastCleanupAt && (
+                                                <p className="text-[11px] text-muted">
+                                                    Last cleanup {new Date(status.qcMetrics.lastCleanupAt).toLocaleString()}
+                                                </p>
+                                            )}
+                                        </section>
+
+                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-4 flex flex-wrap gap-3">
+                                            <button
+                                                type="button"
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
+                                                onClick={handleDryRun}
+                                                disabled={dryRunning}
+                                            >
+                                                <FlaskConical className="w-3.5 h-3.5" />
+                                                Dry-run hunt
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
+                                                onClick={() => handleTabChange('downloads')}
+                                            >
+                                                <Download className="w-3.5 h-3.5" />
+                                                Downloads
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
+                                                onClick={() => handleTabChange('hunt')}
+                                            >
+                                                <Crosshair className="w-3.5 h-3.5" />
+                                                Hunt details
+                                            </button>
+                                        </section>
+
+                                        <section className="space-y-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Just hunted</h2>
+                                                <button
+                                                    type="button"
+                                                    className="text-xs font-bold text-plex hover:underline"
+                                                    onClick={() => handleTabChange('activity')}
+                                                >
+                                                    Full activity
+                                                </button>
+                                            </div>
+                                            {grabsByLibrary.length === 0 ? (
+                                                <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
+                                                    <p className="text-sm text-muted">
+                                                        No libraries indexed yet. Refresh the index, or run a dry run to preview candidates.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                grabsByLibrary.map((group) => (
+                                                    <div key={group.key} className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <h3 className="text-sm font-bold text-text">{group.label}</h3>
+                                                            <span className="text-[11px] text-muted">
+                                                                {group.items.length ? `${group.items.length} recent` : 'No recent grabs'}
+                                                            </span>
+                                                        </div>
+                                                        {group.items.length === 0 ? (
+                                                            <p className="text-xs text-muted">Nothing grabbed from this library yet.</p>
+                                                        ) : (
+                                                            <div className="space-y-2">
+                                                                {group.items.slice(0, 8).map((entry) => {
+                                                                    const when = entryTime(entry);
+                                                                    const delta = entry.currentScore != null && entry.candidateScore != null
+                                                                        ? entry.candidateScore - entry.currentScore
+                                                                        : null;
+                                                                    return (
+                                                                        <div key={entry.id} className="rounded-lg border border-border/50 bg-background/40 px-3 py-2">
+                                                                            <div className="flex items-center justify-between gap-2">
+                                                                                <div className="text-xs font-semibold text-text">{entry.title}</div>
+                                                                                {delta != null && (
+                                                                                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">+{delta}</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="text-[11px] text-muted mt-0.5">
+                                                                                {[
+                                                                                    entry.releaseTitle,
+                                                                                    when ? new Date(when).toLocaleString() : null,
+                                                                                ].filter(Boolean).join(' · ')}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </section>
+                                    </div>
+                                )}
+
+                                {activeTab === 'hunt' && (
+                                    <div className="flex flex-col gap-6">
+                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
+                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <h2 className="text-sm font-bold uppercase tracking-wide text-muted">How it hunts</h2>
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
+                                                    onClick={() => handleTabChange('profiles')}
+                                                >
+                                                    <Settings2 className="w-3.5 h-3.5" />
+                                                    Arr scores
+                                                </button>
+                                            </div>
                                             <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
                                                 <li>
                                                     <span className="text-text font-semibold">Fair per library.</span>{' '}
-                                                    Each configured Arr root folder gets a turn every cycle (round-robin). Shared Sonarr/Radarr instances with multiple roots are hunted separately.
+                                                    Each configured Arr root folder gets a turn every cycle (round-robin). Shared Sonarr/Radarr/Lidarr instances with multiple roots are hunted separately.
                                                 </li>
                                                 <li>
                                                     <span className="text-text font-semibold">Worst scores first inside each library.</span>{' '}
@@ -464,6 +655,17 @@ export const UpgraderDashboard: React.FC = () => {
                                                     ) : '.'}
                                                 </li>
                                             </ol>
+                                            <div className="pt-2">
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-bold text-text hover:border-plex/40 disabled:opacity-50"
+                                                    onClick={handleDryRun}
+                                                    disabled={dryRunning || rebuilding || !!status?.rebuildInProgress}
+                                                >
+                                                    <FlaskConical className={`w-4 h-4 ${dryRunning ? 'animate-pulse' : ''}`} />
+                                                    {dryRunning ? 'Dry run…' : 'Dry-run hunt'}
+                                                </button>
+                                            </div>
                                         </section>
 
                                         {(dryRunning || dryRun) && (
@@ -572,73 +774,29 @@ export const UpgraderDashboard: React.FC = () => {
                                                 })}
                                             </section>
                                         )}
-
-                                        <section className="space-y-4">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Just hunted</h2>
-                                                <button
-                                                    type="button"
-                                                    className="text-xs font-bold text-plex hover:underline"
-                                                    onClick={() => handleTabChange('history')}
-                                                >
-                                                    Full activity
-                                                </button>
-                                            </div>
-                                            {grabsByLibrary.length === 0 ? (
-                                                <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
-                                                    <p className="text-sm text-muted">
-                                                        No libraries indexed yet. Refresh the index, or run a dry run to preview candidates.
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                grabsByLibrary.map((group) => (
-                                                    <div key={group.key} className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <h3 className="text-sm font-bold text-text">{group.label}</h3>
-                                                            <span className="text-[11px] text-muted">
-                                                                {group.items.length ? `${group.items.length} recent` : 'No recent grabs'}
-                                                            </span>
-                                                        </div>
-                                                        {group.items.length === 0 ? (
-                                                            <p className="text-xs text-muted">Nothing grabbed from this library yet.</p>
-                                                        ) : (
-                                                            <div className="space-y-2">
-                                                                {group.items.slice(0, 12).map((entry) => {
-                                                                    const when = entryTime(entry);
-                                                                    const delta = entry.currentScore != null && entry.candidateScore != null
-                                                                        ? entry.candidateScore - entry.currentScore
-                                                                        : null;
-                                                                    return (
-                                                                        <div key={entry.id} className="rounded-lg border border-border/50 bg-background/40 px-3 py-2">
-                                                                            <div className="flex items-center justify-between gap-2">
-                                                                                <div className="text-xs font-semibold text-text">{entry.title}</div>
-                                                                                {delta != null && (
-                                                                                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">+{delta}</span>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="text-[11px] text-muted mt-0.5">
-                                                                                {[
-                                                                                    entry.releaseTitle,
-                                                                                    when ? new Date(when).toLocaleString() : null,
-                                                                                ].filter(Boolean).join(' · ')}
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))
-                                            )}
-                                        </section>
                                     </div>
                                 )}
 
-                                {activeTab === 'history' && <UpgraderHistoryPanel />}
-
-                                {activeTab === 'exclusions' && (
-                                    <UpgraderExclusionsPanel addToast={addToast} onChanged={() => loadData(true)} />
+                                {activeTab === 'downloads' && (
+                                    <QcDownloadsPanel
+                                        onToast={addToast}
+                                        snoozeDefaultHours={status?.qcThresholds?.snoozeDefaultHours ?? 24}
+                                    />
                                 )}
+
+                                {activeTab === 'clients' && (
+                                    <QcClientsPanel onToast={addToast} />
+                                )}
+
+                                {activeTab === 'rules' && (
+                                    <QcRulesPanel
+                                        status={status}
+                                        onToast={addToast}
+                                        onChanged={() => loadData(true)}
+                                    />
+                                )}
+
+                                {(activeTab === 'activity' || activeTab === 'history') && <UpgraderHistoryPanel />}
 
                                 {activeTab === 'profiles' && (
                                     <UpgraderProfilesTab

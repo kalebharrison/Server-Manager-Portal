@@ -221,7 +221,7 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
                             Arr scores setup
                         </h3>
                         <p className="text-sm text-muted mt-1">
-                            Tune Sonarr/Radarr custom formats and quality profiles so scores reward Remux, DV/HDR, and Atmos. Quality Hunt uses those scores when grabbing upgrades.
+                            Tune Sonarr/Radarr custom formats and quality profiles so scores reward Remux, DV/HDR, and Atmos. Quality Control uses those scores when grabbing upgrades.
                         </p>
                     </div>
                     <div className="flex items-center gap-3">

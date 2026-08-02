@@ -36,7 +36,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             { id: 'metadata', label: 'Metadata', keywords: ['tmdb', 'tvdb', 'artwork', 'genres', 'discovery', 'metadata'] },
             { id: 'status', label: 'Status Page', keywords: ['uptime', 'health', 'services', 'monitor'] },
             { id: 'scanner', label: 'Scanner (Admin Only)', keywords: ['autoscan', 'scanner', 'webhook', 'path rewrite', 'sonarr', 'radarr', 'lidarr', 'library refresh', 'admin'] },
-            { id: 'upgrader', label: 'Quality Hunt (Admin Only)', keywords: ['upgrade', 'quality', 'score', 'remux', 'sonarr', 'radarr', 'custom format', 'admin'] },
+            { id: 'upgrader', label: 'Quality Control (Admin Only)', keywords: ['upgrade', 'qc', 'quality control', 'download', 'quality', 'score', 'remux', 'sonarr', 'radarr', 'custom format', 'admin'] },
         ]
     },
     {

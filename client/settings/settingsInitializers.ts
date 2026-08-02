@@ -98,6 +98,20 @@ type SettingsHydrationSetters = {
         preferRemux: boolean;
         preferSeasonPacks: boolean;
     }) => void;
+    setQcCleanupAutomationEnabled: (value: boolean) => void;
+    setQcMetaDlMinutes: (value: number) => void;
+    setQcStalledHours: (value: number) => void;
+    setQcCompletedNotImportingMinutes: (value: number) => void;
+    setQcResearchThrottleHours: (value: number) => void;
+    setQcSnoozeDefaultHours: (value: number) => void;
+    setQcDiscordDigestEnabled: (value: boolean) => void;
+    setQcPreferImportDiscordOnly: (value: boolean) => void;
+    setQcQbitUrl: (value: string) => void;
+    setQcQbitUsername: (value: string) => void;
+    setQcQbitPassword: (value: string) => void;
+    setQcSabUrl: (value: string) => void;
+    setQcSabApiKey: (value: string) => void;
+    setQcBlockedExtensions: (value: string[]) => void;
     setTestRecipient: (value: string) => void;
     setServers: (value: any[]) => void;
     dashboardLayoutRef: React.MutableRefObject<DashboardLayoutConfig>;
@@ -202,6 +216,24 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
         preferRemux: initialSettings.upgraderPreferences?.preferRemux !== false,
         preferSeasonPacks: initialSettings.upgraderPreferences?.preferSeasonPacks !== false,
     });
+    setters.setQcCleanupAutomationEnabled(!!initialSettings.qcCleanupAutomationEnabled);
+    setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 30));
+    setters.setQcStalledHours(Math.max(1, Number(initialSettings.qcStalledHours) || 6));
+    setters.setQcCompletedNotImportingMinutes(Math.max(1, Number(initialSettings.qcCompletedNotImportingMinutes) || 60));
+    setters.setQcResearchThrottleHours(Math.max(1, Number(initialSettings.qcResearchThrottleHours) || 24));
+    setters.setQcSnoozeDefaultHours(Math.max(1, Number(initialSettings.qcSnoozeDefaultHours) || 24));
+    setters.setQcDiscordDigestEnabled(!!initialSettings.qcDiscordDigestEnabled);
+    setters.setQcPreferImportDiscordOnly(initialSettings.qcPreferImportDiscordOnly !== false);
+    setters.setQcQbitUrl(String(initialSettings.qcQbitUrl || ''));
+    setters.setQcQbitUsername(String(initialSettings.qcQbitUsername || ''));
+    setters.setQcQbitPassword(String(initialSettings.qcQbitPassword || ''));
+    setters.setQcSabUrl(String(initialSettings.qcSabUrl || ''));
+    setters.setQcSabApiKey(String(initialSettings.qcSabApiKey || ''));
+    setters.setQcBlockedExtensions(
+        Array.isArray(initialSettings.qcBlockedExtensions)
+            ? initialSettings.qcBlockedExtensions.map((entry: string) => String(entry || '').trim()).filter(Boolean)
+            : [],
+    );
     const layout = normalizeSectionLayout(initialSettings.dashboardLayout);
     setters.dashboardLayoutRef.current = layout;
     setters.setDashboardLayout(layout);
