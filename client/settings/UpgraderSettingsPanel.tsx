@@ -15,6 +15,7 @@ type Props = {
     huntAvailableMovies: boolean;
     minSizeGB: number;
     maxActionsPerHour: number;
+    maxDownloadsPerLibrary: number;
     minScoreDelta: number;
     preferences: Prefs;
     qcCleanupAutomationEnabled: boolean;
@@ -42,6 +43,7 @@ type Props = {
     onHuntAvailableMoviesChange: (value: boolean) => void;
     onMinSizeGBChange: (value: number) => void;
     onMaxActionsPerHourChange: (value: number) => void;
+    onMaxDownloadsPerLibraryChange: (value: number) => void;
     onMinScoreDeltaChange: (value: number) => void;
     onPreferencesChange: (value: Prefs) => void;
     onQcCleanupAutomationEnabledChange: (value: boolean) => void;
@@ -78,6 +80,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     huntAvailableMovies,
     minSizeGB,
     maxActionsPerHour,
+    maxDownloadsPerLibrary,
     minScoreDelta,
     preferences,
     qcCleanupAutomationEnabled,
@@ -105,6 +108,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onHuntAvailableMoviesChange,
     onMinSizeGBChange,
     onMaxActionsPerHourChange,
+    onMaxDownloadsPerLibraryChange,
     onMinScoreDeltaChange,
     onPreferencesChange,
     onQcCleanupAutomationEnabledChange,
@@ -358,7 +362,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <label className="text-sm font-semibold">Minimum file size (GB)
                             <input
                                 type="number"
@@ -377,6 +381,19 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 value={maxActionsPerHour}
                                 disabled={!enabled}
                                 onChange={(event) => onMaxActionsPerHourChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Max downloads per library
+                            <span className="block text-xs text-muted mt-1 font-normal">
+                                In-flight Arr downloads from hunts (default 5).
+                            </span>
+                            <input
+                                type="number"
+                                min="1"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={maxDownloadsPerLibrary}
+                                disabled={!enabled}
+                                onChange={(event) => onMaxDownloadsPerLibraryChange(Math.max(1, Number(event.target.value) || 1))}
                             />
                         </label>
                         <label className="text-sm font-semibold">Minimum score delta

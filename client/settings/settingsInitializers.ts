@@ -220,6 +220,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setUpgraderHuntAvailableMovies(initialSettings.upgraderHuntAvailableMovies !== false);
     setters.setUpgraderMinSizeGB(Math.max(0, Number(initialSettings.upgraderMinSizeGB) || 5));
     setters.setUpgraderMaxActionsPerHour(Math.max(1, Number(initialSettings.upgraderMaxActionsPerHour) || 25));
+    setters.setUpgraderMaxDownloadsPerLibrary(Math.max(1, Number(initialSettings.upgraderMaxDownloadsPerLibrary) || 5));
     setters.setUpgraderMinScoreDelta(Math.max(0, Number(initialSettings.upgraderMinScoreDelta ?? 10) || 0));
     setters.setUpgraderPreferences({
         preferDolbyVisionHdr: initialSettings.upgraderPreferences?.preferDolbyVisionHdr !== false,

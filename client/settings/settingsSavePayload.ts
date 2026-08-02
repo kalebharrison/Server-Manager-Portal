@@ -90,6 +90,7 @@ type SettingsSavePayloadInput = {
     upgraderHuntAvailableMovies: boolean;
     upgraderMinSizeGB: number;
     upgraderMaxActionsPerHour: number;
+    upgraderMaxDownloadsPerLibrary: number;
     upgraderMinScoreDelta: number;
     upgraderPreferences: {
         preferDolbyVisionHdr: boolean;

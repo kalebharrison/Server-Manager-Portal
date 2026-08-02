@@ -90,6 +90,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     upgraderHuntAvailableMovies: true,
     upgraderMinSizeGB: 5,
     upgraderMaxActionsPerHour: 25,
+    upgraderMaxDownloadsPerLibrary: 5,
     upgraderMinScoreDelta: 10,
     upgraderPreferences: {
         preferDolbyVisionHdr: true,

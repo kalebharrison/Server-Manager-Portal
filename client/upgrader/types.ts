@@ -50,6 +50,7 @@ export type UpgraderStatus = {
     preferImportDiscordOnly?: boolean;
     profileMapConfigured: boolean;
     maxActionsPerHour: number;
+    maxDownloadsPerLibrary?: number;
     minScoreDelta?: number;
     recentUpgradeCount: number;
     defaultPreset: string;

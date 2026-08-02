@@ -107,6 +107,7 @@ export const useSettingsFormState = () => {
         upgraderHuntAvailableMovies: values.upgraderHuntAvailableMovies,
         upgraderMinSizeGB: values.upgraderMinSizeGB,
         upgraderMaxActionsPerHour: values.upgraderMaxActionsPerHour,
+        upgraderMaxDownloadsPerLibrary: values.upgraderMaxDownloadsPerLibrary,
         upgraderMinScoreDelta: values.upgraderMinScoreDelta,
         upgraderPreferences: values.upgraderPreferences,
         qcCleanupAutomationEnabled: values.qcCleanupAutomationEnabled,

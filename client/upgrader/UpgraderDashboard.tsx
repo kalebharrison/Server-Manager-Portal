@@ -650,7 +650,7 @@ export const UpgraderDashboard: React.FC = () => {
                                             <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
                                                 <li>
                                                     <span className="text-text font-semibold">Fair per library.</span>{' '}
-                                                    Each configured Arr root folder gets a turn every cycle (round-robin). Shared Sonarr/Radarr/Lidarr instances with multiple roots are hunted separately.
+                                                    Each configured Arr root folder gets a turn every cycle (round-robin). Shared Sonarr/Radarr/Lidarr instances with multiple roots are hunted separately. Hunts also stop grabbing for a library once it already has {status?.maxDownloadsPerLibrary ?? 5} in-flight Arr downloads.
                                                 </li>
                                                 <li>
                                                     <span className="text-text font-semibold">Worst scores first inside each library.</span>{' '}

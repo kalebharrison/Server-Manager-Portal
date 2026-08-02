@@ -116,6 +116,7 @@ export const useSettingsHydration = ({
             setUpgraderHuntAvailableMovies: set('upgraderHuntAvailableMovies'),
             setUpgraderMinSizeGB: set('upgraderMinSizeGB'),
             setUpgraderMaxActionsPerHour: set('upgraderMaxActionsPerHour'),
+            setUpgraderMaxDownloadsPerLibrary: set('upgraderMaxDownloadsPerLibrary'),
             setUpgraderMinScoreDelta: set('upgraderMinScoreDelta'),
             setUpgraderPreferences: set('upgraderPreferences'),
             setQcCleanupAutomationEnabled: set('qcCleanupAutomationEnabled'),
