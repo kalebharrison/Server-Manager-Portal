@@ -111,7 +111,6 @@ export const UpgraderDashboard: React.FC = () => {
     const [search, setSearch] = useState(initialUrl.browse.search);
     const [searchInput, setSearchInput] = useState(initialUrl.browse.search);
     const [page, setPage] = useState(initialUrl.browse.page);
-    const [showQualityBadges, setShowQualityBadges] = useState(true);
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
     const [upgradeItems, setUpgradeItems] = useState<UpgraderItem[]>([]);
     const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
@@ -237,12 +236,11 @@ export const UpgraderDashboard: React.FC = () => {
             if (configData?.settings?.upgraderDrawerPosition) setDrawerPosition(configData.settings.upgraderDrawerPosition);
             if (!enabled) return;
 
-            const [statusData, summaryData, itemsData, queueData, publicConfig] = await Promise.all([
+            const [statusData, summaryData, itemsData, queueData] = await Promise.all([
                 apiFetch('/api/upgrader/status'),
                 apiFetch('/api/upgrader/summary'),
                 apiFetch(`/api/upgrader/items?codecs=${encodeURIComponent(Array.from(codecs).join(','))}&resolutions=${encodeURIComponent(Array.from(resolutions).join(','))}&features=${encodeURIComponent(Array.from(features).join(','))}&qualities=${encodeURIComponent(Array.from(qualities).join(','))}&libraryId=${encodeURIComponent(libraryId)}&mediaType=${encodeURIComponent(mediaType)}&search=${encodeURIComponent(search)}&sort=${encodeURIComponent(sort)}&page=${page}&limit=48`),
                 apiFetch('/api/upgrader/queue').catch(() => null),
-                apiFetch('/api/config/public').catch(() => ({})),
             ]);
 
             setStatus(statusData || null);
@@ -251,7 +249,6 @@ export const UpgraderDashboard: React.FC = () => {
             setItems(Array.isArray(itemsData?.items) ? itemsData.items : []);
             setTotal(Number(itemsData?.total || 0));
             setLibraries(Array.isArray(itemsData?.libraries) ? itemsData.libraries : []);
-            setShowQualityBadges(publicConfig?.showPosterQualityBadges !== false);
         } catch (e: any) {
             if (isUpgraderDisabledError(e)) {
                 setFeatureEnabled(false);
@@ -357,12 +354,12 @@ export const UpgraderDashboard: React.FC = () => {
             chips.push(`${summary.upgradeCandidates} with files`);
         }
         if (summary.avgCustomFormatScore != null) {
-            chips.push(`avg score ${summary.avgCustomFormatScore}`);
+            chips.push(`avg Arr score ${summary.avgCustomFormatScore}`);
         }
         if (status?.automationEnabled) {
-            chips.push(`auto-hunt on · ${status.recentUpgradeCount}/${status.maxActionsPerHour}/hr`);
+            chips.push(`auto-grab on · ${status.recentUpgradeCount}/${status.maxActionsPerHour}/hr`);
         } else {
-            chips.push('auto-hunt off');
+            chips.push('manual mode');
         }
         return chips;
     }, [summary, status]);
@@ -406,8 +403,8 @@ export const UpgraderDashboard: React.FC = () => {
                             <h1 className="page-title">Quality Hunt</h1>
                         </div>
                         <p className="text-sm text-muted max-w-2xl">
-                            Find library titles with room to improve, then grab better Arr releases by custom-format score
-                            (Remux / DV+HDR / Atmos). Season packs are preferred for TV, but never if they would drop resolution.
+                            Your Sonarr/Radarr library. Each poster shows the Arr custom-format score for the file you already have —
+                            higher usually means better (Remux, DV/HDR, Atmos). Quality Hunt can search for a higher-scoring release and grab it.
                         </p>
                     </div>
                     {featureEnabled && (
@@ -459,7 +456,7 @@ export const UpgraderDashboard: React.FC = () => {
                                 )}
                                 {status?.arrConfigured && !status.automationEnabled && (
                                     <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-200">
-                                        Browse only — enable auto-hunt in Settings to grab
+                                        Grabbing is off — Settings → Quality Hunt → Enable auto-hunt
                                     </span>
                                 )}
                             </div>
@@ -708,25 +705,19 @@ export const UpgraderDashboard: React.FC = () => {
                                         const isSelected = selectedKeys.has(item.ratingKey);
                                         const isShow = item.mediaType === 'show';
                                         const score = item.avgCustomFormatScore ?? item.customFormatScore ?? 0;
-                                        const resLabel = item.videoResolution === '4k' ? '4K' : (item.videoResolution || '').toUpperCase() || '—';
+                                        const resLabel = item.videoResolution === '4k' ? '4K' : (item.videoResolution || '').toUpperCase() || '';
                                         const sourceLabel = item.sourceTier && item.sourceTier !== 'unknown' ? item.sourceTier : '';
-                                        const epCount = item.totalEpisodeCount ?? item.episodeCount ?? 0;
-                                        const gridBadgeText = [
-                                            `score ${score}`,
-                                            resLabel !== '—' ? resLabel : null,
-                                            sourceLabel || null,
-                                            isShow && epCount ? `${epCount} eps` : null,
-                                        ].filter(Boolean).join(' · ');
-                                        const listBadgeText = [
-                                            gridBadgeText,
+                                        const extras = [
                                             item.hasDolbyVision ? 'DV' : (item.hasHdr ? 'HDR' : null),
-                                        ].filter(Boolean).join(' · ');
-                                        const dominantCodecPercentageLabel = `score ${score}`;
-                                        const dominantCodecColorClass = score >= 100
-                                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                            : score >= 0
-                                                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                                                : 'bg-red-500/10 border-red-500/20 text-red-300';
+                                            item.hasAtmos ? 'Atmos' : null,
+                                        ].filter(Boolean);
+                                        const qualityBits = [resLabel, sourceLabel, ...extras].filter(Boolean).join(' · ');
+                                        const scoreBadgeText = qualityBits ? `Arr ${score} · ${qualityBits}` : `Arr score ${score}`;
+                                        const scoreColorClass = score >= 100
+                                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                                            : score > 0
+                                                ? 'bg-amber-500/15 border-amber-500/30 text-amber-200'
+                                                : 'bg-black/75 border-white/20 text-white/80';
 
                                         const sizesToShow: { label: string; sizeGB: number }[] = [];
                                         if (Number(item.sizeGB || 0) > 0) {
@@ -751,15 +742,6 @@ export const UpgraderDashboard: React.FC = () => {
                                                     )}
                                                     <div className="w-full sm:w-24 shrink-0 aspect-[2/3] sm:aspect-auto sm:h-36 rounded-md overflow-hidden bg-black/50 relative border border-white/5 cursor-pointer" onClick={isShow ? () => handleOpenDrawer(item) : undefined}>
                                                         <img src={item.thumbUrl ? resolvePortalAssetUrl(item.thumbUrl) : (item.thumb ? portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=200&height=300`) : item.posterFallbackUrl ? resolvePortalAssetUrl(item.posterFallbackUrl) : '')} alt={item.title} className="w-full h-full object-cover" />
-                                                        {showQualityBadges && item.displayTags && item.displayTags.length > 0 && (
-                                                            <div className="absolute bottom-1 left-1 right-1 flex flex-wrap gap-0.5 pointer-events-none z-10">
-                                                                {item.displayTags.map((tag) => (
-                                                                    <span key={tag} className="text-[8px] font-bold px-1 py-px rounded bg-black/85 text-white/95 border border-white/15 uppercase tracking-wide">
-                                                                        {tag}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        )}
                                                     </div>
                                                     <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
                                                         <div className="flex items-start justify-between gap-4">
@@ -780,22 +762,11 @@ export const UpgraderDashboard: React.FC = () => {
                                                                             {`${s.sizeGB < 1 ? Math.round(s.sizeGB * 1024) + ' MB' : Math.round(s.sizeGB * 100) / 100 + ' GB'}${s.label ? ` (${s.label})` : ''}`}
                                                                         </span>
                                                                     ))}
-                                                                    {dominantCodecPercentageLabel && (
-                                                                        <span className={`px-2 py-0.5 rounded-md border text-xs font-semibold ${dominantCodecColorClass}`}>
-                                                                            {dominantCodecPercentageLabel}
-                                                                        </span>
-                                                                    )}
                                                                 </div>
                                                             </div>
-                                                            {listBadgeText && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={isShow ? () => handleOpenDrawer(item) : undefined}
-                                                                    className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-black/75 border border-white/20 text-amber-200 ${isShow ? 'hover:border-plex/50 cursor-pointer' : 'cursor-default'}`}
-                                                                >
-                                                                    {listBadgeText}
-                                                                </button>
-                                                            )}
+                                                            <span className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full border ${scoreColorClass}`}>
+                                                                {scoreBadgeText}
+                                                            </span>
                                                         </div>
                                                         {item.overview && (
                                                             <div className="mt-2 text-xs text-muted line-clamp-2 md:line-clamp-3">
@@ -841,24 +812,18 @@ export const UpgraderDashboard: React.FC = () => {
                                                         />
                                                     </div>
                                                 )}
-                                                {gridBadgeText && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={isShow ? () => handleOpenDrawer(item) : undefined}
-                                                        className={`absolute top-2 right-2 z-20 upgrader-card-badge text-[10px] font-bold px-2 py-1 rounded-full bg-black/75 border border-white/20 text-amber-200 ${isShow ? 'hover:border-plex/50 cursor-pointer' : 'cursor-default'}`}
-                                                    >
-                                                        {gridBadgeText}
-                                                    </button>
-                                                )}
+                                                <span className={`absolute top-2 right-2 z-20 upgrader-card-badge text-[10px] font-bold px-2 py-1 rounded-full border ${scoreColorClass}`}>
+                                                    {scoreBadgeText}
+                                                </span>
                                                 <DiscoverPosterCard
                                                     variant="home"
-                                                    showQualityBadges={showQualityBadges}
+                                                    showQualityBadges={false}
                                                     item={{
                                                         title: item.title,
                                                         thumb: item.thumb,
                                                         thumbUrl: item.thumbUrl || undefined,
                                                         plexUrl: item.arrDeepUrl || '#',
-                                                        tags: item.displayTags,
+                                                        tags: [],
                                                         year: item.year ?? undefined,
                                                     }}
                                                     footer={(
@@ -885,21 +850,15 @@ export const UpgraderDashboard: React.FC = () => {
                                                                         {`${s.sizeGB < 1 ? Math.round(s.sizeGB * 1024) + ' MB' : Math.round(s.sizeGB * 100) / 100 + ' GB'}${s.label ? ` (${s.label})` : ''}`}
                                                                     </span>
                                                                 ))}
-                                                                {dominantCodecPercentageLabel && (
-                                                                    <span className={`px-1.5 py-0.5 rounded-md border text-[10px] font-semibold ${dominantCodecColorClass}`}>
-                                                                        {dominantCodecPercentageLabel}
-                                                                    </span>
-                                                                )}
                                                             </div>
                                                             <div className="upgrader-card-actions flex flex-wrap gap-x-2 gap-y-1">
-
                                                                 {isShow && (
                                                                     <button
                                                                         type="button"
                                                                         className="text-[10px] font-bold text-muted hover:underline"
                                                                         onClick={() => handleOpenDrawer(item)}
                                                                     >
-                                                                        {gridBadgeText}
+                                                                        Episodes
                                                                     </button>
                                                                 )}
                                                                 {item.arrDeepUrl && (

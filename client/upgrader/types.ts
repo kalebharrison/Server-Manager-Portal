@@ -57,6 +57,7 @@ export type UpgraderItem = {
     isHevc: boolean;
     hasHdr: boolean;
     hasDolbyVision: boolean;
+    hasAtmos?: boolean;
     hasFile?: boolean;
     episodeCount?: number;
     customFormatScore?: number;
