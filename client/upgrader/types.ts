@@ -240,6 +240,7 @@ export type UpgraderHuntResponse = {
     grabbed?: number;
     wouldGrab?: number;
     searched?: number;
+    skipped?: number;
     libraries?: Array<{ key: string; label: string; considered: number; available: number }>;
     maxPerLibrary?: number;
 };

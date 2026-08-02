@@ -188,23 +188,28 @@ export const UpgraderDashboard: React.FC = () => {
     };
 
     const handleDryRun = async () => {
+        setActiveTab('overview');
         setDryRunning(true);
+        setDryRun(null);
+        addToast('Dry run started — searching Arr for a small sample per library…', 'info');
         try {
             const result = await apiFetch('/api/upgrader/hunt', {
                 method: 'POST',
-                body: JSON.stringify({ dryRun: true }),
+                body: JSON.stringify({ dryRun: true, limit: 8 }),
             }) as UpgraderHuntResponse;
             setDryRun(result || null);
             if (!result?.ran) {
                 addToast(result?.reason || 'Dry run did not run.', 'error');
+            } else if (!(result.searched > 0)) {
+                addToast(result.reason || 'Dry run found no eligible titles to search.', 'error');
             } else {
                 addToast(
-                    `Dry run: ${result.wouldGrab || 0} would grab · ${result.searched || 0} searched across ${(result.libraries || []).length} libraries.`,
+                    `Dry run done: ${result.wouldGrab || 0} would grab · ${result.skipped || 0} skipped · ${result.searched || 0} searched.`,
                     'success',
                 );
             }
         } catch (e: any) {
-            addToast(e.message || 'Dry run failed', 'error');
+            addToast(e.message || 'Dry run failed (request may have timed out — try Refresh index first).', 'error');
         } finally {
             setDryRunning(false);
         }
@@ -222,10 +227,10 @@ export const UpgraderDashboard: React.FC = () => {
         [recentGrabs, libraries],
     );
 
-    const dryRunByLibrary = useMemo(() => {
-        const actionable = (dryRun?.results || []).filter((entry) => entry.success);
-        return groupByLibrary(actionable, libraries);
-    }, [dryRun, libraries]);
+    const dryRunByLibrary = useMemo(
+        () => groupByLibrary(dryRun?.results || [], libraries),
+        [dryRun, libraries],
+    );
 
     const tabButtonClass = (tab: UpgraderTab) =>
         `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
@@ -410,40 +415,63 @@ export const UpgraderDashboard: React.FC = () => {
                                             </ol>
                                         </section>
 
-                                        {dryRun?.ran && (
+                                        {(dryRunning || dryRun) && (
                                             <section className="space-y-4">
                                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                                     <div>
                                                         <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Dry run preview</h2>
                                                         <p className="text-xs text-muted mt-1">
-                                                            No grabs were sent. {dryRun.wouldGrab || 0} would grab · {dryRun.searched || 0} searched
-                                                            {(dryRun.libraries || []).length ? ` · ${(dryRun.libraries || []).length} libraries` : ''}.
+                                                            {dryRunning
+                                                                ? 'Searching Arr now (small sample per library). This can take a minute…'
+                                                                : (
+                                                                    <>
+                                                                        No grabs were sent.
+                                                                        {' '}{dryRun?.wouldGrab || 0} would grab
+                                                                        {' · '}{dryRun?.skipped || 0} skipped
+                                                                        {' · '}{dryRun?.searched || 0} searched
+                                                                        {(dryRun?.libraries || []).length ? ` · ${(dryRun?.libraries || []).length} libraries` : ''}.
+                                                                        {dryRun?.reason ? ` ${dryRun.reason}` : ''}
+                                                                    </>
+                                                                )}
                                                         </p>
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        className="text-xs font-bold text-muted hover:text-text"
-                                                        onClick={() => setDryRun(null)}
-                                                    >
-                                                        Clear preview
-                                                    </button>
+                                                    {!dryRunning && (
+                                                        <button
+                                                            type="button"
+                                                            className="text-xs font-bold text-muted hover:text-text"
+                                                            onClick={() => setDryRun(null)}
+                                                        >
+                                                            Clear preview
+                                                        </button>
+                                                    )}
                                                 </div>
-                                                {dryRunByLibrary.every((group) => group.items.length === 0) ? (
-                                                    <div className="rounded-2xl border border-border/60 bg-card/40 p-6 text-center">
-                                                        <p className="text-sm text-muted">Nothing better found in this cycle’s queue.</p>
+                                                {dryRunning && (
+                                                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 flex items-center gap-3 text-sm text-amber-100">
+                                                        <FlaskConical className="w-5 h-5 animate-pulse shrink-0" />
+                                                        Dry run in progress — waiting on Sonarr/Radarr release search…
                                                     </div>
-                                                ) : (
-                                                    dryRunByLibrary.map((group) => (
+                                                )}
+                                                {!dryRunning && dryRun && dryRunByLibrary.length === 0 && (
+                                                    <div className="rounded-2xl border border-border/60 bg-card/40 p-6 text-center">
+                                                        <p className="text-sm text-muted">
+                                                            {dryRun.reason || 'No titles were searched. Refresh the index if your library looks empty.'}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {!dryRunning && dryRunByLibrary.map((group) => {
+                                                    const would = group.items.filter((entry) => entry.success);
+                                                    const skipped = group.items.filter((entry) => !entry.success);
+                                                    return (
                                                         <div key={`dry-${group.key}`} className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
                                                             <div className="flex items-center justify-between gap-2">
                                                                 <h3 className="text-sm font-bold text-text">{group.label}</h3>
-                                                                <span className="text-[11px] text-muted">{group.items.length} would grab</span>
+                                                                <span className="text-[11px] text-muted">
+                                                                    {would.length} would grab · {skipped.length} skipped
+                                                                </span>
                                                             </div>
-                                                            {group.items.length === 0 ? (
-                                                                <p className="text-xs text-muted">No upgrades found for this library in the dry run.</p>
-                                                            ) : (
+                                                            {would.length > 0 && (
                                                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                                                                    {group.items.map((entry: UpgraderHuntResult) => {
+                                                                    {would.map((entry: UpgraderHuntResult) => {
                                                                         const thumb = entry.thumbUrl ? resolvePortalAssetUrl(entry.thumbUrl) : '';
                                                                         const delta = entry.scoreDelta ?? (
                                                                             entry.currentScore != null && entry.candidateScore != null
@@ -485,9 +513,25 @@ export const UpgraderDashboard: React.FC = () => {
                                                                     })}
                                                                 </div>
                                                             )}
+                                                            {skipped.length > 0 && (
+                                                                <div className="space-y-2">
+                                                                    {skipped.map((entry) => (
+                                                                        <div key={`skip-${entry.ratingKey}`} className="rounded-lg border border-border/50 bg-background/40 px-3 py-2">
+                                                                            <div className="text-xs font-semibold text-text">{entry.title}</div>
+                                                                            <div className="text-[11px] text-muted mt-0.5">
+                                                                                {entry.reason || 'No better release found'}
+                                                                                {entry.currentScore != null ? ` · current score ${entry.currentScore}` : ''}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {would.length === 0 && skipped.length === 0 && (
+                                                                <p className="text-xs text-muted">No titles from this library in the dry-run sample.</p>
+                                                            )}
                                                         </div>
-                                                    ))
-                                                )}
+                                                    );
+                                                })}
                                             </section>
                                         )}
 
