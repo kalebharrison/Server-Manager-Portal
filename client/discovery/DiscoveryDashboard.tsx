@@ -390,6 +390,7 @@ const DiscoveryDashboardInner: React.FC<{
                         pushToast={pushToast}
                         providerLabel={providerLabel}
                         showPosterQualityBadges={showPosterQualityBadges}
+                        mediaServerType={mediaServerType}
                     />
                         )}
                         {subRoute === 'movies' && (

@@ -19,6 +19,7 @@ import { DiscoverQuickRequestButton } from './DiscoverQuickRequestButton';
 import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
 import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { useDiscoverNotify } from './useDiscoverNotify';
+import { DiscoverDownloadsSection } from '../screens/DiscoverDownloadsSection';
 
 const EmptyRail: React.FC<{
     title: string;
@@ -183,7 +184,8 @@ export const DiscoverHome: React.FC<{
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     providerLabel?: string;
     showPosterQualityBadges?: boolean;
-}> = ({ onSelect, formatItem, navigate, pushToast, providerLabel = 'Plex', showPosterQualityBadges = false }) => {
+    mediaServerType?: string;
+}> = ({ onSelect, formatItem, navigate, pushToast, providerLabel = 'Plex', showPosterQualityBadges = false, mediaServerType = 'plex' }) => {
     const { t, locale } = useDiscoverI18n();
     const { preferences, loaded } = useDiscoveryPreferences();
     const { showLibraryQueue, toggleLibraryQueue } = useLibraryQueueToggle();
@@ -310,8 +312,12 @@ export const DiscoverHome: React.FC<{
         );
     }
 
+    const isJellyfinPortal = String(mediaServerType || '').toLowerCase() === 'jellyfin';
+
     return (
         <div className={`flex flex-col gap-6 w-full max-w-full overflow-hidden pb-8 px-1${enterAnim ? ' discover-content-enter' : ''}`}>
+            {!isJellyfinPortal && <DiscoverDownloadsSection />}
+
             {showLibraryQueue ? (
                 <section className={discoveryTheme.personalPanel}>
                     <div className="px-1 flex items-start justify-between gap-3">
