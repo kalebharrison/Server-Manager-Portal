@@ -18,7 +18,7 @@ export const DiscoverCommunityPage: React.FC<{
     showPosterQualityBadges = false,
 }) => {
     const isJellyfinPortal = String(mediaServerType || '').toLowerCase() === 'jellyfin';
-    const refreshMs = cacheRefreshMs();
+    const refreshMs = cacheRefreshMs({ cacheRefreshMinutes: 5 });
     const [trendingStats, setTrendingStats] = useState<TrendingStats | null>(null);
     const [loading, setLoading] = useState(!isJellyfinPortal);
 
