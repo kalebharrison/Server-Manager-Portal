@@ -65,7 +65,9 @@ const clientStateLabel = (item: QcDownloadItem) => {
 
 const safetyHoldLabel = (hold?: QcDownloadItem['safetyHold']) => {
     if (hold === 'genericImport') return 'held: not a doomed import failure';
+    if (hold === 'importQueueBusy') return 'held: waiting behind active import';
     if (hold === 'stallOutage') return 'held: client/network outage guard';
+    if (hold === 'metaDlOutage') return 'held: qBit network/DHT down';
     return null;
 };
 

@@ -301,6 +301,68 @@ test('active importing is never completedNotImporting even when hours old', () =
     assert.equal(reason, null);
 });
 
+test('importPending behind an active import is not completedNotImporting', () => {
+    const now = Date.now();
+    const waiting = {
+        arrType: 'radarr',
+        arrInstanceId: 'main',
+        arrQueueId: 2,
+        status: 'completed',
+        trackedDownloadState: 'importPending',
+        trackedDownloadStatus: 'ok',
+        added: new Date(now - 90 * minute).toISOString(),
+    };
+    const active = {
+        arrType: 'radarr',
+        arrInstanceId: 'main',
+        arrQueueId: 1,
+        status: 'completed',
+        trackedDownloadState: 'importing',
+    };
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 20 }),
+        arrItem: waiting,
+        peerArrItems: [active, waiting],
+        clientItem: {
+            client: 'sab',
+            state: 'completed',
+            progress: 1,
+            completedAt: now - 90 * minute,
+        },
+    });
+    assert.equal(reason, null);
+    assert.equal(isReasonActionable({
+        reason: QC_REASONS.completedNotImporting,
+        arrItem: waiting,
+    }, { arrItems: [active, waiting] }), false);
+});
+
+test('importPending alone past threshold is still completedNotImporting', () => {
+    const now = Date.now();
+    const waiting = {
+        arrType: 'radarr',
+        arrInstanceId: 'main',
+        arrQueueId: 2,
+        status: 'completed',
+        trackedDownloadState: 'importPending',
+        added: new Date(now - 90 * minute).toISOString(),
+    };
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 20 }),
+        arrItem: waiting,
+        peerArrItems: [waiting],
+        clientItem: {
+            client: 'sab',
+            state: 'completed',
+            progress: 1,
+            completedAt: now - 90 * minute,
+        },
+    });
+    assert.equal(reason, QC_REASONS.completedNotImporting);
+});
+
 test('completedNotImporting ages from completion not grab time', () => {
     const now = Date.now();
     // Grabbed 2h ago, finished 5 minutes ago — still within CNI grace.
