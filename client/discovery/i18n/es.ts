@@ -66,6 +66,7 @@ export const es: DeepPartial<EnCatalog> = {
         discover: 'Discover',
         movies: 'Películas',
         series: 'Series',
+        community: 'Comunidad',
         myRequests: 'Mis solicitudes',
         myIssues: 'Mis reportes',
     },

@@ -69,15 +69,21 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
             const landingRoute = preferredLanding === 'portal'
                 ? 'user'
                 : preferredLanding === 'discover'
-                    ? 'dashboard'
-                    : preferredLanding;
+                    ? 'discover'
+                    : preferredLanding === 'request'
+                        ? 'discover'
+                        : preferredLanding;
             const landingPath = preferredLanding === 'portal'
                 ? '/portal'
-                : preferredLanding === 'discover'
-                    ? '/dashboard'
+                : preferredLanding === 'discover' || preferredLanding === 'request'
+                    ? '/discovery'
                     : `/${preferredLanding}`;
             if (path === '/status') updateRoute('status');
-            else if (path === '/dashboard') updateRoute('dashboard');
+            else if (path === '/dashboard') {
+                // Orphaned post-Discover-merge route — send bookmarks to Discover.
+                window.history.replaceState({}, '', portalUrl('/discovery'));
+                updateRoute('discover');
+            }
             else if (path === '/discovery' || path.startsWith('/discovery/')) updateRoute('discover');
             else if (path === '/settings' && data.session.isAdmin) updateRoute('settings');
             else if (path === '/preferences') updateRoute('preferences');
@@ -122,7 +128,8 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
             if (path === '/status' && publicStatusEnabledRef.current !== false) {
                 updateRoute('status');
             } else if (path === '/dashboard') {
-                updateRoute('dashboard');
+                window.history.replaceState({}, '', portalUrl('/discovery'));
+                updateRoute('login');
             } else {
                 updateRoute('login');
             }
@@ -188,23 +195,23 @@ export const useAppRouting = () => {
             window.history.pushState({}, '', portalUrl('/settings#logs'));
             return;
         }
-        updateRoute(route);
-        if (route !== 'loading' && route !== 'invite') {
+        // Legacy aliases — Discover owns request UI + the old library dashboard.
+        const normalized: AppRoute = (route === 'dashboard' || route === 'request') ? 'discover' : route;
+        updateRoute(normalized);
+        if (normalized !== 'loading' && normalized !== 'invite') {
             let path = '/';
-            if (route === 'admin') path = '/admin';
-            if (route === 'users') path = '/users';
-            if (route === 'user') path = '/portal';
-            if (route === 'status') path = '/status';
-            if (route === 'dashboard') path = '/dashboard';
-            if (route === 'discover') path = '/discovery';
-            if (route === 'settings') path = '/settings#branding';
-            if (route === 'preferences') path = '/preferences';
-            if (route === 'analytics') path = '/analytics';
-            if (route === 'mediastack') path = '/mediastack';
-            if (route === 'request') path = '/request';
-            if (route === 'scanner') path = '/scanner';
-            if (route === 'upgrader') path = '/upgrader';
-            if (route === 'issues') path = '/issues';
+            if (normalized === 'admin') path = '/admin';
+            if (normalized === 'users') path = '/users';
+            if (normalized === 'user') path = '/portal';
+            if (normalized === 'status') path = '/status';
+            if (normalized === 'discover') path = '/discovery';
+            if (normalized === 'settings') path = '/settings#branding';
+            if (normalized === 'preferences') path = '/preferences';
+            if (normalized === 'analytics') path = '/analytics';
+            if (normalized === 'mediastack') path = '/mediastack';
+            if (normalized === 'scanner') path = '/scanner';
+            if (normalized === 'upgrader') path = '/upgrader';
+            if (normalized === 'issues') path = '/issues';
             window.history.pushState({}, '', portalUrl(path));
         }
     }, [updateRoute]);

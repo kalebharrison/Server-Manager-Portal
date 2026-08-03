@@ -4,7 +4,6 @@ import {
     Login,
     PublicInviteClaim,
     StatusDashboard,
-    LibraryDashboard,
     DiscoveryDashboard,
     MediaStackDashboard,
     AnalyticsDashboard,
@@ -63,8 +62,12 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
         return <PublicInviteClaim code={code} showServerStats={effectivePublicConfig?.showLoginServerStats === true} />;
     }
     if (currentRoute === 'status') return <StatusDashboard onBack={() => isPublicStatus ? setRoute('login') : setRoute('user')} isAdmin={isAdmin} isPublic={isPublicStatus} />;
-    if (currentRoute === 'dashboard') return <LibraryDashboard isAdmin={isAdmin} publicConfig={effectivePublicConfig} mediaServerType={sessionInfo?.mediaServerType} cacheScope={sessionInfo?.serverName} />;
-    if (currentRoute === 'discover') return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} />;
+    if (currentRoute === 'dashboard') {
+        // Legacy library dashboard — merged into Discover; keep bookmarks working.
+        window.history.replaceState({}, '', portalUrl('/discovery'));
+        return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} serverName={sessionInfo?.serverName} />;
+    }
+    if (currentRoute === 'discover') return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} serverName={sessionInfo?.serverName} />;
     if (currentRoute === 'settings' && isAdmin) return <SettingsDashboard />;
     if (currentRoute === 'preferences') return <UserPreferencesDashboard account={sessionInfo?.account} activeTheme={activeTheme} setActiveTheme={setActiveTheme} refreshSession={checkSession} readOnly={isImpersonating} />;
     if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
@@ -74,7 +77,7 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
         if (path === '/request' || path === '/requests') {
             window.history.replaceState({}, '', portalUrl('/discovery'));
         }
-        return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} />;
+        return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} serverName={sessionInfo?.serverName} />;
     }
     if (currentRoute === 'scanner' && isAdmin) return <ScannerDashboard />;
     if (currentRoute === 'upgrader' && isAdmin) return <UpgraderDashboard />;

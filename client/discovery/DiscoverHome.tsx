@@ -316,7 +316,9 @@ export const DiscoverHome: React.FC<{
 
     return (
         <div className={`flex flex-col gap-6 w-full max-w-full overflow-hidden pb-8 px-1${enterAnim ? ' discover-content-enter' : ''}`}>
-            {!isJellyfinPortal && <DiscoverDownloadsSection />}
+            {!isJellyfinPortal && (
+                <DiscoverDownloadsSection layout="rail" gridSize={gridSize} />
+            )}
 
             {showLibraryQueue ? (
                 <section className={discoveryTheme.personalPanel}>

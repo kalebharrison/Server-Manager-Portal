@@ -6,7 +6,8 @@ import { DiscoverSeries } from './DiscoverSeries';
 import { DiscoverCategoryPage } from './DiscoverCategoryPage';
 import { MediaDetailsPage } from './MediaDetailsPage';
 import { PersonDetailsPage } from './PersonDetailsPage';
-import { Film, Tv, Compass, ClipboardList, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Film, Tv, Compass, ClipboardList, AlertTriangle, ChevronDown, Users } from 'lucide-react';
+import { DiscoverCommunityPage } from './DiscoverCommunityPage';
 import { apiFetch } from '../shared/api';
 import { portalUrl, stripBasePath } from '../shared/basePath';
 import { normalizeRawDiscoveryItem } from './discoverItemUtils';
@@ -30,7 +31,8 @@ const DiscoveryDashboardInner: React.FC<{
     isAdmin?: boolean;
     currentUserId?: string | null;
     showPosterQualityBadges?: boolean;
-}> = ({ pushToast, mediaServerType = 'plex', isAdmin = false, currentUserId = null, showPosterQualityBadges = false }) => {
+    serverName?: string;
+}> = ({ pushToast, mediaServerType = 'plex', isAdmin = false, currentUserId = null, showPosterQualityBadges = false, serverName }) => {
     const { t, locale } = useDiscoverI18n();
     const [path, setPath] = useState(() => {
         if (typeof window !== 'undefined') return window.location.pathname;
@@ -283,7 +285,7 @@ const DiscoveryDashboardInner: React.FC<{
         );
     }
 
-    const showTabs = ['home', 'movies', 'series', 'requests', 'issues'].includes(subRoute);
+    const showTabs = ['home', 'movies', 'series', 'community', 'requests', 'issues'].includes(subRoute);
 
     if (subRoute === 'watchlist') {
         // Plex watchlist integration is disabled — send people back to Discover.
@@ -299,6 +301,7 @@ const DiscoveryDashboardInner: React.FC<{
         { id: 'home', path: '/discovery', label: t('nav.discover'), icon: Compass, count: 0, countColor: '' },
         { id: 'movies', path: '/discovery/movies', label: t('nav.movies'), icon: Film, count: 0, countColor: '' },
         { id: 'series', path: '/discovery/series', label: t('nav.series'), icon: Tv, count: 0, countColor: '' },
+        { id: 'community', path: '/discovery/community', label: t('nav.community'), icon: Users, count: 0, countColor: '' },
         { id: 'requests', path: '/discovery/requests', label: t('nav.myRequests'), icon: ClipboardList, count: myPendingCount, countColor: 'bg-plex/25 text-plex' },
         ...(canSeeIssuesTab
             ? [{ id: 'issues', path: '/discovery/issues', label: t('nav.myIssues'), icon: AlertTriangle, count: myOpenIssueCount, countColor: 'bg-amber-500/25 text-amber-300' }]
@@ -411,6 +414,13 @@ const DiscoveryDashboardInner: React.FC<{
                                 showPosterQualityBadges={showPosterQualityBadges}
                             />
                         )}
+                        {subRoute === 'community' && (
+                            <DiscoverCommunityPage
+                                mediaServerType={mediaServerType}
+                                serverName={serverName}
+                                showPosterQualityBadges={showPosterQualityBadges}
+                            />
+                        )}
                         {subRoute === 'requests' && (
                             <MyRequestsPage
                                 navigate={navigate}
@@ -439,6 +449,7 @@ export const DiscoveryDashboard: React.FC<{
     isAdmin?: boolean;
     currentUserId?: string | null;
     showPosterQualityBadges?: boolean;
+    serverName?: string;
 }> = ({ pushToast: pushToastProp, ...props }) => {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const pushToast = useCallback((msg: string, type: 'success' | 'error') => {

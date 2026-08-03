@@ -64,6 +64,7 @@ export const en = {
         discover: 'Discover',
         movies: 'Movies',
         series: 'Series',
+        community: 'Community',
         myRequests: 'My Requests',
         myIssues: 'My Issues',
     },
