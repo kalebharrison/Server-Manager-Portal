@@ -6,6 +6,7 @@ import {
     findDuplicates,
     findOrphans,
     isDoomedImportFailure,
+    isMetaDlActionable,
     isReasonActionable,
     isResearchThrottled,
     isSeedingProtected,
@@ -16,13 +17,18 @@ import {
     strikeGapMsForReason,
     thresholdsFromConfig,
 } from '../../lib/upgrader/qc-rules.js';
+import {
+    QC_CLIENT_RECOMMENDED,
+    summarizeQbitAlignment,
+    summarizeSabAlignment,
+} from '../../lib/upgrader/qc-client-optimize.js';
 
 const hour = 60 * 60 * 1000;
 const minute = 60 * 1000;
 
 test('thresholdsFromConfig applies per-strike defaults', () => {
     const t = thresholdsFromConfig({});
-    assert.equal(t.metaDlMinutes, 10);
+    assert.equal(t.metaDlMinutes, 20);
     assert.equal(t.stalledHours, 2);
     assert.equal(t.completedNotImportingMinutes, 20);
     assert.equal(t.orphanGraceMinutes, 15);
@@ -367,6 +373,99 @@ test('findOrphans skips known downloadIds and seeding protected', () => {
     assert.equal(orphans.length, 1);
     assert.equal(orphans[0].id, 'ccc');
     assert.equal(orphans[0].reason, QC_REASONS.orphan);
+});
+
+test('stopped/paused completed qBit seeds are protected from orphans', () => {
+    assert.equal(isSeedingProtected({ client: 'qbit', state: 'stoppedUP', progress: 1 }), true);
+    assert.equal(isSeedingProtected({ client: 'qbit', state: 'pausedUP', progress: 1 }), true);
+    assert.equal(isSeedingProtected({ client: 'qbit', state: 'checkingUP', progress: 1 }), true);
+    const orphans = findOrphans({
+        arrDownloadIds: [],
+        clientItems: [
+            { id: 'a', hash: 'a', client: 'qbit', state: 'stoppedUP', progress: 1 },
+            { id: 'b', hash: 'b', client: 'qbit', state: 'pausedUP', progress: 1 },
+            { id: 'c', hash: 'c', client: 'qbit', state: 'downloading', progress: 0.2 },
+        ],
+    });
+    assert.equal(orphans.length, 1);
+    assert.equal(orphans[0].id, 'c');
+});
+
+test('successful SAB history is not orphan-killed', () => {
+    const orphans = findOrphans({
+        arrDownloadIds: [],
+        clientItems: [
+            {
+                id: 'nzo1',
+                client: 'sab',
+                source: 'history',
+                state: 'completed',
+                progress: 1,
+            },
+            {
+                id: 'nzo2',
+                client: 'sab',
+                source: 'history',
+                state: 'failed',
+                progress: 0.5,
+                failMessage: 'Unpack failed',
+            },
+            {
+                id: 'nzo3',
+                client: 'sab',
+                source: 'queue',
+                state: 'downloading',
+                progress: 0.2,
+            },
+        ],
+    });
+    assert.equal(orphans.length, 2);
+    assert.deepEqual(orphans.map((row) => row.id).sort(), ['nzo2', 'nzo3']);
+});
+
+test('metaDL kills are held when qBit DHT/network is down', () => {
+    assert.equal(isMetaDlActionable({
+        clientItem: { client: 'qbit', id: 'a', state: 'metaDL', progress: 0 },
+        clients: { qbit: true },
+        networkHealth: { qbit: { ok: false, reason: 'dht_dead', dhtNodes: 0 } },
+        qbitConfigured: true,
+    }), false);
+
+    assert.equal(isMetaDlActionable({
+        clientItem: { client: 'qbit', id: 'a', state: 'metaDL', progress: 0 },
+        clients: { qbit: true },
+        networkHealth: { qbit: { ok: true, dhtNodes: 40 } },
+        qbitConfigured: true,
+    }), true);
+
+    assert.equal(isReasonActionable({
+        reason: QC_REASONS.metaDL,
+        client: { client: 'qbit', id: 'a', state: 'metaDL' },
+    }, {
+        clients: { qbit: true },
+        networkHealth: { qbit: { ok: false, reason: 'disconnected' } },
+        qbitConfigured: true,
+    }), false);
+});
+
+test('summarize client alignment detects SAB discard and short qBit seed time', () => {
+    const sab = summarizeSabAlignment({ no_dupes: 1, no_smart_dupes: 0, no_series_dupes: 0 });
+    assert.equal(sab.aligned, false);
+    assert.equal(QC_CLIENT_RECOMMENDED.sab.no_dupes, 0);
+
+    const qbit = summarizeQbitAlignment({
+        max_seeding_time: 1,
+        max_active_torrents: 23,
+        max_ratio: 1,
+    });
+    assert.equal(qbit.aligned, false);
+
+    const aligned = summarizeQbitAlignment({
+        max_seeding_time: QC_CLIENT_RECOMMENDED.qbit.max_seeding_time,
+        max_active_torrents: 40,
+        max_ratio: 1,
+    });
+    assert.equal(aligned.aligned, true);
 });
 
 test('findOrphans grace and recent-hunt protection prevent false kills', () => {
