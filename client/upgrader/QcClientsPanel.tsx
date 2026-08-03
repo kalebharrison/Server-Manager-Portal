@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Loader2, Save, ExternalLink, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Loader2, Save, ExternalLink } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
+import { QcOptimizeClientsButton } from './QcOptimizeClientsButton';
 
 type ExtensionPolicy = {
     qbit?: string[];
@@ -13,23 +14,6 @@ type ExtensionPolicy = {
     errors?: { qbit?: string | null; sab?: string | null };
 };
 
-type AlignmentRow = {
-    key: string;
-    label: string;
-    current: number | null;
-    recommended: number | null;
-    ok: boolean;
-    meaning?: string;
-};
-
-type ClientAlignment = {
-    aligned?: boolean;
-    clients?: { qbit?: boolean; sab?: boolean };
-    sab?: { configured?: boolean; aligned?: boolean; rows?: AlignmentRow[]; error?: string };
-    qbit?: { configured?: boolean; aligned?: boolean; rows?: AlignmentRow[]; error?: string };
-    errors?: { qbit?: string | null; sab?: string | null };
-};
-
 type Props = {
     onToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 };
@@ -37,30 +21,19 @@ type Props = {
 const listLabel = (entries?: string[]) =>
     (entries && entries.length ? entries.join(', ') : '—');
 
-const formatRowValue = (row: AlignmentRow) => {
-    if (row.meaning) return `${row.current} (${row.meaning})`;
-    if (row.current == null) return '—';
-    return String(row.current);
-};
-
 export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [aligning, setAligning] = useState(false);
     const [policy, setPolicy] = useState<ExtensionPolicy | null>(null);
-    const [alignment, setAlignment] = useState<ClientAlignment | null>(null);
     const [text, setText] = useState('');
+    const [aligned, setAligned] = useState<boolean | null>(null);
 
     const loadPolicy = useCallback(async () => {
         setLoading(true);
         try {
-            const [extData, alignData] = await Promise.all([
-                apiFetch('/api/upgrader/qc/extensions'),
-                apiFetch('/api/upgrader/qc/client-alignment'),
-            ]);
+            const extData = await apiFetch('/api/upgrader/qc/extensions');
             setPolicy(extData || null);
             setText((extData?.union || []).join('\n'));
-            setAlignment(alignData || null);
         } catch (e: any) {
             onToast(e.message || 'Failed to load client policy', 'error');
         } finally {
@@ -91,24 +64,6 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
         }
     };
 
-    const handleAlign = async () => {
-        setAligning(true);
-        try {
-            const data = await apiFetch('/api/upgrader/qc/client-alignment', { method: 'POST', body: '{}' });
-            setAlignment(data || null);
-            onToast(
-                data?.aligned
-                    ? 'SAB/qBit settings aligned with QC.'
-                    : 'Applied recommended settings (check remaining diffs).',
-                data?.aligned ? 'success' : 'info',
-            );
-        } catch (e: any) {
-            onToast(e.message || 'Failed to apply client alignment', 'error');
-        } finally {
-            setAligning(false);
-        }
-    };
-
     if (loading && !policy) {
         return (
             <div className="flex items-center justify-center gap-2 py-16 text-muted">
@@ -123,10 +78,6 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
     const clientsConfigured = qbitConfigured || sabConfigured;
     const sabEmpty = sabConfigured && !(policy?.sab?.length);
     const qbitEmpty = qbitConfigured && !(policy?.qbit?.length);
-    const alignmentRows = [
-        ...(alignment?.sab?.configured ? (alignment.sab.rows || []) : []),
-        ...(alignment?.qbit?.configured ? (alignment.qbit.rows || []) : []),
-    ];
 
     return (
         <div className="space-y-4">
@@ -149,7 +100,7 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                     <div>
                         <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Download clients</h2>
                         <p className="text-xs text-muted mt-1">
-                            Connection settings live in Settings. This tab manages QC-aligned client prefs and the shared blocked-extension list.
+                            Connection settings live in Settings. Optimize tunes SAB/qBit for QC hunt and cleanup.
                         </p>
                     </div>
                     <a
@@ -184,68 +135,19 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
 
             {clientsConfigured && (
                 <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">QC alignment</h2>
-                            <p className="text-xs text-muted mt-1">
-                                Turns off SAB identical-NZB discard (so research re-grabs work) and raises qBit seed time /
-                                active torrent caps so imports and packs are not false-killed.
-                            </p>
-                        </div>
-                        <div className={`inline-flex items-center gap-1.5 text-xs font-bold ${alignment?.aligned ? 'text-emerald-300' : 'text-amber-200'}`}>
-                            {alignment?.aligned
-                                ? <><CheckCircle2 className="w-3.5 h-3.5" /> Aligned</>
-                                : <><AlertTriangle className="w-3.5 h-3.5" /> Needs apply</>}
-                        </div>
+                    <div>
+                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Optimize for QC</h2>
+                        <p className="text-xs text-muted mt-1">
+                            Turns off SAB identical-NZB discard (so research re-grabs work) and raises qBit seed time /
+                            active torrent caps so imports and packs are not false-killed.
+                            {aligned === true ? ' Currently aligned.' : aligned === false ? ' Currently needs apply.' : ''}
+                        </p>
                     </div>
-
-                    {alignmentRows.length > 0 && (
-                        <div className="overflow-x-auto rounded-xl border border-border/50">
-                            <table className="w-full text-xs text-left">
-                                <thead className="bg-background/50 text-muted uppercase tracking-wide">
-                                    <tr>
-                                        <th className="px-3 py-2 font-semibold">Setting</th>
-                                        <th className="px-3 py-2 font-semibold">Current</th>
-                                        <th className="px-3 py-2 font-semibold">Recommended</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {alignmentRows.map((row) => (
-                                        <tr key={row.key} className="border-t border-border/40">
-                                            <td className="px-3 py-2 text-text">{row.label}</td>
-                                            <td className={`px-3 py-2 ${row.ok ? 'text-emerald-300' : 'text-amber-200'}`}>
-                                                {formatRowValue(row)}
-                                            </td>
-                                            <td className="px-3 py-2 text-muted">
-                                                {row.recommended == null ? '—' : String(row.recommended)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-
-                    {(alignment?.errors?.sab || alignment?.errors?.qbit || alignment?.sab?.error || alignment?.qbit?.error) && (
-                        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 space-y-1">
-                            {(alignment?.errors?.sab || alignment?.sab?.error) && (
-                                <p>SAB: {alignment?.errors?.sab || alignment?.sab?.error}</p>
-                            )}
-                            {(alignment?.errors?.qbit || alignment?.qbit?.error) && (
-                                <p>qBit: {alignment?.errors?.qbit || alignment?.qbit?.error}</p>
-                            )}
-                        </div>
-                    )}
-
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-plex text-background text-sm font-bold hover:bg-plex-hover disabled:opacity-50"
-                        onClick={handleAlign}
-                        disabled={aligning || !clientsConfigured}
-                    >
-                        {aligning ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                        {aligning ? 'Applying…' : 'Apply recommended SAB/qBit settings'}
-                    </button>
+                    <QcOptimizeClientsButton
+                        onToast={onToast}
+                        variant="full"
+                        onAlignedChange={setAligned}
+                    />
                 </section>
             )}
 

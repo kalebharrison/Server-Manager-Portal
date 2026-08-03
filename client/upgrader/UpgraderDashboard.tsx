@@ -22,6 +22,7 @@ import { UpgraderProfilesTab } from './UpgraderProfilesTab';
 import { QcClientsPanel } from './QcClientsPanel';
 import { QcDownloadsPanel } from './QcDownloadsPanel';
 import { QcIntegrityPanel } from './QcIntegrityPanel';
+import { QcOptimizeClientsButton } from './QcOptimizeClientsButton';
 import { QcPolicySummary } from './QcPolicySummary';
 import { QcRulesPanel } from './QcRulesPanel';
 import type {
@@ -45,7 +46,7 @@ const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode
     { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'Recent grabs, how hunting works, and dry-run preview' },
     { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-3.5 h-3.5" />, title: 'Scan library files for corruption (report-only unless you replace)' },
     { id: 'downloads', label: 'Downloads', icon: <Download className="w-3.5 h-3.5" />, title: 'Download health, strikes, and cleanup' },
-    { id: 'clients', label: 'Clients', icon: <HardDrive className="w-3.5 h-3.5" />, title: 'Download client connection and blocked extensions' },
+    { id: 'clients', label: 'Clients', icon: <HardDrive className="w-3.5 h-3.5" />, title: 'Optimize qBit/SAB and manage blocked extensions' },
     { id: 'rules', label: 'Rules', icon: <Ban className="w-3.5 h-3.5" />, title: 'Full policy: timing, caps, hunt targets, skip list' },
     { id: 'activity', label: 'Activity', icon: <History className="w-3.5 h-3.5" />, title: 'Live hunt grabs and cleanup history' },
 ];
@@ -550,6 +551,14 @@ export const UpgraderDashboard: React.FC = () => {
                                                     {' · '}min score gain {minDelta}
                                                     {summary.scoreUnknownCount ? ` · ${summary.scoreUnknownCount} shows unscored` : ''}
                                                 </p>
+                                            )}
+                                            {(status?.clientsConfigured?.qbit || status?.clientsConfigured?.sab) && (
+                                                <div className="pt-2 border-t border-border/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                    <p className="text-xs text-muted">
+                                                        Tune SAB/qBit so hunt research and remux imports are not blocked by dupe discard or tiny seed windows.
+                                                    </p>
+                                                    <QcOptimizeClientsButton onToast={addToast} variant="compact" />
+                                                </div>
                                             )}
                                         </section>
 
