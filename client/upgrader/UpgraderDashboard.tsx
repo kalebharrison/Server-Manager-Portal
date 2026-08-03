@@ -73,7 +73,9 @@ const groupByLibrary = <T extends { arrInstanceName?: string | null; libraryName
     }
 
     for (const entry of entries) {
-        const label = entry.libraryName || entry.arrInstanceName || fallbackLabel(entry.arrType);
+        const label = entry.libraryName
+            || entry.arrInstanceName
+            || fallbackLabel(entry.arrType);
         const key = entry.libraryKey || `name:${label}`;
         ensure(key, label).items.push(entry);
     }
@@ -650,7 +652,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                             </span>
                                                         </div>
                                                         {group.items.length === 0 ? (
-                                                            <p className="text-xs text-muted">Nothing hunted from this library yet.</p>
+                                                            <p className="text-xs text-muted">Nothing hunted from {group.label} yet.</p>
                                                         ) : (
                                                             <div className="space-y-2">
                                                                 {group.items.slice(0, 10).map((entry) => {
