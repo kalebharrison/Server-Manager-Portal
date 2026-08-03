@@ -52,7 +52,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             label: 'Completed, not importing',
             perStrike: formatMinutes(cni),
             effective: formatMinutes(cni * strikes),
-            note: 'Finished in client, Arr not importing',
+            note: 'Finished in client, Arr waiting — never kills active imports',
             killKeys: ['completedNotImporting'],
         },
         {

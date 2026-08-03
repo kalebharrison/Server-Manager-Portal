@@ -226,6 +226,7 @@ test('classifyQueueItem detects completedNotImporting past threshold', () => {
             client: 'qbit',
             state: 'uploading',
             progress: 1,
+            added_on: Math.floor((now - 3 * hour) / 1000),
             completion_on: Math.floor((now - 90 * minute) / 1000),
         },
     });
@@ -244,7 +245,12 @@ test('waiting to import is not classified as failedImport', () => {
             statusMessages: [{ title: 'Waiting to import' }],
             added: new Date(now - 5 * minute).toISOString(),
         },
-        clientItem: { client: 'sab', state: 'Completed', progress: 1 },
+        clientItem: {
+            client: 'sab',
+            state: 'Completed',
+            progress: 1,
+            completedAt: now - 5 * minute,
+        },
     });
     assert.equal(young, null);
 
@@ -258,9 +264,56 @@ test('waiting to import is not classified as failedImport', () => {
             statusMessages: [{ title: 'Waiting to import' }],
             added: new Date(now - 45 * minute).toISOString(),
         },
-        clientItem: { client: 'sab', state: 'Completed', progress: 1 },
+        clientItem: {
+            client: 'sab',
+            state: 'Completed',
+            progress: 1,
+            completedAt: now - 45 * minute,
+        },
     });
     assert.equal(aged, QC_REASONS.completedNotImporting);
+});
+
+test('active importing is never completedNotImporting even when hours old', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 20 }),
+        arrItem: {
+            status: 'completed',
+            trackedDownloadState: 'importing',
+            trackedDownloadStatus: 'ok',
+            added: new Date(now - 3 * hour).toISOString(),
+        },
+        clientItem: {
+            client: 'sab',
+            state: 'completed',
+            progress: 1,
+            completedAt: now - 2 * hour,
+        },
+    });
+    assert.equal(reason, null);
+});
+
+test('completedNotImporting ages from completion not grab time', () => {
+    const now = Date.now();
+    // Grabbed 2h ago, finished 5 minutes ago — still within CNI grace.
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 20 }),
+        arrItem: {
+            status: 'completed',
+            trackedDownloadState: 'importPending',
+            added: new Date(now - 2 * hour).toISOString(),
+        },
+        clientItem: {
+            client: 'sab',
+            state: 'completed',
+            progress: 1,
+            completedAt: now - 5 * minute,
+        },
+    });
+    assert.equal(reason, null);
 });
 
 test('classifyQueueItem returns null when healthy', () => {
