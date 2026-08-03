@@ -232,6 +232,37 @@ test('classifyQueueItem detects completedNotImporting past threshold', () => {
     assert.equal(reason, QC_REASONS.completedNotImporting);
 });
 
+test('waiting to import is not classified as failedImport', () => {
+    const now = Date.now();
+    const young = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 20 }),
+        arrItem: {
+            status: 'completed',
+            trackedDownloadStatus: 'warning',
+            trackedDownloadState: 'importPending',
+            statusMessages: [{ title: 'Waiting to import' }],
+            added: new Date(now - 5 * minute).toISOString(),
+        },
+        clientItem: { client: 'sab', state: 'Completed', progress: 1 },
+    });
+    assert.equal(young, null);
+
+    const aged = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 20 }),
+        arrItem: {
+            status: 'completed',
+            trackedDownloadStatus: 'warning',
+            trackedDownloadState: 'importPending',
+            statusMessages: [{ title: 'Waiting to import' }],
+            added: new Date(now - 45 * minute).toISOString(),
+        },
+        clientItem: { client: 'sab', state: 'Completed', progress: 1 },
+    });
+    assert.equal(aged, QC_REASONS.completedNotImporting);
+});
+
 test('classifyQueueItem returns null when healthy', () => {
     const now = Date.now();
     const reason = classifyQueueItem({
