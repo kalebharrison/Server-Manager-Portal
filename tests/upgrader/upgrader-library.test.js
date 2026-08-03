@@ -82,16 +82,16 @@ test('librariesForArrInstance lists one entry per configured root', () => {
     assert.equal(single[0].name, 'Radarr Main');
 });
 
-test('Lidarr defaults to Music (or path label)', () => {
+test('Lidarr always labels as Music', () => {
     assert.equal(friendlyLibraryName({ type: 'lidarr', name: 'Lidarr' }), 'Music');
-    assert.equal(friendlyLibraryName({ type: 'lidarr', name: 'Lidarr' }, 'Audio'), 'Audio');
-    assert.equal(friendlyLibraryName({ type: 'lidarr', name: 'Jazz Vault' }), 'Jazz Vault');
+    assert.equal(friendlyLibraryName({ type: 'lidarr', name: 'Artists' }, 'Artists'), 'Music');
+    assert.equal(friendlyLibraryName({ type: 'lidarr', name: 'Jazz Vault' }), 'Music');
 
     const libs = librariesForArrInstance({
         id: 'l1',
         type: 'lidarr',
-        name: 'Lidarr',
-        activeDirectory: '/media/music',
+        name: 'Artists',
+        activeDirectory: '/media/artists',
     });
     assert.equal(libs.length, 1);
     assert.equal(libs[0].name, 'Music');

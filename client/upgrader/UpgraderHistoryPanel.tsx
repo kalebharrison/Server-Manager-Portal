@@ -5,10 +5,35 @@ import type { UpgraderAuditEntry } from './types';
 
 const entryTime = (entry: UpgraderAuditEntry) => entry.timestamp || entry.at || null;
 
+const friendlyFailureReason = (reason?: string | null) => {
+    const text = String(reason || '').trim();
+    if (!text) return '';
+    if (/SABnzbd/i.test(text) || /Error response received from SAB/i.test(text)) {
+        return 'SABnzbd rejected the grab — check that SAB is up and Radarr can reach it.';
+    }
+    if (/qBittorrent|qbit/i.test(text) && /Error response received from/i.test(text)) {
+        return 'qBittorrent rejected the grab — check the download client connection in Radarr/Sonarr.';
+    }
+    const messageMatch = text.match(/"message"\s*:\s*"([^"]+)"/);
+    if (messageMatch?.[1]) {
+        const msg = messageMatch[1].replace(/\\n/g, ' ').trim();
+        if (/SABnzbd/i.test(msg)) {
+            return 'SABnzbd rejected the grab — check that SAB is up and Radarr can reach it.';
+        }
+        return msg.length > 180 ? `${msg.slice(0, 180)}…` : msg;
+    }
+    const firstLine = text.split(/\n|\bat\s/)[0]
+        .replace(/^Radarr returned \d+:\s*/i, '')
+        .replace(/^Sonarr returned \d+:\s*/i, '')
+        .trim();
+    return firstLine.length > 180 ? `${firstLine.slice(0, 180)}…` : firstLine;
+};
+
 const actionLabel = (entry: UpgraderAuditEntry) => {
+    const failed = entry.success === false;
     switch (entry.action) {
-        case 'upgrade': return 'Grabbed better release';
-        case 'missing_search': return 'Grabbed missing';
+        case 'upgrade': return failed ? 'Grab failed' : 'Grabbed better release';
+        case 'missing_search': return failed ? 'Missing search failed' : 'Grabbed missing';
         case 'qc_integrity_scan': return 'Integrity scan';
         case 'qc_integrity_replace': return 'Integrity replace';
         case 'profile_change': return 'Profile change';
@@ -162,7 +187,9 @@ export const UpgraderHistoryPanel: React.FC = () => {
                                             {entry.actor?.username ? <span>by {entry.actor.username}</span> : null}
                                         </div>
                                         {entry.success === false && entry.reason && !entry.action?.startsWith('qc_') && (
-                                            <p className="text-[11px] text-red-300 mt-1">{entry.reason}</p>
+                                            <p className="text-[11px] text-red-300 mt-1" title={String(entry.reason)}>
+                                                {friendlyFailureReason(entry.reason)}
+                                            </p>
                                         )}
                                     </div>
                                 </div>

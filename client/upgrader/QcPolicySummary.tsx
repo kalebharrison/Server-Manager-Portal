@@ -9,6 +9,7 @@ type TimingRow = {
     perStrike: string;
     effective: string;
     note?: string;
+    killKeys: string[];
 };
 
 const formatMinutes = (minutes: number) => {
@@ -36,6 +37,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             perStrike: formatMinutes(meta),
             effective: formatMinutes(meta * strikes),
             note: 'qBit stuck fetching metadata',
+            killKeys: ['metaDL'],
         },
         {
             id: 'stalled',
@@ -43,6 +45,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             perStrike: `${stalledHours}h`,
             effective: `${stalledHours * strikes}h`,
             note: 'Held during client/network outages',
+            killKeys: ['stalled'],
         },
         {
             id: 'cni',
@@ -50,6 +53,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             perStrike: formatMinutes(cni),
             effective: formatMinutes(cni * strikes),
             note: 'Finished in client, Arr not importing',
+            killKeys: ['completedNotImporting'],
         },
         {
             id: 'orphan',
@@ -57,6 +61,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             perStrike: formatMinutes(orphan || 15),
             effective: formatMinutes((orphan || 15) * strikes),
             note: 'Also protects fresh hunt grabs',
+            killKeys: ['orphan'],
         },
         {
             id: 'import',
@@ -64,6 +69,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             perStrike: formatMinutes(orphan || 15),
             effective: formatMinutes((orphan || 15) * strikes),
             note: 'Uses orphan gap as strike window',
+            killKeys: ['failedImport', 'duplicate'],
         },
     ];
 };
@@ -85,14 +91,17 @@ export const QcPolicySummary: React.FC<Props> = ({
     const maxActions = Math.max(1, Number(status?.maxActionsPerHour) || 25);
     const minDelta = Math.max(0, Number(status?.minScoreDelta ?? 10) || 0);
     const prefs = status?.preferences;
+    const killsByReason = status?.qcMetrics?.killsByReason || {};
+    const killCount = (keys: string[]) => keys.reduce((sum, key) => sum + (Number(killsByReason[key]) || 0), 0);
+    const totalKills = Object.values(killsByReason).reduce((sum, n) => sum + (Number(n) || 0), 0);
 
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Cleanup timing</h2>
+                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Cleanup policy</h2>
                     <p className="text-xs text-muted mt-1">
-                        {strikes} strikes × each window below = effective wait before a kill (healthy scans only).
+                        {strikes} strikes × each window = wait before a kill. Kill counts are lifetime totals for this portal.
                     </p>
                 </div>
                 {showSettingsLink && (
@@ -113,22 +122,36 @@ export const QcPolicySummary: React.FC<Props> = ({
                             <th className="px-3 py-2 font-semibold">Type</th>
                             <th className="px-3 py-2 font-semibold">Per strike</th>
                             <th className="px-3 py-2 font-semibold">Effective ({strikes}×)</th>
+                            <th className="px-3 py-2 font-semibold">Kills</th>
                             {!compact && <th className="px-3 py-2 font-semibold">Notes</th>}
                         </tr>
                     </thead>
                     <tbody>
-                        {rows.map((row) => (
-                            <tr key={row.id} className="border-t border-border/40">
-                                <td className="px-3 py-2 font-semibold text-text">{row.label}</td>
-                                <td className="px-3 py-2 text-text">{row.perStrike}</td>
-                                <td className="px-3 py-2 font-bold text-plex">{row.effective}</td>
-                                {!compact && (
-                                    <td className="px-3 py-2 text-muted">{row.note || '—'}</td>
-                                )}
-                            </tr>
-                        ))}
+                        {rows.map((row) => {
+                            const kills = killCount(row.killKeys);
+                            return (
+                                <tr key={row.id} className="border-t border-border/40">
+                                    <td className="px-3 py-2 font-semibold text-text">{row.label}</td>
+                                    <td className="px-3 py-2 text-text">{row.perStrike}</td>
+                                    <td className="px-3 py-2 font-bold text-plex">{row.effective}</td>
+                                    <td className={`px-3 py-2 font-bold ${kills > 0 ? 'text-text' : 'text-muted'}`}>
+                                        {kills}
+                                    </td>
+                                    {!compact && (
+                                        <td className="px-3 py-2 text-muted">{row.note || '—'}</td>
+                                    )}
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted">
+                <span>{totalKills} total cleanup kills recorded</span>
+                {status?.qcMetrics?.lastCleanupAt && (
+                    <span>Last cleanup {new Date(status.qcMetrics.lastCleanupAt).toLocaleString()}</span>
+                )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

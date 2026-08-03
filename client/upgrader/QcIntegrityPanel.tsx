@@ -203,8 +203,10 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             <div className="rounded-2xl border border-border/60 bg-card/40 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h2>
-                    <p className="text-xs text-muted mt-1">
-                        ffprobe + quick decode at start / middle / near-end on Arr-known files. Dry-run by default.
+                    <p className="text-xs text-muted mt-1 max-w-2xl">
+                        Checks Arr-known library files with ffprobe + a short decode at the start, middle, and near the end.
+                        A dry-run scan only reports problems — it never deletes or replaces anything.
+                        Use Replace on a finding when you want Arr to remove the bad file and hunt a new copy.
                         Each pass checks up to 25 files and can take a few minutes on big libraries.
                     </p>
                     {result?.setup && !result.setup.ready && (
@@ -227,7 +229,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     onClick={() => void runScan()}
                 >
                     {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FlaskConical className="w-3.5 h-3.5" />}
-                    {scanning ? 'Scanning…' : 'Dry-run scan'}
+                    {scanning ? 'Scanning…' : 'Scan (report only)'}
                 </button>
             </div>
 
@@ -261,7 +263,10 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     </button>
                 </div>
                 {!result && !scanning && (
-                    <p className="text-xs text-muted">Click Dry-run scan to check a batch of Arr files. First pass is the slowest.</p>
+                    <p className="text-xs text-muted">
+                        Click Scan (report only) to check a batch of Arr files. Nothing is changed until you click Replace on a finding.
+                        The first pass is the slowest.
+                    </p>
                 )}
                 {scanning && findings.length === 0 && (
                     <p className="text-xs text-muted">Working through files now — findings will show when this pass finishes.</p>

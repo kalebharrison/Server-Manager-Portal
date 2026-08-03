@@ -42,8 +42,8 @@ type LibraryGroup<T> = { key: string; label: string; items: T[] };
 
 const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode; title: string }> = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-3.5 h-3.5" />, title: 'Active downloads, timing, and recent activity' },
-    { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'How it hunts and dry-run preview' },
-    { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-3.5 h-3.5" />, title: 'Validate library files and replace corrupt ones' },
+    { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'Recent grabs, how hunting works, and dry-run preview' },
+    { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-3.5 h-3.5" />, title: 'Scan library files for corruption (report-only unless you replace)' },
     { id: 'downloads', label: 'Downloads', icon: <Download className="w-3.5 h-3.5" />, title: 'Download health, strikes, and cleanup' },
     { id: 'clients', label: 'Clients', icon: <HardDrive className="w-3.5 h-3.5" />, title: 'Download client connection and blocked extensions' },
     { id: 'rules', label: 'Rules', icon: <Ban className="w-3.5 h-3.5" />, title: 'Full policy: timing, caps, hunt targets, skip list' },
@@ -171,25 +171,31 @@ export const UpgraderDashboard: React.FC = () => {
             const indexedLibraries = Array.isArray(summaryData?.libraries)
                 ? summaryData.libraries.map((lib: any) => ({
                     id: String(lib.key || lib.id),
-                    name: String(lib.name || 'Library').replace(/^Lidarr$/i, 'Music'),
+                    name: String(lib.type || lib.arrType) === 'lidarr'
+                        || /^(lidarr|artists?|music)$/i.test(String(lib.name || ''))
+                        ? 'Music'
+                        : String(lib.name || 'Library'),
                     type: String(lib.type || 'arr'),
                 }))
                 : [];
             const configuredLibraries = Array.isArray(profilesData?.libraries)
                 ? profilesData.libraries.map((lib: any) => ({
                     id: String(lib.key || lib.id),
-                    name: String(lib.name || 'Library').replace(/^Lidarr$/i, 'Music'),
+                    name: String(lib.type || '') === 'lidarr'
+                        || /^(lidarr|artists?|music)$/i.test(String(lib.name || ''))
+                        ? 'Music'
+                        : String(lib.name || 'Library'),
                     type: String(lib.type || 'arr'),
                 }))
                 : [];
             const instanceList = Array.isArray(profilesData?.instances)
                 ? profilesData.instances.map((instance: any) => ({
                     id: String(instance.id),
-                    name: String(instance.name || (
-                        instance.type === 'radarr' ? 'Radarr'
-                            : instance.type === 'lidarr' ? 'Music'
-                                : 'Sonarr'
-                    )).replace(/^Lidarr$/i, 'Music'),
+                    name: String(instance.type || '') === 'lidarr'
+                        ? 'Music'
+                        : String(instance.name || (
+                            instance.type === 'radarr' ? 'Radarr' : 'Sonarr'
+                        )),
                     type: String(instance.type || 'arr'),
                 }))
                 : [];
@@ -199,7 +205,10 @@ export const UpgraderDashboard: React.FC = () => {
                 : (indexedLibraries.length ? indexedLibraries : instanceList));
 
             const grabs = (Array.isArray(auditData?.entries) ? auditData.entries : [])
-                .filter((entry: UpgraderAuditEntry) => entry.action === 'upgrade' && entry.success !== false && !entry.dryRun)
+                .filter((entry: UpgraderAuditEntry) => (
+                    (entry.action === 'upgrade' || entry.action === 'missing_search')
+                    && !entry.dryRun
+                ))
                 .slice(0, 48);
             setRecentGrabs(grabs);
         } catch (e: any) {
@@ -330,9 +339,6 @@ export const UpgraderDashboard: React.FC = () => {
     const usedActions = status?.recentUpgradeCount ?? 0;
     const remainingActions = Math.max(0, maxActions - usedActions);
     const minDelta = status?.minScoreDelta ?? 10;
-    const prefs = status?.preferences;
-    const killsByReason = status?.qcMetrics?.killsByReason || {};
-    const killEntries = Object.entries(killsByReason).filter(([, n]) => Number(n) > 0);
     const activeByLibrary = Array.isArray(status?.activeDownloadsByLibrary)
         ? status!.activeDownloadsByLibrary!
         : [];
@@ -362,7 +368,7 @@ export const UpgraderDashboard: React.FC = () => {
                                 disabled={dryRunning || rebuilding || !!status?.rebuildInProgress}
                             >
                                 <FlaskConical className={`w-3.5 h-3.5 ${dryRunning ? 'animate-pulse' : ''}`} />
-                                {dryRunning ? 'Dry run…' : 'Dry run hunt'}
+                                {dryRunning ? 'Previewing…' : 'Preview hunt'}
                             </button>
                             <button
                                 type="button"
@@ -571,7 +577,12 @@ export const UpgraderDashboard: React.FC = () => {
                                                         return (
                                                             <div key={lib.key} className="rounded-xl border border-border/50 bg-background/40 px-3 py-2.5">
                                                                 <div className="flex items-center justify-between gap-3 text-xs">
-                                                                    <span className="font-semibold text-text truncate">{lib.label}</span>
+                                                                    <span className="font-semibold text-text truncate">
+                                                                        {String(lib.key || '').startsWith('lidarr:')
+                                                                            || /^(lidarr|artists?|music)$/i.test(String(lib.label || ''))
+                                                                            ? 'Music'
+                                                                            : lib.label}
+                                                                    </span>
                                                                     <span className={`font-bold shrink-0 ${atCap ? 'text-amber-200' : 'text-text'}`}>
                                                                         {lib.active}/{lib.cap}
                                                                         <span className="ml-1 font-semibold text-muted">
@@ -595,125 +606,6 @@ export const UpgraderDashboard: React.FC = () => {
                                         <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
                                             <QcPolicySummary status={status} compact />
                                         </section>
-
-                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
-                                            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Kills by reason</h2>
-                                            {killEntries.length === 0 ? (
-                                                <p className="text-xs text-muted">No cleanup kills recorded yet.</p>
-                                            ) : (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {killEntries.map(([reason, count]) => (
-                                                        <span
-                                                            key={reason}
-                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-background/40 px-2.5 py-1 text-xs"
-                                                        >
-                                                            <span className="font-semibold text-text">{reason}</span>
-                                                            <span className="text-muted">{count}</span>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {status?.qcMetrics?.lastCleanupAt && (
-                                                <p className="text-[11px] text-muted">
-                                                    Last cleanup {new Date(status.qcMetrics.lastCleanupAt).toLocaleString()}
-                                                </p>
-                                            )}
-                                        </section>
-
-                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-4 flex flex-wrap gap-3">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
-                                                onClick={handleDryRun}
-                                                disabled={dryRunning}
-                                            >
-                                                <FlaskConical className="w-3.5 h-3.5" />
-                                                Dry-run hunt
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
-                                                onClick={() => handleTabChange('downloads')}
-                                            >
-                                                <Download className="w-3.5 h-3.5" />
-                                                Downloads
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
-                                                onClick={() => handleTabChange('rules')}
-                                            >
-                                                <Ban className="w-3.5 h-3.5" />
-                                                Full policy
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
-                                                onClick={() => handleTabChange('hunt')}
-                                            >
-                                                <Crosshair className="w-3.5 h-3.5" />
-                                                Hunt details
-                                            </button>
-                                        </section>
-
-                                        <section className="space-y-4">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Just hunted</h2>
-                                                <button
-                                                    type="button"
-                                                    className="text-xs font-bold text-plex hover:underline"
-                                                    onClick={() => handleTabChange('activity')}
-                                                >
-                                                    Full activity
-                                                </button>
-                                            </div>
-                                            {grabsByLibrary.length === 0 ? (
-                                                <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
-                                                    <p className="text-sm text-muted">
-                                                        No libraries indexed yet. Refresh the index, or run a dry run to preview candidates.
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                grabsByLibrary.map((group) => (
-                                                    <div key={group.key} className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <h3 className="text-sm font-bold text-text">{group.label}</h3>
-                                                            <span className="text-[11px] text-muted">
-                                                                {group.items.length ? `${group.items.length} recent` : 'No recent grabs'}
-                                                            </span>
-                                                        </div>
-                                                        {group.items.length === 0 ? (
-                                                            <p className="text-xs text-muted">Nothing grabbed from this library yet.</p>
-                                                        ) : (
-                                                            <div className="space-y-2">
-                                                                {group.items.slice(0, 8).map((entry) => {
-                                                                    const when = entryTime(entry);
-                                                                    const delta = entry.currentScore != null && entry.candidateScore != null
-                                                                        ? entry.candidateScore - entry.currentScore
-                                                                        : null;
-                                                                    return (
-                                                                        <div key={entry.id} className="rounded-lg border border-border/50 bg-background/40 px-3 py-2">
-                                                                            <div className="flex items-center justify-between gap-2">
-                                                                                <div className="text-xs font-semibold text-text">{entry.title}</div>
-                                                                                {delta != null && (
-                                                                                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">+{delta}</span>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="text-[11px] text-muted mt-0.5">
-                                                                                {[
-                                                                                    entry.releaseTitle,
-                                                                                    when ? new Date(when).toLocaleString() : null,
-                                                                                ].filter(Boolean).join(' · ')}
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))
-                                            )}
-                                        </section>
                                     </div>
                                 )}
 
@@ -726,9 +618,97 @@ export const UpgraderDashboard: React.FC = () => {
 
                                 {activeTab === 'hunt' && (
                                     <div className="flex flex-col gap-6">
+                                        <section className="space-y-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div>
+                                                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Recent hunts</h2>
+                                                    <p className="text-xs text-muted mt-1">
+                                                        Successful grabs and failures from Arr (e.g. SAB rejected an NZB).
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="text-xs font-bold text-plex hover:underline"
+                                                    onClick={() => handleTabChange('activity')}
+                                                >
+                                                    Full activity
+                                                </button>
+                                            </div>
+                                            {grabsByLibrary.length === 0 ? (
+                                                <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
+                                                    <p className="text-sm text-muted">
+                                                        No hunt activity yet. Refresh the index, or run a preview below.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                grabsByLibrary.map((group) => (
+                                                    <div key={group.key} className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <h3 className="text-sm font-bold text-text">{group.label}</h3>
+                                                            <span className="text-[11px] text-muted">
+                                                                {group.items.length ? `${group.items.length} recent` : 'No recent hunts'}
+                                                            </span>
+                                                        </div>
+                                                        {group.items.length === 0 ? (
+                                                            <p className="text-xs text-muted">Nothing hunted from this library yet.</p>
+                                                        ) : (
+                                                            <div className="space-y-2">
+                                                                {group.items.slice(0, 10).map((entry) => {
+                                                                    const when = entryTime(entry);
+                                                                    const failed = entry.success === false;
+                                                                    const delta = !failed && entry.currentScore != null && entry.candidateScore != null
+                                                                        ? entry.candidateScore - entry.currentScore
+                                                                        : null;
+                                                                    return (
+                                                                        <div
+                                                                            key={entry.id}
+                                                                            className={`rounded-lg border px-3 py-2 ${
+                                                                                failed
+                                                                                    ? 'border-red-500/25 bg-red-500/5'
+                                                                                    : 'border-border/50 bg-background/40'
+                                                                            }`}
+                                                                        >
+                                                                            <div className="flex items-center justify-between gap-2">
+                                                                                <div className="text-xs font-semibold text-text">{entry.title}</div>
+                                                                                {delta != null && (
+                                                                                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">+{delta}</span>
+                                                                                )}
+                                                                                {failed && (
+                                                                                    <span className="text-[10px] font-bold text-red-300 shrink-0">Failed</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="text-[11px] text-muted mt-0.5">
+                                                                                {[
+                                                                                    failed ? 'Grab failed' : 'Grabbed',
+                                                                                    entry.releaseTitle,
+                                                                                    when ? new Date(when).toLocaleString() : null,
+                                                                                ].filter(Boolean).join(' · ')}
+                                                                            </div>
+                                                                            {failed && entry.reason && (
+                                                                                <p className="text-[11px] text-red-300 mt-1 line-clamp-2">
+                                                                                    {/SAB/i.test(String(entry.reason))
+                                                                                        ? 'SABnzbd rejected the grab — check SAB is up and Radarr can reach it.'
+                                                                                        : String(entry.reason).split(/\n|\bat\s/)[0].slice(0, 180)}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </section>
+
                                         <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
                                             <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <h2 className="text-sm font-bold uppercase tracking-wide text-muted">How it hunts</h2>
+                                                <div>
+                                                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">How it hunts</h2>
+                                                    <p className="text-xs text-muted mt-1">
+                                                        Preview searches Arr without grabbing. Auto-hunt uses the same rules when enabled in Settings.
+                                                    </p>
+                                                </div>
                                                 <button
                                                     type="button"
                                                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
@@ -741,35 +721,19 @@ export const UpgraderDashboard: React.FC = () => {
                                             <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
                                                 <li>
                                                     <span className="text-text font-semibold">Fair per library.</span>{' '}
-                                                    Each configured Arr root folder gets a turn every cycle (round-robin). Shared Arr instances with multiple roots are hunted separately. Hunts also stop grabbing for a library once it already has {status?.maxDownloadsPerLibrary ?? 5} in-flight Arr downloads.
+                                                    Each Arr root folder gets a turn every cycle. Hunting stops for a library at {status?.maxDownloadsPerLibrary ?? 5} in-flight downloads.
                                                 </li>
                                                 <li>
-                                                    <span className="text-text font-semibold">Worst scores first inside each library.</span>{' '}
-                                                    Within a library it tries the lowest Arr scores first, capped per cycle so it keeps moving.
+                                                    <span className="text-text font-semibold">Worst scores first.</span>{' '}
+                                                    Lowest Arr custom-format scores are tried first inside each library.
                                                 </li>
                                                 <li>
-                                                    <span className="text-text font-semibold">No repeat loops.</span>{' '}
-                                                    After a grab or a “nothing better” search (~7 days), that title cools down so the next cycle moves on.
+                                                    <span className="text-text font-semibold">Cooldownoldown after tries.</span>{' '}
+                                                    After a grab or a “nothing better” result (~7 days), that title cools down.
                                                 </li>
                                                 <li>
-                                                    <span className="text-text font-semibold">TV targets the weakest season.</span>{' '}
-                                                    Interactive Arr release search for that season (or the movie) — not a whole-library Arr command.
-                                                </li>
-                                                <li>
-                                                    <span className="text-text font-semibold">Never downgrade resolution.</span>{' '}
-                                                    A 1080p season pack cannot beat a 4K season floor. Score must beat current by at least {minDelta}
-                                                    {prefs ? (
-                                                        <>
-                                                            {', with portal boosts for '}
-                                                            {[
-                                                                prefs.preferDolbyVisionHdr !== false ? 'DV/HDR' : null,
-                                                                prefs.preferAtmos !== false ? 'Atmos' : null,
-                                                                prefs.preferRemux !== false ? 'Remux' : null,
-                                                                prefs.preferSeasonPacks !== false ? 'season packs' : null,
-                                                            ].filter(Boolean).join(', ') || 'your enabled prefs'}
-                                                            .
-                                                        </>
-                                                    ) : '.'}
+                                                    <span className="text-text font-semibold">Score floor {minDelta}+.</span>{' '}
+                                                    Never downgrades resolution (e.g. 1080p cannot beat a 4K season).
                                                 </li>
                                             </ol>
                                             <div className="pt-2">
@@ -780,7 +744,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                     disabled={dryRunning || rebuilding || !!status?.rebuildInProgress}
                                                 >
                                                     <FlaskConical className={`w-4 h-4 ${dryRunning ? 'animate-pulse' : ''}`} />
-                                                    {dryRunning ? 'Dry run…' : 'Dry-run hunt'}
+                                                    {dryRunning ? 'Previewing…' : 'Preview hunt (no grabs)'}
                                                 </button>
                                             </div>
                                         </section>
@@ -789,13 +753,13 @@ export const UpgraderDashboard: React.FC = () => {
                                             <section className="space-y-4">
                                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                                     <div>
-                                                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Dry run preview</h2>
+                                                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Hunt preview</h2>
                                                         <p className="text-xs text-muted mt-1">
                                                             {dryRunning
-                                                                ? 'Searching Arr now (small sample per library). This can take a minute…'
+                                                                ? 'Searching Arr now (small sample per library). This can take a minute — nothing is grabbed.'
                                                                 : (
                                                                     <>
-                                                                        No grabs were sent.
+                                                                        Preview only — no grabs were sent.
                                                                         {' '}{dryRun?.wouldGrab || 0} would grab
                                                                         {' · '}{dryRun?.skipped || 0} skipped
                                                                         {' · '}{dryRun?.searched || 0} searched
@@ -818,7 +782,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                 {dryRunning && (
                                                     <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 flex items-center gap-3 text-sm text-amber-100">
                                                         <FlaskConical className="w-5 h-5 animate-pulse shrink-0" />
-                                                        Dry run in progress — waiting on Sonarr/Radarr release search…
+                                                        Preview in progress — waiting on Arr release search…
                                                     </div>
                                                 )}
                                                 {!dryRunning && dryRun && dryRunByLibrary.length === 0 && (

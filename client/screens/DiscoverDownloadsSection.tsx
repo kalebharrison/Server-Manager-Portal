@@ -2,10 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowUpCircle, CircleHelp, DownloadCloud, Film, Music, Sparkles, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
-import { discoverPosterGridClass, discoverRowCardWidthClass, type UpgraderGridSize } from '../shared/portalLayout';
+import { discoverPosterGridClass } from '../shared/portalLayout';
 import { ScrollReveal } from '../shared/ui';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
-import { Carousel } from '../discovery/Carousel';
 import { discoveryTheme } from '../discovery/discoveryThemeClasses';
 import { groupOnTheWayDownloads } from '../../lib/media-stack/on-the-way-group.js';
 import { mapQueueRecords } from './media-stack/mediaStackUtils';
@@ -74,21 +73,18 @@ const DownloadPosterCard: React.FC<{ item: any; className?: string }> = ({ item,
 
 type Props = {
     useScrollRevealAnimations?: boolean;
-    /** `rail` matches Discover Home carousel density; `grid` uses the poster grid. */
+    /** `rail` = compact wrapping grid on Discover Home; `grid` = full poster grid. */
     layout?: 'grid' | 'rail';
-    gridSize?: UpgraderGridSize;
 };
 
 export const DiscoverDownloadsSection: React.FC<Props> = ({
     useScrollRevealAnimations,
     layout = 'grid',
-    gridSize = 'large',
 }) => {
     const [downloads, setDownloads] = useState<any[]>([]);
     const [loaded, setLoaded] = useState(false);
     const initialLoadRef = useRef(true);
     const isRail = layout === 'rail';
-    const posterCardClass = discoverRowCardWidthClass(gridSize);
 
     const loadDownloads = useCallback(async () => {
         const forceRefresh = initialLoadRef.current;
@@ -138,11 +134,14 @@ export const DiscoverDownloadsSection: React.FC<Props> = ({
         return (
             <div className="flex flex-col gap-2 relative">
                 {title}
-                <Carousel>
+                <div
+                    className="grid gap-2 px-2"
+                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(5.5rem, 1fr))' }}
+                >
                     {visibleDownloads.map((item) => (
-                        <DownloadPosterCard key={item.id} item={item} className={`shrink-0 ${posterCardClass}`} />
+                        <DownloadPosterCard key={item.id} item={item} />
                     ))}
-                </Carousel>
+                </div>
             </div>
         );
     }
