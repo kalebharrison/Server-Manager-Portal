@@ -277,6 +277,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         <label className="text-sm font-semibold">Completed not importing (min / strike)
                             <span className="block text-xs font-normal text-muted mt-1">
                                 Finished in the client but Arr still has not imported — per strike window.
+                                Large remuxes get extra time (2 min/GB, capped) and waits behind other imports are held.
                             </span>
                             <input
                                 type="number"

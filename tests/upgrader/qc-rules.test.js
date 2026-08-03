@@ -30,7 +30,7 @@ test('thresholdsFromConfig applies per-strike defaults', () => {
     const t = thresholdsFromConfig({});
     assert.equal(t.metaDlMinutes, 20);
     assert.equal(t.stalledHours, 2);
-    assert.equal(t.completedNotImportingMinutes, 20);
+    assert.equal(t.completedNotImportingMinutes, 90);
     assert.equal(t.orphanGraceMinutes, 15);
     assert.equal(t.maxStrikes, 3);
     assert.equal(t.researchThrottleHours, 24);
@@ -338,6 +338,41 @@ test('importPending behind an active import is not completedNotImporting', () =>
     }, { arrItems: [active, waiting] }), false);
 });
 
+test('importPending behind an older pending peer is not completedNotImporting', () => {
+    const now = Date.now();
+    const older = {
+        arrType: 'radarr',
+        arrInstanceId: 'main',
+        arrQueueId: 1,
+        status: 'completed',
+        trackedDownloadState: 'importPending',
+        estimatedCompletionTime: new Date(now - 3 * hour).toISOString(),
+        added: new Date(now - 4 * hour).toISOString(),
+    };
+    const newer = {
+        arrType: 'radarr',
+        arrInstanceId: 'main',
+        arrQueueId: 2,
+        status: 'completed',
+        trackedDownloadState: 'importPending',
+        estimatedCompletionTime: new Date(now - 2 * hour).toISOString(),
+        added: new Date(now - 3 * hour).toISOString(),
+    };
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 20 }),
+        arrItem: newer,
+        peerArrItems: [older, newer],
+        clientItem: {
+            client: 'sab',
+            state: 'completed',
+            progress: 1,
+            completedAt: now - 2 * hour,
+        },
+    });
+    assert.equal(reason, null);
+});
+
 test('importPending alone past threshold is still completedNotImporting', () => {
     const now = Date.now();
     const waiting = {
@@ -361,6 +396,39 @@ test('importPending alone past threshold is still completedNotImporting', () => 
         },
     });
     assert.equal(reason, QC_REASONS.completedNotImporting);
+});
+
+test('large remuxes get a longer CNI threshold before first strike', () => {
+    const now = Date.now();
+    const arrItem = {
+        status: 'completed',
+        trackedDownloadState: 'importPending',
+        size: 50 * (1024 ** 3),
+        added: new Date(now - 2 * hour).toISOString(),
+    };
+    const clientItem = {
+        client: 'sab',
+        state: 'completed',
+        progress: 1,
+        size: 50 * (1024 ** 3),
+        completedAt: now - 100 * minute,
+    };
+    // base 90 + 50*2=100 → 190 minutes; 100 min completed age is still inside grace
+    const young = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({}),
+        arrItem,
+        clientItem,
+    });
+    assert.equal(young, null);
+
+    const aged = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({}),
+        arrItem,
+        clientItem: { ...clientItem, completedAt: now - 200 * minute },
+    });
+    assert.equal(aged, QC_REASONS.completedNotImporting);
 });
 
 test('completedNotImporting ages from completion not grab time', () => {

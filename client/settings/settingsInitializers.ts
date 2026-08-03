@@ -250,7 +250,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityDecodeTimeoutMs(Math.max(1000, Number(initialSettings.qcIntegrityDecodeTimeoutMs) || 30000));
     setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 20));
     setters.setQcStalledHours(Math.max(1, Number(initialSettings.qcStalledHours) || 2));
-    setters.setQcCompletedNotImportingMinutes(Math.max(1, Number(initialSettings.qcCompletedNotImportingMinutes) || 20));
+    setters.setQcCompletedNotImportingMinutes(Math.max(1, Number(initialSettings.qcCompletedNotImportingMinutes) || 90));
     setters.setQcOrphanGraceMinutes(Math.max(0, Number(initialSettings.qcOrphanGraceMinutes ?? 15) || 0));
     setters.setQcMaxStrikes(Math.max(1, Number(initialSettings.qcMaxStrikes) || 3));
     setters.setQcResearchThrottleHours(Math.max(1, Number(initialSettings.qcResearchThrottleHours) || 24));

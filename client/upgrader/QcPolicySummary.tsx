@@ -28,7 +28,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
     const strikes = Math.max(1, Number(t?.maxStrikes) || 3);
     const meta = Math.max(1, Number(t?.metaDlMinutes) || 10);
     const stalledHours = Math.max(1, Number(t?.stalledHours) || 2);
-    const cni = Math.max(1, Number(t?.completedNotImportingMinutes) || 20);
+    const cni = Math.max(1, Number(t?.completedNotImportingMinutes) || 90);
     const orphan = Math.max(0, Number(t?.orphanGraceMinutes ?? 15) || 0);
     return [
         {
@@ -52,7 +52,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             label: 'Completed, not importing',
             perStrike: formatMinutes(cni),
             effective: formatMinutes(cni * strikes),
-            note: 'Finished in client, Arr waiting — never kills active imports',
+            note: 'Finished in client, Arr waiting — held behind import queue; large files get extra time',
             killKeys: ['completedNotImporting'],
         },
         {
