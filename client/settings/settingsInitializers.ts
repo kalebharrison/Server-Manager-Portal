@@ -261,6 +261,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
         return Math.max(1, raw);
     })());
     setters.setQcIntegrityConcurrency(Math.max(1, Number(initialSettings.qcIntegrityConcurrency) || 4));
+    setters.setQcIntegrityPlayabilityConcurrency(Math.max(1, Number(initialSettings.qcIntegrityPlayabilityConcurrency) || 1));
     setters.setQcIntegrityBreakerMaxFindings(Math.max(1, Number(initialSettings.qcIntegrityBreakerMaxFindings) || 50));
     setters.setQcIntegrityBreakerMaxPercent(Math.max(0.1, Number(initialSettings.qcIntegrityBreakerMaxPercent) || 10));
     setters.setQcIntegrityPauseWhenSessions(Math.max(0, Number(initialSettings.qcIntegrityPauseWhenSessions ?? 0) || 0));

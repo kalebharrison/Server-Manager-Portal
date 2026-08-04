@@ -27,6 +27,7 @@ type Props = {
     integrityPathMaps: Array<{ from: string; to: string }>;
     integrityMaxPerCycle: number;
     integrityConcurrency: number;
+    integrityPlayabilityConcurrency: number;
     integrityBreakerMaxFindings: number;
     integrityBreakerMaxPercent: number;
     integrityPauseWhenSessions: number;
@@ -65,6 +66,7 @@ type Props = {
     onIntegrityPathMapsChange: (value: Array<{ from: string; to: string }>) => void;
     onIntegrityMaxPerCycleChange: (value: number) => void;
     onIntegrityConcurrencyChange: (value: number) => void;
+    onIntegrityPlayabilityConcurrencyChange: (value: number) => void;
     onIntegrityBreakerMaxFindingsChange: (value: number) => void;
     onIntegrityBreakerMaxPercentChange: (value: number) => void;
     onIntegrityPauseWhenSessionsChange: (value: number) => void;
@@ -112,6 +114,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityPathMaps,
     integrityMaxPerCycle,
     integrityConcurrency,
+    integrityPlayabilityConcurrency,
     integrityBreakerMaxFindings,
     integrityBreakerMaxPercent,
     integrityPauseWhenSessions,
@@ -150,6 +153,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityPathMapsChange,
     onIntegrityMaxPerCycleChange,
     onIntegrityConcurrencyChange,
+    onIntegrityPlayabilityConcurrencyChange,
     onIntegrityBreakerMaxFindingsChange,
     onIntegrityBreakerMaxPercentChange,
     onIntegrityPauseWhenSessionsChange,
@@ -589,7 +593,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 onChange={(event) => onIntegrityMaxPerCycleChange(Math.max(1, Number(event.target.value) || 1))}
                             />
                         </label>
-                        <label className="text-sm font-semibold">Concurrency
+                        <label className="text-sm font-semibold">Hash concurrency
+                            <span className="block text-xs font-normal text-muted mt-0.5">imohash / xxhash workers</span>
                             <input
                                 type="number"
                                 min="1"
@@ -597,6 +602,17 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 value={integrityConcurrency}
                                 disabled={!enabled || !integrityEnabled}
                                 onChange={(event) => onIntegrityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Playability concurrency
+                            <span className="block text-xs font-normal text-muted mt-0.5">ffmpeg decode workers (keep low)</span>
+                            <input
+                                type="number"
+                                min="1"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityPlayabilityConcurrency}
+                                disabled={!enabled || !integrityEnabled}
+                                onChange={(event) => onIntegrityPlayabilityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
                             />
                         </label>
                         <label className="text-sm font-semibold">Nightly hour (0–23)

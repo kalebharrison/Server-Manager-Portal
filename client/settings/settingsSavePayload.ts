@@ -107,6 +107,7 @@ type SettingsSavePayloadInput = {
     qcIntegrityPathMaps: Array<{ from: string; to: string }>;
     qcIntegrityMaxPerCycle: number;
     qcIntegrityConcurrency: number;
+    qcIntegrityPlayabilityConcurrency: number;
     qcIntegrityBreakerMaxFindings: number;
     qcIntegrityBreakerMaxPercent: number;
     qcIntegrityPauseWhenSessions: number;

@@ -35,9 +35,11 @@ type IntegrityProgress = {
 
 type CoverageBucket = {
     total?: number;
-    baselined?: number;
+    playability?: number;
     imohash?: number;
     xxhash?: number;
+    /** @deprecated legacy */
+    baselined?: number;
 };
 
 type IntegrityCoverage = {
@@ -114,11 +116,24 @@ const SCAN_MODES: Array<{ mode: IntegrityScanMode; label: string; xxhashOnly?: b
     { mode: 'xxhash', label: 'Full xxhash', xxhashOnly: true },
 ];
 
-const formatCoverage = (bucket?: CoverageBucket) => {
-    const total = Number(bucket?.total || 0);
-    const baselined = Number(bucket?.baselined || 0);
-    if (!total) return '0 / 0';
-    return `${baselined} / ${total}`;
+const formatPair = (done?: number, total?: number) => {
+    const d = Number(done || 0);
+    const t = Number(total || 0);
+    if (!t) return '0 / 0';
+    return `${d} / ${t}`;
+};
+
+const coverageTotals = (coverage: IntegrityCoverage | null) => {
+    const buckets = [coverage?.movie, coverage?.show, coverage?.album];
+    return buckets.reduce(
+        (acc, bucket) => ({
+            total: acc.total + Number(bucket?.total || 0),
+            playability: acc.playability + Number(bucket?.playability || 0),
+            imohash: acc.imohash + Number(bucket?.imohash || 0),
+            xxhash: acc.xxhash + Number(bucket?.xxhash || 0),
+        }),
+        { total: 0, playability: 0, imohash: 0, xxhash: 0 },
+    );
 };
 
 export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = false }) => {
@@ -346,9 +361,9 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         <p className="text-xs text-muted mt-1 max-w-2xl">
                             Checks Arr-known library files with playability decode (start/middle/end) and imohash,
                             plus optional xxhash. Includes music when enabled. Files currently playing on Plex are skipped.
-                            Manual buttons start a full-library pass in the background (can take hours on ~50k files).
-                            Scheduled jobs still use the per-cycle batch size. Dry-run modes only report problems —
-                            nothing is deleted until you Replace a finding.
+                            Manual Full imohash/xxhash can run with higher concurrency. Full playability/baseline
+                            uses a separate lower concurrency (ffmpeg-heavy). Scheduled jobs still use the per-cycle
+                            batch size. Dry-run modes only report problems — nothing is deleted until you Replace a finding.
                         </p>
                         {result?.setup && !result.setup.ready && (
                             <p className="text-xs text-amber-200 mt-2">
@@ -403,22 +418,64 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {([
-                    ['Movies', coverage?.movie],
-                    ['TV', coverage?.show],
-                    ['Music', coverage?.album],
-                ] as Array<[string, CoverageBucket | undefined]>).map(([label, bucket]) => (
-                    <div key={label} className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                        <div className="text-[11px] uppercase tracking-wide text-muted">{label} coverage</div>
-                        <div className="mt-1 text-lg font-bold text-text">{formatCoverage(bucket)}</div>
-                        <div className="text-[10px] text-muted mt-1">
-                            imohash {Number(bucket?.imohash || 0)}
-                            {xxhashEnabled ? ` · xxhash ${Number(bucket?.xxhash || 0)}` : ''}
+            {(() => {
+                const totals = coverageTotals(coverage);
+                const checkRows: Array<{ key: 'playability' | 'imohash' | 'xxhash'; label: string; hide?: boolean }> = [
+                    { key: 'playability', label: 'Playability' },
+                    { key: 'imohash', label: 'Imohash' },
+                    { key: 'xxhash', label: 'Xxhash', hide: !xxhashEnabled },
+                ];
+                const mediaCols: Array<{ key: 'movie' | 'show' | 'album'; label: string }> = [
+                    { key: 'movie', label: 'Movies' },
+                    { key: 'show', label: 'TV' },
+                    { key: 'album', label: 'Music' },
+                ];
+                return (
+                    <div className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+                        <div>
+                            <h3 className="text-sm font-bold text-text">Coverage by check</h3>
+                            <p className="text-xs text-muted mt-1">
+                                Imohash can be complete while playability is still empty — they are tracked separately.
+                            </p>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead>
+                                    <tr className="text-[11px] uppercase tracking-wide text-muted border-b border-border/40">
+                                        <th className="py-2 pr-3 font-semibold">Check</th>
+                                        {mediaCols.map((col) => (
+                                            <th key={col.key} className="py-2 pr-3 font-semibold">{col.label}</th>
+                                        ))}
+                                        <th className="py-2 font-semibold">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {checkRows.filter((row) => !row.hide).map((row) => {
+                                        const totalDone = totals[row.key];
+                                        const totalAll = totals.total;
+                                        return (
+                                            <tr key={row.key} className="border-b border-border/20 last:border-0">
+                                                <td className="py-2.5 pr-3 font-semibold text-text">{row.label}</td>
+                                                {mediaCols.map((col) => {
+                                                    const bucket = coverage?.[col.key];
+                                                    return (
+                                                        <td key={col.key} className="py-2.5 pr-3 text-text tabular-nums">
+                                                            {formatPair(bucket?.[row.key], bucket?.total)}
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="py-2.5 text-text font-bold tabular-nums">
+                                                    {formatPair(totalDone, totalAll)}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                ))}
-            </div>
+                );
+            })()}
 
             {(result?.ran || scanning) && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

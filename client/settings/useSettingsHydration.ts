@@ -128,6 +128,7 @@ export const useSettingsHydration = ({
             setQcIntegrityPathMaps: set('qcIntegrityPathMaps'),
             setQcIntegrityMaxPerCycle: set('qcIntegrityMaxPerCycle'),
             setQcIntegrityConcurrency: set('qcIntegrityConcurrency'),
+            setQcIntegrityPlayabilityConcurrency: set('qcIntegrityPlayabilityConcurrency'),
             setQcIntegrityBreakerMaxFindings: set('qcIntegrityBreakerMaxFindings'),
             setQcIntegrityBreakerMaxPercent: set('qcIntegrityBreakerMaxPercent'),
             setQcIntegrityPauseWhenSessions: set('qcIntegrityPauseWhenSessions'),
