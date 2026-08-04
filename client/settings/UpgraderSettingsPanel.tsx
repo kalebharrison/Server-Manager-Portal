@@ -253,6 +253,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         deletes them from qBit/SAB, then triggers <span className="text-text">one</span> re-search per title.
                         Stalls are held when the downloader reports network down. Import failures only auto-clean for
                         clear junk (sample, blocked extension, invalid media, encrypted archive, etc.).
+                        Blocked-extension payloads (e.g. single-file <span className="font-mono">.exe</span> torrents) are
+                        probed mid-download via qBit/SAB file lists and killed on the next cleanup cycle.
                         Manual cleanup on the Downloads tab still works when automation is off.
                     </p>
                     <label className="flex items-center justify-between gap-4">

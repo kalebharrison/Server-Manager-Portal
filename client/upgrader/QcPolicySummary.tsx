@@ -64,6 +64,14 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             killKeys: ['orphan'],
         },
         {
+            id: 'blockedExt',
+            label: 'Blocked extension (early)',
+            perStrike: 'immediate',
+            effective: '1 cleanup cycle',
+            note: 'Uses Settings blocked-extension list; probes qBit/SAB file names mid-download',
+            killKeys: ['blockedExtension'],
+        },
+        {
             id: 'import',
             label: 'Doomed import / duplicate',
             perStrike: formatMinutes(orphan || 15),

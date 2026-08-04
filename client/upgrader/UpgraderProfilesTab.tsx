@@ -100,6 +100,7 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
     const [editingProfile, setEditingProfile] = useState<{ show: boolean; profile: QualityProfile | null }>({ show: false, profile: null });
     const [formatPage, setFormatPage] = useState(initialFormatPage);
     const [profilePage, setProfilePage] = useState(initialProfilePage);
+    const [repairingUnkn0wn, setRepairingUnkn0wn] = useState(false);
     const pageSize = 18;
 
     useEffect(() => {
@@ -198,6 +199,30 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
         setEditingProfile({ show: false, profile: null });
     };
 
+    const handleRepairUnkn0wnRemux = async () => {
+        setRepairingUnkn0wn(true);
+        try {
+            const payload = await apiFetch('/api/upgrader/customformats/repair-unkn0wn-remux', {
+                method: 'POST',
+                body: JSON.stringify({}),
+            }) as { repairedCount?: number; results?: Array<{ instanceName?: string; repaired?: unknown[]; error?: string }> };
+            const count = Number(payload?.repairedCount || 0);
+            const errors = (payload?.results || []).filter((row) => row.error);
+            if (errors.length) {
+                window.alert(`Repaired ${count} format(s); ${errors.length} instance(s) failed.`);
+            } else {
+                window.alert(count
+                    ? `Repaired UnKn0wn remux exception on ${count} custom format(s).`
+                    : 'No broken UnKn0wn (NoRemux) patterns found.');
+            }
+            if (selectedInstanceId) await loadInstanceData(selectedInstanceId);
+        } catch (error: any) {
+            window.alert(error?.message || 'Failed to repair UnKn0wn remux CF');
+        } finally {
+            setRepairingUnkn0wn(false);
+        }
+    };
+
     useEffect(() => {
         loadData();
     }, [loadData]);
@@ -225,6 +250,15 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            className="text-xs border border-border px-3 py-1.5 rounded-lg font-semibold text-text hover:border-plex/40 disabled:opacity-50"
+                            disabled={repairingUnkn0wn || loading}
+                            onClick={() => void handleRepairUnkn0wnRemux()}
+                            title="Fix TRaSH UnKn0wn (NoRemux) so underscore REMUX titles are not scored as LQ"
+                        >
+                            {repairingUnkn0wn ? 'Repairing…' : 'Repair UnKn0wn remux CF'}
+                        </button>
                         <InstanceDropdown
                             options={instances}
                             value={selectedInstanceId}
