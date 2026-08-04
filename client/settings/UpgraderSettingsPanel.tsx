@@ -252,7 +252,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         Removes doomed queue items from Sonarr/Radarr/Lidarr (blocklist + skip Arr auto-redownload),
                         deletes them from qBit/SAB, then triggers <span className="text-text">one</span> re-search per title.
                         Stalls are held when the downloader reports network down. Import failures only auto-clean for
-                        clear junk (sample, blocked extension, invalid media, encrypted archive, etc.).
+                        clear junk (sample, blocked extension, invalid media, encrypted archive, etc.) and for
+                        resolution downgrades (e.g. existing 2160p vs new 1080p “not an upgrade”).
                         Blocked-extension payloads (e.g. single-file <span className="font-mono">.exe</span> torrents) are
                         probed mid-download via qBit/SAB file lists and killed on the next cleanup cycle.
                         Manual cleanup on the Downloads tab still works when automation is off.

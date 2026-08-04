@@ -9,6 +9,7 @@ import {
     isMetaDlActionable,
     isReasonActionable,
     isResearchThrottled,
+    isResolutionDowngradeImportFailure,
     isSeedingProtected,
     isSnoozed,
     isStallActionable,
@@ -176,6 +177,68 @@ test('only doomed import failures are actionable', () => {
         trackedDownloadState: 'importFailed',
         failMessage: 'Archive is encrypted / password protected',
     }), true);
+});
+
+test('resolution downgrade not-an-upgrade is doomed even while importPending', () => {
+    const arrItem = {
+        status: 'completed',
+        trackedDownloadStatus: 'warning',
+        trackedDownloadState: 'importPending',
+        statusMessages: [{
+            title: 'Futurama S11E01 REAL MULTi 1080p WEB H264-UKDTV',
+            messages: [
+                'Not an upgrade for existing episode file(s). Existing quality: WEBDL-2160p. New Quality WEBDL-1080p.',
+            ],
+        }],
+    };
+    assert.equal(isResolutionDowngradeImportFailure(arrItem), true);
+    assert.equal(isDoomedImportFailure(arrItem), true);
+    assert.equal(classifyQueueItem({
+        now: Date.now(),
+        thresholds: thresholdsFromConfig(),
+        arrItem,
+        clientItem: { client: 'qbit', state: 'uploading', progress: 1 },
+    }), QC_REASONS.qualityDowngrade);
+    assert.equal(isReasonActionable({ reason: QC_REASONS.qualityDowngrade, arrItem }), true);
+});
+
+test('same-resolution not-an-upgrade is not a resolution downgrade', () => {
+    const arrItem = {
+        trackedDownloadState: 'importPending',
+        trackedDownloadStatus: 'warning',
+        statusMessages: [{
+            messages: [
+                'Not an upgrade for existing episode file(s). Existing quality: WEBDL-1080p. New Quality WEBDL-1080p.',
+            ],
+        }],
+    };
+    assert.equal(isResolutionDowngradeImportFailure(arrItem), false);
+});
+
+test('custom format upgrade rejects are not treated as resolution downgrades', () => {
+    const now = Date.now();
+    const arrItem = {
+        trackedDownloadState: 'importPending',
+        trackedDownloadStatus: 'warning',
+        added: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
+        statusMessages: [{
+            messages: [
+                'Not a Custom Format upgrade for existing movie file(s). New: [DV HDR10, LQ (Release Title)] (-5000) do not improve on Existing: [DD] (750)',
+            ],
+        }],
+    };
+    assert.equal(isResolutionDowngradeImportFailure(arrItem), false);
+    assert.notEqual(classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 60 }),
+        arrItem,
+        clientItem: {
+            client: 'qbit',
+            state: 'uploading',
+            progress: 1,
+            completion_on: Math.floor((now - 2 * 60 * 60 * 1000) / 1000),
+        },
+    }), QC_REASONS.qualityDowngrade);
 });
 
 test('stall kills are held when download client is configured but unreachable', () => {

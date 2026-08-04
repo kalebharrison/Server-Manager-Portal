@@ -64,6 +64,14 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             killKeys: ['orphan'],
         },
         {
+            id: 'qualityDowngrade',
+            label: 'Resolution downgrade',
+            perStrike: 'immediate',
+            effective: '1 cleanup cycle',
+            note: 'Arr “not an upgrade” when new file is lower res (e.g. 2160p → 1080p)',
+            killKeys: ['qualityDowngrade'],
+        },
+        {
             id: 'blockedExt',
             label: 'Blocked extension (early)',
             perStrike: 'immediate',
