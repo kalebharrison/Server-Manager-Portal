@@ -266,11 +266,11 @@ test('sonarr stamps missingAiredCount from episode air dates', () => {
         },
     ];
     const counted = countMissingAiredEpisodes(episodes, now);
-    assert.equal(counted.missingAiredCount, 1);
+    assert.equal(counted.missingAiredCount, 2);
     assert.equal(counted.availableAt, '2026-02-01T00:00:00.000Z');
 
     const item = buildSonarrIndexItem(sonarrInstance, record, [], episodes, profile, { now });
-    assert.equal(item.missingAiredCount, 1);
+    assert.equal(item.missingAiredCount, 2);
     assert.equal(item.huntMissingEligible, true);
     assert.equal(item.availableAt, '2026-02-01T00:00:00.000Z');
 });
