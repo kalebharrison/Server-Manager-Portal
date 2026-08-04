@@ -19,6 +19,7 @@ import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
 import { UpgraderHistoryPanel } from './UpgraderHistoryPanel';
 import { UpgraderProfilesTab } from './UpgraderProfilesTab';
+import { QcCfRepairsPanel } from './QcCfRepairsPanel';
 import { QcClientsPanel } from './QcClientsPanel';
 import { QcDownloadsPanel } from './QcDownloadsPanel';
 import { QcIntegrityPanel } from './QcIntegrityPanel';
@@ -467,6 +468,8 @@ export const UpgraderDashboard: React.FC = () => {
                                                 )}
                                             </div>
                                         )}
+
+                                        <QcCfRepairsPanel onToast={addToast} />
 
                                         <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
                                             <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Automation</h2>

@@ -202,9 +202,9 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
     const handleRepairUnkn0wnRemux = async () => {
         setRepairingUnkn0wn(true);
         try {
-            const payload = await apiFetch('/api/upgrader/customformats/repair-unkn0wn-remux', {
+            const payload = await apiFetch('/api/upgrader/customformats/repairs', {
                 method: 'POST',
-                body: JSON.stringify({}),
+                body: JSON.stringify({ repairIds: ['unkn0wn-remux'] }),
             }) as { repairedCount?: number; results?: Array<{ instanceName?: string; repaired?: unknown[]; error?: string }> };
             const count = Number(payload?.repairedCount || 0);
             const errors = (payload?.results || []).filter((row) => row.error);
