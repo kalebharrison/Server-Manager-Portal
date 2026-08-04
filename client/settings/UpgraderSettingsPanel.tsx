@@ -22,8 +22,16 @@ type Props = {
     integrityEnabled: boolean;
     integrityAutomationEnabled: boolean;
     integrityRequireAudio: boolean;
+    integrityIncludeMusic: boolean;
+    integrityXxhashEnabled: boolean;
     integrityPathMaps: Array<{ from: string; to: string }>;
     integrityMaxPerCycle: number;
+    integrityConcurrency: number;
+    integrityBreakerMaxFindings: number;
+    integrityBreakerMaxPercent: number;
+    integrityPauseWhenSessions: number;
+    integrityNightlyHour: number;
+    integrityDiscordDigestEnabled: boolean;
     integrityDecodeWindowSec: number;
     integrityDecodeTimeoutMs: number;
     qcMetaDlMinutes: number;
@@ -52,8 +60,16 @@ type Props = {
     onIntegrityEnabledChange: (value: boolean) => void;
     onIntegrityAutomationEnabledChange: (value: boolean) => void;
     onIntegrityRequireAudioChange: (value: boolean) => void;
+    onIntegrityIncludeMusicChange: (value: boolean) => void;
+    onIntegrityXxhashEnabledChange: (value: boolean) => void;
     onIntegrityPathMapsChange: (value: Array<{ from: string; to: string }>) => void;
     onIntegrityMaxPerCycleChange: (value: number) => void;
+    onIntegrityConcurrencyChange: (value: number) => void;
+    onIntegrityBreakerMaxFindingsChange: (value: number) => void;
+    onIntegrityBreakerMaxPercentChange: (value: number) => void;
+    onIntegrityPauseWhenSessionsChange: (value: number) => void;
+    onIntegrityNightlyHourChange: (value: number) => void;
+    onIntegrityDiscordDigestEnabledChange: (value: boolean) => void;
     onIntegrityDecodeWindowSecChange: (value: number) => void;
     onIntegrityDecodeTimeoutMsChange: (value: number) => void;
     onQcMetaDlMinutesChange: (value: number) => void;
@@ -91,8 +107,16 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityEnabled,
     integrityAutomationEnabled,
     integrityRequireAudio,
+    integrityIncludeMusic,
+    integrityXxhashEnabled,
     integrityPathMaps,
     integrityMaxPerCycle,
+    integrityConcurrency,
+    integrityBreakerMaxFindings,
+    integrityBreakerMaxPercent,
+    integrityPauseWhenSessions,
+    integrityNightlyHour,
+    integrityDiscordDigestEnabled,
     integrityDecodeWindowSec,
     integrityDecodeTimeoutMs,
     qcMetaDlMinutes,
@@ -121,8 +145,16 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityEnabledChange,
     onIntegrityAutomationEnabledChange,
     onIntegrityRequireAudioChange,
+    onIntegrityIncludeMusicChange,
+    onIntegrityXxhashEnabledChange,
     onIntegrityPathMapsChange,
     onIntegrityMaxPerCycleChange,
+    onIntegrityConcurrencyChange,
+    onIntegrityBreakerMaxFindingsChange,
+    onIntegrityBreakerMaxPercentChange,
+    onIntegrityPauseWhenSessionsChange,
+    onIntegrityNightlyHourChange,
+    onIntegrityDiscordDigestEnabledChange,
     onIntegrityDecodeWindowSecChange,
     onIntegrityDecodeTimeoutMsChange,
     onQcMetaDlMinutesChange,
@@ -466,8 +498,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                 <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                     <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h4>
                     <p className="text-xs text-muted">
-                        Validates Arr-known media files with ffprobe plus short ffmpeg decode at start, middle, and near-end.
-                        Requires media mounted read-only into this container and path maps from Arr paths to container paths.
+                        Validates Arr-known media with playability decode plus imohash (and optional xxhash).
+                        Skips files currently playing on Plex. Requires media mounted read-only and Arr→container path maps.
                     </p>
                     <label className="flex items-center justify-between gap-4">
                         <span>
@@ -507,6 +539,45 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             onChange={(event) => onIntegrityRequireAudioChange(event.target.checked)}
                         />
                     </label>
+                    <label className="flex items-center justify-between gap-4">
+                        <span>
+                            <span className="block font-semibold">Include music</span>
+                            <span className="block text-xs text-muted mt-1">Scan Lidarr/audio library files.</span>
+                        </span>
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-plex"
+                            disabled={!enabled || !integrityEnabled}
+                            checked={integrityIncludeMusic && integrityEnabled && enabled}
+                            onChange={(event) => onIntegrityIncludeMusicChange(event.target.checked)}
+                        />
+                    </label>
+                    <label className="flex items-center justify-between gap-4">
+                        <span>
+                            <span className="block font-semibold">Enable xxhash</span>
+                            <span className="block text-xs text-muted mt-1">Optional full-file hash mode (slower).</span>
+                        </span>
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-plex"
+                            disabled={!enabled || !integrityEnabled}
+                            checked={integrityXxhashEnabled && integrityEnabled && enabled}
+                            onChange={(event) => onIntegrityXxhashEnabledChange(event.target.checked)}
+                        />
+                    </label>
+                    <label className="flex items-center justify-between gap-4">
+                        <span>
+                            <span className="block font-semibold">Discord integrity digest</span>
+                            <span className="block text-xs text-muted mt-1">Post a summary of integrity findings to Discord.</span>
+                        </span>
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-plex"
+                            disabled={!enabled || !integrityEnabled}
+                            checked={integrityDiscordDigestEnabled && integrityEnabled && enabled}
+                            onChange={(event) => onIntegrityDiscordDigestEnabledChange(event.target.checked)}
+                        />
+                    </label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <label className="text-sm font-semibold">Max files per cycle
                             <input
@@ -516,6 +587,27 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 value={integrityMaxPerCycle}
                                 disabled={!enabled || !integrityEnabled}
                                 onChange={(event) => onIntegrityMaxPerCycleChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Concurrency
+                            <input
+                                type="number"
+                                min="1"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityConcurrency}
+                                disabled={!enabled || !integrityEnabled}
+                                onChange={(event) => onIntegrityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Nightly hour (0–23)
+                            <input
+                                type="number"
+                                min="0"
+                                max="23"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityNightlyHour}
+                                disabled={!enabled || !integrityEnabled}
+                                onChange={(event) => onIntegrityNightlyHourChange(Math.max(0, Math.min(23, Number(event.target.value) || 0)))}
                             />
                         </label>
                         <label className="text-sm font-semibold">Decode window (sec)
@@ -537,6 +629,38 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 value={integrityDecodeTimeoutMs}
                                 disabled={!enabled || !integrityEnabled}
                                 onChange={(event) => onIntegrityDecodeTimeoutMsChange(Math.max(1000, Number(event.target.value) || 1000))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Pause when sessions ≥
+                            <span className="block text-xs font-normal text-muted mt-0.5">0 = never pause for Plex busy</span>
+                            <input
+                                type="number"
+                                min="0"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityPauseWhenSessions}
+                                disabled={!enabled || !integrityEnabled}
+                                onChange={(event) => onIntegrityPauseWhenSessionsChange(Math.max(0, Number(event.target.value) || 0))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Breaker max findings
+                            <input
+                                type="number"
+                                min="1"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityBreakerMaxFindings}
+                                disabled={!enabled || !integrityEnabled}
+                                onChange={(event) => onIntegrityBreakerMaxFindingsChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Breaker max %
+                            <input
+                                type="number"
+                                min="0.1"
+                                step="0.1"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityBreakerMaxPercent}
+                                disabled={!enabled || !integrityEnabled}
+                                onChange={(event) => onIntegrityBreakerMaxPercentChange(Math.max(0.1, Number(event.target.value) || 0.1))}
                             />
                         </label>
                     </div>

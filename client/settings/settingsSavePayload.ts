@@ -102,8 +102,16 @@ type SettingsSavePayloadInput = {
     qcIntegrityEnabled: boolean;
     qcIntegrityAutomationEnabled: boolean;
     qcIntegrityRequireAudio: boolean;
+    qcIntegrityIncludeMusic: boolean;
+    qcIntegrityXxhashEnabled: boolean;
     qcIntegrityPathMaps: Array<{ from: string; to: string }>;
     qcIntegrityMaxPerCycle: number;
+    qcIntegrityConcurrency: number;
+    qcIntegrityBreakerMaxFindings: number;
+    qcIntegrityBreakerMaxPercent: number;
+    qcIntegrityPauseWhenSessions: number;
+    qcIntegrityNightlyHour: number;
+    qcIntegrityDiscordDigestEnabled: boolean;
     qcIntegrityDecodeWindowSec: number;
     qcIntegrityDecodeTimeoutMs: number;
     qcMetaDlMinutes: number;

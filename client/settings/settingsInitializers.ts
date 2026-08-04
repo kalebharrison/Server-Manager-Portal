@@ -105,8 +105,16 @@ type SettingsHydrationSetters = {
     setQcIntegrityEnabled: (value: boolean) => void;
     setQcIntegrityAutomationEnabled: (value: boolean) => void;
     setQcIntegrityRequireAudio: (value: boolean) => void;
+    setQcIntegrityIncludeMusic: (value: boolean) => void;
+    setQcIntegrityXxhashEnabled: (value: boolean) => void;
     setQcIntegrityPathMaps: (value: Array<{ from: string; to: string }>) => void;
     setQcIntegrityMaxPerCycle: (value: number) => void;
+    setQcIntegrityConcurrency: (value: number) => void;
+    setQcIntegrityBreakerMaxFindings: (value: number) => void;
+    setQcIntegrityBreakerMaxPercent: (value: number) => void;
+    setQcIntegrityPauseWhenSessions: (value: number) => void;
+    setQcIntegrityNightlyHour: (value: number) => void;
+    setQcIntegrityDiscordDigestEnabled: (value: boolean) => void;
     setQcIntegrityDecodeWindowSec: (value: number) => void;
     setQcIntegrityDecodeTimeoutMs: (value: number) => void;
     setQcMetaDlMinutes: (value: number) => void;
@@ -235,6 +243,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityEnabled(!!initialSettings.qcIntegrityEnabled);
     setters.setQcIntegrityAutomationEnabled(!!initialSettings.qcIntegrityAutomationEnabled);
     setters.setQcIntegrityRequireAudio(initialSettings.qcIntegrityRequireAudio !== false);
+    setters.setQcIntegrityIncludeMusic(initialSettings.qcIntegrityIncludeMusic !== false);
+    setters.setQcIntegrityXxhashEnabled(!!initialSettings.qcIntegrityXxhashEnabled);
     setters.setQcIntegrityPathMaps(
         Array.isArray(initialSettings.qcIntegrityPathMaps)
             ? initialSettings.qcIntegrityPathMaps
@@ -245,7 +255,13 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
                 .filter((entry: { from: string; to: string }) => entry.from && entry.to)
             : [],
     );
-    setters.setQcIntegrityMaxPerCycle(Math.max(1, Number(initialSettings.qcIntegrityMaxPerCycle) || 25));
+    setters.setQcIntegrityMaxPerCycle(Math.max(1, Number(initialSettings.qcIntegrityMaxPerCycle) || 200));
+    setters.setQcIntegrityConcurrency(Math.max(1, Number(initialSettings.qcIntegrityConcurrency) || 4));
+    setters.setQcIntegrityBreakerMaxFindings(Math.max(1, Number(initialSettings.qcIntegrityBreakerMaxFindings) || 50));
+    setters.setQcIntegrityBreakerMaxPercent(Math.max(0.1, Number(initialSettings.qcIntegrityBreakerMaxPercent) || 10));
+    setters.setQcIntegrityPauseWhenSessions(Math.max(0, Number(initialSettings.qcIntegrityPauseWhenSessions ?? 0) || 0));
+    setters.setQcIntegrityNightlyHour(Math.max(0, Math.min(23, Number(initialSettings.qcIntegrityNightlyHour ?? 2) || 2)));
+    setters.setQcIntegrityDiscordDigestEnabled(!!initialSettings.qcIntegrityDiscordDigestEnabled);
     setters.setQcIntegrityDecodeWindowSec(Math.max(1, Number(initialSettings.qcIntegrityDecodeWindowSec) || 10));
     setters.setQcIntegrityDecodeTimeoutMs(Math.max(1000, Number(initialSettings.qcIntegrityDecodeTimeoutMs) || 30000));
     setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 20));
