@@ -110,6 +110,7 @@ type SettingsHydrationSetters = {
     setQcIntegrityPathMaps: (value: Array<{ from: string; to: string }>) => void;
     setQcIntegrityMaxPerCycle: (value: number) => void;
     setQcIntegrityConcurrency: (value: number) => void;
+    setQcIntegrityPlayabilityConcurrency: (value: number) => void;
     setQcIntegrityBreakerMaxFindings: (value: number) => void;
     setQcIntegrityBreakerMaxPercent: (value: number) => void;
     setQcIntegrityPauseWhenSessions: (value: number) => void;

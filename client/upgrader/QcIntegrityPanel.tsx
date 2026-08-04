@@ -124,16 +124,14 @@ const formatPair = (done?: number, total?: number) => {
 };
 
 const coverageTotals = (coverage: IntegrityCoverage | null) => {
-    const buckets = [coverage?.movie, coverage?.show, coverage?.album];
-    return buckets.reduce(
-        (acc, bucket) => ({
-            total: acc.total + Number(bucket?.total || 0),
-            playability: acc.playability + Number(bucket?.playability || 0),
-            imohash: acc.imohash + Number(bucket?.imohash || 0),
-            xxhash: acc.xxhash + Number(bucket?.xxhash || 0),
-        }),
-        { total: 0, playability: 0, imohash: 0, xxhash: 0 },
-    );
+    const totals = { total: 0, playability: 0, imohash: 0, xxhash: 0 };
+    for (const bucket of [coverage?.movie, coverage?.show, coverage?.album]) {
+        totals.total += Number(bucket?.total || 0);
+        totals.playability += Number(bucket?.playability || 0);
+        totals.imohash += Number(bucket?.imohash || 0);
+        totals.xxhash += Number(bucket?.xxhash || 0);
+    }
+    return totals;
 };
 
 export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = false }) => {
