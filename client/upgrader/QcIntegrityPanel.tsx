@@ -108,10 +108,10 @@ type Props = {
 };
 
 const SCAN_MODES: Array<{ mode: IntegrityScanMode; label: string; xxhashOnly?: boolean }> = [
-    { mode: 'baseline', label: 'Baseline backfill' },
-    { mode: 'imohash', label: 'Nightly imohash' },
-    { mode: 'playability', label: 'Playability sweep' },
-    { mode: 'xxhash', label: 'Xxhash', xxhashOnly: true },
+    { mode: 'baseline', label: 'Full baseline' },
+    { mode: 'imohash', label: 'Full imohash' },
+    { mode: 'playability', label: 'Full playability' },
+    { mode: 'xxhash', label: 'Full xxhash', xxhashOnly: true },
 ];
 
 const formatCoverage = (bucket?: CoverageBucket) => {
@@ -133,6 +133,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const [xxhashEnabled, setXxhashEnabled] = useState(false);
     const [findings, setFindings] = useState<IntegrityFinding[]>([]);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const wasScanningRef = useRef(false);
 
     const stopPolling = useCallback(() => {
         if (pollRef.current) {
@@ -143,7 +144,29 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
 
     const loadStatus = useCallback(async () => {
         const status = await apiFetch('/api/upgrader/qc/integrity') as IntegrityStatus;
-        setScanning(!!status.scanning);
+        const nowScanning = !!status.scanning;
+        if (wasScanningRef.current && !nowScanning && status.lastScan) {
+            const last = status.lastScan;
+            onToast?.(
+                `${last.mode || 'scan'} done: ${last.findingCount || 0} findings · ${last.scanned || 0} probed · ${last.skippedPlaying || 0} playing skip.`,
+                'success',
+            );
+            setResult({
+                ran: true,
+                mode: last.mode,
+                scanned: last.scanned,
+                skipped: last.skipped,
+                skippedPlaying: last.skippedPlaying,
+                passed: last.passed,
+                findingCount: last.findingCount,
+                findings: status.findings || last.findings || [],
+                coverage: status.coverage,
+                breaker: status.breaker,
+                setup: status.setup,
+            });
+        }
+        wasScanningRef.current = nowScanning;
+        setScanning(nowScanning);
         setProgress(status.progress || null);
         setCoverage(status.coverage || null);
         setBreaker(status.breaker || null);
@@ -151,7 +174,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         if (Array.isArray(status.findings)) {
             setFindings(status.findings);
         }
-        if (!status.scanning && status.lastScan) {
+        if (!nowScanning && status.lastScan) {
             setResult((current) => current?.ran ? current : {
                 ran: true,
                 mode: status.lastScan?.mode,
@@ -167,7 +190,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             });
         }
         return status;
-    }, []);
+    }, [onToast]);
 
     const startPolling = useCallback(() => {
         stopPolling();
@@ -193,12 +216,17 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         try {
             const payload = await apiFetch('/api/upgrader/qc/integrity/scan', {
                 method: 'POST',
-                body: JSON.stringify({ mode, dryRun: true, force: false }),
-            }) as IntegrityScanResponse;
+                body: JSON.stringify({ mode, dryRun: true, force: false, full: true }),
+            }) as IntegrityScanResponse & { started?: boolean };
 
-            if (payload.scanning || payload.reason === 'Scan already in progress') {
-                onToast?.('A scan is already running — watching progress.', 'info');
-                setProgress(payload.progress || { mode });
+            if (payload.scanning || payload.started || payload.reason === 'Scan already in progress') {
+                onToast?.(
+                    payload.started
+                        ? `Full ${mode} pass started — this can take a while. Watching progress.`
+                        : 'A scan is already running — watching progress.',
+                    'info',
+                );
+                setProgress(payload.progress || { mode, currentTitle: 'Running…' });
                 return;
             }
 
@@ -318,7 +346,9 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         <p className="text-xs text-muted mt-1 max-w-2xl">
                             Checks Arr-known library files with playability decode (start/middle/end) and imohash,
                             plus optional xxhash. Includes music when enabled. Files currently playing on Plex are skipped.
-                            Dry-run modes only report problems — nothing is deleted until you Replace a finding.
+                            Manual buttons start a full-library pass in the background (can take hours on ~50k files).
+                            Scheduled jobs still use the per-cycle batch size. Dry-run modes only report problems —
+                            nothing is deleted until you Replace a finding.
                         </p>
                         {result?.setup && !result.setup.ready && (
                             <p className="text-xs text-amber-200 mt-2">

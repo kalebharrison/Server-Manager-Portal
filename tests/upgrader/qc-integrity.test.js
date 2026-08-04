@@ -496,6 +496,64 @@ test('plex playing paths are skipped', async () => {
     assert.equal(result.findingCount, 0);
 });
 
+test('full imohash pass ignores maxPerCycle batch cap', async () => {
+    const titles = ['A', 'B', 'C', 'D', 'E'];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            items: titles.map((title, index) => ({
+                ratingKey: `radarr:r1:${index + 1}`,
+                title,
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: index + 1,
+                movieFileId: index + 1,
+                filePath: `/movies/${title}.mkv`,
+            })),
+        }),
+        loadPrefs: async () => ({}),
+        savePrefs: async () => {},
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:x' }),
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.scanIntegrity({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityMaxPerCycle: 2,
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, { dryRun: true, force: true, mode: 'baseline', full: true });
+
+    assert.equal(result.ran, true);
+    assert.equal(result.full, true);
+    assert.equal(result.scanned, 5);
+});
+
 test('clearBreaker resets tripped state', async () => {
     let prefs = {
         integrityBreaker: { tripped: true, at: '2026-01-01T00:00:00.000Z', reason: 'too many', findingCount: 99 },
