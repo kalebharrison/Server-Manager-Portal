@@ -114,6 +114,36 @@ test('collectIntegrityCandidates includes lidarr track files when enabled', () =
     }], { includeMusic: false }).length, 0);
 });
 
+test('collectIntegrityCandidates includes unmonitored Arr files', () => {
+    const candidates = collectIntegrityCandidates([
+        {
+            ratingKey: 'radarr:1:9',
+            title: 'Unmonitored Movie',
+            monitored: false,
+            hasFile: true,
+            mediaType: 'movie',
+            arrType: 'radarr',
+            arrInstanceId: '1',
+            entityId: 9,
+            movieFileId: 44,
+            filePath: '/movies/Movie.mkv',
+        },
+        {
+            ratingKey: 'sonarr:2:3',
+            title: 'Unmonitored Show',
+            monitored: false,
+            mediaType: 'show',
+            arrType: 'sonarr',
+            arrInstanceId: '2',
+            entityId: 3,
+            episodes: [
+                { episodeId: 10, episodeFileId: 11, filePath: '/tv/Show/S01E01.mkv', seasonNumber: 1, episodeNumber: 1 },
+            ],
+        },
+    ]);
+    assert.equal(candidates.length, 2);
+});
+
 test('probeMediaFile allows audio-only for music', async () => {
     const result = await probeMediaFile('/tmp/track.flac', {
         mediaKind: 'audio',

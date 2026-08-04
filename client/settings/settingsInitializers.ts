@@ -255,7 +255,11 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
                 .filter((entry: { from: string; to: string }) => entry.from && entry.to)
             : [],
     );
-    setters.setQcIntegrityMaxPerCycle(Math.max(1, Number(initialSettings.qcIntegrityMaxPerCycle) || 200));
+    setters.setQcIntegrityMaxPerCycle((() => {
+        const raw = Number(initialSettings.qcIntegrityMaxPerCycle);
+        if (!Number.isFinite(raw) || raw <= 0 || raw === 25) return 200;
+        return Math.max(1, raw);
+    })());
     setters.setQcIntegrityConcurrency(Math.max(1, Number(initialSettings.qcIntegrityConcurrency) || 4));
     setters.setQcIntegrityBreakerMaxFindings(Math.max(1, Number(initialSettings.qcIntegrityBreakerMaxFindings) || 50));
     setters.setQcIntegrityBreakerMaxPercent(Math.max(0.1, Number(initialSettings.qcIntegrityBreakerMaxPercent) || 10));
