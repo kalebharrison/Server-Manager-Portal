@@ -541,7 +541,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                 <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                     <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h4>
                     <p className="text-xs text-muted">
-                        Validates Arr-known media with playability decode plus imohash (and optional xxhash).
+                        Validates Arr-known media with a playback check plus a quick fingerprint (and optional full-file hash).
                         Skips files currently playing on Plex. Requires media mounted read-only and Arr→container path maps.
                     </p>
                     <label className="flex items-center justify-between gap-4">
@@ -597,7 +597,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                     </label>
                     <label className="flex items-center justify-between gap-4">
                         <span>
-                            <span className="block font-semibold">Enable xxhash</span>
+                            <span className="block font-semibold">Enable full-file hash</span>
                             <span className="block text-xs text-muted mt-1">Optional full-file hash mode (slower).</span>
                         </span>
                         <input
@@ -632,8 +632,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 onChange={(event) => onIntegrityMaxPerCycleChange(Math.max(1, Number(event.target.value) || 1))}
                             />
                         </label>
-                        <label className="text-sm font-semibold">Hash concurrency
-                            <span className="block text-xs font-normal text-muted mt-0.5">imohash / xxhash workers</span>
+                        <label className="text-sm font-semibold">Fingerprint / full-hash concurrency
+                            <span className="block text-xs font-normal text-muted mt-0.5">Workers for quick fingerprint and full-file hash</span>
                             <input
                                 type="number"
                                 min="1"
@@ -643,8 +643,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 onChange={(event) => onIntegrityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
                             />
                         </label>
-                        <label className="text-sm font-semibold">Playability concurrency
-                            <span className="block text-xs font-normal text-muted mt-0.5">ffmpeg decode workers (keep low)</span>
+                        <label className="text-sm font-semibold">Playback-check concurrency
+                            <span className="block text-xs font-normal text-muted mt-0.5">Decode workers (keep low)</span>
                             <input
                                 type="number"
                                 min="1"

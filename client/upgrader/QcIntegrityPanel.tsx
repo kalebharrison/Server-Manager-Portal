@@ -109,18 +109,84 @@ type Props = {
     integrityEnabled?: boolean;
 };
 
-const SCAN_MODES: Array<{ mode: IntegrityScanMode; label: string; xxhashOnly?: boolean }> = [
-    { mode: 'baseline', label: 'Full baseline' },
-    { mode: 'imohash', label: 'Full imohash' },
-    { mode: 'playability', label: 'Full playability' },
-    { mode: 'xxhash', label: 'Full xxhash', xxhashOnly: true },
+/** API mode → plain-language label shown in the UI. */
+const MODE_LABELS: Record<IntegrityScanMode, string> = {
+    playability: 'Playback check',
+    imohash: 'Quick fingerprint',
+    xxhash: 'Full-file hash',
+    baseline: 'Run all checks',
+};
+
+const SCAN_ACTIONS: Array<{
+    mode: IntegrityScanMode;
+    label: string;
+    blurb: string;
+    xxhashOnly?: boolean;
+}> = [
+    {
+        mode: 'playability',
+        label: MODE_LABELS.playability,
+        blurb: 'Decode samples at the start, middle, and end. Catches unplayable or truncated files.',
+    },
+    {
+        mode: 'imohash',
+        label: MODE_LABELS.imohash,
+        blurb: 'Fast spot-check of file size plus small slices. Good for catching silent swaps.',
+    },
+    {
+        mode: 'xxhash',
+        label: MODE_LABELS.xxhash,
+        blurb: 'Hashes the entire file. Slowest; enable in Settings first.',
+        xxhashOnly: true,
+    },
+    {
+        mode: 'baseline',
+        label: MODE_LABELS.baseline,
+        blurb: 'Runs playback + fingerprint together (and full-file hash when that option is on).',
+    },
 ];
+
+const CHECK_STATUS: Array<{
+    key: 'playability' | 'imohash' | 'xxhash';
+    label: string;
+    blurb: string;
+    xxhashOnly?: boolean;
+}> = [
+    {
+        key: 'playability',
+        label: MODE_LABELS.playability,
+        blurb: 'Has a decode pass on record',
+    },
+    {
+        key: 'imohash',
+        label: MODE_LABELS.imohash,
+        blurb: 'Has a quick fingerprint on record',
+    },
+    {
+        key: 'xxhash',
+        label: MODE_LABELS.xxhash,
+        blurb: 'Has a full-file hash on record',
+        xxhashOnly: true,
+    },
+];
+
+const labelForMode = (mode?: string | null) => {
+    if (!mode) return 'scan';
+    return MODE_LABELS[mode as IntegrityScanMode] || mode;
+};
 
 const formatPair = (done?: number, total?: number) => {
     const d = Number(done || 0);
     const t = Number(total || 0);
     if (!t) return '0 / 0';
     return `${d} / ${t}`;
+};
+
+const coveragePct = (done?: number, total?: number) => {
+    const d = Number(done || 0);
+    const t = Number(total || 0);
+    if (!t) return 0;
+    return Math.min(100, Math.round((d / t) * 100));
 };
 
 const coverageTotals = (coverage: IntegrityCoverage | null) => {
@@ -161,7 +227,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         if (wasScanningRef.current && !nowScanning && status.lastScan) {
             const last = status.lastScan;
             onToast?.(
-                `${last.mode || 'scan'} done: ${last.findingCount || 0} findings · ${last.scanned || 0} probed · ${last.skippedPlaying || 0} playing skip.`,
+                `${labelForMode(last.mode)} done: ${last.findingCount || 0} findings · ${last.scanned || 0} probed · ${last.skippedPlaying || 0} playing skip.`,
                 'success',
             );
             setResult({
@@ -235,7 +301,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             if (payload.scanning || payload.started || payload.reason === 'Scan already in progress') {
                 onToast?.(
                     payload.started
-                        ? `Full ${mode} pass started — this can take a while. Watching progress.`
+                        ? `${labelForMode(mode)} started — this can take a while. Watching progress.`
                         : 'A scan is already running — watching progress.',
                     'info',
                 );
@@ -252,7 +318,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 onToast?.(payload.reason || 'Integrity scan did not run.', 'error');
             } else {
                 onToast?.(
-                    `${mode}: ${payload.findingCount || 0} findings · ${payload.scanned || 0} probed · ${payload.skippedPlaying || 0} playing skip.`,
+                    `${labelForMode(mode)}: ${payload.findingCount || 0} findings · ${payload.scanned || 0} probed · ${payload.skippedPlaying || 0} playing skip.`,
                     'success',
                 );
             }
@@ -348,51 +414,90 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     }
 
     const displayFindings = findings.length ? findings : (result?.findings || []);
-    const visibleModes = SCAN_MODES.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
+    const visibleActions = SCAN_ACTIONS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
+    const visibleStatus = CHECK_STATUS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
+    const totals = coverageTotals(coverage);
+    const mediaCols: Array<{ key: 'movie' | 'show' | 'album'; label: string }> = [
+        { key: 'movie', label: 'Movies' },
+        { key: 'show', label: 'TV' },
+        { key: 'album', label: 'Music' },
+    ];
 
     return (
         <div className="space-y-4">
-            <div className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div>
-                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h2>
-                        <p className="text-xs text-muted mt-1 max-w-2xl">
-                            Checks Arr-known library files with playability decode (start/middle/end) and imohash,
-                            plus optional xxhash. Includes music when enabled. Files currently playing on Plex are skipped.
-                            Manual Full imohash/xxhash can run with higher concurrency. Full playability/baseline
-                            uses a separate lower concurrency (ffmpeg-heavy). Scheduled jobs still use the per-cycle
-                            batch size. Dry-run modes only report problems — nothing is deleted until you Replace a finding.
+            <div className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-4">
+                <div>
+                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h2>
+                    <p className="text-xs text-muted mt-1 max-w-2xl">
+                        Verify Arr-known library files. Pick one check, or run all of them.
+                        Files playing on Plex are skipped. Dry-run only — nothing is deleted until you Replace a finding.
+                    </p>
+                    {result?.setup && !result.setup.ready && (
+                        <p className="text-xs text-amber-200 mt-2">
+                            ffmpeg/ffprobe missing in this environment. Install them in the portal image before scanning.
                         </p>
-                        {result?.setup && !result.setup.ready && (
-                            <p className="text-xs text-amber-200 mt-2">
-                                ffmpeg/ffprobe missing in this environment. Install them in the portal image before scanning.
-                            </p>
-                        )}
-                        {scanning && (
-                            <p className="text-xs text-amber-100 mt-2">
-                                Scanning{progress?.mode ? ` (${progress.mode})` : ''}
-                                {progress?.currentTitle ? `: ${progress.currentTitle}` : '…'}
-                                {progress?.target != null ? ` · ${progress.scanned || 0}/${progress.target} probed` : ''}
-                                {progress?.findingCount ? ` · ${progress.findingCount} findings so far` : ''}
-                            </p>
-                        )}
+                    )}
+                    {scanning && (
+                        <p className="text-xs text-amber-100 mt-2">
+                            Running {labelForMode(progress?.mode)}
+                            {progress?.currentTitle ? `: ${progress.currentTitle}` : '…'}
+                            {progress?.target != null ? ` · ${progress.scanned || 0}/${progress.target} probed` : ''}
+                            {progress?.findingCount ? ` · ${progress.findingCount} findings so far` : ''}
+                        </p>
+                    )}
+                </div>
+
+                <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Status</h3>
+                    <div className={`mt-2 grid gap-3 ${visibleStatus.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'} grid-cols-1`}>
+                        {visibleStatus.map((check) => {
+                            const done = totals[check.key];
+                            const total = totals.total;
+                            const pct = coveragePct(done, total);
+                            return (
+                                <div key={check.key} className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                    <div className="text-sm font-bold text-text">{check.label}</div>
+                                    <p className="text-[11px] text-muted mt-0.5">{check.blurb}</p>
+                                    <div className="mt-2 flex items-baseline justify-between gap-2">
+                                        <span className="text-lg font-bold text-text tabular-nums">{formatPair(done, total)}</span>
+                                        <span className="text-xs font-semibold text-muted tabular-nums">{pct}%</span>
+                                    </div>
+                                    <div className="mt-2 h-1.5 rounded-full bg-border/50 overflow-hidden">
+                                        <div
+                                            className="h-full rounded-full bg-plex/80 transition-[width]"
+                                            style={{ width: `${pct}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    {visibleModes.map((entry) => (
-                        <button
-                            key={entry.mode}
-                            type="button"
-                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold hover:bg-plex-hover disabled:opacity-50"
-                            disabled={scanning}
-                            onClick={() => void runScan(entry.mode)}
-                        >
-                            {scanning && progress?.mode === entry.mode
-                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                : <FlaskConical className="w-3.5 h-3.5" />}
-                            {entry.label}
-                        </button>
-                    ))}
+
+                <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Run a check</h3>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        {visibleActions.map((entry) => {
+                            const active = scanning && progress?.mode === entry.mode;
+                            return (
+                                <button
+                                    key={entry.mode}
+                                    type="button"
+                                    className="text-left rounded-xl border border-border/60 bg-background/30 px-3 py-3 hover:border-plex/40 disabled:opacity-50"
+                                    disabled={scanning}
+                                    onClick={() => void runScan(entry.mode)}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        {active
+                                            ? <Loader2 className="w-3.5 h-3.5 animate-spin text-plex shrink-0" />
+                                            : <FlaskConical className="w-3.5 h-3.5 text-plex shrink-0" />}
+                                        <span className="text-sm font-bold text-text">{entry.label}</span>
+                                    </div>
+                                    <p className="text-[11px] text-muted mt-1.5 leading-snug">{entry.blurb}</p>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
@@ -416,64 +521,49 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 </div>
             )}
 
-            {(() => {
-                const totals = coverageTotals(coverage);
-                const checkRows: Array<{ key: 'playability' | 'imohash' | 'xxhash'; label: string; hide?: boolean }> = [
-                    { key: 'playability', label: 'Playability' },
-                    { key: 'imohash', label: 'Imohash' },
-                    { key: 'xxhash', label: 'Xxhash', hide: !xxhashEnabled },
-                ];
-                const mediaCols: Array<{ key: 'movie' | 'show' | 'album'; label: string }> = [
-                    { key: 'movie', label: 'Movies' },
-                    { key: 'show', label: 'TV' },
-                    { key: 'album', label: 'Music' },
-                ];
-                return (
-                    <div className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                        <div>
-                            <h3 className="text-sm font-bold text-text">Coverage by check</h3>
-                            <p className="text-xs text-muted mt-1">
-                                Imohash can be complete while playability is still empty — they are tracked separately.
-                            </p>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
-                                <thead>
-                                    <tr className="text-[11px] uppercase tracking-wide text-muted border-b border-border/40">
-                                        <th className="py-2 pr-3 font-semibold">Check</th>
-                                        {mediaCols.map((col) => (
-                                            <th key={col.key} className="py-2 pr-3 font-semibold">{col.label}</th>
-                                        ))}
-                                        <th className="py-2 font-semibold">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {checkRows.filter((row) => !row.hide).map((row) => {
-                                        const totalDone = totals[row.key];
-                                        const totalAll = totals.total;
-                                        return (
-                                            <tr key={row.key} className="border-b border-border/20 last:border-0">
-                                                <td className="py-2.5 pr-3 font-semibold text-text">{row.label}</td>
-                                                {mediaCols.map((col) => {
-                                                    const bucket = coverage?.[col.key];
-                                                    return (
-                                                        <td key={col.key} className="py-2.5 pr-3 text-text tabular-nums">
-                                                            {formatPair(bucket?.[row.key], bucket?.total)}
-                                                        </td>
-                                                    );
-                                                })}
-                                                <td className="py-2.5 text-text font-bold tabular-nums">
-                                                    {formatPair(totalDone, totalAll)}
+            <div className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+                <div>
+                    <h3 className="text-sm font-bold text-text">Coverage by library</h3>
+                    <p className="text-xs text-muted mt-1">
+                        Same three checks, split by Movies / TV / Music.
+                    </p>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                        <thead>
+                            <tr className="text-[11px] uppercase tracking-wide text-muted border-b border-border/40">
+                                <th className="py-2 pr-3 font-semibold">Check</th>
+                                {mediaCols.map((col) => (
+                                    <th key={col.key} className="py-2 pr-3 font-semibold">{col.label}</th>
+                                ))}
+                                <th className="py-2 font-semibold">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {visibleStatus.map((row) => {
+                                const totalDone = totals[row.key];
+                                const totalAll = totals.total;
+                                return (
+                                    <tr key={row.key} className="border-b border-border/20 last:border-0">
+                                        <td className="py-2.5 pr-3 font-semibold text-text">{row.label}</td>
+                                        {mediaCols.map((col) => {
+                                            const bucket = coverage?.[col.key];
+                                            return (
+                                                <td key={col.key} className="py-2.5 pr-3 text-text tabular-nums">
+                                                    {formatPair(bucket?.[row.key], bucket?.total)}
                                                 </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                );
-            })()}
+                                            );
+                                        })}
+                                        <td className="py-2.5 text-text font-bold tabular-nums">
+                                            {formatPair(totalDone, totalAll)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             {(result?.ran || scanning) && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -507,8 +597,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 </div>
                 {!result && !scanning && displayFindings.length === 0 && (
                     <p className="text-xs text-muted">
-                        Run a dry-run mode above to check a batch of Arr files. Nothing is changed until you click Replace.
-                        The first baseline pass is the slowest.
+                        Run a check above. Nothing changes until you click Replace on a finding.
                     </p>
                 )}
                 {scanning && displayFindings.length === 0 && (
