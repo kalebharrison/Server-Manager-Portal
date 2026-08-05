@@ -52,7 +52,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             label: 'Completed, not importing',
             perStrike: formatMinutes(cni),
             effective: formatMinutes(cni * strikes),
-            note: 'Finished in client, Arr waiting — held behind import queue; large files get extra time',
+            note: 'Finished in client, Arr waiting — held while Arr is copying or queued behind an active import',
             killKeys: ['completedNotImporting'],
         },
         {
@@ -60,7 +60,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             label: 'Orphan (no Arr link)',
             perStrike: formatMinutes(orphan || 15),
             effective: formatMinutes((orphan || 15) * strikes),
-            note: 'Also protects fresh hunt grabs',
+            note: 'Not held for seeding — only fresh hunt grabs / grace window',
             killKeys: ['orphan'],
         },
         {

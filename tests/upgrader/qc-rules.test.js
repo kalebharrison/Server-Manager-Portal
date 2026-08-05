@@ -554,7 +554,7 @@ test('findDuplicates groups sonarr episodes', () => {
     assert.equal(dupes[0].id, 1);
 });
 
-test('findOrphans skips known downloadIds and seeding protected', () => {
+test('findOrphans skips known downloadIds but allows seeding leftovers', () => {
     const orphans = findOrphans({
         arrDownloadIds: ['AAA', 'bbb'],
         clientItems: [
@@ -563,12 +563,12 @@ test('findOrphans skips known downloadIds and seeding protected', () => {
             { id: 'ddd', hash: 'ddd', client: 'qbit', state: 'uploading', progress: 1 },
         ],
     });
-    assert.equal(orphans.length, 1);
-    assert.equal(orphans[0].id, 'ccc');
-    assert.equal(orphans[0].reason, QC_REASONS.orphan);
+    assert.equal(orphans.length, 2);
+    assert.deepEqual(orphans.map((o) => o.id).sort(), ['ccc', 'ddd']);
+    assert.equal(orphans.every((o) => o.reason === QC_REASONS.orphan), true);
 });
 
-test('stopped/paused completed qBit seeds are protected from orphans', () => {
+test('completed qBit seeds can be orphan-cleaned (import safety is Arr-side)', () => {
     assert.equal(isSeedingProtected({ client: 'qbit', state: 'stoppedUP', progress: 1 }), true);
     assert.equal(isSeedingProtected({ client: 'qbit', state: 'pausedUP', progress: 1 }), true);
     assert.equal(isSeedingProtected({ client: 'qbit', state: 'checkingUP', progress: 1 }), true);
@@ -580,8 +580,8 @@ test('stopped/paused completed qBit seeds are protected from orphans', () => {
             { id: 'c', hash: 'c', client: 'qbit', state: 'downloading', progress: 0.2 },
         ],
     });
-    assert.equal(orphans.length, 1);
-    assert.equal(orphans[0].id, 'c');
+    assert.equal(orphans.length, 3);
+    assert.deepEqual(orphans.map((o) => o.id).sort(), ['a', 'b', 'c']);
 });
 
 test('successful SAB history is not orphan-killed', () => {
@@ -704,7 +704,7 @@ test('findOrphans grace and recent-hunt protection prevent false kills', () => {
     assert.equal(orphans.find((row) => row.id === 'old')?.withinGrace, false);
 });
 
-test('isSeedingProtected only for completed qbit upload states', () => {
+test('isSeedingProtected detects completed qbit upload states (informational)', () => {
     assert.equal(isSeedingProtected({ client: 'qbit', state: 'uploading', progress: 1 }), true);
     assert.equal(isSeedingProtected({ client: 'qbit', state: 'stalledUP', progress: 1 }), true);
     assert.equal(isSeedingProtected({ client: 'qbit', state: 'forcedUP', progress: 1 }), true);
