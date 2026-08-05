@@ -42,7 +42,7 @@ In each Arr app → Settings → Connect → Add → **Webhook**:
 | Field | Value |
 |---|---|
 | Name | `Portal Integrity` (or similar) |
-| Notification triggers | **On Import** / **On Upgrade** (and Import Complete if offered) |
+| Notification triggers | **On Import** / **On Upgrade** (Sonarr/Radarr). Lidarr: **On Release Import** / **On Upgrade**. |
 | URL | `http://<portal-container>:2121/triggers/<sonarr\|radarr\|lidarr>` |
 | Method | `POST` |
 | Username / Password | Same values as Settings → Quality Control → Library integrity |
