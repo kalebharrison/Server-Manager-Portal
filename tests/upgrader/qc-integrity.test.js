@@ -7,6 +7,7 @@ import {
     collectIntegrityCandidates,
     createQcIntegrity,
     mapArrPath,
+    reconcileIntegrityFindings,
     scheduleDecodeWindows,
     probeMediaFile,
 } from '../../lib/upgrader/qc-integrity.js';
@@ -23,6 +24,20 @@ test('mapArrPath prefers longest Arr prefix', () => {
         { from: '/movies/4k', to: '/media/movies-4k' },
     ]);
     assert.equal(mapped, '/media/movies-4k/Film.mkv');
+});
+
+test('reconcileIntegrityFindings drops replaced Arr file ids and passed keys', () => {
+    const findings = reconcileIntegrityFindings([
+        { key: 'radarr:r1:1:file:10', reason: 'missing_file', title: 'Old' },
+        { key: 'radarr:r1:1:file:20', reason: 'missing_file', title: 'Current miss' },
+        { key: 'radarr:r1:2:file:30', reason: 'decode_start', title: 'Will pass' },
+    ], {
+        liveKeys: ['radarr:r1:1:file:20', 'radarr:r1:2:file:30'],
+        passedKeys: ['radarr:r1:2:file:30'],
+        incoming: [{ key: 'radarr:r1:1:file:20', reason: 'missing_file', title: 'Current miss again' }],
+    });
+    assert.deepEqual(findings.map((entry) => entry.key), ['radarr:r1:1:file:20']);
+    assert.equal(findings[0].title, 'Current miss again');
 });
 
 test('scheduleDecodeWindows uses start mid end for long files', () => {
@@ -241,6 +256,103 @@ test('scanIntegrity dry-run does not delete Arr files', async () => {
     assert.equal(result.findingCount, 1);
     assert.equal(result.findings[0].reason, 'decode_start');
     assert.equal(requests.length, 0);
+});
+
+test('scanIntegrity and getStatus prune findings for replaced Arr file ids', async () => {
+    let prefs = {
+        integrityFindings: [
+            { key: 'radarr:r1:1:file:7', reason: 'missing_file', title: 'Old file id' },
+            { key: 'radarr:r1:1:file:99', reason: 'missing_file', title: 'Current' },
+        ],
+    };
+    const saved = [];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            items: [{
+                ratingKey: 'radarr:r1:1',
+                title: 'Movie',
+                monitored: true,
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 1,
+                movieFileId: 99,
+                filePath: '/movies/Movie.mkv',
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => {
+            prefs = next;
+            saved.push(next);
+        },
+        appendAudit: async () => {},
+        loadCache: async () => ({
+            entries: {
+                'radarr:r1:1:file:7': { ok: false, size: 1, mtimeMs: 1 },
+                'radarr:r1:1:file:99': {
+                    ok: true,
+                    playabilityAt: new Date().toISOString(),
+                    playabilityOk: true,
+                    size: 100,
+                    mtimeMs: 1,
+                    imohash: 'imo:abc',
+                },
+            },
+        }),
+        saveCache: async () => {},
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version test`, stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const status = await integrity.getStatus({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+    });
+    assert.deepEqual(status.findings.map((entry) => entry.key), ['radarr:r1:1:file:99']);
+    assert.equal(saved.length, 1);
+
+    prefs = {
+        integrityFindings: [
+            { key: 'radarr:r1:1:file:7', reason: 'missing_file', title: 'Old file id' },
+            { key: 'radarr:r1:1:file:99', reason: 'missing_file', title: 'Current' },
+        ],
+    };
+    const scan = await integrity.scanIntegrity({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityMaxPerCycle: 10,
+        arrInstances: [{
+            id: 'r1',
+            type: 'radarr',
+            name: 'Radarr',
+            url: 'http://radarr.local',
+            apiKey: 'x',
+            enabled: true,
+        }],
+    }, { dryRun: true, force: true, mode: 'playability' });
+
+    assert.equal(scan.ran, true);
+    assert.equal(scan.findingCount, 0);
+    assert.deepEqual((prefs.integrityFindings || []).map((entry) => entry.key), []);
 });
 
 test('imohash mismatch does not blocklist', async () => {
