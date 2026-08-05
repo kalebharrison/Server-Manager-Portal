@@ -355,6 +355,78 @@ test('scanIntegrity and getStatus prune findings for replaced Arr file ids', asy
     assert.deepEqual((prefs.integrityFindings || []).map((entry) => entry.key), []);
 });
 
+test('scanIntegrity skips missing_file when Arr file id is already gone', async () => {
+    let prefs = {
+        integrityFindings: [
+            {
+                key: 'sonarr:s1:38:file:39807',
+                reason: 'missing_file',
+                title: 'The Grand Tour (2016)',
+                episodeFileId: 39807,
+            },
+        ],
+    };
+    const requests = [];
+    const integrity = createQcIntegrity({
+        request: async (_instance, reqPath) => {
+            requests.push(reqPath);
+            if (String(reqPath).includes('/episodefile/39807')) {
+                throw new Error('Sonarr returned 404: NotFound');
+            }
+            return {};
+        },
+        loadIndex: async () => ({
+            items: [{
+                ratingKey: 'sonarr:s1:38',
+                title: 'The Grand Tour (2016)',
+                monitored: true,
+                mediaType: 'show',
+                arrType: 'sonarr',
+                arrInstanceId: 's1',
+                entityId: 38,
+                episodes: [{
+                    episodeId: 7734,
+                    episodeFileId: 39807,
+                    filePath: '/media/tv/The.Grand.Tour/Season03/S03E01-x265.mkv',
+                    seasonNumber: 3,
+                    episodeNumber: 1,
+                }],
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        statImpl: async () => ({ ok: false, reason: 'missing_file', detail: 'ENOENT' }),
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version test`, stderr: '' };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const scan = await integrity.scanIntegrity({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityMaxPerCycle: 10,
+        arrInstances: [{
+            id: 's1',
+            type: 'sonarr',
+            name: 'Sonarr',
+            url: 'http://sonarr.local',
+            apiKey: 'x',
+            enabled: true,
+        }],
+    }, { dryRun: true, force: true, mode: 'imohash' });
+
+    assert.equal(scan.ran, true);
+    assert.equal(scan.findingCount, 0);
+    assert.equal((prefs.integrityFindings || []).length, 0);
+    assert.equal(requests.some((path) => String(path).includes('/episodefile/39807')), true);
+});
+
 test('imohash mismatch does not blocklist', async () => {
     const blocklistCalls = [];
     const integrity = createQcIntegrity({
