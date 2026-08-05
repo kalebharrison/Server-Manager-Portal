@@ -1,4 +1,4 @@
-export const SETTINGS_TABS = ['plex', 'public-access', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'scanner', 'upgrader', 'metadata', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'discord', 'broadcast', 'stream-rules', 'logs'] as const;
+export const SETTINGS_TABS = ['plex', 'public-access', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'upgrader', 'metadata', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'discord', 'broadcast', 'stream-rules', 'logs'] as const;
 
 export type SettingsTabId = typeof SETTINGS_TABS[number];
 
@@ -35,8 +35,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             { id: 'mediastack', label: 'Apps & Automation', keywords: ['sonarr', 'radarr', 'lidarr', 'tautulli', 'jellystat', 'requests', 'integrations', 'arr', 'discover', 'qbittorrent', 'qbit', 'sabnzbd', 'sab', 'download client'] },
             { id: 'metadata', label: 'Metadata', keywords: ['tmdb', 'tvdb', 'artwork', 'genres', 'discovery', 'metadata'] },
             { id: 'status', label: 'Status Page', keywords: ['uptime', 'health', 'services', 'monitor'] },
-            { id: 'scanner', label: 'Scanner (Admin Only)', keywords: ['autoscan', 'scanner', 'webhook', 'path rewrite', 'sonarr', 'radarr', 'lidarr', 'library refresh', 'admin'] },
-            { id: 'upgrader', label: 'Quality Control (Admin Only)', keywords: ['upgrade', 'qc', 'quality control', 'download', 'quality', 'score', 'remux', 'sonarr', 'radarr', 'custom format', 'admin'] },
+            { id: 'upgrader', label: 'Quality Control (Admin Only)', keywords: ['upgrade', 'qc', 'quality control', 'download', 'quality', 'score', 'remux', 'sonarr', 'radarr', 'custom format', 'admin', 'integrity', 'webhook'] },
         ]
     },
     {

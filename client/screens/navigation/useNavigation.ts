@@ -64,7 +64,6 @@ export const useNavigation = ({
             if (!item) return false;
             if (item.adminOnly && !isAdmin) return false;
             if (key === 'request' && (navFeatures?.request === false || navFeatures?.requestNav === false)) return false;
-            if (key === 'scanner' && navFeatures?.scanner !== true) return false;
             if (hidden.has(key) && !ALWAYS_VISIBLE_NAV_KEYS.has(key)) return false;
             return true;
         });

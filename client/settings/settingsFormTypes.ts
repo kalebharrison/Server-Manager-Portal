@@ -1,6 +1,5 @@
 import type { DashboardLayoutConfig } from '../shared/dashboardLayout';
 import type { ArrInstance, PlexServer } from '../shared/types';
-import type { ScannerSettings } from './ScannerSettingsPanel';
 
 export type SettingsFormValues = {
     token: string;
@@ -78,11 +77,6 @@ export type SettingsFormValues = {
     allowTemporaryAccess: boolean;
     navOrder: string[];
     navHiddenKeys: string[];
-    scannerEnabled: boolean;
-    scannerHomeWidgetEnabled: boolean;
-    scannerWebhooksVisible: boolean;
-    scannerManualPathVisible: boolean;
-    scanner: ScannerSettings;
     upgraderEnabled: boolean;
     upgraderAutomationEnabled: boolean;
     upgraderHuntMissingEpisodes: boolean;
@@ -114,6 +108,8 @@ export type SettingsFormValues = {
     qcIntegrityDiscordDigestEnabled: boolean;
     qcIntegrityDecodeWindowSec: number;
     qcIntegrityDecodeTimeoutMs: number;
+    qcIntegrityWebhookUsername: string;
+    qcIntegrityWebhookPassword: string;
     qcMetaDlMinutes: number;
     qcStalledHours: number;
     qcSlowDownloadFloorKbps: number;

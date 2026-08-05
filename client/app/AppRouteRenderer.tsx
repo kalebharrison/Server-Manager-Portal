@@ -7,7 +7,6 @@ import {
     DiscoveryDashboard,
     MediaStackDashboard,
     AnalyticsDashboard,
-    ScannerDashboard,
     UpgraderDashboard,
     IssuesDashboard,
     AdminDashboard,
@@ -79,7 +78,6 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
         }
         return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} serverName={sessionInfo?.serverName} />;
     }
-    if (currentRoute === 'scanner' && isAdmin) return <ScannerDashboard />;
     if (currentRoute === 'upgrader' && isAdmin) return <UpgraderDashboard />;
     if (currentRoute === 'issues') return <IssuesDashboard isAdmin={isAdmin} />;
     if (currentRoute === 'admin' || currentRoute === 'users') return <AdminDashboard onViewAsUser={handleViewAsUser} />;

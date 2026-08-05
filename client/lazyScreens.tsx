@@ -14,7 +14,6 @@ export const LibraryDashboard = lazyComponent(() => import('./screens/LibraryDas
 export const DiscoveryDashboard = lazyComponent(() => import('./discovery/DiscoveryDashboard'), (module) => module.DiscoveryDashboard);
 export const MediaStackDashboard = lazyComponent(() => import('./screens/MediaStackDashboard'), (module) => module.MediaStackDashboard);
 export const AnalyticsDashboard = lazyComponent(() => import('./screens/AnalyticsDashboard'), (module) => module.AnalyticsDashboard);
-export const ScannerDashboard = lazyComponent(() => import('./scanner/ScannerDashboard'), (module) => module.ScannerDashboard);
 export const UpgraderDashboard = lazyComponent(() => import('./upgrader/UpgraderDashboard'), (module) => module.UpgraderDashboard);
 export const IssuesDashboard = lazyComponent(() => import('./screens/IssuesDashboard'), (module) => module.IssuesDashboard);
 export const AdminDashboard = lazyComponent(() => import('./screens/AdminDashboard'), (module) => module.AdminDashboard);

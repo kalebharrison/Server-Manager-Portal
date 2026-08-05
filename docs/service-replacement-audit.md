@@ -11,10 +11,9 @@ Snapshot after Wave 1–4 upstream ports on fork `beta` (lab stack; see `.local/
 | **speedtest-tracker** | Portal Status speed test added for signed-in members. | **Keep** dedicated tracker for WAN/history; portal test is convenience only. |
 | **trimarr-*** | Unrelated to Upgrader (anime/TV trim pipelines). | **Keep**. |
 | **notifiarr** | Still owns Arr/Plex Discord media posts. | **Keep** (do not double-wire portal webhooks). |
-| **Autoscan** | Not running; Scanner port adds Arr→Plex/JF partial refresh in-portal. | **No container to drop** — configure Arr webhooks to portal `/triggers/*` on lab first. |
 
 ## Promote checklist
 
-1. Smoke lab: themes, What’s New, nav hide, mobile More, Scanner settings, Status speed test, Request Review modal, Upgrader page (admin).
+1. Smoke lab: themes, What’s New, nav hide, mobile More, Status speed test, Request Review modal, Upgrader page (admin).
 2. Smoke the portal request path end to end: Discover → request → admin approve → Arr add with requester tag.
 3. Merge `beta` → `main` → Dockhand pulls `:main`.

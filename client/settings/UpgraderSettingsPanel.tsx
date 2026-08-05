@@ -35,6 +35,8 @@ type Props = {
     integrityDiscordDigestEnabled: boolean;
     integrityDecodeWindowSec: number;
     integrityDecodeTimeoutMs: number;
+    integrityWebhookUsername: string;
+    integrityWebhookPassword: string;
     qcMetaDlMinutes: number;
     qcStalledHours: number;
     qcSlowDownloadFloorKbps: number;
@@ -76,6 +78,8 @@ type Props = {
     onIntegrityDiscordDigestEnabledChange: (value: boolean) => void;
     onIntegrityDecodeWindowSecChange: (value: number) => void;
     onIntegrityDecodeTimeoutMsChange: (value: number) => void;
+    onIntegrityWebhookUsernameChange: (value: string) => void;
+    onIntegrityWebhookPasswordChange: (value: string) => void;
     onQcMetaDlMinutesChange: (value: number) => void;
     onQcStalledHoursChange: (value: number) => void;
     onQcSlowDownloadFloorKbpsChange: (value: number) => void;
@@ -126,6 +130,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityDiscordDigestEnabled,
     integrityDecodeWindowSec,
     integrityDecodeTimeoutMs,
+    integrityWebhookUsername,
+    integrityWebhookPassword,
     qcMetaDlMinutes,
     qcStalledHours,
     qcSlowDownloadFloorKbps,
@@ -167,6 +173,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityDiscordDigestEnabledChange,
     onIntegrityDecodeWindowSecChange,
     onIntegrityDecodeTimeoutMsChange,
+    onIntegrityWebhookUsernameChange,
+    onIntegrityWebhookPasswordChange,
     onQcMetaDlMinutesChange,
     onQcStalledHoursChange,
     onQcSlowDownloadFloorKbpsChange,
@@ -544,6 +552,37 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         Validates Arr-known media with a playback check plus a quick fingerprint (and optional full-file hash).
                         Skips files currently playing on Plex. Requires media mounted read-only and Arr→container path maps.
                     </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <label className="text-sm font-semibold">
+                            Webhook username
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                Arr Notification webhooks should POST to /triggers/sonarr, /triggers/radarr, /triggers/lidarr with this Basic Auth. Used for import fingerprint baselines.
+                            </span>
+                            <input
+                                type="text"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityWebhookUsername}
+                                disabled={!enabled}
+                                autoComplete="off"
+                                onChange={(event) => onIntegrityWebhookUsernameChange(event.target.value)}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">
+                            Webhook password
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                Leave blank to keep the existing password.
+                            </span>
+                            <input
+                                type="password"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={integrityWebhookPassword}
+                                disabled={!enabled}
+                                autoComplete="new-password"
+                                placeholder="••••••••"
+                                onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
+                            />
+                        </label>
+                    </div>
                     <label className="flex items-center justify-between gap-4">
                         <span>
                             <span className="block font-semibold">Enable integrity scans</span>

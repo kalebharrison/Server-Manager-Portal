@@ -1,7 +1,6 @@
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { normalizeNavHiddenKeys, normalizeSettingsNavOrder } from './settingsNavOrder';
 import type { ArrInstance } from '../shared/types';
-import type { ScannerSettings } from './ScannerSettingsPanel';
 
 type SettingsSavePayloadInput = {
     token: string;
@@ -79,11 +78,6 @@ type SettingsSavePayloadInput = {
     autoBackupEnabled: boolean;
     autoBackupIntervalDays: number;
     autoBackupRetentionCount: number;
-    scannerEnabled: boolean;
-    scannerHomeWidgetEnabled: boolean;
-    scannerWebhooksVisible: boolean;
-    scannerManualPathVisible: boolean;
-    scanner: ScannerSettings;
     upgraderEnabled: boolean;
     upgraderAutomationEnabled: boolean;
     upgraderHuntMissingEpisodes: boolean;
@@ -115,6 +109,8 @@ type SettingsSavePayloadInput = {
     qcIntegrityDiscordDigestEnabled: boolean;
     qcIntegrityDecodeWindowSec: number;
     qcIntegrityDecodeTimeoutMs: number;
+    qcIntegrityWebhookUsername: string;
+    qcIntegrityWebhookPassword: string;
     qcMetaDlMinutes: number;
     qcStalledHours: number;
     qcSlowDownloadFloorKbps: number;

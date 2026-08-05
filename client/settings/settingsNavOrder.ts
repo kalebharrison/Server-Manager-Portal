@@ -1,11 +1,11 @@
-const DEFAULT_NAV_ORDER = ['home', 'users', 'discover', 'issues', 'status', 'analytics', 'mediastack', 'request', 'scanner', 'upgrader', 'settings', 'logout'];
+const DEFAULT_NAV_ORDER = ['home', 'users', 'discover', 'issues', 'status', 'analytics', 'mediastack', 'request', 'upgrader', 'settings', 'logout'];
 
 export const ALWAYS_VISIBLE_NAV_KEYS = new Set(['home', 'settings', 'logout', 'preferences']);
 
-/** Normalize nav order and drop retired entries such as `maintenance`. */
+/** Normalize nav order and drop retired entries such as `maintenance` and `scanner`. */
 export const normalizeSettingsNavOrder = (order: string[]) => {
     const base = Array.isArray(order)
-        ? order.filter((key) => Boolean(key) && key !== 'maintenance')
+        ? order.filter((key) => Boolean(key) && key !== 'maintenance' && key !== 'scanner')
         : [...DEFAULT_NAV_ORDER];
     if (!base.includes('issues')) {
         const discoverIndex = base.indexOf('discover');
@@ -14,10 +14,6 @@ export const normalizeSettingsNavOrder = (order: string[]) => {
     if (!base.includes('users')) {
         const homeIndex = base.indexOf('home');
         base.splice(homeIndex >= 0 ? homeIndex + 1 : 0, 0, 'users');
-    }
-    if (!base.includes('scanner')) {
-        const settingsIndex = base.indexOf('settings');
-        base.splice(settingsIndex >= 0 ? settingsIndex : base.length, 0, 'scanner');
     }
     if (!base.includes('upgrader')) {
         const settingsIndex = base.indexOf('settings');

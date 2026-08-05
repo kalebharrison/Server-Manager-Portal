@@ -1,4 +1,4 @@
-export type NavigationRoute = 'admin' | 'user' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'request' | 'scanner';
+export type NavigationRoute = 'admin' | 'user' | 'status' | 'dashboard' | 'issues' | 'settings' | 'preferences' | 'logs' | 'analytics' | 'mediastack' | 'request';
 
 export interface NavigationProps {
     currentRoute: string;
@@ -14,7 +14,6 @@ export interface NavigationProps {
         request?: boolean;
         /** When false, hide Request Content (portal Discover already covers it). */
         requestNav?: boolean;
-        scanner?: boolean;
     };
     appVersion?: string;
     activeTheme: string;

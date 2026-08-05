@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
     collectArrIntegrityPayloads,
     enrichArrIntegrityPayload,
-} from '../../lib/scanner/scanner-routes.js';
+    classifyArrImportEvent,
+} from '../../lib/upgrader/arr-integrity-triggers.js';
 
 test('collectArrIntegrityPayloads extracts sonarr episode files', () => {
     const payloads = collectArrIntegrityPayloads('sonarr', {
@@ -44,4 +45,10 @@ test('enrichArrIntegrityPayload builds coverage-compatible cache keys', () => {
     assert.equal(enriched.arrInstanceId, 'sonarr-default');
     assert.equal(enriched.ratingKey, 'sonarr:sonarr-default:38');
     assert.equal(enriched.key, 'sonarr:sonarr-default:38:file:65081');
+});
+
+test('classifyArrImportEvent gates import and upgrade', () => {
+    assert.equal(classifyArrImportEvent('sonarr', { eventType: 'Download' }).action, 'import');
+    assert.equal(classifyArrImportEvent('sonarr', { eventType: 'Download', isUpgrade: true }).action, 'upgrade');
+    assert.equal(classifyArrImportEvent('sonarr', { eventType: 'Test' }).action, 'test');
 });

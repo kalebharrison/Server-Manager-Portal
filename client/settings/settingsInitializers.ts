@@ -3,7 +3,6 @@ import type React from 'react';
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { normalizeNavHiddenKeys, normalizeSettingsNavOrder } from './settingsNavOrder';
 import type { ArrInstance } from '../shared/types';
-import type { ScannerSettings } from './ScannerSettingsPanel';
 
 type SettingsHydrationSetters = {
     setToken: (value: string) => void;
@@ -82,11 +81,6 @@ type SettingsHydrationSetters = {
     setAutoBackupIntervalDays: (value: number) => void;
     setAutoBackupRetentionCount: (value: number) => void;
     setDashboardLayout: (value: DashboardLayoutConfig) => void;
-    setScannerEnabled: (value: boolean) => void;
-    setScannerHomeWidgetEnabled: (value: boolean) => void;
-    setScannerWebhooksVisible: (value: boolean) => void;
-    setScannerManualPathVisible: (value: boolean) => void;
-    setScanner: (value: ScannerSettings) => void;
     setUpgraderEnabled: (value: boolean) => void;
     setUpgraderAutomationEnabled: (value: boolean) => void;
     setUpgraderHuntMissingEpisodes: (value: boolean) => void;
@@ -118,6 +112,8 @@ type SettingsHydrationSetters = {
     setQcIntegrityDiscordDigestEnabled: (value: boolean) => void;
     setQcIntegrityDecodeWindowSec: (value: number) => void;
     setQcIntegrityDecodeTimeoutMs: (value: number) => void;
+    setQcIntegrityWebhookUsername: (value: string) => void;
+    setQcIntegrityWebhookPassword: (value: string) => void;
     setQcMetaDlMinutes: (value: number) => void;
     setQcStalledHours: (value: number) => void;
     setQcSlowDownloadFloorKbps: (value: number) => void;
@@ -216,18 +212,6 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     if (initialSettings.autoBackupEnabled !== undefined) setters.setAutoBackupEnabled(!!initialSettings.autoBackupEnabled);
     if (initialSettings.autoBackupIntervalDays !== undefined) setters.setAutoBackupIntervalDays(Number(initialSettings.autoBackupIntervalDays) || 2);
     if (initialSettings.autoBackupRetentionCount !== undefined) setters.setAutoBackupRetentionCount(Number(initialSettings.autoBackupRetentionCount) || 10);
-    setters.setScannerEnabled(!!initialSettings.scannerEnabled);
-    setters.setScannerHomeWidgetEnabled(!!initialSettings.scannerHomeWidgetEnabled);
-    setters.setScannerWebhooksVisible(initialSettings.scannerWebhooksVisible !== false);
-    setters.setScannerManualPathVisible(initialSettings.scannerManualPathVisible !== false);
-    setters.setScanner(initialSettings.scanner || {
-        minimumAge: '1m',
-        verifyPathExists: false,
-        authUsername: '',
-        authPassword: '',
-        triggers: { sonarr: [], radarr: [], lidarr: [] },
-        targets: { plex: [], jellyfin: [], emby: [] },
-    });
     setters.setUpgraderEnabled(!!initialSettings.upgraderEnabled);
     setters.setUpgraderAutomationEnabled(!!initialSettings.upgraderAutomationEnabled);
     setters.setUpgraderHuntMissingEpisodes(initialSettings.upgraderHuntMissingEpisodes !== false);
@@ -272,6 +256,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityDiscordDigestEnabled(!!initialSettings.qcIntegrityDiscordDigestEnabled);
     setters.setQcIntegrityDecodeWindowSec(Math.max(1, Number(initialSettings.qcIntegrityDecodeWindowSec) || 10));
     setters.setQcIntegrityDecodeTimeoutMs(Math.max(1000, Number(initialSettings.qcIntegrityDecodeTimeoutMs) || 30000));
+    setters.setQcIntegrityWebhookUsername(String(initialSettings.qcIntegrityWebhookUsername || ''));
+    setters.setQcIntegrityWebhookPassword('');
     setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 20));
     setters.setQcStalledHours(Math.max(1, Number(initialSettings.qcStalledHours) || 2));
     setters.setQcSlowDownloadFloorKbps(Math.max(0, Number(initialSettings.qcSlowDownloadFloorKbps ?? 100) || 0));

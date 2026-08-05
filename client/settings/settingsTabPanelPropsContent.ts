@@ -34,25 +34,6 @@ export const buildNavigationTabPanelProps = ({
     onNavHiddenKeysChange: onChange('navHiddenKeys'),
 });
 
-export const buildScannerTabPanelProps = ({
-    values,
-    onChange,
-    addToast,
-}: Pick<ContentTabPanelPropsInput, 'values' | 'onChange' | 'addToast'>): SettingsTabPanelProps['scanner'] => ({
-    enabled: values.scannerEnabled,
-    onEnabledChange: onChange('scannerEnabled'),
-    homeWidgetEnabled: values.scannerHomeWidgetEnabled,
-    onHomeWidgetEnabledChange: onChange('scannerHomeWidgetEnabled'),
-    webhooksVisible: values.scannerWebhooksVisible,
-    onWebhooksVisibleChange: onChange('scannerWebhooksVisible'),
-    manualPathVisible: values.scannerManualPathVisible,
-    onManualPathVisibleChange: onChange('scannerManualPathVisible'),
-    scanner: values.scanner,
-    onChange: onChange('scanner'),
-    sectionId: 'scanner',
-    addToast,
-});
-
 export const buildUpgraderTabPanelProps = ({
     values,
     onChange,
@@ -83,6 +64,8 @@ export const buildUpgraderTabPanelProps = ({
     integrityDiscordDigestEnabled: values.qcIntegrityDiscordDigestEnabled,
     integrityDecodeWindowSec: values.qcIntegrityDecodeWindowSec,
     integrityDecodeTimeoutMs: values.qcIntegrityDecodeTimeoutMs,
+    integrityWebhookUsername: values.qcIntegrityWebhookUsername,
+    integrityWebhookPassword: values.qcIntegrityWebhookPassword,
     qcMetaDlMinutes: values.qcMetaDlMinutes,
     qcStalledHours: values.qcStalledHours,
     qcSlowDownloadFloorKbps: values.qcSlowDownloadFloorKbps,
@@ -124,6 +107,8 @@ export const buildUpgraderTabPanelProps = ({
     onIntegrityDiscordDigestEnabledChange: onChange('qcIntegrityDiscordDigestEnabled'),
     onIntegrityDecodeWindowSecChange: onChange('qcIntegrityDecodeWindowSec'),
     onIntegrityDecodeTimeoutMsChange: onChange('qcIntegrityDecodeTimeoutMs'),
+    onIntegrityWebhookUsernameChange: onChange('qcIntegrityWebhookUsername'),
+    onIntegrityWebhookPasswordChange: onChange('qcIntegrityWebhookPassword'),
     onQcMetaDlMinutesChange: onChange('qcMetaDlMinutes'),
     onQcStalledHoursChange: onChange('qcStalledHours'),
     onQcSlowDownloadFloorKbpsChange: onChange('qcSlowDownloadFloorKbps'),

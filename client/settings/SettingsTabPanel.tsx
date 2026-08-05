@@ -26,7 +26,6 @@ const NavigationOrderTab = lazyTab(() => import('./NavigationOrderTab').then(mod
 const NewsletterSettingsTab = lazyTab(() => import('./NewsletterSettingsTab').then(module => ({ default: module.NewsletterSettingsTab })));
 const PublicAccessSettingsTab = lazyTab(() => import('./PublicAccessSettingsTab').then(module => ({ default: module.PublicAccessSettingsTab })));
 const SmtpSettingsTab = lazyTab(() => import('./SmtpSettingsTab').then(module => ({ default: module.SmtpSettingsTab })));
-const ScannerSettingsPanel = lazyTab(() => import('./ScannerSettingsPanel').then(module => ({ default: module.ScannerSettingsPanel })));
 const UpgraderSettingsPanel = lazyTab(() => import('./UpgraderSettingsPanel').then(module => ({ default: module.UpgraderSettingsPanel })));
 const StatusSettingsTab = lazyTab(() => import('./StatusSettingsTab').then(module => ({ default: module.StatusSettingsTab })));
 const StreamKillRulesPanel = lazyTab(() => import('./StreamKillRulesPanel').then(module => ({ default: module.StreamKillRulesPanel })));
@@ -58,7 +57,6 @@ export type SettingsTabPanelProps = {
     tasks: TabProps;
     system: TabProps;
     logs: TabProps;
-    scanner: TabProps;
     upgrader: TabProps;
 };
 
@@ -84,7 +82,6 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
     tasks,
     system,
     logs,
-    scanner,
     upgrader,
 }) => (
     <Suspense fallback={<SettingsTabFallback />}>
@@ -103,7 +100,6 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
         {activeTab === 'public-access' && <PublicAccessSettingsTab {...publicAccess} />}
         {activeTab === 'cleanup' && <CleanupSettingsTab {...cleanup} />}
         {activeTab === 'mediastack' && <MediaStackSettingsTab {...mediaStack} />}
-        {activeTab === 'scanner' && <ScannerSettingsPanel {...scanner} />}
         {activeTab === 'upgrader' && <UpgraderSettingsPanel {...upgrader} />}
         {activeTab === 'metadata' && <MetadataSettingsTab {...metadata} />}
         {activeTab === 'home-layout' && <HomeLayoutSettings {...homeLayout} />}

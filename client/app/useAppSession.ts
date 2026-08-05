@@ -98,7 +98,6 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
                 window.history.replaceState({}, '', portalUrl('/discovery'));
                 updateRoute('discover');
             }
-            else if (path === '/scanner' && data.session.isAdmin && !data.impersonation?.active && data.navFeatures?.scanner) updateRoute('scanner');
             else if (path === '/upgrader' && data.session.isAdmin && !data.impersonation?.active && data.navFeatures?.upgrader) updateRoute('upgrader');
             else if (path === '/issues') updateRoute('issues');
             else if (path === '/analytics') updateRoute('analytics');
@@ -209,7 +208,6 @@ export const useAppRouting = () => {
             if (normalized === 'preferences') path = '/preferences';
             if (normalized === 'analytics') path = '/analytics';
             if (normalized === 'mediastack') path = '/mediastack';
-            if (normalized === 'scanner') path = '/scanner';
             if (normalized === 'upgrader') path = '/upgrader';
             if (normalized === 'issues') path = '/issues';
             window.history.pushState({}, '', portalUrl(path));

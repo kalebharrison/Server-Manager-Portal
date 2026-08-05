@@ -12,7 +12,6 @@ import {
     buildInvitesTabPanelProps,
     buildNavigationTabPanelProps,
     buildPublicAccessTabPanelProps,
-    buildScannerTabPanelProps,
     buildUpgraderTabPanelProps,
     buildStatusTabPanelProps,
 } from './settingsTabPanelPropsContent';
@@ -64,7 +63,6 @@ export const buildSettingsTabPanelProps = ({
         newsletter: buildNewsletterTabPanelProps({ values, onChange, emailActions }),
         cleanup: buildCleanupTabPanelProps({ values, onChange }),
         mediaStack: buildMediaStackTabPanelProps({ initialSettings, values, onChange, addToast }),
-        scanner: buildScannerTabPanelProps({ values, onChange, addToast }),
         upgrader: buildUpgraderTabPanelProps({ values, onChange }),
         metadata: buildMetadataTabPanelProps({ initialSettings, values, onChange, addToast }),
         homeLayout: buildHomeLayoutTabPanelProps({ values, form }),

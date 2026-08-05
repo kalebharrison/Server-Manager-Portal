@@ -1,6 +1,5 @@
 import { DEFAULT_DASHBOARD_LAYOUT } from '../shared/dashboardLayout';
 import { getDefaultSettingsNavOrder } from './settingsNavOrder';
-import { defaultScannerSettings } from './ScannerSettingsPanel';
 import type { SettingsFormValues } from './settingsFormTypes';
 
 export const createInitialSettingsFormValues = (): SettingsFormValues => ({
@@ -79,11 +78,6 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     allowTemporaryAccess: false,
     navOrder: getDefaultSettingsNavOrder(),
     navHiddenKeys: [],
-    scannerEnabled: false,
-    scannerHomeWidgetEnabled: false,
-    scannerWebhooksVisible: true,
-    scannerManualPathVisible: true,
-    scanner: defaultScannerSettings(),
     upgraderEnabled: false,
     upgraderAutomationEnabled: false,
     upgraderHuntMissingEpisodes: true,
@@ -115,6 +109,8 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     qcIntegrityDiscordDigestEnabled: false,
     qcIntegrityDecodeWindowSec: 10,
     qcIntegrityDecodeTimeoutMs: 30000,
+    qcIntegrityWebhookUsername: '',
+    qcIntegrityWebhookPassword: '',
     qcMetaDlMinutes: 20,
     qcStalledHours: 2,
     qcSlowDownloadFloorKbps: 100,
