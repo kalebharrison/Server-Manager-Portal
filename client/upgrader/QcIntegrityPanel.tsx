@@ -186,7 +186,9 @@ const coveragePct = (done?: number, total?: number) => {
     const d = Number(done || 0);
     const t = Number(total || 0);
     if (!t) return 0;
-    return Math.min(100, Math.round((d / t) * 100));
+    if (d >= t) return 100;
+    // Never round incomplete coverage up to 100% (e.g. 57393/57453 → 99).
+    return Math.min(99, Math.floor((d / t) * 100));
 };
 
 const coverageTotals = (coverage: IntegrityCoverage | null) => {
