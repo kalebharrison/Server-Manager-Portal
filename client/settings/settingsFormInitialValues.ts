@@ -117,6 +117,8 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     qcIntegrityDecodeTimeoutMs: 30000,
     qcMetaDlMinutes: 20,
     qcStalledHours: 2,
+    qcSlowDownloadFloorKbps: 100,
+    qcSlowDownloadMinAgeHours: 6,
     qcCompletedNotImportingMinutes: 90,
     qcOrphanGraceMinutes: 15,
     qcMaxStrikes: 3,

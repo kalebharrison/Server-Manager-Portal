@@ -48,6 +48,14 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             killKeys: ['stalled'],
         },
         {
+            id: 'slowDownload',
+            label: 'Slow download',
+            perStrike: `${stalledHours}h`,
+            effective: `${stalledHours * strikes}h`,
+            note: `qBit below ${Math.max(0, Number(t?.slowDownloadFloorKbps ?? 100) || 0)} KB/s after ${Math.max(0, Number(t?.slowDownloadMinAgeHours ?? 6) || 0)}h — seeder count is not a hold`,
+            killKeys: ['slowDownload'],
+        },
+        {
             id: 'cni',
             label: 'Completed, not importing',
             perStrike: formatMinutes(cni),

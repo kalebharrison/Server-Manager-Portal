@@ -37,6 +37,8 @@ type Props = {
     integrityDecodeTimeoutMs: number;
     qcMetaDlMinutes: number;
     qcStalledHours: number;
+    qcSlowDownloadFloorKbps: number;
+    qcSlowDownloadMinAgeHours: number;
     qcCompletedNotImportingMinutes: number;
     qcOrphanGraceMinutes: number;
     qcMaxStrikes: number;
@@ -76,6 +78,8 @@ type Props = {
     onIntegrityDecodeTimeoutMsChange: (value: number) => void;
     onQcMetaDlMinutesChange: (value: number) => void;
     onQcStalledHoursChange: (value: number) => void;
+    onQcSlowDownloadFloorKbpsChange: (value: number) => void;
+    onQcSlowDownloadMinAgeHoursChange: (value: number) => void;
     onQcCompletedNotImportingMinutesChange: (value: number) => void;
     onQcOrphanGraceMinutesChange: (value: number) => void;
     onQcMaxStrikesChange: (value: number) => void;
@@ -124,6 +128,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityDecodeTimeoutMs,
     qcMetaDlMinutes,
     qcStalledHours,
+    qcSlowDownloadFloorKbps,
+    qcSlowDownloadMinAgeHours,
     qcCompletedNotImportingMinutes,
     qcOrphanGraceMinutes,
     qcMaxStrikes,
@@ -163,6 +169,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityDecodeTimeoutMsChange,
     onQcMetaDlMinutesChange,
     onQcStalledHoursChange,
+    onQcSlowDownloadFloorKbpsChange,
+    onQcSlowDownloadMinAgeHoursChange,
     onQcCompletedNotImportingMinutesChange,
     onQcOrphanGraceMinutesChange,
     onQcMaxStrikesChange,
@@ -181,7 +189,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
             <section id="upgrader" className="space-y-5 scroll-mt-24">
                 <p className="text-sm text-muted">
                     Hunts Sonarr/Radarr/Lidarr for higher custom-format scores and monitors download clients for doomed queues
-                    (metaDL, stalled, failed import, orphans).
+                    (metaDL, stalled, slow download, failed import, orphans).
                 </p>
 
                 <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
@@ -311,6 +319,34 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 value={qcStalledHours}
                                 disabled={!enabled}
                                 onChange={(event) => onQcStalledHoursChange(Math.max(1, Number(event.target.value) || 1))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Slow download floor (KB/s)
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                qBit only. Below this speed (and past min age) earns a slow-download strike.
+                                Seeder counts do not hold — only measured download speed counts as actively pulling.
+                                Uses the same hours/strike gap as stalled.
+                            </span>
+                            <input
+                                type="number"
+                                min="0"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={qcSlowDownloadFloorKbps}
+                                disabled={!enabled}
+                                onChange={(event) => onQcSlowDownloadFloorKbpsChange(Math.max(0, Number(event.target.value) || 0))}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold">Slow download min age (hours)
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                Don’t judge brand-new grabs until they’ve been downloading at least this long.
+                            </span>
+                            <input
+                                type="number"
+                                min="0"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={qcSlowDownloadMinAgeHours}
+                                disabled={!enabled}
+                                onChange={(event) => onQcSlowDownloadMinAgeHoursChange(Math.max(0, Number(event.target.value) || 0))}
                             />
                         </label>
                         <label className="text-sm font-semibold">Completed not importing (min / strike)

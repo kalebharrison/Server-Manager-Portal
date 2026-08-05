@@ -138,6 +138,8 @@ export const useSettingsHydration = ({
             setQcIntegrityDecodeTimeoutMs: set('qcIntegrityDecodeTimeoutMs'),
             setQcMetaDlMinutes: set('qcMetaDlMinutes'),
             setQcStalledHours: set('qcStalledHours'),
+            setQcSlowDownloadFloorKbps: set('qcSlowDownloadFloorKbps'),
+            setQcSlowDownloadMinAgeHours: set('qcSlowDownloadMinAgeHours'),
             setQcCompletedNotImportingMinutes: set('qcCompletedNotImportingMinutes'),
             setQcOrphanGraceMinutes: set('qcOrphanGraceMinutes'),
             setQcMaxStrikes: set('qcMaxStrikes'),

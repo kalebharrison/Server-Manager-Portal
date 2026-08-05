@@ -129,6 +129,8 @@ export const useSettingsFormState = () => {
         qcIntegrityDecodeTimeoutMs: values.qcIntegrityDecodeTimeoutMs,
         qcMetaDlMinutes: values.qcMetaDlMinutes,
         qcStalledHours: values.qcStalledHours,
+        qcSlowDownloadFloorKbps: values.qcSlowDownloadFloorKbps,
+        qcSlowDownloadMinAgeHours: values.qcSlowDownloadMinAgeHours,
         qcCompletedNotImportingMinutes: values.qcCompletedNotImportingMinutes,
         qcOrphanGraceMinutes: values.qcOrphanGraceMinutes,
         qcMaxStrikes: values.qcMaxStrikes,

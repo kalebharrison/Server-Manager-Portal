@@ -120,6 +120,8 @@ type SettingsHydrationSetters = {
     setQcIntegrityDecodeTimeoutMs: (value: number) => void;
     setQcMetaDlMinutes: (value: number) => void;
     setQcStalledHours: (value: number) => void;
+    setQcSlowDownloadFloorKbps: (value: number) => void;
+    setQcSlowDownloadMinAgeHours: (value: number) => void;
     setQcCompletedNotImportingMinutes: (value: number) => void;
     setQcOrphanGraceMinutes: (value: number) => void;
     setQcMaxStrikes: (value: number) => void;
@@ -272,6 +274,8 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityDecodeTimeoutMs(Math.max(1000, Number(initialSettings.qcIntegrityDecodeTimeoutMs) || 30000));
     setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 20));
     setters.setQcStalledHours(Math.max(1, Number(initialSettings.qcStalledHours) || 2));
+    setters.setQcSlowDownloadFloorKbps(Math.max(0, Number(initialSettings.qcSlowDownloadFloorKbps ?? 100) || 0));
+    setters.setQcSlowDownloadMinAgeHours(Math.max(0, Number(initialSettings.qcSlowDownloadMinAgeHours ?? 6) || 0));
     setters.setQcCompletedNotImportingMinutes(Math.max(1, Number(initialSettings.qcCompletedNotImportingMinutes) || 90));
     setters.setQcOrphanGraceMinutes(Math.max(0, Number(initialSettings.qcOrphanGraceMinutes ?? 15) || 0));
     setters.setQcMaxStrikes(Math.max(1, Number(initialSettings.qcMaxStrikes) || 3));

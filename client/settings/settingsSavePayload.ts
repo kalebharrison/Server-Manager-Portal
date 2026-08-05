@@ -117,6 +117,8 @@ type SettingsSavePayloadInput = {
     qcIntegrityDecodeTimeoutMs: number;
     qcMetaDlMinutes: number;
     qcStalledHours: number;
+    qcSlowDownloadFloorKbps: number;
+    qcSlowDownloadMinAgeHours: number;
     qcCompletedNotImportingMinutes: number;
     qcOrphanGraceMinutes: number;
     qcMaxStrikes: number;

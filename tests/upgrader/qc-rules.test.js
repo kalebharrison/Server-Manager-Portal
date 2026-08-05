@@ -31,6 +31,8 @@ test('thresholdsFromConfig applies per-strike defaults', () => {
     const t = thresholdsFromConfig({});
     assert.equal(t.metaDlMinutes, 20);
     assert.equal(t.stalledHours, 2);
+    assert.equal(t.slowDownloadFloorKbps, 100);
+    assert.equal(t.slowDownloadMinAgeHours, 6);
     assert.equal(t.completedNotImportingMinutes, 90);
     assert.equal(t.orphanGraceMinutes, 15);
     assert.equal(t.maxStrikes, 3);
@@ -121,6 +123,111 @@ test('classifyQueueItem detects stalled past threshold', () => {
         },
     });
     assert.equal(reason, QC_REASONS.stalled);
+});
+
+test('classifyQueueItem detects slow download below floor after min age', () => {
+    const now = Date.now();
+    const thresholds = thresholdsFromConfig({
+        qcSlowDownloadFloorKbps: 100,
+        qcSlowDownloadMinAgeHours: 6,
+        qcStalledHours: 2,
+    });
+    const reason = classifyQueueItem({
+        now,
+        thresholds,
+        clientItem: {
+            client: 'qbit',
+            state: 'downloading',
+            added_on: Math.floor((now - 7 * hour) / 1000),
+            progress: 0.3,
+            dlspeed: 50 * 1024, // 50 KB/s — below 100 KB/s floor
+            num_seeds: 0,
+        },
+        arrItem: { status: 'downloading' },
+    });
+    assert.equal(reason, QC_REASONS.slowDownload);
+});
+
+test('slow download is not classified when actively pulling above floor', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({
+            qcSlowDownloadFloorKbps: 100,
+            qcSlowDownloadMinAgeHours: 6,
+        }),
+        clientItem: {
+            client: 'qbit',
+            state: 'downloading',
+            added_on: Math.floor((now - 8 * hour) / 1000),
+            progress: 0.4,
+            dlspeed: 250 * 1024,
+            num_seeds: 0, // zero seeds must not force a strike when speed is healthy
+        },
+        arrItem: { status: 'downloading' },
+    });
+    assert.equal(reason, null);
+});
+
+test('seeder count alone does not hold a slow download strike', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({
+            qcSlowDownloadFloorKbps: 100,
+            qcSlowDownloadMinAgeHours: 6,
+        }),
+        clientItem: {
+            client: 'qbit',
+            state: 'downloading',
+            added_on: Math.floor((now - 8 * hour) / 1000),
+            progress: 0.25,
+            dlspeed: 0,
+            num_seeds: 12, // stale tracker claim — still slow without throughput
+        },
+        arrItem: { status: 'downloading' },
+    });
+    assert.equal(reason, QC_REASONS.slowDownload);
+});
+
+test('slow download ignores torrents younger than min age', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({
+            qcSlowDownloadFloorKbps: 100,
+            qcSlowDownloadMinAgeHours: 6,
+        }),
+        clientItem: {
+            client: 'qbit',
+            state: 'downloading',
+            added_on: Math.floor((now - 2 * hour) / 1000),
+            progress: 0.1,
+            dlspeed: 1024,
+        },
+        arrItem: { status: 'downloading' },
+    });
+    assert.equal(reason, null);
+});
+
+test('slow download skips near-complete torrents', () => {
+    const now = Date.now();
+    const reason = classifyQueueItem({
+        now,
+        thresholds: thresholdsFromConfig({
+            qcSlowDownloadFloorKbps: 100,
+            qcSlowDownloadMinAgeHours: 6,
+        }),
+        clientItem: {
+            client: 'qbit',
+            state: 'downloading',
+            added_on: Math.floor((now - 10 * hour) / 1000),
+            progress: 0.97,
+            dlspeed: 0,
+        },
+        arrItem: { status: 'downloading' },
+    });
+    assert.equal(reason, null);
 });
 
 test('classifyQueueItem does not treat downloadClientUnavailable as stalled', () => {

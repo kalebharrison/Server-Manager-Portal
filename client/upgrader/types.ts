@@ -42,6 +42,8 @@ export type UpgraderStatus = {
     qcThresholds?: {
         metaDlMinutes: number;
         stalledHours: number;
+        slowDownloadFloorKbps?: number;
+        slowDownloadMinAgeHours?: number;
         completedNotImportingMinutes: number;
         orphanGraceMinutes?: number;
         maxStrikes?: number;
