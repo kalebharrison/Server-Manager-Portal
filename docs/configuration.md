@@ -40,6 +40,7 @@ See [`.env.example`](../.env.example) for the full template.
 | Home layout | Section order/visibility for member home |
 | SMTP / newsletter | Outbound mail and newsletter schedule |
 | Status | Monitored services and public status page |
+| Quality Control | Library upgrader + Integrity scans; Arr import webhooks for on-import fingerprints ([Integrity webhooks](./integrity-webhooks.md)) |
 | System | Backups, diagnostics, background tasks |
 
 ## Private homelab stack map (optional)

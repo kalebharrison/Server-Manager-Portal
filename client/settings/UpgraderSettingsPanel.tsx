@@ -551,12 +551,17 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                     <p className="text-xs text-muted">
                         Validates Arr-known media with a playback check plus a quick fingerprint (and optional full-file hash).
                         Skips files currently playing on Plex. Requires media mounted read-only and Arr→container path maps.
+                        For on-import baselining, Arr must POST to the webhook URLs below with this Basic Auth
+                        (see docs/integrity-webhooks.md).
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <label className="text-sm font-semibold">
                             Webhook username
                             <span className="block text-xs font-normal text-muted mt-1">
-                                Arr Notification webhooks should POST to /triggers/sonarr, /triggers/radarr, /triggers/lidarr with this Basic Auth. Used for import fingerprint baselines.
+                                Arr → Connect → Webhook. Paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
+                                <code className="text-[11px]">/triggers/radarr</code>,{' '}
+                                <code className="text-[11px]">/triggers/lidarr</code>. Prefer the portal Docker hostname
+                                (e.g. <code className="text-[11px]">http://server-manager-portal-beta:2121/triggers/sonarr</code>).
                             </span>
                             <input
                                 type="text"
@@ -570,7 +575,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         <label className="text-sm font-semibold">
                             Webhook password
                             <span className="block text-xs font-normal text-muted mt-1">
-                                Leave blank to keep the existing password.
+                                Required for Arr notifications. Leave blank when saving to keep the existing password.
                             </span>
                             <input
                                 type="password"

@@ -42,6 +42,8 @@ Example path maps (Settings textarea):
 
 Without these mounts/maps, Integrity stays available in the UI but scans report paths as not visible.
 
+For on-import fingerprinting (so new downloads are baselined immediately), configure Arr webhook notifications as described in [Integrity import webhooks](./integrity-webhooks.md).
+
 ## Published image
 
 Images publish from the `beta` and `main` branches:
