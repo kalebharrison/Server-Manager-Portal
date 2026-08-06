@@ -18,7 +18,6 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean; sessionInfo: any }
     const [viewTab, setViewTab] = useState<AnalyticsViewTab>('overview');
     const mediaServerType = String(sessionInfo?.mediaServerType || 'plex').toLowerCase();
     const isJellyfinPortal = mediaServerType === 'jellyfin';
-    const analyticsSourceLabel = isJellyfinPortal ? 'Jellystat' : 'Tautulli';
     const { analyticsData, providerData, isLoading, error } = useAnalyticsData({ days, isAdmin, isJellyfinPortal });
 
     useEffect(() => {
@@ -59,7 +58,6 @@ export const AnalyticsDashboard: React.FC<{ isAdmin: boolean; sessionInfo: any }
                     {analyticsData.libraryHealth && <AnalyticsLibraryHealth libraryHealth={analyticsData.libraryHealth} />}
                     <AnalyticsChartsSection
                         analyticsData={analyticsData}
-                        analyticsSourceLabel={analyticsSourceLabel}
                         isAdmin={isAdmin}
                         onUserClick={setSelectedUser}
                         providerData={providerData}

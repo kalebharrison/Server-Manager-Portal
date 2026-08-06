@@ -24,13 +24,11 @@ const resolveUserAvatar = (thumb: string | null | undefined, width = 80, height 
 
 export const AnalyticsChartsSection = memo(({
     analyticsData,
-    analyticsSourceLabel,
     isAdmin,
     onUserClick,
     providerData,
 }: {
     analyticsData: AnalyticsData;
-    analyticsSourceLabel: string;
     isAdmin: boolean;
     onUserClick: (user: AnalyticsUser) => void;
     providerData: ProviderAnalytics | null;
@@ -52,7 +50,6 @@ export const AnalyticsChartsSection = memo(({
                         peakHours={analyticsData.peakHours || []}
                         tautulliData={providerData}
                         compare={analyticsData.compare}
-                        analyticsSourceLabel={analyticsSourceLabel}
                     />
                 </Suspense>
                 <div className="flex flex-col gap-6 lg:col-span-1">

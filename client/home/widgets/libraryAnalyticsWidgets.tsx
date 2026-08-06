@@ -109,7 +109,7 @@ export const renderLibraryAnalyticsWidget = (
                     <div className="glass-card p-3 md:p-4 shadow-xl flex flex-col flex-1 min-h-0">
                         <div className="flex items-center justify-between flex-shrink-0">
                             <h2 className="text-lg md:text-xl font-bold text-text flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-plex" /> Jellystat Activity
+                                <Activity className="w-5 h-5 text-plex" /> Server Activity
                             </h2>
                             <PeriodDropdown
                                 value={analyticsDays}
@@ -142,8 +142,8 @@ export const renderLibraryAnalyticsWidget = (
                         ) : (
                             <div className="flex flex-col items-center justify-center p-4 md:p-5 text-center flex-1 min-h-0 mt-2 md:mt-3">
                                 <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 text-xl shadow-inner">🍿</div>
-                                <h3 className="font-bold text-text mb-1">No Jellystat activity yet</h3>
-                                <p className="text-muted text-sm max-w-sm">Once Jellystat records playback activity, your server activity summary will appear right here.</p>
+                                <h3 className="font-bold text-text mb-1">No activity yet</h3>
+                                <p className="text-muted text-sm max-w-sm">Once playback is recorded, your server activity summary will appear right here.</p>
                             </div>
                         )}
                     </div>

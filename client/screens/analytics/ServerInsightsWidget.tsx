@@ -7,8 +7,7 @@ export const ServerInsightsWidget: React.FC<{
     peakHours: number[],
     tautulliData: any,
     compare: any,
-    analyticsSourceLabel: string
-}> = ({ peakHours, tautulliData, compare, analyticsSourceLabel }) => {
+}> = ({ peakHours, tautulliData, compare }) => {
     
     // Format chart data
     const chartData = peakHours ? peakHours.map((count, hour) => {
@@ -51,7 +50,7 @@ export const ServerInsightsWidget: React.FC<{
                         <Activity className="w-48 h-48 text-[#3b82f6]" />
                     </div>
                     <h3 className="text-sm font-bold text-muted uppercase tracking-wider mb-4 flex items-center gap-2 relative z-10">
-                        <Activity className="w-4 h-4 text-[#3b82f6]" /> {analyticsSourceLabel} Records & Period Stats
+                        <Activity className="w-4 h-4 text-[#3b82f6]" /> Records & Period Stats
                     </h3>
                     <div className="grid grid-cols-2 gap-3 relative z-10">
                         <div className="flex flex-col p-3 bg-black/20 rounded-lg border border-white/5 shadow-inner">
