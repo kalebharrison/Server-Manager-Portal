@@ -1,10 +1,11 @@
 import React from 'react';
 
+import { portalUrl } from '../shared/basePath';
 import type { ArrInstance } from '../shared/types';
 import { ArrInstancesPanel } from './ArrInstancesPanel';
 import { MediaStackAnalyticsSection } from './MediaStackAnalyticsSection';
-import { MediaStackDownloadClientsSection } from './MediaStackDownloadClientsSection';
 import { MediaStackRequestSection } from './MediaStackRequestSection';
+import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 type MediaStackSettingsTabProps = {
     initialSettings: any;
@@ -14,21 +15,11 @@ type MediaStackSettingsTabProps = {
     tautulliApiKey: string;
     jellystatUrl: string;
     jellystatApiKey: string;
-    qcQbitUrl: string;
-    qcQbitUsername: string;
-    qcQbitPassword: string;
-    qcSabUrl: string;
-    qcSabApiKey: string;
     onArrInstancesChange: (value: ArrInstance[]) => void;
     onTautulliUrlChange: (value: string) => void;
     onTautulliApiKeyChange: (value: string) => void;
     onJellystatUrlChange: (value: string) => void;
     onJellystatApiKeyChange: (value: string) => void;
-    onQcQbitUrlChange: (value: string) => void;
-    onQcQbitUsernameChange: (value: string) => void;
-    onQcQbitPasswordChange: (value: string) => void;
-    onQcSabUrlChange: (value: string) => void;
-    onQcSabApiKeyChange: (value: string) => void;
     addToast: (message: string, type?: 'success' | 'error') => void;
 };
 
@@ -40,24 +31,21 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     tautulliApiKey,
     jellystatUrl,
     jellystatApiKey,
-    qcQbitUrl,
-    qcQbitUsername,
-    qcQbitPassword,
-    qcSabUrl,
-    qcSabApiKey,
     onArrInstancesChange,
     onTautulliUrlChange,
     onTautulliApiKeyChange,
     onJellystatUrlChange,
     onJellystatApiKeyChange,
-    onQcQbitUrlChange,
-    onQcQbitUsernameChange,
-    onQcQbitPasswordChange,
-    onQcSabUrlChange,
-    onQcSabApiKeyChange,
     addToast,
 }) => (
     <div className="mb-8 animate-fade-in space-y-4">
+        <div>
+            <h3 className="text-xl font-bold text-plex mb-2 border-b border-border pb-2">Arr &amp; Analytics</h3>
+            <p className="text-sm text-muted mb-4">
+                Sonarr, Radarr, Lidarr instances and watch-stats apps (Tautulli or Jellystat).
+            </p>
+        </div>
+
         {(['sonarr', 'radarr', 'lidarr'] as const).map((type) => (
             <ArrInstancesPanel
                 key={type}
@@ -71,18 +59,15 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             />
         ))}
 
-        <MediaStackDownloadClientsSection
-            qcQbitUrl={qcQbitUrl}
-            qcQbitUsername={qcQbitUsername}
-            qcQbitPassword={qcQbitPassword}
-            qcSabUrl={qcSabUrl}
-            qcSabApiKey={qcSabApiKey}
-            onQcQbitUrlChange={onQcQbitUrlChange}
-            onQcQbitUsernameChange={onQcQbitUsernameChange}
-            onQcQbitPasswordChange={onQcQbitPasswordChange}
-            onQcSabUrlChange={onQcSabUrlChange}
-            onQcSabApiKeyChange={onQcSabApiKeyChange}
-        />
+        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-4">
+            <p className="text-sm text-muted">
+                qBittorrent and SABnzbd credentials live under{' '}
+                <a href={portalUrl('/settings#upgrader/downloads')} className="text-plex font-semibold hover:underline">
+                    Quality Control → Downloads
+                </a>
+                .
+            </p>
+        </div>
 
         <MediaStackAnalyticsSection
             mediaServerType={mediaServerType}
@@ -98,6 +83,12 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             addToast={addToast}
         />
 
-        <MediaStackRequestSection addToast={addToast} />
+        <SettingsCollapseSection
+            title="Maintenance"
+            subtitle="One-shot migration and normalization tools"
+            defaultOpen={false}
+        >
+            <MediaStackRequestSection addToast={addToast} />
+        </SettingsCollapseSection>
     </div>
 );

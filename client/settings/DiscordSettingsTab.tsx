@@ -3,6 +3,7 @@ import React from 'react';
 import { DiscordBotSection } from './DiscordBotSection';
 import { DiscordHubSection } from './DiscordHubSection';
 import { DiscordLlmSection } from './DiscordLlmSection';
+import { DiscordQcDigestsSection } from './DiscordQcDigestsSection';
 import { DiscordSearchSection } from './DiscordSearchSection';
 
 export type DiscordSettingsTabProps = {
@@ -26,6 +27,8 @@ export type DiscordSettingsTabProps = {
     discordBraveSearchApiKey: string;
     discordTavilyApiKey: string;
     discordMentionNl: boolean;
+    qcDiscordDigestEnabled: boolean;
+    integrityDiscordDigestEnabled: boolean;
     onDiscordEnabledChange: (value: boolean) => void;
     onDiscordInviteUrlChange: (value: string) => void;
     onDiscordChatChannelLabelChange: (value: string) => void;
@@ -46,6 +49,8 @@ export type DiscordSettingsTabProps = {
     onDiscordBraveSearchApiKeyChange: (value: string) => void;
     onDiscordTavilyApiKeyChange: (value: string) => void;
     onDiscordMentionNlChange: (value: boolean) => void;
+    onQcDiscordDigestEnabledChange: (value: boolean) => void;
+    onIntegrityDiscordDigestEnabledChange: (value: boolean) => void;
 };
 
 export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => (
@@ -105,5 +110,14 @@ export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => 
             onDiscordBraveSearchApiKeyChange={props.onDiscordBraveSearchApiKeyChange}
             onDiscordTavilyApiKeyChange={props.onDiscordTavilyApiKeyChange}
         />
+        <div className="mt-4">
+            <DiscordQcDigestsSection
+                discordEnabled={props.discordEnabled}
+                qcDiscordDigestEnabled={props.qcDiscordDigestEnabled}
+                integrityDiscordDigestEnabled={props.integrityDiscordDigestEnabled}
+                onQcDiscordDigestEnabledChange={props.onQcDiscordDigestEnabledChange}
+                onIntegrityDiscordDigestEnabledChange={props.onIntegrityDiscordDigestEnabledChange}
+            />
+        </div>
     </div>
 );

@@ -75,7 +75,7 @@ export const buildSettingsTabPanelProps = ({
         branding: buildBrandingTabPanelProps({ values, onChange, addToast }),
         invites: buildInvitesTabPanelProps({ addToast }),
         tasks: buildTasksTabPanelProps({ admin }),
-        system: buildSystemTabPanelProps({ values, admin }),
+        system: buildSystemTabPanelProps({ values, onChange, admin }),
         logs: buildLogsTabPanelProps({ admin }),
     };
 };

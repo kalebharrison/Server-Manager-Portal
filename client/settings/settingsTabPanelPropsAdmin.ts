@@ -1,10 +1,12 @@
 import type { SettingsTabPanelProps } from './SettingsTabPanel';
 import type { SettingsFormValues } from './useSettingsFormState';
 import type { useSettingsAdminPanel } from './useSettingsAdminPanel';
+import type { SettingsTabPanelOnChange } from './settingsTabPanelPropsTypes';
 
 type AdminTabPanelPropsInput = {
     values: SettingsFormValues;
     admin: ReturnType<typeof useSettingsAdminPanel>;
+    onChange: SettingsTabPanelOnChange;
 };
 
 export const buildTasksTabPanelProps = ({
@@ -16,9 +18,11 @@ export const buildTasksTabPanelProps = ({
 
 export const buildSystemTabPanelProps = ({
     values,
+    onChange,
     admin,
 }: AdminTabPanelPropsInput): SettingsTabPanelProps['system'] => ({
     systemHealth: admin.systemHealth,
+    checkInterval: values.checkInterval,
     autoBackupEnabled: admin.autoBackupEnabled,
     autoBackupIntervalDays: admin.autoBackupIntervalDays,
     autoBackupRetentionCount: admin.autoBackupRetentionCount,
@@ -28,6 +32,7 @@ export const buildSystemTabPanelProps = ({
     diagnostics: admin.diagnostics,
     mediaServerType: values.mediaServerType,
     isLoadingDiagnostics: admin.isLoadingDiagnostics,
+    onCheckIntervalChange: onChange('checkInterval'),
     onAutoBackupEnabledChange: admin.setAutoBackupEnabled,
     onAutoBackupIntervalDaysChange: admin.setAutoBackupIntervalDays,
     onAutoBackupRetentionCountChange: admin.setAutoBackupRetentionCount,

@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Loader, ToastContainer, type ToastMessage } from '../shared/toast';
 import { SettingsNavigation } from './SettingsNavigation';
 import { SettingsTabPanel, type SettingsTabPanelProps } from './SettingsTabPanel';
-import type { SettingsTab, SettingsTabGroup, SettingsTabId } from './settingsTabs';
+import { getSettingsTabMeta, type SettingsTab, type SettingsTabGroup, type SettingsTabId } from './settingsTabs';
 
 const ACTION_ONLY_TABS = new Set<SettingsTabId>(['broadcast', 'invites', 'tasks', 'logs']);
 const SAVE_LABELS: Partial<Record<SettingsTabId, string>> = {
@@ -42,6 +42,7 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
 }) => {
     const panelTopRef = useRef<HTMLDivElement>(null);
     const skipInitialScrollRef = useRef(true);
+    const activeMeta = getSettingsTabMeta(activeTab);
 
     useEffect(() => {
         if (skipInitialScrollRef.current) {
@@ -82,6 +83,9 @@ export const SettingsPageLayout: React.FC<SettingsPageLayoutProps> = ({
                     />
 
                     <div className="flex-grow mb-4 min-w-0 w-full">
+                        {activeMeta?.blurb ? (
+                            <p className="text-sm text-muted mb-3 px-0.5">{activeMeta.blurb}</p>
+                        ) : null}
                         <div className="settings-panel">
                             <SettingsTabPanel {...panelProps} />
                         </div>

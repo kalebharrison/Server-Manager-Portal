@@ -55,9 +55,12 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
             <label htmlFor="portalAnnouncement">Announcement Banner</label>
             <textarea id="portalAnnouncement" className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all" value={announcement} onChange={(event) => onAnnouncementChange(event.target.value)} placeholder="Server maintenance scheduled for Friday..." rows={3} />
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mt-2">
-                <SettingHint>Saving settings publishes the banner. Use the button to also email all eligible members. Discord bot settings are under the Discord tab.</SettingHint>
+                <SettingHint>
+                    Saving settings publishes the banner on the portal. “Publish &amp; Email” also emails eligible members.
+                    For full email campaigns, use Notifications → Broadcast Email.
+                </SettingHint>
                 <button type="button" onClick={onPushAnnouncement} disabled={isPushingAnnouncement || !announcement.trim()} className="bg-plex hover:bg-plex-hover disabled:opacity-50 text-background font-bold py-2 px-4 rounded-lg transition-colors text-sm whitespace-nowrap">
-                    {isPushingAnnouncement ? 'Sending...' : 'Publish & Email Members'}
+                    {isPushingAnnouncement ? 'Sending...' : 'Publish banner & email members'}
                 </button>
             </div>
         </SettingsCollapseSection>

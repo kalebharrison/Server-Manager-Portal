@@ -57,8 +57,6 @@ export const buildCleanupTabPanelProps = ({
 }: Pick<EmailTabPanelPropsInput, 'values' | 'onChange'>): SettingsTabPanelProps['cleanup'] => ({
     inactiveCleanupEnabled: values.inactiveCleanupEnabled,
     inactiveCleanupDays: values.inactiveCleanupDays,
-    checkInterval: values.checkInterval,
     onInactiveCleanupEnabledChange: onChange('inactiveCleanupEnabled'),
     onInactiveCleanupDaysChange: onChange('inactiveCleanupDays'),
-    onCheckIntervalChange: onChange('checkInterval'),
 });

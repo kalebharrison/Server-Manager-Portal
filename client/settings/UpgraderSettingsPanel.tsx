@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { portalUrl } from '../shared/basePath';
+import { MediaStackDownloadClientsSection } from './MediaStackDownloadClientsSection';
+import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 type Prefs = {
     preferDolbyVisionHdr: boolean;
@@ -7,6 +9,33 @@ type Prefs = {
     preferRemux: boolean;
     preferSeasonPacks: boolean;
 };
+
+type UpgraderSubTab = 'overview' | 'hunt' | 'downloads' | 'integrity';
+
+const SUB_TABS: Array<{ id: UpgraderSubTab; label: string }> = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'hunt', label: 'Hunt' },
+    { id: 'downloads', label: 'Downloads' },
+    { id: 'integrity', label: 'Integrity' },
+];
+
+const isUpgraderSubTab = (value: string): value is UpgraderSubTab => (
+    SUB_TABS.some((tab) => tab.id === value)
+);
+
+const parseUpgraderSubTabFromHash = (rawHash: string): { subTab: UpgraderSubTab; scrollTarget?: string } => {
+    const raw = String(rawHash || '').replace(/^#/, '').trim();
+    if (raw === 'qbittorrent') return { subTab: 'downloads', scrollTarget: 'qbittorrent' };
+    if (raw === 'sabnzbd') return { subTab: 'downloads', scrollTarget: 'sabnzbd' };
+    if (raw === 'upgrader' || raw === 'upgrader/overview') return { subTab: 'overview' };
+    const sub = raw.startsWith('upgrader/') ? raw.slice('upgrader/'.length).split(/[/?]/)[0] : '';
+    if (sub && isUpgraderSubTab(sub)) return { subTab: sub };
+    return { subTab: 'overview' };
+};
+
+const upgraderSubTabHash = (subTab: UpgraderSubTab) => (
+    subTab === 'overview' ? '#upgrader' : `#upgrader/${subTab}`
+);
 
 type Props = {
     enabled: boolean;
@@ -48,6 +77,8 @@ type Props = {
     qcSnoozeDefaultHours: number;
     qcDiscordDigestEnabled: boolean;
     qcQbitUrl: string;
+    qcQbitUsername: string;
+    qcQbitPassword: string;
     qcSabUrl: string;
     qcSabApiKey: string;
     qcBlockedExtensions: string[];
@@ -90,6 +121,11 @@ type Props = {
     onQcSnoozeDefaultHoursChange: (value: number) => void;
     onQcDiscordDigestEnabledChange: (value: boolean) => void;
     onQcBlockedExtensionsChange: (value: string[]) => void;
+    onQcQbitUrlChange: (value: string) => void;
+    onQcQbitUsernameChange: (value: string) => void;
+    onQcQbitPasswordChange: (value: string) => void;
+    onQcSabUrlChange: (value: string) => void;
+    onQcSabApiKeyChange: (value: string) => void;
 };
 
 const parseExtensionsText = (value: string) => [
@@ -125,7 +161,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityBreakerMaxPercent,
     integrityPauseWhenSessions,
     integrityNightlyHour,
-    integrityDiscordDigestEnabled,
     integrityDecodeWindowSec,
     integrityDecodeTimeoutMs,
     integrityWebhookUsername,
@@ -139,8 +174,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcMaxStrikes,
     qcResearchThrottleHours,
     qcSnoozeDefaultHours,
-    qcDiscordDigestEnabled,
     qcQbitUrl,
+    qcQbitUsername,
+    qcQbitPassword,
     qcSabUrl,
     qcSabApiKey,
     qcBlockedExtensions,
@@ -167,7 +203,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityBreakerMaxPercentChange,
     onIntegrityPauseWhenSessionsChange,
     onIntegrityNightlyHourChange,
-    onIntegrityDiscordDigestEnabledChange,
     onIntegrityDecodeWindowSecChange,
     onIntegrityDecodeTimeoutMsChange,
     onIntegrityWebhookUsernameChange,
@@ -181,11 +216,56 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onQcMaxStrikesChange,
     onQcResearchThrottleHoursChange,
     onQcSnoozeDefaultHoursChange,
-    onQcDiscordDigestEnabledChange,
     onQcBlockedExtensionsChange,
+    onQcQbitUrlChange,
+    onQcQbitUsernameChange,
+    onQcQbitPasswordChange,
+    onQcSabUrlChange,
+    onQcSabApiKeyChange,
 }) => {
-    const qbitConfigured = !!String(qcQbitUrl || '').trim();
-    const sabConfigured = !!(String(qcSabUrl || '').trim() && String(qcSabApiKey || '').trim());
+    const [activeSubTab, setActiveSubTab] = useState<UpgraderSubTab>(() => (
+        parseUpgraderSubTabFromHash(window.location.hash).subTab
+    ));
+    const [scrollTarget, setScrollTarget] = useState<string | undefined>(() => (
+        parseUpgraderSubTabFromHash(window.location.hash).scrollTarget
+    ));
+
+    const syncFromHash = useCallback(() => {
+        const parsed = parseUpgraderSubTabFromHash(window.location.hash);
+        setActiveSubTab(parsed.subTab);
+        setScrollTarget(parsed.scrollTarget);
+    }, []);
+
+    useEffect(() => {
+        syncFromHash();
+        window.addEventListener('hashchange', syncFromHash);
+        return () => window.removeEventListener('hashchange', syncFromHash);
+    }, [syncFromHash]);
+
+    useEffect(() => {
+        if (!scrollTarget) return;
+        const frame = requestAnimationFrame(() => {
+            document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [scrollTarget, activeSubTab]);
+
+    const handleSubTabChange = (subTab: UpgraderSubTab) => {
+        setActiveSubTab(subTab);
+        setScrollTarget(undefined);
+        const hash = upgraderSubTabHash(subTab);
+        if (window.location.hash !== hash) {
+            window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}${hash}`);
+        }
+    };
+
+    const subTabButtonClass = (subTab: UpgraderSubTab) => (
+        `inline-flex items-center px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
+            activeSubTab === subTab
+                ? 'bg-plex text-background shadow-sm'
+                : 'text-muted hover:text-text hover:bg-white/5'
+        }`
+    );
 
     return (
         <div className="mb-8 animate-fade-in space-y-6">
@@ -196,583 +276,609 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                     (metaDL, stalled, slow download, failed import, orphans).
                 </p>
 
-                <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Enable Quality Control</h4>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Enable Quality Control</span>
-                            <span className="block text-xs text-muted mt-1">Shows the admin Quality Control page and enables its API.</span>
-                        </span>
-                        <input type="checkbox" className="h-4 w-4 accent-plex" checked={enabled} onChange={(event) => onEnabledChange(event.target.checked)} />
-                    </label>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Enable auto-hunt</span>
-                            <span className="block text-xs text-muted mt-1">Background hunt every ~20 minutes, plus manual dry-run on the Hunt tab.</span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled}
-                            checked={automationEnabled && enabled}
-                            onChange={(event) => onAutomationEnabledChange(event.target.checked)}
-                        />
-                    </label>
+                <div className="inline-flex flex-wrap gap-0.5 p-1 rounded-xl border border-border/60 bg-card/40 w-fit max-w-full">
+                    {SUB_TABS.map((tab) => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            className={subTabButtonClass(tab.id)}
+                            onClick={() => handleSubTabChange(tab.id)}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
 
-                <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-3">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download clients</h4>
-                    <p className="text-sm text-muted">
-                        Connection credentials live in{' '}
-                        <a href={portalUrl('/settings#mediastack')} className="text-plex font-semibold hover:underline">
-                            Apps &amp; Automation
-                        </a>
-                        .
-                    </p>
-                    <ul className="text-sm space-y-1">
-                        <li>
-                            <span className="font-semibold">qBittorrent:</span>{' '}
-                            <span className={qbitConfigured ? 'text-emerald-300' : 'text-amber-200'}>
-                                {qbitConfigured ? 'Configured' : 'Not configured'}
-                            </span>
-                        </li>
-                        <li>
-                            <span className="font-semibold">SABnzbd:</span>{' '}
-                            <span className={sabConfigured ? 'text-emerald-300' : 'text-amber-200'}>
-                                {sabConfigured ? 'Configured' : 'Not configured'}
-                            </span>
-                        </li>
-                    </ul>
-                    <label className="text-sm font-semibold block pt-2">
-                        Default blocked extensions
-                        <span className="block text-xs font-normal text-muted mt-1">
-                            Stored in config; Clients tab can also push live to qBit/SAB. Comma or newline separated.
-                        </span>
-                        <textarea
-                            className="mt-2 w-full min-h-[80px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
-                            disabled={!enabled}
-                            value={(qcBlockedExtensions || []).join('\n')}
-                            placeholder={'exe\nbat\nlnk'}
-                            onChange={(event) => onQcBlockedExtensionsChange(parseExtensionsText(event.target.value))}
-                        />
-                    </label>
-                </div>
-
-                <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
-                    <p className="text-xs text-muted">
-                        Removes doomed queue items from Sonarr/Radarr/Lidarr (blocklist + skip Arr auto-redownload),
-                        deletes them from qBit/SAB, then triggers <span className="text-text">one</span> re-search per title.
-                        Stalls are held when the downloader reports network down. Import failures only auto-clean for
-                        clear junk (sample, blocked extension, invalid media, encrypted archive, etc.) and for
-                        resolution downgrades (e.g. existing 2160p vs new 1080p “not an upgrade”).
-                        Blocked-extension payloads (e.g. single-file <span className="font-mono">.exe</span> torrents) are
-                        probed mid-download via qBit/SAB file lists and killed on the next cleanup cycle.
-                        Manual cleanup on the Downloads tab still works when automation is off.
-                    </p>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Enable cleanup automation</span>
-                            <span className="block text-xs text-muted mt-1">
-                                Run the cleanup pass on a timer. Leave off if you only want dry-run / manual live cleanup.
-                            </span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled}
-                            checked={qcCleanupAutomationEnabled && enabled}
-                            onChange={(event) => onQcCleanupAutomationEnabledChange(event.target.checked)}
-                        />
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <label className="text-sm font-semibold">Max strikes
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                Cleanup needs this many healthy observations of the same problem before a kill. Timers below are per strike.
-                            </span>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={qcMaxStrikes}
-                                disabled={!enabled}
-                                onChange={(event) => onQcMaxStrikesChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">MetaDL minutes / strike
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                qBit stuck in metaDL this long earns one strike (× max strikes ≈ total wait).
-                            </span>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={qcMetaDlMinutes}
-                                disabled={!enabled}
-                                onChange={(event) => onQcMetaDlMinutesChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Stalled hours / strike
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                Stalled this long earns one strike. Skipped while qBit/SAB network health looks down.
-                            </span>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={qcStalledHours}
-                                disabled={!enabled}
-                                onChange={(event) => onQcStalledHoursChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Slow download floor (KB/s)
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                qBit only. Below this speed (and past min age) earns a slow-download strike.
-                                Seeder counts do not hold — only measured download speed counts as actively pulling.
-                                Uses the same hours/strike gap as stalled.
-                            </span>
-                            <input
-                                type="number"
-                                min="0"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={qcSlowDownloadFloorKbps}
-                                disabled={!enabled}
-                                onChange={(event) => onQcSlowDownloadFloorKbpsChange(Math.max(0, Number(event.target.value) || 0))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Slow download min age (hours)
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                Don’t judge brand-new grabs until they’ve been downloading at least this long.
-                            </span>
-                            <input
-                                type="number"
-                                min="0"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={qcSlowDownloadMinAgeHours}
-                                disabled={!enabled}
-                                onChange={(event) => onQcSlowDownloadMinAgeHoursChange(Math.max(0, Number(event.target.value) || 0))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Completed not importing (min / strike)
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                Finished in the client but Arr still has not imported — per strike window.
-                                Large remuxes get extra time (2 min/GB, capped) and waits behind other imports are held.
-                            </span>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={qcCompletedNotImportingMinutes}
-                                disabled={!enabled}
-                                onChange={(event) => onQcCompletedNotImportingMinutesChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Orphan grace (min / strike)
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                No Arr link for this long earns one orphan strike (also protects fresh hunt grabs).
-                            </span>
-                            <input
-                                type="number"
-                                min="0"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={qcOrphanGraceMinutes}
-                                disabled={!enabled}
-                                onChange={(event) => onQcOrphanGraceMinutesChange(Math.max(0, Number(event.target.value) || 0))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Research throttle (hours)
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                Minimum wait before QC asks Arr to search the same movie/episode/album again after a cleanup.
-                            </span>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={qcResearchThrottleHours}
-                                disabled={!enabled}
-                                onChange={(event) => onQcResearchThrottleHoursChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Snooze default (hours)
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                How long “Snooze” on the Downloads tab hides a row from cleanup.
-                            </span>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={qcSnoozeDefaultHours}
-                                disabled={!enabled}
-                                onChange={(event) => onQcSnoozeDefaultHoursChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                    </div>
-                </div>
-
-                <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Discord</h4>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Cleanup digest</span>
-                            <span className="block text-xs text-muted mt-1">Post a Discord digest after automated cleanup runs.</span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled}
-                            checked={qcDiscordDigestEnabled && enabled}
-                            onChange={(event) => onQcDiscordDigestEnabledChange(event.target.checked)}
-                        />
-                    </label>
-                </div>
-
-                <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Hunt preferences</h4>
-                    <div className="space-y-3">
-                        <label className="flex items-center justify-between gap-4">
-                            <span className="text-sm font-semibold">
-                                Hunt missing aired episodes
-                                <span className="block text-xs text-muted mt-1 font-normal">
-                                    Search monitored TV episodes that have already aired but have no file.
+                {activeSubTab === 'overview' && (
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Enable Quality Control</h4>
+                            <label className="flex items-center justify-between gap-4">
+                                <span>
+                                    <span className="block font-semibold">Enable Quality Control</span>
+                                    <span className="block text-xs text-muted mt-1">Shows the admin Quality Control page and enables its API.</span>
                                 </span>
-                            </span>
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 accent-plex"
-                                disabled={!enabled}
-                                checked={huntMissingEpisodes && enabled}
-                                onChange={(event) => onHuntMissingEpisodesChange(event.target.checked)}
-                            />
-                        </label>
-                        <label className="flex items-center justify-between gap-4">
-                            <span className="text-sm font-semibold">
-                                Hunt digitally available movies
-                                <span className="block text-xs text-muted mt-1 font-normal">
-                                    Search monitored movies after digital/streaming release when no file is on disk.
+                                <input type="checkbox" className="h-4 w-4 accent-plex" checked={enabled} onChange={(event) => onEnabledChange(event.target.checked)} />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span>
+                                    <span className="block font-semibold">Enable auto-hunt</span>
+                                    <span className="block text-xs text-muted mt-1">Background hunt every ~20 minutes, plus manual dry-run on the Hunt tab.</span>
                                 </span>
-                            </span>
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 accent-plex"
-                                disabled={!enabled}
-                                checked={huntAvailableMovies && enabled}
-                                onChange={(event) => onHuntAvailableMoviesChange(event.target.checked)}
-                            />
-                        </label>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <label className="text-sm font-semibold">Minimum file size (GB)
-                            <input
-                                type="number"
-                                min="0"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={minSizeGB}
-                                disabled={!enabled}
-                                onChange={(event) => onMinSizeGBChange(Number(event.target.value) || 0)}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Maximum actions per hour
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={maxActionsPerHour}
-                                disabled={!enabled}
-                                onChange={(event) => onMaxActionsPerHourChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Max downloads per library
-                            <span className="block text-xs text-muted mt-1 font-normal">
-                                In-flight Arr downloads from hunts (default 5).
-                            </span>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={maxDownloadsPerLibrary}
-                                disabled={!enabled}
-                                onChange={(event) => onMaxDownloadsPerLibraryChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Minimum score delta
-                            <input
-                                type="number"
-                                min="0"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={minScoreDelta}
-                                disabled={!enabled}
-                                onChange={(event) => onMinScoreDeltaChange(Math.max(0, Number(event.target.value) || 0))}
-                            />
-                        </label>
-                    </div>
-                    <div className="pt-2 border-t border-border/40 space-y-3">
-                        <p className="text-xs font-bold uppercase tracking-wide text-muted">Portal preference boosts</p>
-                        {([
-                            ['preferDolbyVisionHdr', 'Prefer Dolby Vision + HDR'],
-                            ['preferAtmos', 'Prefer Atmos / TrueHD'],
-                            ['preferRemux', 'Prefer Remux'],
-                            ['preferSeasonPacks', 'Prefer season packs (TV, never downgrade res)'],
-                        ] as const).map(([key, label]) => (
-                            <label key={key} className="flex items-center justify-between gap-4">
-                                <span className="text-sm font-semibold">{label}</span>
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 accent-plex"
                                     disabled={!enabled}
-                                    checked={!!preferences[key]}
-                                    onChange={(event) => onPreferencesChange({ ...preferences, [key]: event.target.checked })}
+                                    checked={automationEnabled && enabled}
+                                    onChange={(event) => onAutomationEnabledChange(event.target.checked)}
                                 />
                             </label>
-                        ))}
-                    </div>
-                </div>
+                        </div>
 
-                <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h4>
-                    <p className="text-xs text-muted">
-                        Validates Arr-known media with a playback check plus a quick fingerprint (and optional full-file hash).
-                        Skips files currently playing on Plex. Requires media mounted read-only and Arr→container path maps.
-                        For on-import baselining, Arr must POST to the webhook URLs below with this Basic Auth
-                        (see docs/integrity-webhooks.md).
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label className="text-sm font-semibold">
-                            Webhook username
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                Arr → Connect → Webhook. Paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
-                                <code className="text-[11px]">/triggers/radarr</code>,{' '}
-                                <code className="text-[11px]">/triggers/lidarr</code>. Prefer the portal Docker hostname
-                                (e.g. <code className="text-[11px]">http://server-manager-portal-beta:2121/triggers/sonarr</code>).
-                            </span>
-                            <input
-                                type="text"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityWebhookUsername}
-                                disabled={!enabled}
-                                autoComplete="off"
-                                onChange={(event) => onIntegrityWebhookUsernameChange(event.target.value)}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">
-                            Webhook password
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                Required for Arr notifications. Leave blank when saving to keep the existing password.
-                            </span>
-                            <input
-                                type="password"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityWebhookPassword}
-                                disabled={!enabled}
-                                autoComplete="new-password"
-                                placeholder="••••••••"
-                                onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
-                            />
-                        </label>
+                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-3">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Quick links</h4>
+                            <ul className="text-sm space-y-2">
+                                <li>
+                                    <a href={portalUrl('/upgrader')} className="text-plex font-semibold hover:underline">
+                                        Quality Control dashboard
+                                    </a>
+                                    <span className="text-muted"> — hunt preview, download health, integrity scans</span>
+                                </li>
+                                <li>
+                                    <a href={portalUrl('/settings#mediastack')} className="text-plex font-semibold hover:underline">
+                                        Arr &amp; Analytics settings
+                                    </a>
+                                    <span className="text-muted"> — Sonarr, Radarr, Lidarr instances</span>
+                                </li>
+                                <li>
+                                    <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
+                                        Discord digests
+                                    </a>
+                                    <span className="text-muted"> — cleanup and integrity notification toggles</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Enable integrity scans</span>
-                            <span className="block text-xs text-muted mt-1">Unlocks the Integrity tab and API.</span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled}
-                            checked={integrityEnabled && enabled}
-                            onChange={(event) => onIntegrityEnabledChange(event.target.checked)}
-                        />
-                    </label>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Enable integrity automation</span>
-                            <span className="block text-xs text-muted mt-1">
-                                Background scan can delete bad files and trigger Arr re-search. Default off — use dry-run first.
-                            </span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled || !integrityEnabled}
-                            checked={integrityAutomationEnabled && integrityEnabled && enabled}
-                            onChange={(event) => onIntegrityAutomationEnabledChange(event.target.checked)}
-                        />
-                    </label>
-                    <label className="flex items-center justify-between gap-4">
-                        <span className="text-sm font-semibold">Require audio stream</span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled || !integrityEnabled}
-                            checked={integrityRequireAudio && integrityEnabled && enabled}
-                            onChange={(event) => onIntegrityRequireAudioChange(event.target.checked)}
-                        />
-                    </label>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Include music</span>
-                            <span className="block text-xs text-muted mt-1">Scan Lidarr/audio library files.</span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled || !integrityEnabled}
-                            checked={integrityIncludeMusic && integrityEnabled && enabled}
-                            onChange={(event) => onIntegrityIncludeMusicChange(event.target.checked)}
-                        />
-                    </label>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Enable full-file hash</span>
-                            <span className="block text-xs text-muted mt-1">Optional full-file hash mode (slower).</span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled || !integrityEnabled}
-                            checked={integrityXxhashEnabled && integrityEnabled && enabled}
-                            onChange={(event) => onIntegrityXxhashEnabledChange(event.target.checked)}
-                        />
-                    </label>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Discord integrity digest</span>
-                            <span className="block text-xs text-muted mt-1">Post a summary of integrity findings to Discord.</span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled || !integrityEnabled}
-                            checked={integrityDiscordDigestEnabled && integrityEnabled && enabled}
-                            onChange={(event) => onIntegrityDiscordDigestEnabledChange(event.target.checked)}
-                        />
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <label className="text-sm font-semibold">Max files per cycle
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityMaxPerCycle}
-                                disabled={!enabled || !integrityEnabled}
-                                onChange={(event) => onIntegrityMaxPerCycleChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Fingerprint / full-hash concurrency
-                            <span className="block text-xs font-normal text-muted mt-0.5">Workers for quick fingerprint and full-file hash</span>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityConcurrency}
-                                disabled={!enabled || !integrityEnabled}
-                                onChange={(event) => onIntegrityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Playback-check concurrency
-                            <span className="block text-xs font-normal text-muted mt-0.5">Decode workers (keep low)</span>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityPlayabilityConcurrency}
-                                disabled={!enabled || !integrityEnabled}
-                                onChange={(event) => onIntegrityPlayabilityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Nightly hour (0–23)
-                            <input
-                                type="number"
-                                min="0"
-                                max="23"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityNightlyHour}
-                                disabled={!enabled || !integrityEnabled}
-                                onChange={(event) => onIntegrityNightlyHourChange(Math.max(0, Math.min(23, Number(event.target.value) || 0)))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Decode window (sec)
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityDecodeWindowSec}
-                                disabled={!enabled || !integrityEnabled}
-                                onChange={(event) => onIntegrityDecodeWindowSecChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Decode timeout (ms)
-                            <input
-                                type="number"
-                                min="1000"
-                                step="1000"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityDecodeTimeoutMs}
-                                disabled={!enabled || !integrityEnabled}
-                                onChange={(event) => onIntegrityDecodeTimeoutMsChange(Math.max(1000, Number(event.target.value) || 1000))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Pause when sessions ≥
-                            <span className="block text-xs font-normal text-muted mt-0.5">0 = never pause for Plex busy</span>
-                            <input
-                                type="number"
-                                min="0"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityPauseWhenSessions}
-                                disabled={!enabled || !integrityEnabled}
-                                onChange={(event) => onIntegrityPauseWhenSessionsChange(Math.max(0, Number(event.target.value) || 0))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Breaker max findings
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityBreakerMaxFindings}
-                                disabled={!enabled || !integrityEnabled}
-                                onChange={(event) => onIntegrityBreakerMaxFindingsChange(Math.max(1, Number(event.target.value) || 1))}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold">Breaker max %
-                            <input
-                                type="number"
-                                min="0.1"
-                                step="0.1"
-                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                value={integrityBreakerMaxPercent}
-                                disabled={!enabled || !integrityEnabled}
-                                onChange={(event) => onIntegrityBreakerMaxPercentChange(Math.max(0.1, Number(event.target.value) || 0.1))}
-                            />
-                        </label>
+                )}
+
+                {activeSubTab === 'hunt' && (
+                    <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                        <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Hunt preferences</h4>
+                        <div className="space-y-3">
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="text-sm font-semibold">
+                                    Hunt missing aired episodes
+                                    <span className="block text-xs text-muted mt-1 font-normal">
+                                        Search monitored TV episodes that have already aired but have no file.
+                                    </span>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled}
+                                    checked={huntMissingEpisodes && enabled}
+                                    onChange={(event) => onHuntMissingEpisodesChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="text-sm font-semibold">
+                                    Hunt digitally available movies
+                                    <span className="block text-xs text-muted mt-1 font-normal">
+                                        Search monitored movies after digital/streaming release when no file is on disk.
+                                    </span>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled}
+                                    checked={huntAvailableMovies && enabled}
+                                    onChange={(event) => onHuntAvailableMoviesChange(event.target.checked)}
+                                />
+                            </label>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <label className="text-sm font-semibold">Minimum file size (GB)
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={minSizeGB}
+                                    disabled={!enabled}
+                                    onChange={(event) => onMinSizeGBChange(Number(event.target.value) || 0)}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">Maximum actions per hour
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={maxActionsPerHour}
+                                    disabled={!enabled}
+                                    onChange={(event) => onMaxActionsPerHourChange(Math.max(1, Number(event.target.value) || 1))}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">Max downloads per library
+                                <span className="block text-xs text-muted mt-1 font-normal">
+                                    In-flight Arr downloads from hunts (default 5).
+                                </span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={maxDownloadsPerLibrary}
+                                    disabled={!enabled}
+                                    onChange={(event) => onMaxDownloadsPerLibraryChange(Math.max(1, Number(event.target.value) || 1))}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">Minimum score delta
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={minScoreDelta}
+                                    disabled={!enabled}
+                                    onChange={(event) => onMinScoreDeltaChange(Math.max(0, Number(event.target.value) || 0))}
+                                />
+                            </label>
+                        </div>
+                        <div className="pt-2 border-t border-border/40 space-y-3">
+                            <p className="text-xs font-bold uppercase tracking-wide text-muted">Portal preference boosts</p>
+                            {([
+                                ['preferDolbyVisionHdr', 'Prefer Dolby Vision + HDR'],
+                                ['preferAtmos', 'Prefer Atmos / TrueHD'],
+                                ['preferRemux', 'Prefer Remux'],
+                                ['preferSeasonPacks', 'Prefer season packs (TV, never downgrade res)'],
+                            ] as const).map(([key, label]) => (
+                                <label key={key} className="flex items-center justify-between gap-4">
+                                    <span className="text-sm font-semibold">{label}</span>
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 accent-plex"
+                                        disabled={!enabled}
+                                        checked={!!preferences[key]}
+                                        onChange={(event) => onPreferencesChange({ ...preferences, [key]: event.target.checked })}
+                                    />
+                                </label>
+                            ))}
+                        </div>
                     </div>
-                    <label className="text-sm font-semibold block">
-                        Path maps (Arr path → container path)
-                        <span className="block text-xs font-normal text-muted mt-1">
-                            One map per line as <code className="text-text">/arr/movies=/media/movies</code>
-                        </span>
-                        <textarea
-                            className="mt-2 w-full min-h-[90px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
-                            disabled={!enabled || !integrityEnabled}
-                            value={(integrityPathMaps || []).map((entry) => `${entry.from}=${entry.to}`).join('\n')}
-                            placeholder={'/movies=/media/movies\n/tv=/media/tv'}
-                            onChange={(event) => {
-                                const maps = event.target.value
-                                    .split('\n')
-                                    .map((line) => line.trim())
-                                    .filter(Boolean)
-                                    .map((line) => {
-                                        const splitAt = line.includes('=') ? line.indexOf('=') : line.indexOf('→');
-                                        if (splitAt < 0) return null;
-                                        const from = line.slice(0, splitAt).trim();
-                                        const to = line.slice(splitAt + 1).trim();
-                                        if (!from || !to) return null;
-                                        return { from, to };
-                                    })
-                                    .filter(Boolean) as Array<{ from: string; to: string }>;
-                                onIntegrityPathMapsChange(maps);
-                            }}
+                )}
+
+                {activeSubTab === 'downloads' && (
+                    <div className="space-y-4">
+                        <MediaStackDownloadClientsSection
+                            qcQbitUrl={qcQbitUrl}
+                            qcQbitUsername={qcQbitUsername}
+                            qcQbitPassword={qcQbitPassword}
+                            qcSabUrl={qcSabUrl}
+                            qcSabApiKey={qcSabApiKey}
+                            onQcQbitUrlChange={onQcQbitUrlChange}
+                            onQcQbitUsernameChange={onQcQbitUsernameChange}
+                            onQcQbitPasswordChange={onQcQbitPasswordChange}
+                            onQcSabUrlChange={onQcSabUrlChange}
+                            onQcSabApiKeyChange={onQcSabApiKeyChange}
                         />
-                    </label>
-                </div>
+
+                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-3">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Blocked extensions</h4>
+                            <label className="text-sm font-semibold block">
+                                Default blocked extensions
+                                <span className="block text-xs font-normal text-muted mt-1">
+                                    Stored in config; Clients tab can also push live to qBit/SAB. Comma or newline separated.
+                                </span>
+                                <textarea
+                                    className="mt-2 w-full min-h-[80px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
+                                    disabled={!enabled}
+                                    value={(qcBlockedExtensions || []).join('\n')}
+                                    placeholder={'exe\nbat\nlnk'}
+                                    onChange={(event) => onQcBlockedExtensionsChange(parseExtensionsText(event.target.value))}
+                                />
+                            </label>
+                        </div>
+
+                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
+                            <p className="text-xs text-muted">
+                                Removes doomed queue items from Sonarr/Radarr/Lidarr (blocklist + skip Arr auto-redownload),
+                                deletes them from qBit/SAB, then triggers <span className="text-text">one</span> re-search per title.
+                                Stalls are held when the downloader reports network down. Import failures only auto-clean for
+                                clear junk (sample, blocked extension, invalid media, encrypted archive, etc.) and for
+                                resolution downgrades (e.g. existing 2160p vs new 1080p “not an upgrade”).
+                                Blocked-extension payloads (e.g. single-file <span className="font-mono">.exe</span> torrents) are
+                                probed mid-download via qBit/SAB file lists and killed on the next cleanup cycle.
+                                Manual cleanup on the Downloads tab still works when automation is off.
+                            </p>
+                            <label className="flex items-center justify-between gap-4">
+                                <span>
+                                    <span className="block font-semibold">Enable cleanup automation</span>
+                                    <span className="block text-xs text-muted mt-1">
+                                        Run the cleanup pass on a timer. Leave off if you only want dry-run / manual live cleanup.
+                                    </span>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled}
+                                    checked={qcCleanupAutomationEnabled && enabled}
+                                    onChange={(event) => onQcCleanupAutomationEnabledChange(event.target.checked)}
+                                />
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <label className="text-sm font-semibold">Max strikes
+                                    <span className="block text-xs font-normal text-muted mt-1">
+                                        Cleanup needs this many healthy observations of the same problem before a kill. Timers below are per strike.
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={qcMaxStrikes}
+                                        disabled={!enabled}
+                                        onChange={(event) => onQcMaxStrikesChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">MetaDL minutes / strike
+                                    <span className="block text-xs font-normal text-muted mt-1">
+                                        qBit stuck in metaDL this long earns one strike (× max strikes ≈ total wait).
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={qcMetaDlMinutes}
+                                        disabled={!enabled}
+                                        onChange={(event) => onQcMetaDlMinutesChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Stalled hours / strike
+                                    <span className="block text-xs font-normal text-muted mt-1">
+                                        Stalled this long earns one strike. Skipped while qBit/SAB network health looks down.
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={qcStalledHours}
+                                        disabled={!enabled}
+                                        onChange={(event) => onQcStalledHoursChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Slow download floor (KB/s)
+                                    <span className="block text-xs font-normal text-muted mt-1">
+                                        qBit only. Below this speed (and past min age) earns a slow-download strike.
+                                        Seeder counts do not hold — only measured download speed counts as actively pulling.
+                                        Uses the same hours/strike gap as stalled.
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={qcSlowDownloadFloorKbps}
+                                        disabled={!enabled}
+                                        onChange={(event) => onQcSlowDownloadFloorKbpsChange(Math.max(0, Number(event.target.value) || 0))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Slow download min age (hours)
+                                    <span className="block text-xs font-normal text-muted mt-1">
+                                        Don’t judge brand-new grabs until they’ve been downloading at least this long.
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={qcSlowDownloadMinAgeHours}
+                                        disabled={!enabled}
+                                        onChange={(event) => onQcSlowDownloadMinAgeHoursChange(Math.max(0, Number(event.target.value) || 0))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Completed not importing (min / strike)
+                                    <span className="block text-xs font-normal text-muted mt-1">
+                                        Finished in the client but Arr still has not imported — per strike window.
+                                        Large remuxes get extra time (2 min/GB, capped) and waits behind other imports are held.
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={qcCompletedNotImportingMinutes}
+                                        disabled={!enabled}
+                                        onChange={(event) => onQcCompletedNotImportingMinutesChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Orphan grace (min / strike)
+                                    <span className="block text-xs font-normal text-muted mt-1">
+                                        No Arr link for this long earns one orphan strike (also protects fresh hunt grabs).
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={qcOrphanGraceMinutes}
+                                        disabled={!enabled}
+                                        onChange={(event) => onQcOrphanGraceMinutesChange(Math.max(0, Number(event.target.value) || 0))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Research throttle (hours)
+                                    <span className="block text-xs font-normal text-muted mt-1">
+                                        Minimum wait before QC asks Arr to search the same movie/episode/album again after a cleanup.
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={qcResearchThrottleHours}
+                                        disabled={!enabled}
+                                        onChange={(event) => onQcResearchThrottleHoursChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Snooze default (hours)
+                                    <span className="block text-xs font-normal text-muted mt-1">
+                                        How long “Snooze” on the Downloads tab hides a row from cleanup.
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={qcSnoozeDefaultHours}
+                                        disabled={!enabled}
+                                        onChange={(event) => onQcSnoozeDefaultHoursChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                            </div>
+                            <p className="text-xs text-muted pt-1">
+                                Cleanup digests are configured in{' '}
+                                <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
+                                    Settings → Discord
+                                </a>.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {activeSubTab === 'integrity' && (
+                    <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                        <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h4>
+                        <p className="text-xs text-muted">
+                            Validates Arr-known media with a playback check plus a quick fingerprint (and optional full-file hash).
+                            Skips files currently playing on Plex. Requires media mounted read-only and Arr→container path maps.
+                            For on-import baselining, Arr must POST to the webhook URLs below with this Basic Auth
+                            (see docs/integrity-webhooks.md).
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <label className="text-sm font-semibold">
+                                Webhook username
+                                <span className="block text-xs font-normal text-muted mt-1">
+                                    Arr → Connect → Webhook. Paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
+                                    <code className="text-[11px]">/triggers/radarr</code>,{' '}
+                                    <code className="text-[11px]">/triggers/lidarr</code>. Prefer the portal Docker hostname
+                                    (e.g. <code className="text-[11px]">http://server-manager-portal-beta:2121/triggers/sonarr</code>).
+                                </span>
+                                <input
+                                    type="text"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={integrityWebhookUsername}
+                                    disabled={!enabled}
+                                    autoComplete="off"
+                                    onChange={(event) => onIntegrityWebhookUsernameChange(event.target.value)}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">
+                                Webhook password
+                                <span className="block text-xs font-normal text-muted mt-1">
+                                    Required for Arr notifications. Leave blank when saving to keep the existing password.
+                                </span>
+                                <input
+                                    type="password"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={integrityWebhookPassword}
+                                    disabled={!enabled}
+                                    autoComplete="new-password"
+                                    placeholder="••••••••"
+                                    onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
+                                />
+                            </label>
+                        </div>
+                        <label className="flex items-center justify-between gap-4">
+                            <span>
+                                <span className="block font-semibold">Enable integrity scans</span>
+                                <span className="block text-xs text-muted mt-1">Unlocks the Integrity tab and API.</span>
+                            </span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-plex"
+                                disabled={!enabled}
+                                checked={integrityEnabled && enabled}
+                                onChange={(event) => onIntegrityEnabledChange(event.target.checked)}
+                            />
+                        </label>
+                        <label className="flex items-center justify-between gap-4">
+                            <span>
+                                <span className="block font-semibold">Enable integrity automation</span>
+                                <span className="block text-xs text-muted mt-1">
+                                    Background scan can delete bad files and trigger Arr re-search. Default off — use dry-run first.
+                                </span>
+                            </span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-plex"
+                                disabled={!enabled || !integrityEnabled}
+                                checked={integrityAutomationEnabled && integrityEnabled && enabled}
+                                onChange={(event) => onIntegrityAutomationEnabledChange(event.target.checked)}
+                            />
+                        </label>
+                        <label className="flex items-center justify-between gap-4">
+                            <span className="text-sm font-semibold">Require audio stream</span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-plex"
+                                disabled={!enabled || !integrityEnabled}
+                                checked={integrityRequireAudio && integrityEnabled && enabled}
+                                onChange={(event) => onIntegrityRequireAudioChange(event.target.checked)}
+                            />
+                        </label>
+                        <label className="flex items-center justify-between gap-4">
+                            <span>
+                                <span className="block font-semibold">Include music</span>
+                                <span className="block text-xs text-muted mt-1">Scan Lidarr/audio library files.</span>
+                            </span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-plex"
+                                disabled={!enabled || !integrityEnabled}
+                                checked={integrityIncludeMusic && integrityEnabled && enabled}
+                                onChange={(event) => onIntegrityIncludeMusicChange(event.target.checked)}
+                            />
+                        </label>
+                        <label className="flex items-center justify-between gap-4">
+                            <span>
+                                <span className="block font-semibold">Enable full-file hash</span>
+                                <span className="block text-xs text-muted mt-1">Optional full-file hash mode (slower).</span>
+                            </span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-plex"
+                                disabled={!enabled || !integrityEnabled}
+                                checked={integrityXxhashEnabled && integrityEnabled && enabled}
+                                onChange={(event) => onIntegrityXxhashEnabledChange(event.target.checked)}
+                            />
+                        </label>
+                        <p className="text-xs text-muted">
+                            Integrity digests are configured in{' '}
+                            <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
+                                Settings → Discord
+                            </a>.
+                        </p>
+                        <label className="text-sm font-semibold block">
+                            Path maps (Arr path → container path)
+                            <span className="block text-xs font-normal text-muted mt-1">
+                                One map per line as <code className="text-text">/arr/movies=/media/movies</code>
+                            </span>
+                            <textarea
+                                className="mt-2 w-full min-h-[90px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
+                                disabled={!enabled || !integrityEnabled}
+                                value={(integrityPathMaps || []).map((entry) => `${entry.from}=${entry.to}`).join('\n')}
+                                placeholder={'/movies=/media/movies\n/tv=/media/tv'}
+                                onChange={(event) => {
+                                    const maps = event.target.value
+                                        .split('\n')
+                                        .map((line) => line.trim())
+                                        .filter(Boolean)
+                                        .map((line) => {
+                                            const splitAt = line.includes('=') ? line.indexOf('=') : line.indexOf('→');
+                                            if (splitAt < 0) return null;
+                                            const from = line.slice(0, splitAt).trim();
+                                            const to = line.slice(splitAt + 1).trim();
+                                            if (!from || !to) return null;
+                                            return { from, to };
+                                        })
+                                        .filter(Boolean) as Array<{ from: string; to: string }>;
+                                    onIntegrityPathMapsChange(maps);
+                                }}
+                            />
+                        </label>
+
+                        <SettingsCollapseSection title="Advanced" defaultOpen={false}>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <label className="text-sm font-semibold">Max files per cycle
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityMaxPerCycle}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityMaxPerCycleChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Fingerprint / full-hash concurrency
+                                    <span className="block text-xs font-normal text-muted mt-0.5">Workers for quick fingerprint and full-file hash</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityConcurrency}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Playback-check concurrency
+                                    <span className="block text-xs font-normal text-muted mt-0.5">Decode workers (keep low)</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityPlayabilityConcurrency}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityPlayabilityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Nightly hour (0–23)
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="23"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityNightlyHour}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityNightlyHourChange(Math.max(0, Math.min(23, Number(event.target.value) || 0)))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Decode window (sec)
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityDecodeWindowSec}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityDecodeWindowSecChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Decode timeout (ms)
+                                    <input
+                                        type="number"
+                                        min="1000"
+                                        step="1000"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityDecodeTimeoutMs}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityDecodeTimeoutMsChange(Math.max(1000, Number(event.target.value) || 1000))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Pause when sessions ≥
+                                    <span className="block text-xs font-normal text-muted mt-0.5">0 = never pause for Plex busy</span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityPauseWhenSessions}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityPauseWhenSessionsChange(Math.max(0, Number(event.target.value) || 0))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Breaker max findings
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityBreakerMaxFindings}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityBreakerMaxFindingsChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Breaker max %
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityBreakerMaxPercent}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityBreakerMaxPercentChange(Math.max(0.1, Number(event.target.value) || 0.1))}
+                                    />
+                                </label>
+                            </div>
+                        </SettingsCollapseSection>
+                    </div>
+                )}
             </section>
         </div>
     );

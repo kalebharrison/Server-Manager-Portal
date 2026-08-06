@@ -14,7 +14,7 @@ const NAV_LABELS: Record<string, string> = {
     mediastack: 'Calendar',
     request: 'Request Content',
     preferences: 'Preferences',
-    upgrader: 'Quality Control (Admin Only)',
+    upgrader: 'Quality Control',
     settings: 'Settings (Admin Only)',
     logout: 'Logout',
 };

@@ -77,6 +77,8 @@ export const buildUpgraderTabPanelProps = ({
     qcSnoozeDefaultHours: values.qcSnoozeDefaultHours,
     qcDiscordDigestEnabled: values.qcDiscordDigestEnabled,
     qcQbitUrl: values.qcQbitUrl,
+    qcQbitUsername: values.qcQbitUsername,
+    qcQbitPassword: values.qcQbitPassword,
     qcSabUrl: values.qcSabUrl,
     qcSabApiKey: values.qcSabApiKey,
     qcBlockedExtensions: values.qcBlockedExtensions,
@@ -119,6 +121,11 @@ export const buildUpgraderTabPanelProps = ({
     onQcSnoozeDefaultHoursChange: onChange('qcSnoozeDefaultHours'),
     onQcDiscordDigestEnabledChange: onChange('qcDiscordDigestEnabled'),
     onQcBlockedExtensionsChange: onChange('qcBlockedExtensions'),
+    onQcQbitUrlChange: onChange('qcQbitUrl'),
+    onQcQbitUsernameChange: onChange('qcQbitUsername'),
+    onQcQbitPasswordChange: onChange('qcQbitPassword'),
+    onQcSabUrlChange: onChange('qcSabUrl'),
+    onQcSabApiKeyChange: onChange('qcSabApiKey'),
 });
 
 export const buildBroadcastTabPanelProps = ({
@@ -180,6 +187,8 @@ export const buildDiscordTabPanelProps = ({
     discordBraveSearchApiKey: values.discordBraveSearchApiKey,
     discordTavilyApiKey: values.discordTavilyApiKey,
     discordMentionNl: values.discordMentionNl,
+    qcDiscordDigestEnabled: values.qcDiscordDigestEnabled,
+    integrityDiscordDigestEnabled: values.qcIntegrityDiscordDigestEnabled,
     onDiscordEnabledChange: onChange('discordEnabled'),
     onDiscordInviteUrlChange: onChange('discordInviteUrl'),
     onDiscordChatChannelLabelChange: onChange('discordChatChannelLabel'),
@@ -200,6 +209,8 @@ export const buildDiscordTabPanelProps = ({
     onDiscordBraveSearchApiKeyChange: onChange('discordBraveSearchApiKey'),
     onDiscordTavilyApiKeyChange: onChange('discordTavilyApiKey'),
     onDiscordMentionNlChange: onChange('discordMentionNl'),
+    onQcDiscordDigestEnabledChange: onChange('qcDiscordDigestEnabled'),
+    onIntegrityDiscordDigestEnabledChange: onChange('qcIntegrityDiscordDigestEnabled'),
 });
 
 export const buildPublicAccessTabPanelProps = ({

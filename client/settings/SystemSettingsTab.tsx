@@ -1,10 +1,12 @@
 import React from 'react';
 import { BackupRestorePanel } from './BackupRestorePanel';
+import { SettingHint } from './SettingHint';
 import { SystemDiagnosticsPanel } from './SystemDiagnosticsPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
 
 type SystemSettingsTabProps = {
     systemHealth: any;
+    checkInterval: number;
     autoBackupEnabled: boolean;
     autoBackupIntervalDays: number;
     autoBackupRetentionCount: number;
@@ -14,6 +16,7 @@ type SystemSettingsTabProps = {
     diagnostics: any;
     mediaServerType: 'plex' | 'jellyfin';
     isLoadingDiagnostics: boolean;
+    onCheckIntervalChange: (minutes: number) => void;
     onAutoBackupEnabledChange: (value: boolean) => void;
     onAutoBackupIntervalDaysChange: (value: number) => void;
     onAutoBackupRetentionCountChange: (value: number) => void;
@@ -27,6 +30,7 @@ type SystemSettingsTabProps = {
 
 export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     systemHealth,
+    checkInterval,
     autoBackupEnabled,
     autoBackupIntervalDays,
     autoBackupRetentionCount,
@@ -36,6 +40,7 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     diagnostics,
     mediaServerType,
     isLoadingDiagnostics,
+    onCheckIntervalChange,
     onAutoBackupEnabledChange,
     onAutoBackupIntervalDaysChange,
     onAutoBackupRetentionCountChange,
@@ -49,6 +54,21 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     <div className="mb-8 animate-fade-in space-y-6">
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">System</h3>
         <SystemHealthPanel systemHealth={systemHealth} />
+
+        <section className="rounded-xl border border-border/60 bg-surface/20 p-4 space-y-2">
+            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Scheduler</h4>
+            <label htmlFor="checkInterval" className="font-semibold block">Access check interval (minutes)</label>
+            <input
+                className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex"
+                id="checkInterval"
+                type="number"
+                min="1"
+                value={checkInterval}
+                onChange={(event) => onCheckIntervalChange(Math.max(1, Number(event.target.value) || 1))}
+            />
+            <SettingHint>How often the portal checks account expiration and user-cleanup conditions.</SettingHint>
+        </section>
+
         <BackupRestorePanel
             autoBackupEnabled={autoBackupEnabled}
             autoBackupIntervalDays={autoBackupIntervalDays}

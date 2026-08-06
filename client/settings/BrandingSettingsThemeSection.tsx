@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { CustomSelect } from '../shared/ui';
+import { portalUrl } from '../shared/basePath';
 import { SettingHint } from './SettingHint';
 import { ToggleRow } from './BrandingSettingsTabShared';
 
@@ -70,7 +71,12 @@ export const BrandingSettingsThemeSection: React.FC<{
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
                     <h4 className="font-bold text-text">Enable TMDB Trending Slideshow</h4>
-                    <SettingHint>Replaces the static splash background with a fading slideshow of currently trending movies and shows from TMDB. Requires a TMDB API key in Integrations.</SettingHint>
+                    <SettingHint>
+                        Replaces the static splash background with a fading slideshow of currently trending movies and shows from TMDB (logged-in portal).
+                        Login-screen trending is under{' '}
+                        <a href={portalUrl('/settings#public-access')} className="text-plex font-semibold hover:underline">Access &amp; Privacy</a>.
+                        Requires a TMDB API key in Metadata.
+                    </SettingHint>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
                     <input
