@@ -14,6 +14,3 @@ export const DiscoverHideExistingToggle: React.FC<{
         </div>
     );
 };
-
-/** @deprecated Use DiscoverHideExistingToggle */
-export const DiscoverHideRequestedToggle = DiscoverHideExistingToggle;

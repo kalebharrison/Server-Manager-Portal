@@ -34,9 +34,3 @@ export function useHideExistingToggle() {
 
     return { hideExisting, setHideExisting };
 }
-
-/** @deprecated Use useHideExistingToggle */
-export function useHideRequestedToggle() {
-    const { hideExisting, setHideExisting } = useHideExistingToggle();
-    return { hideRequested: hideExisting, setHideRequested: setHideExisting };
-}
