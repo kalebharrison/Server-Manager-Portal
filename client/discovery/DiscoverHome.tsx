@@ -368,7 +368,6 @@ export const DiscoverHome: React.FC<{
                                 items={rows.plexWatchlist}
                                 formatItem={formatItem}
                                 onSelect={onSelect}
-                                navigate={navigate}
                                 pushToast={pushToast}
                                 onRefresh={loadData}
                                 variant="row"

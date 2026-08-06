@@ -41,6 +41,7 @@ More detail: **[docs/deployment.md](docs/deployment.md)** · **[docs/configurati
 - **Discover** — live activity, trending, community picks
 - **Requests** — portal-native TMDB Discover, request queue, and Arr approvals
 - **Calendar** — Sonarr/Radarr release calendar and download activity
+- **Quality Control** — library hunt/upgrader, download health (qBit/SAB), library integrity scans (admin)
 - **Admin** — users, invites/referrals, live streams, kill rules, status page, backups
 - **Auth** — Plex OAuth or Jellyfin login / Quick Connect
 
@@ -52,6 +53,8 @@ More detail: **[docs/deployment.md](docs/deployment.md)** · **[docs/configurati
 | [Configuration](docs/configuration.md) | Env vars + Settings UI map |
 | [Development](docs/development.md) | Local setup, scripts, tests |
 | [Architecture](docs/architecture.md) | How the app is wired |
+| [Quality Control](docs/quality-control.md) | Hunt, download health, integrity |
+| [Integrity webhooks](docs/integrity-webhooks.md) | Arr → portal on-import fingerprints |
 | [lib/ README](lib/README.md) | Backend domain folders |
 
 ## Local development
@@ -71,7 +74,8 @@ See **[docs/development.md](docs/development.md)**.
 .
 ├── server/                # Express entry (server/index.js)
 ├── client/                # React UI (main.tsx, screens, styles, index.html)
-├── lib/                   # Backend by domain (auth, users, plex, portal-request, …)
+├── lib/                   # Backend by domain (auth, users, plex, portal-request, upgrader, …)
+├── client/upgrader/       # Quality Control UI (hunt, downloads, integrity)
 ├── docker/                # Dockerfile + Compose
 ├── tests/                 # Mirrors lib domains
 ├── docs/                  # Deployment & contributor docs

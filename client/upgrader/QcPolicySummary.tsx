@@ -228,10 +228,6 @@ export const QcPolicySummary: React.FC<Props> = ({
                             Discord cleanup digest:{' '}
                             <span className="font-bold">{status?.discordDigestEnabled ? 'On' : 'Off'}</span>
                         </p>
-                        <p className="text-text">
-                            Prefer import Discord-only:{' '}
-                            <span className="font-bold">{status?.preferImportDiscordOnly === false ? 'Off' : 'On'}</span>
-                        </p>
                         <p className="text-muted pt-1">
                             Boosts:{' '}
                             {[

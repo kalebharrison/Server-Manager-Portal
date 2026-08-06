@@ -73,7 +73,6 @@ type SettingsSavePayloadInput = {
     publicStatusEnabled: boolean;
     defaultLibraryIds: string[];
     use24HourClock: boolean;
-    allowTemporaryAccess: boolean;
     showPosterQualityBadges: boolean;
     autoBackupEnabled: boolean;
     autoBackupIntervalDays: number;
@@ -121,7 +120,6 @@ type SettingsSavePayloadInput = {
     qcResearchThrottleHours: number;
     qcSnoozeDefaultHours: number;
     qcDiscordDigestEnabled: boolean;
-    qcPreferImportDiscordOnly: boolean;
     qcQbitUrl: string;
     qcQbitUsername: string;
     qcQbitPassword: string;

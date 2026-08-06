@@ -20,6 +20,10 @@ Open `http://localhost:2121` and complete the setup wizard.
 | `./config` | `/app/config` | Settings, users, caches, logs |
 | `./backup` | `/app/backup` | Rolling backup snapshots |
 
+### Image tools
+
+The Docker image includes `ffmpeg` (and `ffprobe`) for library integrity playback checks and fingerprints.
+
 ### Optional: Quality Control integrity (media mounts)
 
 Library integrity validates Arr-known files with `ffprobe` / `ffmpeg` inside the portal container. Mount media **read-only** and configure Arr→container path maps in Settings → Quality Control → Library integrity.
@@ -41,6 +45,10 @@ Example path maps (Settings textarea):
 ```
 
 Without these mounts/maps, Integrity stays available in the UI but scans report paths as not visible.
+
+### Download health networking
+
+Download health needs the portal to reach connected **Arr instances** and at least one of **qBittorrent** or **SABnzbd** (configured in Settings → Apps & Automation). Use container hostnames or LAN URLs that resolve from inside the portal container — same guidance as other integrations in [Docker networking tips](#docker-networking-tips).
 
 For on-import fingerprinting (so new downloads are baselined immediately), configure Arr webhook notifications as described in [Integrity import webhooks](./integrity-webhooks.md).
 

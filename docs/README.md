@@ -4,6 +4,7 @@
 |---|---|
 | [Deployment](./deployment.md) | Docker Compose / image run, volumes, reverse proxy |
 | [Configuration](./configuration.md) | Environment variables and Settings UI overview |
+| [Quality Control](./quality-control.md) | Library hunt, download health, integrity scans |
 | [Integrity import webhooks](./integrity-webhooks.md) | Arr → portal `/triggers/*` for on-import fingerprints |
 | [Development](./development.md) | Local setup, scripts, tests, project layout |
 | [Architecture](./architecture.md) | How the portal is structured |

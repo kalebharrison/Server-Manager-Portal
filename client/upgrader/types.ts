@@ -60,7 +60,6 @@ export type UpgraderStatus = {
     activeDownloadTotal?: number;
     clientsConfigured?: { qbit: boolean; sab: boolean };
     discordDigestEnabled?: boolean;
-    preferImportDiscordOnly?: boolean;
     profileMapConfigured: boolean;
     maxActionsPerHour: number;
     maxDownloadsPerLibrary?: number;

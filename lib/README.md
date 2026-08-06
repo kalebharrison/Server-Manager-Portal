@@ -19,6 +19,7 @@ Backend code is grouped by domain. `server/index.js` wires these modules togethe
 | `plex/` | Plex routes, stats, images, connections |
 | `portal-request/` | Portal-native Discover, requests, issues, quotas, watchlist |
 | `status/` | Public/private status page and stream monitor helpers |
+| `upgrader/` | Quality Control — library index/hunt, download health (qBit/SAB), integrity scans, Arr import webhooks |
 | `users/` | Membership, invites, profiles, notifications, admin user ops |
 
 Prefer keeping new files in the matching domain folder. Cross-domain imports use relative paths (`../cache/cache.js`, etc.).

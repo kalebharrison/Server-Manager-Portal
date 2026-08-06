@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
+    assertSafeMediaPath,
     collectIntegrityCandidates,
     createQcIntegrity,
     mapArrPath,
@@ -24,6 +25,85 @@ test('mapArrPath prefers longest Arr prefix', () => {
         { from: '/movies/4k', to: '/media/movies-4k' },
     ]);
     assert.equal(mapped, '/media/movies-4k/Film.mkv');
+});
+
+test('assertSafeMediaPath rejects parent traversal', async () => {
+    const maps = [{ from: '/movies', to: '/media/movies' }];
+    const identityRealpath = async (target) => target;
+    const result = await assertSafeMediaPath('../../../etc/passwd', maps, { realpathImpl: identityRealpath });
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'unsafe_path');
+    assert.match(result.detail, /parent traversal/i);
+});
+
+test('assertSafeMediaPath rejects null byte paths', async () => {
+    const maps = [{ from: '/movies', to: '/media/movies' }];
+    const identityRealpath = async (target) => target;
+    const result = await assertSafeMediaPath('/media/movies/evil.mkv\0/../../etc/passwd', maps, {
+        realpathImpl: identityRealpath,
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'unsafe_path');
+    assert.match(result.detail, /null byte/i);
+});
+
+test('assertSafeMediaPath allows normal mapped media path', async () => {
+    const maps = [{ from: '/movies', to: '/media/movies' }];
+    const identityRealpath = async (target) => target;
+    const result = await assertSafeMediaPath('/media/movies/Film.mkv', maps, { realpathImpl: identityRealpath });
+    assert.equal(result.ok, true);
+    assert.equal(result.path, '/media/movies/Film.mkv');
+});
+
+test('assertSafeMediaPath rejects paths outside configured map roots', async () => {
+    const maps = [{ from: '/movies', to: '/media/movies' }];
+    const identityRealpath = async (target) => target;
+    const result = await assertSafeMediaPath('/etc/passwd', maps, { realpathImpl: identityRealpath });
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'unsafe_path');
+});
+
+test('assertSafeMediaPath allows absolute paths when no maps configured', async () => {
+    const identityRealpath = async (target) => target;
+    const result = await assertSafeMediaPath('/movies/Film.mkv', [], { realpathImpl: identityRealpath });
+    assert.equal(result.ok, true);
+    assert.equal(result.path, '/movies/Film.mkv');
+});
+
+test('validateCandidate rejects unsafe mapped paths before stat', async () => {
+    const statCalls = [];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => ({}),
+        savePrefs: async () => {},
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        statImpl: async (localPath) => {
+            statCalls.push(localPath);
+            return { ok: true, size: 100, mtimeMs: 1 };
+        },
+        realpathImpl: async (target) => target,
+        execImpl: async () => ({ ok: true, code: 0, timedOut: false, stdout: '', stderr: '' }),
+    });
+
+    const result = await integrity.validateCandidate({
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/media/movies' }],
+    }, {
+        key: 'radarr:r1:1:file:7',
+        title: 'Evil',
+        arrType: 'radarr',
+        arrInstanceId: 'r1',
+        entityId: 1,
+        movieFileId: 7,
+        filePath: '/movies/../../etc/passwd',
+        mediaKind: 'video',
+    }, { mode: 'imohash' });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, 'unsafe_path');
+    assert.equal(statCalls.length, 0);
 });
 
 test('reconcileIntegrityFindings drops replaced Arr file ids and passed keys', () => {
@@ -754,4 +834,75 @@ test('clearBreaker resets tripped state', async () => {
     const cleared = await integrity.clearBreaker();
     assert.equal(cleared.tripped, false);
     assert.equal(prefs.integrityBreaker.tripped, false);
+});
+
+test('getStatus reuses prefs integrityCoverage without re-expanding candidates', async () => {
+    const generatedAt = '2026-08-05T12:00:00.000Z';
+    let prefs = {};
+    const saved = [];
+    let itemAccessCount = 0;
+    const movieItem = {
+        ratingKey: 'radarr:r1:1',
+        title: 'Movie',
+        hasFile: true,
+        mediaType: 'movie',
+        arrType: 'radarr',
+        arrInstanceId: 'r1',
+        entityId: 1,
+        movieFileId: 7,
+        filePath: '/movies/Movie.mkv',
+    };
+    const heavyItems = new Proxy([movieItem], {
+        get(target, prop, receiver) {
+            if (prop === 'length' || prop === Symbol.iterator) {
+                itemAccessCount += 1;
+            }
+            return Reflect.get(target, prop, receiver);
+        },
+    });
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            generatedAt,
+            items: heavyItems,
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => {
+            prefs = next;
+            saved.push(next);
+        },
+        appendAudit: async () => {},
+        loadCache: async () => ({
+            entries: {
+                'radarr:r1:1:file:7': {
+                    ok: true,
+                    playabilityAt: generatedAt,
+                    imohash: 'imo:abc',
+                    size: 100,
+                    mtimeMs: 1,
+                },
+            },
+        }),
+        saveCache: async () => {},
+    });
+
+    itemAccessCount = 0;
+    const first = await integrity.getStatus({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+    });
+    assert.ok(itemAccessCount > 0, 'first getStatus should expand index items');
+    assert.equal(first.coverage.movie.total, 1);
+    assert.equal(saved.length, 1);
+    assert.equal(prefs.integrityCoverageIndexAt, generatedAt);
+    assert.equal(prefs.integrityCoverageIncludeMusic, true);
+
+    itemAccessCount = 0;
+    const second = await integrity.getStatus({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+    }, { index: { generatedAt, items: heavyItems } });
+    assert.equal(itemAccessCount, 0, 'cached getStatus should not expand index items');
+    assert.deepEqual(second.coverage, first.coverage);
+    assert.equal(saved.length, 1, 'cached getStatus should not rewrite prefs');
 });

@@ -14,9 +14,9 @@ There is no separate API microservice. Integrations (Plex, Jellyfin, Arr, Tautul
 
 ## Domains
 
-Backend modules live under `lib/` by responsibility — auth, users, analytics, plex, portal-request, media-stack, status, comms, admin, http, cache, config, core. See [`lib/README.md`](../lib/README.md).
+Backend modules live under `lib/` by responsibility — auth, users, analytics, plex, portal-request, media-stack, status, comms, admin, http, cache, config, core, upgrader. See [`lib/README.md`](../lib/README.md).
 
-Frontend code lives under `client/` with feature folders (`settings`, `requests`, `setup`, `home`, `screens`, `shared`).
+Frontend code lives under `client/` with feature folders (`settings`, `requests`, `setup`, `home`, `screens`, `shared`, `upgrader`).
 
 ## Auth model
 
@@ -59,3 +59,14 @@ Managed through Settings → Background Tasks / System diagnostics:
 - Analytics / trending rebuilds
 - Plex library stats (Plex mode)
 - Auto rolling backup
+
+When Quality Control is enabled ([`lib/upgrader/`](../lib/upgrader/)), additional jobs start at portal boot:
+
+| Job | Interval | Requires |
+|---|---|---|
+| Library index rebuild | ~4 hours | QC enabled + ready Arr instances |
+| Auto-hunt | ~20 minutes | QC + auto-hunt enabled |
+| Download cleanup | ~5 minutes | QC + cleanup automation enabled; Arr + qBit/SAB reachable |
+| Integrity baseline backfill | on boot + nightly rechecks | QC + integrity enabled; media mounts + path maps for file access |
+
+See [Quality Control](./quality-control.md) for hunt, download health, and integrity behavior.

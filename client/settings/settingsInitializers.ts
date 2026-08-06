@@ -76,7 +76,6 @@ type SettingsHydrationSetters = {
     setDefaultLibraryIds: (value: string[]) => void;
     setUse24HourClock: (value: boolean) => void;
     setShowPosterQualityBadges: (value: boolean) => void;
-    setAllowTemporaryAccess: (value: boolean) => void;
     setAutoBackupEnabled: (value: boolean) => void;
     setAutoBackupIntervalDays: (value: number) => void;
     setAutoBackupRetentionCount: (value: number) => void;
@@ -124,7 +123,6 @@ type SettingsHydrationSetters = {
     setQcResearchThrottleHours: (value: number) => void;
     setQcSnoozeDefaultHours: (value: number) => void;
     setQcDiscordDigestEnabled: (value: boolean) => void;
-    setQcPreferImportDiscordOnly: (value: boolean) => void;
     setQcQbitUrl: (value: string) => void;
     setQcQbitUsername: (value: string) => void;
     setQcQbitPassword: (value: string) => void;
@@ -208,7 +206,6 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     if (initialSettings.defaultLibraryIds) setters.setDefaultLibraryIds(initialSettings.defaultLibraryIds);
     if (initialSettings.use24HourClock !== undefined) setters.setUse24HourClock(!!initialSettings.use24HourClock);
     if (initialSettings.showPosterQualityBadges !== undefined) setters.setShowPosterQualityBadges(initialSettings.showPosterQualityBadges !== false);
-    if (initialSettings.allowTemporaryAccess !== undefined) setters.setAllowTemporaryAccess(!!initialSettings.allowTemporaryAccess);
     if (initialSettings.autoBackupEnabled !== undefined) setters.setAutoBackupEnabled(!!initialSettings.autoBackupEnabled);
     if (initialSettings.autoBackupIntervalDays !== undefined) setters.setAutoBackupIntervalDays(Number(initialSettings.autoBackupIntervalDays) || 2);
     if (initialSettings.autoBackupRetentionCount !== undefined) setters.setAutoBackupRetentionCount(Number(initialSettings.autoBackupRetentionCount) || 10);
@@ -268,7 +265,6 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcResearchThrottleHours(Math.max(1, Number(initialSettings.qcResearchThrottleHours) || 24));
     setters.setQcSnoozeDefaultHours(Math.max(1, Number(initialSettings.qcSnoozeDefaultHours) || 24));
     setters.setQcDiscordDigestEnabled(!!initialSettings.qcDiscordDigestEnabled);
-    setters.setQcPreferImportDiscordOnly(initialSettings.qcPreferImportDiscordOnly !== false);
     setters.setQcQbitUrl(String(initialSettings.qcQbitUrl || ''));
     setters.setQcQbitUsername(String(initialSettings.qcQbitUsername || ''));
     setters.setQcQbitPassword(String(initialSettings.qcQbitPassword || ''));

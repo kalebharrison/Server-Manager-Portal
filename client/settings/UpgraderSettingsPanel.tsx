@@ -47,7 +47,6 @@ type Props = {
     qcResearchThrottleHours: number;
     qcSnoozeDefaultHours: number;
     qcDiscordDigestEnabled: boolean;
-    qcPreferImportDiscordOnly: boolean;
     qcQbitUrl: string;
     qcSabUrl: string;
     qcSabApiKey: string;
@@ -90,7 +89,6 @@ type Props = {
     onQcResearchThrottleHoursChange: (value: number) => void;
     onQcSnoozeDefaultHoursChange: (value: number) => void;
     onQcDiscordDigestEnabledChange: (value: boolean) => void;
-    onQcPreferImportDiscordOnlyChange: (value: boolean) => void;
     onQcBlockedExtensionsChange: (value: string[]) => void;
 };
 
@@ -142,7 +140,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcResearchThrottleHours,
     qcSnoozeDefaultHours,
     qcDiscordDigestEnabled,
-    qcPreferImportDiscordOnly,
     qcQbitUrl,
     qcSabUrl,
     qcSabApiKey,
@@ -185,7 +182,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onQcResearchThrottleHoursChange,
     onQcSnoozeDefaultHoursChange,
     onQcDiscordDigestEnabledChange,
-    onQcPreferImportDiscordOnlyChange,
     onQcBlockedExtensionsChange,
 }) => {
     const qbitConfigured = !!String(qcQbitUrl || '').trim();
@@ -415,21 +411,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
 
                 <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                     <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Discord</h4>
-                    <label className="flex items-center justify-between gap-4">
-                        <span>
-                            <span className="block font-semibold">Prefer import / available only</span>
-                            <span className="block text-xs text-muted mt-1">
-                                Prefer Notifiarr Import/Available over Grab/Failure so doomed downloads stay quiet.
-                            </span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-plex"
-                            disabled={!enabled}
-                            checked={qcPreferImportDiscordOnly && enabled}
-                            onChange={(event) => onQcPreferImportDiscordOnlyChange(event.target.checked)}
-                        />
-                    </label>
                     <label className="flex items-center justify-between gap-4">
                         <span>
                             <span className="block font-semibold">Cleanup digest</span>

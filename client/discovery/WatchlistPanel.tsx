@@ -17,7 +17,6 @@ type Props = {
     items: any[];
     formatItem: (item: any) => any;
     onSelect: (item: any) => void;
-    navigate?: (path: string) => void;
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     onRefresh?: () => void;
     variant?: 'row' | 'page';
@@ -30,7 +29,6 @@ export const WatchlistPanel: React.FC<Props> = ({
     items,
     formatItem,
     onSelect,
-    navigate,
     pushToast,
     onRefresh,
     variant = 'row',
@@ -164,15 +162,6 @@ export const WatchlistPanel: React.FC<Props> = ({
                 </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-                {variant === 'row' && navigate && (
-                    <button
-                        type="button"
-                        onClick={() => navigate('/discovery/watchlist')}
-                        className="text-xs font-bold text-plex hover:underline px-2 py-1"
-                    >
-                        View All
-                    </button>
-                )}
                 {requestableCount > 0 && canBulkRequest && (
                     <button
                         type="button"

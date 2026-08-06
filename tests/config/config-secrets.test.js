@@ -5,6 +5,26 @@ import { createConfigSecretProtector, SECRET_FIELDS } from '../../lib/config/con
 
 const KEY = 'test-config-encryption-key-0123456789abcdef';
 
+const QC_DISCORD_SECRET_FIELDS = [
+    'discordBotToken',
+    'discordWebhookUrl',
+    'qcQbitPassword',
+    'qcSabApiKey',
+    'qcIntegrityWebhookPassword',
+];
+
+test('QC and Discord secret fields encrypt and decrypt via protectConfig/unprotectConfig', () => {
+    const protector = createConfigSecretProtector(KEY);
+    const config = Object.fromEntries(QC_DISCORD_SECRET_FIELDS.map((field) => [field, `${field}-secret-value`]));
+
+    const protectedConfig = protector.protectConfig(config);
+    for (const field of QC_DISCORD_SECRET_FIELDS) {
+        assert.match(protectedConfig[field], /^smp:enc:v1:/);
+        assert.equal(protectedConfig[field].includes(config[field]), false);
+    }
+    assert.deepEqual(protector.unprotectConfig(protectedConfig), config);
+});
+
 test('configuration credentials are authenticated and encrypted at rest', () => {
     const protector = createConfigSecretProtector(KEY);
     const config = Object.fromEntries(SECRET_FIELDS.map((field) => [field, `${field}-secret-value`]));

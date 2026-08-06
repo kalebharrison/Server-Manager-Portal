@@ -74,7 +74,6 @@ export type SettingsFormValues = {
     announcement: string;
     use24HourClock: boolean;
     showPosterQualityBadges: boolean;
-    allowTemporaryAccess: boolean;
     navOrder: string[];
     navHiddenKeys: string[];
     upgraderEnabled: boolean;
@@ -120,7 +119,6 @@ export type SettingsFormValues = {
     qcResearchThrottleHours: number;
     qcSnoozeDefaultHours: number;
     qcDiscordDigestEnabled: boolean;
-    qcPreferImportDiscordOnly: boolean;
     qcQbitUrl: string;
     qcQbitUsername: string;
     qcQbitPassword: string;

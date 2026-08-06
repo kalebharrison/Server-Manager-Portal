@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ArrowUpCircle,
     RefreshCw,
@@ -17,15 +17,8 @@ import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
-import { UpgraderHistoryPanel } from './UpgraderHistoryPanel';
-import { UpgraderProfilesTab } from './UpgraderProfilesTab';
-import { QcCfRepairsPanel } from './QcCfRepairsPanel';
-import { QcClientsPanel } from './QcClientsPanel';
-import { QcDownloadsPanel } from './QcDownloadsPanel';
-import { QcIntegrityPanel } from './QcIntegrityPanel';
 import { QcOptimizeClientsButton } from './QcOptimizeClientsButton';
 import { QcPolicySummary } from './QcPolicySummary';
-import { QcRulesPanel } from './QcRulesPanel';
 import type {
     UpgraderAuditEntry,
     UpgraderHuntResponse,
@@ -39,6 +32,22 @@ import {
     type UpgraderProfilesUrlState,
     type UpgraderTab,
 } from './upgraderUrlState';
+
+const lazyPanel = (loader: () => Promise<{ default: React.ComponentType<any> }>) => (
+    lazy(loader) as React.LazyExoticComponent<React.ComponentType<any>>
+);
+
+const QcIntegrityPanel = lazyPanel(() => import('./QcIntegrityPanel').then((m) => ({ default: m.QcIntegrityPanel })));
+const QcDownloadsPanel = lazyPanel(() => import('./QcDownloadsPanel').then((m) => ({ default: m.QcDownloadsPanel })));
+const QcClientsPanel = lazyPanel(() => import('./QcClientsPanel').then((m) => ({ default: m.QcClientsPanel })));
+const QcRulesPanel = lazyPanel(() => import('./QcRulesPanel').then((m) => ({ default: m.QcRulesPanel })));
+const UpgraderProfilesTab = lazyPanel(() => import('./UpgraderProfilesTab').then((m) => ({ default: m.UpgraderProfilesTab })));
+const UpgraderHistoryPanel = lazyPanel(() => import('./UpgraderHistoryPanel').then((m) => ({ default: m.UpgraderHistoryPanel })));
+const QcCfRepairsPanel = lazyPanel(() => import('./QcCfRepairsPanel').then((m) => ({ default: m.QcCfRepairsPanel })));
+
+const TabPanelFallback: React.FC = () => (
+    <div className="min-h-[240px]" aria-hidden="true" />
+);
 
 type LibraryGroup<T> = { key: string; label: string; items: T[] };
 
@@ -469,7 +478,9 @@ export const UpgraderDashboard: React.FC = () => {
                                             </div>
                                         )}
 
-                                        <QcCfRepairsPanel onToast={addToast} />
+                                        <Suspense fallback={<TabPanelFallback />}>
+                                            <QcCfRepairsPanel onToast={addToast} />
+                                        </Suspense>
 
                                         <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
                                             <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Automation</h2>
@@ -624,10 +635,12 @@ export const UpgraderDashboard: React.FC = () => {
                                 )}
 
                                 {activeTab === 'integrity' && (
-                                    <QcIntegrityPanel
-                                        onToast={addToast}
-                                        integrityEnabled={!!status?.integrityEnabled}
-                                    />
+                                    <Suspense fallback={<TabPanelFallback />}>
+                                        <QcIntegrityPanel
+                                            onToast={addToast}
+                                            integrityEnabled={!!status?.integrityEnabled}
+                                        />
+                                    </Suspense>
                                 )}
 
                                 {activeTab === 'hunt' && (
@@ -884,33 +897,45 @@ export const UpgraderDashboard: React.FC = () => {
                                 )}
 
                                 {activeTab === 'downloads' && (
-                                    <QcDownloadsPanel
-                                        onToast={addToast}
-                                        snoozeDefaultHours={status?.qcThresholds?.snoozeDefaultHours ?? 24}
-                                    />
+                                    <Suspense fallback={<TabPanelFallback />}>
+                                        <QcDownloadsPanel
+                                            onToast={addToast}
+                                            snoozeDefaultHours={status?.qcThresholds?.snoozeDefaultHours ?? 24}
+                                        />
+                                    </Suspense>
                                 )}
 
                                 {activeTab === 'clients' && (
-                                    <QcClientsPanel onToast={addToast} />
+                                    <Suspense fallback={<TabPanelFallback />}>
+                                        <QcClientsPanel onToast={addToast} />
+                                    </Suspense>
                                 )}
 
                                 {activeTab === 'rules' && (
-                                    <QcRulesPanel
-                                        status={status}
-                                        onToast={addToast}
-                                        onChanged={() => loadData(true)}
-                                    />
+                                    <Suspense fallback={<TabPanelFallback />}>
+                                        <QcRulesPanel
+                                            status={status}
+                                            onToast={addToast}
+                                            onChanged={() => loadData(true)}
+                                        />
+                                    </Suspense>
                                 )}
 
-                                {(activeTab === 'activity' || activeTab === 'history') && <UpgraderHistoryPanel />}
+                                {(activeTab === 'activity' || activeTab === 'history') && (
+                                    <Suspense fallback={<TabPanelFallback />}>
+                                        <UpgraderHistoryPanel />
+                                    </Suspense>
+                                )}
 
                                 {activeTab === 'profiles' && (
-                                    <UpgraderProfilesTab
-                                        initialInstanceId={profilesUrl.instance}
-                                        initialFormatPage={profilesUrl.formatPage}
-                                        initialProfilePage={profilesUrl.profilePage}
-                                        onUrlStateChange={handleProfilesUrlChange}
-                                    />
+                                    <Suspense fallback={<TabPanelFallback />}>
+                                        <UpgraderProfilesTab
+                                            initialInstanceId={profilesUrl.instance}
+                                            initialFormatPage={profilesUrl.formatPage}
+                                            initialProfilePage={profilesUrl.profilePage}
+                                            onUrlStateChange={handleProfilesUrlChange}
+                                        />
+                                    </Suspense>
                                 )}
                             </>
                         )}
