@@ -54,8 +54,10 @@ export const PublicAccessSettingsTab: React.FC<{
     onHideStreamUsersChange,
 }) => (
     <div className="mb-8">
-        <h2 className="text-xl font-bold text-plex mb-2">Access & Privacy</h2>
-        <p className="text-sm text-muted mb-4">Control public visibility, registration, and what members can see about one another. Timed access still comes from admin invites (and optional member referrals).</p>
+        <h2 className="text-xl font-bold text-plex mb-4 inline-flex items-center flex-wrap gap-0">
+            Access & Privacy
+            <SettingHint>Control public visibility, registration, and what members can see about one another. Timed access still comes from admin invites (and optional member referrals).</SettingHint>
+        </h2>
 
         <SwitchRow title="Show library totals before login" checked={showLoginServerStats} onChange={onShowLoginServerStatsChange}>
             <SettingHint>Publicly expose movie, show, music, and 4K totals on login and invite pages. Disabled by default.</SettingHint>

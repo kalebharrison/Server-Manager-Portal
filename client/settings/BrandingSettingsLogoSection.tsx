@@ -38,8 +38,10 @@ export const BrandingSettingsLogoSection: React.FC<{
                                 <img src={JELLYFIN_BRAND_LOGO_URL} alt="" className="w-8 h-8 object-contain" />
                             </span>
                             <div className="min-w-0">
-                                <h4 className="font-bold text-text">Jellyfin branding</h4>
-                                <p className="text-xs text-muted mt-1">Use the Jellyfin server icon and splash background across the portal.</p>
+                                <h4 className="font-bold text-text inline-flex items-center flex-wrap gap-0">
+                                    Jellyfin branding
+                                    <SettingHint>Use the Jellyfin server icon and splash background across the portal.</SettingHint>
+                                </h4>
                             </div>
                         </div>
                         <button

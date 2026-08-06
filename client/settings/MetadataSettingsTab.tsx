@@ -78,7 +78,9 @@ export const MetadataSettingsTab: React.FC<MetadataSettingsTabProps> = ({
             title="Background Cache"
             subtitle="Library, calendar, discovery, and poster refresh"
         >
-            <p className="text-sm text-muted mb-4">Refreshes library, calendar, request discovery, and poster data before users open those pages.</p>
+            <div className="mb-4">
+                <SettingHint>Refreshes library, calendar, request discovery, and poster data before users open those pages.</SettingHint>
+            </div>
             <label htmlFor="cacheRefreshMinutes">Refresh Interval</label>
             <CustomSelect
                 value={String(cacheRefreshMinutes)}

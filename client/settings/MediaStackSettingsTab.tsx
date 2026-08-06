@@ -5,6 +5,7 @@ import type { ArrInstance } from '../shared/types';
 import { ArrInstancesPanel } from './ArrInstancesPanel';
 import { MediaStackAnalyticsSection } from './MediaStackAnalyticsSection';
 import { MediaStackRequestSection } from './MediaStackRequestSection';
+import { SettingHint } from './SettingHint';
 import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 type MediaStackSettingsTabProps = {
@@ -39,11 +40,11 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     addToast,
 }) => (
     <div className="mb-8 animate-fade-in space-y-4">
-        <div>
-            <h3 className="text-xl font-bold text-plex mb-2 border-b border-border pb-2">Arr &amp; Analytics</h3>
-            <p className="text-sm text-muted mb-4">
-                Sonarr, Radarr, Lidarr instances and watch-stats apps (Tautulli or Jellystat).
-            </p>
+        <div className="mb-4">
+            <h3 className="text-xl font-bold text-plex mb-2 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
+                Arr &amp; Analytics
+                <SettingHint>Sonarr, Radarr, Lidarr instances and watch-stats apps (Tautulli or Jellystat).</SettingHint>
+            </h3>
         </div>
 
         {(['sonarr', 'radarr', 'lidarr'] as const).map((type) => (
@@ -60,13 +61,13 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
         ))}
 
         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-4">
-            <p className="text-sm text-muted">
+            <SettingHint>
                 qBittorrent and SABnzbd credentials live under{' '}
                 <a href={portalUrl('/settings#upgrader/downloads')} className="text-plex font-semibold hover:underline">
                     Quality Control → Downloads
                 </a>
                 .
-            </p>
+            </SettingHint>
         </div>
 
         <MediaStackAnalyticsSection

@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { CustomSelect } from '../shared/ui';
+import { SettingHint } from './SettingHint';
 import { SettingsCollapseSection } from './SettingsCollapseSection';
 import { useStatusMonitorConfig } from './useStatusMonitorConfig';
 
@@ -29,7 +30,9 @@ export const StatusMonitorSettings: React.FC<{
                 title="Public Access"
                 subtitle={publicStatusEnabled ? 'Visitors can view the status page' : 'Signed-in members only'}
             >
-                <p className="text-sm text-muted mb-4">Allow visitors who are not signed in to view the status monitor page and status data.</p>
+                <div className="mb-4">
+                    <SettingHint>Allow visitors who are not signed in to view the status monitor page and status data.</SettingHint>
+                </div>
                 <button
                     type="button"
                     onClick={() => onPublicStatusEnabledChange(!publicStatusEnabled)}
@@ -46,7 +49,9 @@ export const StatusMonitorSettings: React.FC<{
                     <button type="button" onClick={addGroup} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-text rounded-md text-sm font-bold transition-colors">Add Group</button>
                 )}
             >
-                <p className="mb-4 text-sm text-muted">Group names become the section headings on the Status page.</p>
+                <div className="mb-4">
+                    <SettingHint>Group names become the section headings on the Status page.</SettingHint>
+                </div>
                 {localConfig.groups.map((group: any) => (
                     <div key={group.id} className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
                         <input
@@ -69,7 +74,9 @@ export const StatusMonitorSettings: React.FC<{
                     <button type="button" onClick={addService} className="px-4 py-2 bg-plex text-background hover:bg-plex-hover rounded-md text-sm font-bold transition-colors shadow-lg">Add Service</button>
                 )}
             >
-                <p className="mb-4 text-sm text-muted">These display fields control exactly what members see on the Status page. Connection URLs remain admin-only.</p>
+                <div className="mb-4">
+                    <SettingHint>These display fields control exactly what members see on the Status page. Connection URLs remain admin-only.</SettingHint>
+                </div>
                 <div className="flex flex-col gap-6">
                     {localConfig.services.map((service: any) => (
                         <div key={service.id} className="flex flex-col gap-3 pb-6 border-b border-border/40 last:border-b-0 last:pb-0">
@@ -132,7 +139,9 @@ export const StatusMonitorSettings: React.FC<{
                 title="Reset Statistics"
                 subtitle="Clear historical uptime and latency data"
             >
-                <p className="text-sm text-muted mb-4">Resetting the status statistics will clear all historical uptime and latency data for all monitored services. This action cannot be undone.</p>
+                <div className="mb-4">
+                    <SettingHint>Resetting the status statistics will clear all historical uptime and latency data for all monitored services. This action cannot be undone.</SettingHint>
+                </div>
                 <button
                     type="button"
                     onClick={handleResetStats}

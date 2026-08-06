@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 import { apiFetch } from '../shared/api';
 import { krMkCond, krMkRule } from './streamKillRulesConstants';
+import { SettingHint } from './SettingHint';
 import { StreamKillConditionRow } from './StreamKillConditionRow';
 
 export const StreamKillRulesPanel: React.FC<{ addToast: (m: string, t?: 'success' | 'error') => void; registerSaveHandler?: (handler: (() => Promise<boolean>) | null) => void }> = ({ addToast, registerSaveHandler }) => {
@@ -44,13 +45,16 @@ export const StreamKillRulesPanel: React.FC<{ addToast: (m: string, t?: 'success
 
     return (
         <div className="mb-8 animate-fade-in">
-            <h3 className="text-xl font-bold text-plex mb-1 border-b border-border pb-2 flex items-center gap-2">
+            <h3 className="text-xl font-bold text-plex mb-6 border-b border-border pb-2 flex items-center flex-wrap gap-0">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                 Stream Kill Rules
+                <SettingHint>
+                    Define rules that automatically terminate Plex streams. Rules are evaluated every{' '}
+                    <strong className="text-text">15 seconds</strong>. Combine conditions using{' '}
+                    <strong className="text-plex">AND</strong> (all must match) or{' '}
+                    <strong className="text-plex">OR</strong> (any must match). The kill message appears on the user&apos;s Plex client screen.
+                </SettingHint>
             </h3>
-            <p className="text-sm text-muted mb-6 leading-relaxed">
-                Define rules that automatically terminate Plex streams. Rules are evaluated every <strong className="text-text">15 seconds</strong>. Combine conditions using <strong className="text-plex">AND</strong> (all must match) or <strong className="text-plex">OR</strong> (any must match). The kill message appears on the user's Plex client screen.
-            </p>
             {rules.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-border rounded-xl text-center gap-3 mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted opacity-40"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>

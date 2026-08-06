@@ -3,6 +3,7 @@ import { Copy } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { getPublicOrigin } from '../shared/basePath';
 import { appConfirm } from '../shared/confirm';
+import { SettingHint } from './SettingHint';
 export const InvitesSettings: React.FC<{ addToast: (msg: string, type: 'success' | 'error') => void }> = ({ addToast }) => {
     const [invites, setInvites] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -80,8 +81,10 @@ export const InvitesSettings: React.FC<{ addToast: (msg: string, type: 'success'
 
     return (
         <div className="animate-fade-in mb-8">
-            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Automated Invite Links</h3>
-            <p className="text-sm text-muted mb-6">Generate unique links to automatically invite users to your Plex server.</p>
+            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
+                Automated Invite Links
+                <SettingHint>Generate unique links to automatically invite users to your Plex server.</SettingHint>
+            </h3>
 
             <div className="space-y-6 mb-8">
                 <h4 className="font-bold">Create New Invite Link</h4>
@@ -120,8 +123,10 @@ export const InvitesSettings: React.FC<{ addToast: (msg: string, type: 'success'
                 )}
 
                 <div className="border-t border-border/50 pt-6">
-                    <h4 className="font-bold mb-4">Direct Email Invite</h4>
-                    <p className="text-sm text-muted mb-4">Send a 1-time use invite directly to a user's email address (uses the Duration defined above).</p>
+                    <h4 className="font-bold mb-4 inline-flex items-center flex-wrap gap-0">
+                        Direct Email Invite
+                        <SettingHint>Send a 1-time use invite directly to a user&apos;s email address (uses the Duration defined above).</SettingHint>
+                    </h4>
                     <div className="flex flex-col md:flex-row gap-4 items-end">
                         <div className="flex-1 w-full">
                             <label className="block text-sm mb-1 font-medium">Email Address</label>

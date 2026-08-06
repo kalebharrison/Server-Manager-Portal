@@ -25,7 +25,7 @@ export const CleanupSettingsTab: React.FC<CleanupSettingsTabProps> = ({
         <div className="mb-6 flex items-center justify-between py-4 border-b border-border/40">
             <div>
                 <label className="font-bold block mb-1">Enable Automated Cleanup</label>
-                <span className="text-xs text-muted block">Run cleanup job automatically in the background</span>
+                <SettingHint>Run cleanup job automatically in the background</SettingHint>
             </div>
             <button
                 onClick={() => onInactiveCleanupEnabledChange(!inactiveCleanupEnabled)}
@@ -52,10 +52,12 @@ export const CleanupSettingsTab: React.FC<CleanupSettingsTabProps> = ({
             </div>
         </div>
 
-        <p className="text-xs text-muted mt-4">
-            How often the portal checks expiration and cleanup conditions is under{' '}
-            <a href="#system" className="text-plex font-semibold hover:underline">System &amp; Backups</a>
-            {' '}→ Access check interval.
-        </p>
+        <div className="mt-4">
+            <SettingHint>
+                How often the portal checks expiration and cleanup conditions is under{' '}
+                <a href="#system" className="text-plex font-semibold hover:underline">System &amp; Backups</a>
+                {' '}→ Access check interval.
+            </SettingHint>
+        </div>
     </div>
 );

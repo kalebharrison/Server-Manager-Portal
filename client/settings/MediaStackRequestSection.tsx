@@ -31,8 +31,8 @@ const PortalOwnershipImportPanel: React.FC<{
 
     return (
         <div className="rounded-lg border border-border/50 bg-surface/40 p-4">
-            <h3 className="font-bold text-text">Normalize Arr requester tags</h3>
-            <div className="mt-1 mb-4">
+            <h3 className="font-bold text-text inline-flex items-center flex-wrap gap-0">
+                Normalize Arr requester tags
                 <SettingHint>
                     Arr is the source of truth for ownership and Notify. This scan adds rename-safe
                     portal tags (<code className="text-xs">user id</code> /{' '}
@@ -42,7 +42,8 @@ const PortalOwnershipImportPanel: React.FC<{
                     <code className="text-xs">-username</code>, e.g. <code className="text-xs">16-alice</code>)
                     are hard-excluded and never removed or rewritten.
                 </SettingHint>
-            </div>
+            </h3>
+            <div className="mt-4">
             <button
                 type="button"
                 disabled={busy}
@@ -51,6 +52,7 @@ const PortalOwnershipImportPanel: React.FC<{
             >
                 {busy ? 'Scanning Arr…' : 'Normalize Arr tags'}
             </button>
+            </div>
         </div>
     );
 };
@@ -62,9 +64,11 @@ export const MediaStackRequestSection: React.FC<{
         title="Discover & requests"
         subtitle="TMDB Discover; Arr tags own requester + notify"
     >
-        <p className="text-sm text-muted mb-4">
-            Portal JSON only holds pending/approval work. Available ownership and Notify subscribers live on Radarr/Sonarr tags.
-        </p>
+        <div className="mb-4">
+            <SettingHint>
+                Portal JSON only holds pending/approval work. Available ownership and Notify subscribers live on Radarr/Sonarr tags.
+            </SettingHint>
+        </div>
         <PortalOwnershipImportPanel addToast={addToast} />
     </SettingsCollapseSection>
 );

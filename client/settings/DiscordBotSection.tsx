@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { SettingHint } from './SettingHint';
+
 export type DiscordBotSectionProps = {
     discordEnabled: boolean;
     discordBotEnabled: boolean;
@@ -20,10 +22,12 @@ export const DiscordBotSection: React.FC<DiscordBotSectionProps> = ({
     onDiscordBotTokenChange,
 }) => (
     <div className="mb-8">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Member bot</h3>
-        <p className="text-sm text-muted mb-6">
-            Slash commands for requests, issues, stats, queue, discover, and `/ask`. Members link their Discord user ID under Preferences.
-        </p>
+        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
+            Member bot
+            <SettingHint>
+                Slash commands for requests, issues, stats, queue, discover, and `/ask`. Members link their Discord user ID under Preferences.
+            </SettingHint>
+        </h3>
         <label className="flex items-center gap-3 mb-4 cursor-pointer">
             <input type="checkbox" checked={discordBotEnabled} onChange={(event) => onDiscordBotEnabledChange(event.target.checked)} disabled={!discordEnabled} />
             <span className="text-sm text-text">Enable Discord member bot</span>

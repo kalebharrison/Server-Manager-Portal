@@ -40,10 +40,12 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
     onDiscordNotifyWatchlistAvailableChange,
 }) => (
     <div className="mb-8">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Hub &amp; notifications</h3>
-        <p className="text-sm text-muted mb-6">
-            Show a Join Discord button to members and optionally post portal events to a channel webhook. Leave the webhook blank if Notifiarr already owns media posts.
-        </p>
+        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
+            Hub &amp; notifications
+            <SettingHint>
+                Show a Join Discord button to members and optionally post portal events to a channel webhook. Leave the webhook blank if Notifiarr already owns media posts.
+            </SettingHint>
+        </h3>
         <label className="flex items-center gap-3 mb-4 cursor-pointer">
             <input type="checkbox" checked={discordEnabled} onChange={(event) => onDiscordEnabledChange(event.target.checked)} />
             <span className="text-sm text-text">Enable Discord integration</span>

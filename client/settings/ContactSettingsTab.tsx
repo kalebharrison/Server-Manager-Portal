@@ -29,9 +29,11 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
             title="Contact Details"
             subtitle="Shown in the Need Help box on the user dashboard"
         >
-            <p className="text-sm text-muted mb-4">
-                Users can use these to contact you for access extensions, issues, or support.
-            </p>
+            <div className="mb-4">
+                <SettingHint>
+                    Users can use these to contact you for access extensions, issues, or support.
+                </SettingHint>
+            </div>
             <div className="mb-4">
                 <label htmlFor="contactEmail">Email Address (Optional)</label>
                 <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactEmail" type="email" value={contactEmail} onChange={(e) => onContactEmailChange(e.target.value)} placeholder="e.g. admin@example.com" />

@@ -30,13 +30,13 @@ export const DiscordSearchSection: React.FC<DiscordSearchSectionProps> = ({
     const disabled = !discordEnabled || !discordBotEnabled || !discordLlmEnabled || !discordAgentEnabled;
     return (
         <div className="mb-8">
-            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Web search</h3>
-            <p className="text-sm text-muted mb-4">
-                Optional backends for the discovery agent. Tried in order: SearXNG → Brave → Tavily → free DuckDuckGo fallback (no key required).
-            </p>
-            <SettingHint>
-                You do not need to run SearXNG. Leave these blank and DuckDuckGo is used automatically. Configured providers are preferred when they return results.
-            </SettingHint>
+            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
+                Web search
+                <SettingHint>
+                    Optional backends for the discovery agent. Tried in order: SearXNG → Brave → Tavily → free DuckDuckGo fallback (no key required).
+                    You do not need to run SearXNG. Leave these blank and DuckDuckGo is used automatically. Configured providers are preferred when they return results.
+                </SettingHint>
+            </h3>
             <div className="mt-4 mb-4">
                 <label htmlFor="discordSearxngUrl">SearXNG base URL (optional)</label>
                 <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordSearxngUrl" type="url" value={discordSearxngUrl} onChange={(event) => onDiscordSearxngUrlChange(event.target.value)} placeholder="http://searxng:8080" disabled={disabled} />

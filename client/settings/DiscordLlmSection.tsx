@@ -36,10 +36,12 @@ export const DiscordLlmSection: React.FC<DiscordLlmSectionProps> = ({
     onDiscordMentionNlChange,
 }) => (
     <div className="mb-8">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Language model &amp; agent</h3>
-        <p className="text-sm text-muted mb-6">
-            OpenAI-compatible endpoint — self-hosted Ollama or an external LiteLLM/OpenAI URL. Discovery `/ask` uses tool calling when the agent is enabled.
-        </p>
+        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
+            Language model &amp; agent
+            <SettingHint>
+                OpenAI-compatible endpoint — self-hosted Ollama or an external LiteLLM/OpenAI URL. Discovery `/ask` uses tool calling when the agent is enabled.
+            </SettingHint>
+        </h3>
         <label className="flex items-center gap-3 mb-4 cursor-pointer">
             <input type="checkbox" checked={discordLlmEnabled} onChange={(event) => onDiscordLlmEnabledChange(event.target.checked)} disabled={!discordEnabled || !discordBotEnabled} />
             <span className="text-sm text-text">Enable natural language (`/ask` + optional @bot)</span>

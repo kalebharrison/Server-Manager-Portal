@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { portalUrl } from '../shared/basePath';
 import { MediaStackDownloadClientsSection } from './MediaStackDownloadClientsSection';
+import { SettingHint } from './SettingHint';
 import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 type Prefs = {
@@ -274,13 +275,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                 <span className="rounded border border-plex/20 bg-plex/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-plex">
                     Admin only
                 </span>
-            </h3>
-            <section id="upgrader" className="space-y-5 scroll-mt-24">
-                <p className="text-sm text-muted">
+                <SettingHint>
                     Hunts Sonarr/Radarr/Lidarr for higher custom-format scores and monitors download clients for doomed queues
                     (metaDL, stalled, slow download, failed import, orphans).
-                </p>
-
+                </SettingHint>
+            </h3>
+            <section id="upgrader" className="space-y-5 scroll-mt-24">
                 <div className="inline-flex flex-wrap gap-0.5 p-1 rounded-xl border border-border/60 bg-card/40 w-fit max-w-full">
                     {SUB_TABS.map((tab) => (
                         <button
@@ -299,16 +299,20 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                             <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Enable Quality Control</h4>
                             <label className="flex items-center justify-between gap-4">
-                                <span>
-                                    <span className="block font-semibold">Enable Quality Control</span>
-                                    <span className="block text-xs text-muted mt-1">Shows the admin Quality Control page and enables its API.</span>
+                                <span className="min-w-0">
+                                    <span className="font-semibold">Enable Quality Control</span>
+                                    <div className="mt-1">
+                                        <SettingHint>Shows the admin Quality Control page and enables its API.</SettingHint>
+                                    </div>
                                 </span>
                                 <input type="checkbox" className="h-4 w-4 accent-plex" checked={enabled} onChange={(event) => onEnabledChange(event.target.checked)} />
                             </label>
                             <label className="flex items-center justify-between gap-4">
-                                <span>
-                                    <span className="block font-semibold">Enable auto-hunt</span>
-                                    <span className="block text-xs text-muted mt-1">Background hunt every ~20 minutes, plus manual dry-run on the Hunt tab.</span>
+                                <span className="min-w-0">
+                                    <span className="font-semibold">Enable auto-hunt</span>
+                                    <div className="mt-1">
+                                        <SettingHint>Background hunt every ~20 minutes, plus manual dry-run on the Hunt tab.</SettingHint>
+                                    </div>
                                 </span>
                                 <input
                                     type="checkbox"
@@ -323,23 +327,23 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-3">
                             <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Quick links</h4>
                             <ul className="text-sm space-y-2">
-                                <li>
+                                <li className="flex items-center gap-1 flex-wrap">
                                     <a href={portalUrl('/upgrader')} className="text-plex font-semibold hover:underline">
                                         Quality Control dashboard
                                     </a>
-                                    <span className="text-muted"> — hunt preview, download health, integrity scans</span>
+                                    <SettingHint>Hunt preview, download health, integrity scans</SettingHint>
                                 </li>
-                                <li>
+                                <li className="flex items-center gap-1 flex-wrap">
                                     <a href={portalUrl('/settings#mediastack')} className="text-plex font-semibold hover:underline">
                                         Arr &amp; Analytics settings
                                     </a>
-                                    <span className="text-muted"> — Sonarr, Radarr, Lidarr instances</span>
+                                    <SettingHint>Sonarr, Radarr, Lidarr instances</SettingHint>
                                 </li>
-                                <li>
+                                <li className="flex items-center gap-1 flex-wrap">
                                     <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
                                         Discord digests
                                     </a>
-                                    <span className="text-muted"> — cleanup and integrity notification toggles</span>
+                                    <SettingHint>Cleanup and integrity notification toggles</SettingHint>
                                 </li>
                             </ul>
                         </div>
@@ -351,11 +355,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Hunt preferences</h4>
                         <div className="space-y-3">
                             <label className="flex items-center justify-between gap-4">
-                                <span className="text-sm font-semibold">
-                                    Hunt missing aired episodes
-                                    <span className="block text-xs text-muted mt-1 font-normal">
-                                        Search monitored TV episodes that have already aired but have no file.
-                                    </span>
+                                <span className="min-w-0">
+                                    <span className="font-semibold">Hunt missing aired episodes</span>
+                                    <div className="mt-1">
+                                        <SettingHint>
+                                            Search monitored TV episodes that have already aired but have no file.
+                                        </SettingHint>
+                                    </div>
                                 </span>
                                 <input
                                     type="checkbox"
@@ -366,11 +372,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="flex items-center justify-between gap-4">
-                                <span className="text-sm font-semibold">
-                                    Hunt digitally available movies
-                                    <span className="block text-xs text-muted mt-1 font-normal">
-                                        Search monitored movies after digital/streaming release when no file is on disk.
-                                    </span>
+                                <span className="min-w-0">
+                                    <span className="font-semibold">Hunt digitally available movies</span>
+                                    <div className="mt-1">
+                                        <SettingHint>
+                                            Search monitored movies after digital/streaming release when no file is on disk.
+                                        </SettingHint>
+                                    </div>
                                 </span>
                                 <input
                                     type="checkbox"
@@ -382,7 +390,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             </label>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <label className="text-sm font-semibold">Minimum file size (GB)
+                            <label className="text-sm font-semibold">
+                                <span className="inline-flex items-center gap-0">
+                                    Minimum file size (GB)
+                                </span>
                                 <input
                                     type="number"
                                     min="0"
@@ -392,7 +403,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     onChange={(event) => onMinSizeGBChange(Number(event.target.value) || 0)}
                                 />
                             </label>
-                            <label className="text-sm font-semibold">Maximum actions per hour
+                            <label className="text-sm font-semibold">
+                                <span className="inline-flex items-center gap-0">
+                                    Maximum actions per hour
+                                </span>
                                 <input
                                     type="number"
                                     min="1"
@@ -402,9 +416,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     onChange={(event) => onMaxActionsPerHourChange(Math.max(1, Number(event.target.value) || 1))}
                                 />
                             </label>
-                            <label className="text-sm font-semibold">Max downloads per library
-                                <span className="block text-xs text-muted mt-1 font-normal">
-                                    In-flight Arr downloads from hunts (default 5).
+                            <label className="text-sm font-semibold">
+                                <span className="inline-flex items-center gap-0">
+                                    Max downloads per library
+                                    <SettingHint>In-flight Arr downloads from hunts (default 5).</SettingHint>
                                 </span>
                                 <input
                                     type="number"
@@ -415,7 +430,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     onChange={(event) => onMaxDownloadsPerLibraryChange(Math.max(1, Number(event.target.value) || 1))}
                                 />
                             </label>
-                            <label className="text-sm font-semibold">Minimum score delta
+                            <label className="text-sm font-semibold">
+                                <span className="inline-flex items-center gap-0">
+                                    Minimum score delta
+                                </span>
                                 <input
                                     type="number"
                                     min="0"
@@ -467,9 +485,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-3">
                             <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Blocked extensions</h4>
                             <label className="text-sm font-semibold block">
-                                Default blocked extensions
-                                <span className="block text-xs font-normal text-muted mt-1">
-                                    Stored in config; Clients tab can also push live to qBit/SAB. Comma or newline separated.
+                                <span className="inline-flex items-center gap-0">
+                                    Default blocked extensions
+                                    <SettingHint>
+                                        Stored in config; Clients tab can also push live to qBit/SAB. Comma or newline separated.
+                                    </SettingHint>
                                 </span>
                                 <textarea
                                     className="mt-2 w-full min-h-[80px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
@@ -482,23 +502,27 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         </div>
 
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
-                            <p className="text-xs text-muted">
-                                Removes doomed queue items from Sonarr/Radarr/Lidarr (blocklist + skip Arr auto-redownload),
-                                deletes them from qBit/SAB, then triggers <span className="text-text">one</span> re-search per title.
-                                Stalls are held when the downloader reports network down. Import failures only auto-clean for
-                                clear junk (sample, blocked extension, invalid media, encrypted archive, etc.) and for
-                                resolution downgrades (e.g. existing 2160p vs new 1080p “not an upgrade”).
-                                Blocked-extension payloads (e.g. single-file <span className="font-mono">.exe</span> torrents) are
-                                probed mid-download via qBit/SAB file lists and killed on the next cleanup cycle.
-                                Manual cleanup on the Downloads tab still works when automation is off.
-                            </p>
+                            <div className="flex items-center gap-1 flex-wrap mb-2">
+                                <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
+                                <SettingHint>
+                                    Removes doomed queue items from Sonarr/Radarr/Lidarr (blocklist + skip Arr auto-redownload),
+                                    deletes them from qBit/SAB, then triggers <span className="text-text">one</span> re-search per title.
+                                    Stalls are held when the downloader reports network down. Import failures only auto-clean for
+                                    clear junk (sample, blocked extension, invalid media, encrypted archive, etc.) and for
+                                    resolution downgrades (e.g. existing 2160p vs new 1080p “not an upgrade”).
+                                    Blocked-extension payloads (e.g. single-file <span className="font-mono">.exe</span> torrents) are
+                                    probed mid-download via qBit/SAB file lists and killed on the next cleanup cycle.
+                                    Manual cleanup on the Downloads tab still works when automation is off.
+                                </SettingHint>
+                            </div>
                             <label className="flex items-center justify-between gap-4">
-                                <span>
-                                    <span className="block font-semibold">Enable cleanup automation</span>
-                                    <span className="block text-xs text-muted mt-1">
-                                        Run the cleanup pass on a timer. Leave off if you only want dry-run / manual live cleanup.
-                                    </span>
+                                <span className="min-w-0">
+                                    <span className="font-semibold">Enable cleanup automation</span>
+                                    <div className="mt-1">
+                                        <SettingHint>
+                                            Run the cleanup pass on a timer. Leave off if you only want dry-run / manual live cleanup.
+                                        </SettingHint>
+                                    </div>
                                 </span>
                                 <input
                                     type="checkbox"
@@ -509,9 +533,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <label className="text-sm font-semibold">Max strikes
-                                    <span className="block text-xs font-normal text-muted mt-1">
-                                        Cleanup needs this many healthy observations of the same problem before a kill. Timers below are per strike.
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Max strikes
+                                        <SettingHint>
+                                            Cleanup needs this many healthy observations of the same problem before a kill. Timers below are per strike.
+                                        </SettingHint>
                                     </span>
                                     <input
                                         type="number"
@@ -522,9 +549,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onQcMaxStrikesChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">MetaDL minutes / strike
-                                    <span className="block text-xs font-normal text-muted mt-1">
-                                        qBit stuck in metaDL this long earns one strike (× max strikes ≈ total wait).
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        MetaDL minutes / strike
+                                        <SettingHint>
+                                            qBit stuck in metaDL this long earns one strike (× max strikes ≈ total wait).
+                                        </SettingHint>
                                     </span>
                                     <input
                                         type="number"
@@ -535,9 +565,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onQcMetaDlMinutesChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Stalled hours / strike
-                                    <span className="block text-xs font-normal text-muted mt-1">
-                                        Stalled this long earns one strike. Skipped while qBit/SAB network health looks down.
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Stalled hours / strike
+                                        <SettingHint>
+                                            Stalled this long earns one strike. Skipped while qBit/SAB network health looks down.
+                                        </SettingHint>
                                     </span>
                                     <input
                                         type="number"
@@ -548,11 +581,14 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onQcStalledHoursChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Slow download floor (KB/s)
-                                    <span className="block text-xs font-normal text-muted mt-1">
-                                        qBit only. Below this speed (and past min age) earns a slow-download strike.
-                                        Seeder counts do not hold — only measured download speed counts as actively pulling.
-                                        Uses the same hours/strike gap as stalled.
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Slow download floor (KB/s)
+                                        <SettingHint>
+                                            qBit only. Below this speed (and past min age) earns a slow-download strike.
+                                            Seeder counts do not hold — only measured download speed counts as actively pulling.
+                                            Uses the same hours/strike gap as stalled.
+                                        </SettingHint>
                                     </span>
                                     <input
                                         type="number"
@@ -563,9 +599,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onQcSlowDownloadFloorKbpsChange(Math.max(0, Number(event.target.value) || 0))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Slow download min age (hours)
-                                    <span className="block text-xs font-normal text-muted mt-1">
-                                        Don’t judge brand-new grabs until they’ve been downloading at least this long.
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Slow download min age (hours)
+                                        <SettingHint>
+                                            Don’t judge brand-new grabs until they’ve been downloading at least this long.
+                                        </SettingHint>
                                     </span>
                                     <input
                                         type="number"
@@ -576,10 +615,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onQcSlowDownloadMinAgeHoursChange(Math.max(0, Number(event.target.value) || 0))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Completed not importing (min / strike)
-                                    <span className="block text-xs font-normal text-muted mt-1">
-                                        Finished in the client but Arr still has not imported — per strike window.
-                                        Large remuxes get extra time (2 min/GB, capped) and waits behind other imports are held.
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Completed not importing (min / strike)
+                                        <SettingHint>
+                                            Finished in the client but Arr still has not imported — per strike window.
+                                            Large remuxes get extra time (2 min/GB, capped) and waits behind other imports are held.
+                                        </SettingHint>
                                     </span>
                                     <input
                                         type="number"
@@ -590,9 +632,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onQcCompletedNotImportingMinutesChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Orphan grace (min / strike)
-                                    <span className="block text-xs font-normal text-muted mt-1">
-                                        No Arr link for this long earns one orphan strike (also protects fresh hunt grabs).
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Orphan grace (min / strike)
+                                        <SettingHint>
+                                            No Arr link for this long earns one orphan strike (also protects fresh hunt grabs).
+                                        </SettingHint>
                                     </span>
                                     <input
                                         type="number"
@@ -603,9 +648,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onQcOrphanGraceMinutesChange(Math.max(0, Number(event.target.value) || 0))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Research throttle (hours)
-                                    <span className="block text-xs font-normal text-muted mt-1">
-                                        Minimum wait before QC asks Arr to search the same movie/episode/album again after a cleanup.
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Research throttle (hours)
+                                        <SettingHint>
+                                            Minimum wait before QC asks Arr to search the same movie/episode/album again after a cleanup.
+                                        </SettingHint>
                                     </span>
                                     <input
                                         type="number"
@@ -616,9 +664,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onQcResearchThrottleHoursChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Snooze default (hours)
-                                    <span className="block text-xs font-normal text-muted mt-1">
-                                        How long “Snooze” on the Downloads tab hides a row from cleanup.
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Snooze default (hours)
+                                        <SettingHint>
+                                            How long “Snooze” on the Downloads tab hides a row from cleanup.
+                                        </SettingHint>
                                     </span>
                                     <input
                                         type="number"
@@ -630,33 +681,39 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                             </div>
-                            <p className="text-xs text-muted pt-1">
-                                Cleanup digests are configured in{' '}
-                                <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
-                                    Settings → Discord
-                                </a>.
-                            </p>
+                            <div className="flex items-center gap-1 flex-wrap pt-1">
+                                <SettingHint>
+                                    Cleanup digests are configured in{' '}
+                                    <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
+                                        Settings → Discord
+                                    </a>.
+                                </SettingHint>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {activeSubTab === 'integrity' && (
                     <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                        <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h4>
-                        <p className="text-xs text-muted">
-                            Validates Arr-known media with a playback check plus a quick fingerprint (and optional full-file hash).
-                            Skips files currently playing on Plex. Requires media mounted read-only and Arr→container path maps.
-                            For on-import baselining, Arr must POST to the webhook URLs below with this Basic Auth
-                            (see docs/integrity-webhooks.md).
-                        </p>
+                        <div className="flex items-center gap-1 flex-wrap mb-2">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h4>
+                            <SettingHint>
+                                Validates Arr-known media with a playback check plus a quick fingerprint (and optional full-file hash).
+                                Skips files currently playing on Plex. Requires media mounted read-only and Arr→container path maps.
+                                For on-import baselining, Arr must POST to the webhook URLs below with this Basic Auth
+                                (see docs/integrity-webhooks.md).
+                            </SettingHint>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <label className="text-sm font-semibold">
-                                Webhook username
-                                <span className="block text-xs font-normal text-muted mt-1">
-                                    Arr → Connect → Webhook. Paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
-                                    <code className="text-[11px]">/triggers/radarr</code>,{' '}
-                                    <code className="text-[11px]">/triggers/lidarr</code>. Prefer the portal Docker hostname
-                                    (e.g. <code className="text-[11px]">http://server-manager-portal-beta:2121/triggers/sonarr</code>).
+                                <span className="inline-flex items-center gap-0">
+                                    Webhook username
+                                    <SettingHint>
+                                        Arr → Connect → Webhook. Paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
+                                        <code className="text-[11px]">/triggers/radarr</code>,{' '}
+                                        <code className="text-[11px]">/triggers/lidarr</code>. Prefer the portal Docker hostname
+                                        (e.g. <code className="text-[11px]">http://server-manager-portal-beta:2121/triggers/sonarr</code>).
+                                    </SettingHint>
                                 </span>
                                 <input
                                     type="text"
@@ -668,9 +725,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="text-sm font-semibold">
-                                Webhook password
-                                <span className="block text-xs font-normal text-muted mt-1">
-                                    Required for Arr notifications. Leave blank when saving to keep the existing password.
+                                <span className="inline-flex items-center gap-0">
+                                    Webhook password
+                                    <SettingHint>
+                                        Required for Arr notifications. Leave blank when saving to keep the existing password.
+                                    </SettingHint>
                                 </span>
                                 <input
                                     type="password"
@@ -684,9 +743,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             </label>
                         </div>
                         <label className="flex items-center justify-between gap-4">
-                            <span>
-                                <span className="block font-semibold">Enable integrity scans</span>
-                                <span className="block text-xs text-muted mt-1">Unlocks the Integrity tab and API.</span>
+                            <span className="min-w-0">
+                                <span className="font-semibold">Enable integrity scans</span>
+                                <div className="mt-1">
+                                    <SettingHint>Unlocks the Integrity tab and API.</SettingHint>
+                                </div>
                             </span>
                             <input
                                 type="checkbox"
@@ -697,11 +758,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                         <label className="flex items-center justify-between gap-4">
-                            <span>
-                                <span className="block font-semibold">Enable integrity automation</span>
-                                <span className="block text-xs text-muted mt-1">
-                                    Background scan can delete bad files and trigger Arr re-search. Default off — use dry-run first.
-                                </span>
+                            <span className="min-w-0">
+                                <span className="font-semibold">Enable integrity automation</span>
+                                <div className="mt-1">
+                                    <SettingHint>
+                                        Background scan can delete bad files and trigger Arr re-search. Default off — use dry-run first.
+                                    </SettingHint>
+                                </div>
                             </span>
                             <input
                                 type="checkbox"
@@ -722,9 +785,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                         <label className="flex items-center justify-between gap-4">
-                            <span>
-                                <span className="block font-semibold">Include music</span>
-                                <span className="block text-xs text-muted mt-1">Scan Lidarr/audio library files.</span>
+                            <span className="min-w-0">
+                                <span className="font-semibold">Include music</span>
+                                <div className="mt-1">
+                                    <SettingHint>Scan Lidarr/audio library files.</SettingHint>
+                                </div>
                             </span>
                             <input
                                 type="checkbox"
@@ -735,9 +800,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                         <label className="flex items-center justify-between gap-4">
-                            <span>
-                                <span className="block font-semibold">Enable full-file hash</span>
-                                <span className="block text-xs text-muted mt-1">Optional full-file hash mode (slower).</span>
+                            <span className="min-w-0">
+                                <span className="font-semibold">Enable full-file hash</span>
+                                <div className="mt-1">
+                                    <SettingHint>Optional full-file hash mode (slower).</SettingHint>
+                                </div>
                             </span>
                             <input
                                 type="checkbox"
@@ -747,16 +814,20 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 onChange={(event) => onIntegrityXxhashEnabledChange(event.target.checked)}
                             />
                         </label>
-                        <p className="text-xs text-muted">
-                            Integrity digests are configured in{' '}
-                            <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
-                                Settings → Discord
-                            </a>.
-                        </p>
+                        <div className="flex items-center gap-1 flex-wrap">
+                            <SettingHint>
+                                Integrity digests are configured in{' '}
+                                <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
+                                    Settings → Discord
+                                </a>.
+                            </SettingHint>
+                        </div>
                         <label className="text-sm font-semibold block">
-                            Path maps (Arr path → container path)
-                            <span className="block text-xs font-normal text-muted mt-1">
-                                One map per line as <code className="text-text">/arr/movies=/media/movies</code>
+                            <span className="inline-flex items-center gap-0">
+                                Path maps (Arr path → container path)
+                                <SettingHint>
+                                    One map per line as <code className="text-text">/arr/movies=/media/movies</code>
+                                </SettingHint>
                             </span>
                             <textarea
                                 className="mt-2 w-full min-h-[90px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
@@ -794,8 +865,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityMaxPerCycleChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Fingerprint / full-hash concurrency
-                                    <span className="block text-xs font-normal text-muted mt-0.5">Workers for quick fingerprint and full-file hash</span>
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Fingerprint / full-hash concurrency
+                                        <SettingHint>Workers for quick fingerprint and full-file hash</SettingHint>
+                                    </span>
                                     <input
                                         type="number"
                                         min="1"
@@ -805,8 +879,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Playback-check concurrency
-                                    <span className="block text-xs font-normal text-muted mt-0.5">Decode workers (keep low)</span>
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Playback-check concurrency
+                                        <SettingHint>Decode workers (keep low)</SettingHint>
+                                    </span>
                                     <input
                                         type="number"
                                         min="1"
@@ -848,8 +925,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityDecodeTimeoutMsChange(Math.max(1000, Number(event.target.value) || 1000))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Pause when sessions ≥
-                                    <span className="block text-xs font-normal text-muted mt-0.5">0 = never pause for Plex busy</span>
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Pause when sessions ≥
+                                        <SettingHint>0 = never pause for Plex busy</SettingHint>
+                                    </span>
                                     <input
                                         type="number"
                                         min="0"

@@ -62,7 +62,9 @@ export const BrandingSettingsPreviewSection: React.FC<{
                         </div>
                     )}
                     <p className="text-sm font-bold text-text">Portal splash preview</p>
-                    <p className="text-xs text-muted mt-1">This is the server icon and background users will see.</p>
+                    <div className="mt-1 flex justify-center">
+                        <SettingHint>This is the server icon and background users will see.</SettingHint>
+                    </div>
                 </div>
             </div>
         </div>
