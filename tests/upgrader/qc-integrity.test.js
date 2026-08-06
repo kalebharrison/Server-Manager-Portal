@@ -906,3 +906,156 @@ test('getStatus reuses prefs integrityCoverage without re-expanding candidates',
     assert.deepEqual(second.coverage, first.coverage);
     assert.equal(saved.length, 1, 'cached getStatus should not rewrite prefs');
 });
+
+test('recheckFinding clears a playability finding when decode passes', async () => {
+    let prefs = {
+        integrityFindings: [{
+            key: 'radarr:r1:1:file:7',
+            ratingKey: 'radarr:r1:1',
+            title: 'Timeout Movie',
+            arrType: 'radarr',
+            arrInstanceId: 'r1',
+            entityId: 1,
+            movieFileId: 7,
+            filePath: '/movies/Timeout.mkv',
+            mediaType: 'movie',
+            mediaKind: 'video',
+            reason: 'decode_mid_timeout',
+            mode: 'playability',
+            ok: false,
+        }],
+    };
+    let cache = { entries: {} };
+    const audits = [];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            items: [{
+                ratingKey: 'radarr:r1:1',
+                title: 'Timeout Movie',
+                monitored: true,
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 1,
+                movieFileId: 7,
+                filePath: '/movies/Timeout.mkv',
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async (entry) => { audits.push(entry); },
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version test`, stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.recheckFinding({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityRequireAudio: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+    }, { key: 'radarr:r1:1:file:7' });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.cleared, true);
+    assert.equal(prefs.integrityFindings.length, 0);
+    assert.ok(cache.entries['radarr:r1:1:file:7']?.playabilityAt);
+    assert.equal(audits.at(-1)?.action, 'qc_integrity_recheck');
+    assert.equal(audits.at(-1)?.cleared, true);
+});
+
+test('recheckFinding keeps and refreshes finding when still failing', async () => {
+    let prefs = {
+        integrityFindings: [{
+            key: 'radarr:r1:1:file:7',
+            ratingKey: 'radarr:r1:1',
+            title: 'Bad Movie',
+            arrType: 'radarr',
+            arrInstanceId: 'r1',
+            entityId: 1,
+            movieFileId: 7,
+            filePath: '/movies/Bad.mkv',
+            mediaType: 'movie',
+            mediaKind: 'video',
+            reason: 'decode_mid_timeout',
+            mode: 'playability',
+            ok: false,
+        }],
+    };
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            items: [{
+                ratingKey: 'radarr:r1:1',
+                title: 'Bad Movie',
+                monitored: true,
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 1,
+                movieFileId: 7,
+                filePath: '/movies/Bad.mkv',
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version test`, stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: false, code: 1, timedOut: false, stdout: '', stderr: 'decode error' };
+        },
+    });
+
+    const result = await integrity.recheckFinding({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityRequireAudio: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+    }, { key: 'radarr:r1:1:file:7' });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.cleared, false);
+    assert.equal(prefs.integrityFindings.length, 1);
+    assert.equal(prefs.integrityFindings[0].reason, 'decode_start');
+    assert.equal(result.finding.reason, 'decode_start');
+});

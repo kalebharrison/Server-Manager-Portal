@@ -207,6 +207,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const [progress, setProgress] = useState<IntegrityProgress | null>(null);
     const [replacingKey, setReplacingKey] = useState<string | null>(null);
     const [snoozingKey, setSnoozingKey] = useState<string | null>(null);
+    const [recheckingKey, setRecheckingKey] = useState<string | null>(null);
     const [clearingBreaker, setClearingBreaker] = useState(false);
     const [result, setResult] = useState<IntegrityScanResponse | null>(null);
     const [coverage, setCoverage] = useState<IntegrityCoverage | null>(null);
@@ -348,6 +349,44 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             onToast?.(error?.message || 'Failed to clear breaker', 'error');
         } finally {
             setClearingBreaker(false);
+        }
+    };
+
+    const recheckOne = async (finding: IntegrityFinding) => {
+        setRecheckingKey(finding.key);
+        try {
+            const payload = await apiFetch('/api/upgrader/qc/integrity/recheck', {
+                method: 'POST',
+                body: JSON.stringify({ key: finding.key, finding }),
+            }) as { cleared?: boolean; finding?: IntegrityFinding; reason?: string };
+            if (payload.cleared) {
+                onToast?.(`Cleared ${finding.title} on recheck`, 'success');
+                setFindings((current) => current.filter((entry) => entry.key !== finding.key));
+                setResult((current) => current ? {
+                    ...current,
+                    findings: (current.findings || []).filter((entry) => entry.key !== finding.key),
+                    findingCount: Math.max(0, Number(current.findingCount || 1) - 1),
+                } : current);
+            } else {
+                const nextFinding = payload.finding || finding;
+                onToast?.(
+                    `${finding.title} still failing: ${nextFinding.reason || payload.reason || 'unknown'}`,
+                    'error',
+                );
+                setFindings((current) => current.map((entry) => (
+                    entry.key === finding.key ? { ...entry, ...nextFinding } : entry
+                )));
+                setResult((current) => current ? {
+                    ...current,
+                    findings: (current.findings || []).map((entry) => (
+                        entry.key === finding.key ? { ...entry, ...nextFinding } : entry
+                    )),
+                } : current);
+            }
+        } catch (error: any) {
+            onToast?.(error?.message || 'Recheck failed', 'error');
+        } finally {
+            setRecheckingKey(null);
         }
     };
 
@@ -633,7 +672,15 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                 <button
                                     type="button"
                                     className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
-                                    disabled={replacingKey === finding.key || scanning}
+                                    disabled={recheckingKey === finding.key || scanning}
+                                    onClick={() => void recheckOne(finding)}
+                                >
+                                    {recheckingKey === finding.key ? 'Rechecking…' : 'Recheck'}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
+                                    disabled={replacingKey === finding.key || scanning || recheckingKey === finding.key}
                                     onClick={() => void replaceOne(finding)}
                                 >
                                     {replacingKey === finding.key ? 'Replacing…' : 'Replace'}
@@ -641,7 +688,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                 <button
                                     type="button"
                                     className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
-                                    disabled={snoozingKey === finding.key || scanning}
+                                    disabled={snoozingKey === finding.key || scanning || recheckingKey === finding.key}
                                     onClick={() => void snoozeOne(finding)}
                                 >
                                     {snoozingKey === finding.key ? 'Snoozing…' : 'Snooze 24h'}
