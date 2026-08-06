@@ -1,8 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { portalUrl } from '../shared/basePath';
 import { MediaStackDownloadClientsSection } from './MediaStackDownloadClientsSection';
+import {
+    applyCleanupPreset,
+    applyHuntPreset,
+    CLEANUP_PRESET_LABELS,
+    HUNT_PRESET_LABELS,
+    type QcPresetId,
+} from './qcPresets';
 import { SettingHint } from './SettingHint';
 import { SettingsCollapseSection } from './SettingsCollapseSection';
+
+const PRESET_IDS: QcPresetId[] = ['relaxed', 'balanced', 'aggressive', 'custom'];
+
+const selectClassName = 'mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all';
 
 type Prefs = {
     preferDolbyVisionHdr: boolean;
@@ -47,8 +58,10 @@ type Props = {
     maxActionsPerHour: number;
     maxDownloadsPerLibrary: number;
     minScoreDelta: number;
+    upgraderHuntIntensity: string;
     preferences: Prefs;
     qcCleanupAutomationEnabled: boolean;
+    qcCleanupAggression: string;
     integrityEnabled: boolean;
     integrityAutomationEnabled: boolean;
     integrityRequireAudio: boolean;
@@ -82,7 +95,6 @@ type Props = {
     qcQbitPassword: string;
     qcSabUrl: string;
     qcSabApiKey: string;
-    qcBlockedExtensions: string[];
     onEnabledChange: (value: boolean) => void;
     onAutomationEnabledChange: (value: boolean) => void;
     onHuntMissingEpisodesChange: (value: boolean) => void;
@@ -91,8 +103,10 @@ type Props = {
     onMaxActionsPerHourChange: (value: number) => void;
     onMaxDownloadsPerLibraryChange: (value: number) => void;
     onMinScoreDeltaChange: (value: number) => void;
+    onUpgraderHuntIntensityChange: (value: string) => void;
     onPreferencesChange: (value: Prefs) => void;
     onQcCleanupAutomationEnabledChange: (value: boolean) => void;
+    onQcCleanupAggressionChange: (value: string) => void;
     onIntegrityEnabledChange: (value: boolean) => void;
     onIntegrityAutomationEnabledChange: (value: boolean) => void;
     onIntegrityRequireAudioChange: (value: boolean) => void;
@@ -121,22 +135,12 @@ type Props = {
     onQcResearchThrottleHoursChange: (value: number) => void;
     onQcSnoozeDefaultHoursChange: (value: number) => void;
     onQcDiscordDigestEnabledChange: (value: boolean) => void;
-    onQcBlockedExtensionsChange: (value: string[]) => void;
     onQcQbitUrlChange: (value: string) => void;
     onQcQbitUsernameChange: (value: string) => void;
     onQcQbitPasswordChange: (value: string) => void;
     onQcSabUrlChange: (value: string) => void;
     onQcSabApiKeyChange: (value: string) => void;
 };
-
-const parseExtensionsText = (value: string) => [
-    ...new Set(
-        value
-            .split(/[\s,;]+/)
-            .map((entry) => entry.trim().replace(/^\*\./, '').replace(/^\./, '').toLowerCase())
-            .filter(Boolean),
-    ),
-];
 
 export const UpgraderSettingsPanel: React.FC<Props> = ({
     enabled,
@@ -147,8 +151,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     maxActionsPerHour,
     maxDownloadsPerLibrary,
     minScoreDelta,
+    upgraderHuntIntensity,
     preferences,
     qcCleanupAutomationEnabled,
+    qcCleanupAggression,
     integrityEnabled,
     integrityAutomationEnabled,
     integrityRequireAudio,
@@ -180,7 +186,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcQbitPassword,
     qcSabUrl,
     qcSabApiKey,
-    qcBlockedExtensions,
     onEnabledChange,
     onAutomationEnabledChange,
     onHuntMissingEpisodesChange,
@@ -189,8 +194,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onMaxActionsPerHourChange,
     onMaxDownloadsPerLibraryChange,
     onMinScoreDeltaChange,
+    onUpgraderHuntIntensityChange,
     onPreferencesChange,
     onQcCleanupAutomationEnabledChange,
+    onQcCleanupAggressionChange,
     onIntegrityEnabledChange,
     onIntegrityAutomationEnabledChange,
     onIntegrityRequireAudioChange,
@@ -217,7 +224,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onQcMaxStrikesChange,
     onQcResearchThrottleHoursChange,
     onQcSnoozeDefaultHoursChange,
-    onQcBlockedExtensionsChange,
     onQcQbitUrlChange,
     onQcQbitUsernameChange,
     onQcQbitPasswordChange,
@@ -259,6 +265,41 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
             window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}${hash}`);
         }
     };
+
+    const handleHuntIntensitySelect = (value: string) => {
+        if (value === 'custom') {
+            onUpgraderHuntIntensityChange('custom');
+            return;
+        }
+        if (value === 'relaxed' || value === 'balanced' || value === 'aggressive') {
+            const preset = applyHuntPreset(value);
+            onMaxActionsPerHourChange(preset.upgraderMaxActionsPerHour);
+            onMaxDownloadsPerLibraryChange(preset.upgraderMaxDownloadsPerLibrary);
+            onMinScoreDeltaChange(preset.upgraderMinScoreDelta);
+            onUpgraderHuntIntensityChange(preset.upgraderHuntIntensity ?? value);
+        }
+    };
+
+    const handleCleanupAggressionSelect = (value: string) => {
+        if (value === 'custom') {
+            onQcCleanupAggressionChange('custom');
+            return;
+        }
+        if (value === 'relaxed' || value === 'balanced' || value === 'aggressive') {
+            const preset = applyCleanupPreset(value);
+            onQcMaxStrikesChange(preset.qcMaxStrikes);
+            onQcMetaDlMinutesChange(preset.qcMetaDlMinutes);
+            onQcStalledHoursChange(preset.qcStalledHours);
+            onQcCompletedNotImportingMinutesChange(preset.qcCompletedNotImportingMinutes);
+            onQcOrphanGraceMinutesChange(preset.qcOrphanGraceMinutes);
+            onQcSlowDownloadFloorKbpsChange(preset.qcSlowDownloadFloorKbps);
+            onQcSlowDownloadMinAgeHoursChange(preset.qcSlowDownloadMinAgeHours);
+            onQcCleanupAggressionChange(preset.qcCleanupAggression ?? value);
+        }
+    };
+
+    const markHuntCustom = () => onUpgraderHuntIntensityChange('custom');
+    const markCleanupCustom = () => onQcCleanupAggressionChange('custom');
 
     const subTabButtonClass = (subTab: UpgraderSubTab) => (
         `inline-flex items-center px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
@@ -322,6 +363,17 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     onChange={(event) => onAutomationEnabledChange(event.target.checked)}
                                 />
                             </label>
+                            <SettingHint>
+                                Download cleanup automation is configured under the{' '}
+                                <button
+                                    type="button"
+                                    className="text-plex font-semibold hover:underline"
+                                    onClick={() => handleSubTabChange('downloads')}
+                                >
+                                    Downloads
+                                </button>{' '}
+                                tab.
+                            </SettingHint>
                         </div>
 
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-3">
@@ -405,43 +457,21 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             </label>
                             <label className="text-sm font-semibold">
                                 <span className="inline-flex items-center gap-0">
-                                    Maximum actions per hour
+                                    Hunt intensity
+                                    <SettingHint>
+                                        Relaxed, Balanced, and Aggressive presets set rate limits below. Custom keeps your manual values.
+                                    </SettingHint>
                                 </span>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                    value={maxActionsPerHour}
+                                <select
+                                    className={selectClassName}
+                                    value={upgraderHuntIntensity || 'balanced'}
                                     disabled={!enabled}
-                                    onChange={(event) => onMaxActionsPerHourChange(Math.max(1, Number(event.target.value) || 1))}
-                                />
-                            </label>
-                            <label className="text-sm font-semibold">
-                                <span className="inline-flex items-center gap-0">
-                                    Max downloads per library
-                                    <SettingHint>In-flight Arr downloads from hunts (default 5).</SettingHint>
-                                </span>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                    value={maxDownloadsPerLibrary}
-                                    disabled={!enabled}
-                                    onChange={(event) => onMaxDownloadsPerLibraryChange(Math.max(1, Number(event.target.value) || 1))}
-                                />
-                            </label>
-                            <label className="text-sm font-semibold">
-                                <span className="inline-flex items-center gap-0">
-                                    Minimum score delta
-                                </span>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                    value={minScoreDelta}
-                                    disabled={!enabled}
-                                    onChange={(event) => onMinScoreDeltaChange(Math.max(0, Number(event.target.value) || 0))}
-                                />
+                                    onChange={(event) => handleHuntIntensitySelect(event.target.value)}
+                                >
+                                    {PRESET_IDS.map((id) => (
+                                        <option key={id} value={id}>{HUNT_PRESET_LABELS[id]}</option>
+                                    ))}
+                                </select>
                             </label>
                         </div>
                         <div className="pt-2 border-t border-border/40 space-y-3">
@@ -464,6 +494,60 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 </label>
                             ))}
                         </div>
+
+                        <SettingsCollapseSection title="Advanced" defaultOpen={false}>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Maximum actions per hour
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={maxActionsPerHour}
+                                        disabled={!enabled}
+                                        onChange={(event) => {
+                                            onMaxActionsPerHourChange(Math.max(1, Number(event.target.value) || 1));
+                                            markHuntCustom();
+                                        }}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Max downloads per library
+                                        <SettingHint>In-flight Arr downloads from hunts (default 5).</SettingHint>
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={maxDownloadsPerLibrary}
+                                        disabled={!enabled}
+                                        onChange={(event) => {
+                                            onMaxDownloadsPerLibraryChange(Math.max(1, Number(event.target.value) || 1));
+                                            markHuntCustom();
+                                        }}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">
+                                    <span className="inline-flex items-center gap-0">
+                                        Minimum score delta
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={minScoreDelta}
+                                        disabled={!enabled}
+                                        onChange={(event) => {
+                                            onMinScoreDeltaChange(Math.max(0, Number(event.target.value) || 0));
+                                            markHuntCustom();
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        </SettingsCollapseSection>
                     </div>
                 )}
 
@@ -482,23 +566,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             onQcSabApiKeyChange={onQcSabApiKeyChange}
                         />
 
-                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-3">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Blocked extensions</h4>
-                            <label className="text-sm font-semibold block">
-                                <span className="inline-flex items-center gap-0">
-                                    Default blocked extensions
-                                    <SettingHint>
-                                        Stored in config; Clients tab can also push live to qBit/SAB. Comma or newline separated.
-                                    </SettingHint>
-                                </span>
-                                <textarea
-                                    className="mt-2 w-full min-h-[80px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
-                                    disabled={!enabled}
-                                    value={(qcBlockedExtensions || []).join('\n')}
-                                    placeholder={'exe\nbat\nlnk'}
-                                    onChange={(event) => onQcBlockedExtensionsChange(parseExtensionsText(event.target.value))}
-                                />
-                            </label>
+                        <div className="rounded-xl border border-plex/30 bg-plex/5 px-4 py-3 text-sm">
+                            Blocked extensions are managed on the{' '}
+                            <a href={portalUrl('/upgrader?tab=clients')} className="text-plex font-semibold hover:underline">
+                                Quality Control → Clients
+                            </a>{' '}
+                            tab (push live to qBit/SAB from there).
                         </div>
 
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
@@ -532,6 +605,26 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     onChange={(event) => onQcCleanupAutomationEnabledChange(event.target.checked)}
                                 />
                             </label>
+                            <label className="text-sm font-semibold block max-w-md">
+                                <span className="inline-flex items-center gap-0">
+                                    Cleanup aggression
+                                    <SettingHint>
+                                        Relaxed, Balanced, and Aggressive presets set strike timers below. Custom keeps your manual values.
+                                    </SettingHint>
+                                </span>
+                                <select
+                                    className={selectClassName}
+                                    value={qcCleanupAggression || 'balanced'}
+                                    disabled={!enabled}
+                                    onChange={(event) => handleCleanupAggressionSelect(event.target.value)}
+                                >
+                                    {PRESET_IDS.map((id) => (
+                                        <option key={id} value={id}>{CLEANUP_PRESET_LABELS[id]}</option>
+                                    ))}
+                                </select>
+                            </label>
+
+                            <SettingsCollapseSection title="Advanced" defaultOpen={false}>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <label className="text-sm font-semibold">
                                     <span className="inline-flex items-center gap-0">
@@ -546,7 +639,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
                                         value={qcMaxStrikes}
                                         disabled={!enabled}
-                                        onChange={(event) => onQcMaxStrikesChange(Math.max(1, Number(event.target.value) || 1))}
+                                        onChange={(event) => {
+                                            onQcMaxStrikesChange(Math.max(1, Number(event.target.value) || 1));
+                                            markCleanupCustom();
+                                        }}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
@@ -562,7 +658,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
                                         value={qcMetaDlMinutes}
                                         disabled={!enabled}
-                                        onChange={(event) => onQcMetaDlMinutesChange(Math.max(1, Number(event.target.value) || 1))}
+                                        onChange={(event) => {
+                                            onQcMetaDlMinutesChange(Math.max(1, Number(event.target.value) || 1));
+                                            markCleanupCustom();
+                                        }}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
@@ -578,7 +677,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
                                         value={qcStalledHours}
                                         disabled={!enabled}
-                                        onChange={(event) => onQcStalledHoursChange(Math.max(1, Number(event.target.value) || 1))}
+                                        onChange={(event) => {
+                                            onQcStalledHoursChange(Math.max(1, Number(event.target.value) || 1));
+                                            markCleanupCustom();
+                                        }}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
@@ -596,7 +698,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
                                         value={qcSlowDownloadFloorKbps}
                                         disabled={!enabled}
-                                        onChange={(event) => onQcSlowDownloadFloorKbpsChange(Math.max(0, Number(event.target.value) || 0))}
+                                        onChange={(event) => {
+                                            onQcSlowDownloadFloorKbpsChange(Math.max(0, Number(event.target.value) || 0));
+                                            markCleanupCustom();
+                                        }}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
@@ -612,7 +717,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
                                         value={qcSlowDownloadMinAgeHours}
                                         disabled={!enabled}
-                                        onChange={(event) => onQcSlowDownloadMinAgeHoursChange(Math.max(0, Number(event.target.value) || 0))}
+                                        onChange={(event) => {
+                                            onQcSlowDownloadMinAgeHoursChange(Math.max(0, Number(event.target.value) || 0));
+                                            markCleanupCustom();
+                                        }}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
@@ -629,7 +737,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
                                         value={qcCompletedNotImportingMinutes}
                                         disabled={!enabled}
-                                        onChange={(event) => onQcCompletedNotImportingMinutesChange(Math.max(1, Number(event.target.value) || 1))}
+                                        onChange={(event) => {
+                                            onQcCompletedNotImportingMinutesChange(Math.max(1, Number(event.target.value) || 1));
+                                            markCleanupCustom();
+                                        }}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
@@ -645,7 +756,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
                                         value={qcOrphanGraceMinutes}
                                         disabled={!enabled}
-                                        onChange={(event) => onQcOrphanGraceMinutesChange(Math.max(0, Number(event.target.value) || 0))}
+                                        onChange={(event) => {
+                                            onQcOrphanGraceMinutesChange(Math.max(0, Number(event.target.value) || 0));
+                                            markCleanupCustom();
+                                        }}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
@@ -661,7 +775,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
                                         value={qcResearchThrottleHours}
                                         disabled={!enabled}
-                                        onChange={(event) => onQcResearchThrottleHoursChange(Math.max(1, Number(event.target.value) || 1))}
+                                        onChange={(event) => {
+                                            onQcResearchThrottleHoursChange(Math.max(1, Number(event.target.value) || 1));
+                                            markCleanupCustom();
+                                        }}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
@@ -677,7 +794,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
                                         value={qcSnoozeDefaultHours}
                                         disabled={!enabled}
-                                        onChange={(event) => onQcSnoozeDefaultHoursChange(Math.max(1, Number(event.target.value) || 1))}
+                                        onChange={(event) => {
+                                            onQcSnoozeDefaultHoursChange(Math.max(1, Number(event.target.value) || 1));
+                                            markCleanupCustom();
+                                        }}
                                     />
                                 </label>
                             </div>
@@ -689,6 +809,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     </a>.
                                 </SettingHint>
                             </div>
+                            </SettingsCollapseSection>
                         </div>
                     </div>
                 )}
@@ -784,36 +905,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 onChange={(event) => onIntegrityRequireAudioChange(event.target.checked)}
                             />
                         </label>
-                        <label className="flex items-center justify-between gap-4">
-                            <span className="min-w-0">
-                                <span className="font-semibold">Include music</span>
-                                <div className="mt-1">
-                                    <SettingHint>Scan Lidarr/audio library files.</SettingHint>
-                                </div>
-                            </span>
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 accent-plex"
-                                disabled={!enabled || !integrityEnabled}
-                                checked={integrityIncludeMusic && integrityEnabled && enabled}
-                                onChange={(event) => onIntegrityIncludeMusicChange(event.target.checked)}
-                            />
-                        </label>
-                        <label className="flex items-center justify-between gap-4">
-                            <span className="min-w-0">
-                                <span className="font-semibold">Enable full-file hash</span>
-                                <div className="mt-1">
-                                    <SettingHint>Optional full-file hash mode (slower).</SettingHint>
-                                </div>
-                            </span>
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 accent-plex"
-                                disabled={!enabled || !integrityEnabled}
-                                checked={integrityXxhashEnabled && integrityEnabled && enabled}
-                                onChange={(event) => onIntegrityXxhashEnabledChange(event.target.checked)}
-                            />
-                        </label>
                         <div className="flex items-center gap-1 flex-wrap">
                             <SettingHint>
                                 Integrity digests are configured in{' '}
@@ -854,6 +945,38 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         </label>
 
                         <SettingsCollapseSection title="Advanced" defaultOpen={false}>
+                            <div className="space-y-3 mb-4">
+                                <label className="flex items-center justify-between gap-4">
+                                    <span className="min-w-0">
+                                        <span className="font-semibold">Include music</span>
+                                        <div className="mt-1">
+                                            <SettingHint>Scan Lidarr/audio library files.</SettingHint>
+                                        </div>
+                                    </span>
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 accent-plex"
+                                        disabled={!enabled || !integrityEnabled}
+                                        checked={integrityIncludeMusic && integrityEnabled && enabled}
+                                        onChange={(event) => onIntegrityIncludeMusicChange(event.target.checked)}
+                                    />
+                                </label>
+                                <label className="flex items-center justify-between gap-4">
+                                    <span className="min-w-0">
+                                        <span className="font-semibold">Enable full-file hash</span>
+                                        <div className="mt-1">
+                                            <SettingHint>Optional full-file hash mode (slower).</SettingHint>
+                                        </div>
+                                    </span>
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 accent-plex"
+                                        disabled={!enabled || !integrityEnabled}
+                                        checked={integrityXxhashEnabled && integrityEnabled && enabled}
+                                        onChange={(event) => onIntegrityXxhashEnabledChange(event.target.checked)}
+                                    />
+                                </label>
+                            </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <label className="text-sm font-semibold">Max files per cycle
                                     <input

@@ -84,7 +84,7 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             label: 'Blocked extension (early)',
             perStrike: 'immediate',
             effective: '1 cleanup cycle',
-            note: 'Uses Settings blocked-extension list; probes qBit/SAB file names mid-download',
+            note: 'Uses QC Clients blocked-extension list; probes qBit/SAB file names mid-download',
             killKeys: ['blockedExtension'],
         },
         {
@@ -127,6 +127,33 @@ export const QcPolicySummary: React.FC<Props> = ({
                     <p className="text-xs text-muted mt-1">
                         {strikes} strikes × each window = wait before a kill. Kill counts are lifetime totals for this portal.
                     </p>
+                    {(status?.qcCleanupAggression && status.qcCleanupAggression !== 'custom')
+                        || (status?.upgraderHuntIntensity && status.upgraderHuntIntensity !== 'custom') ? (
+                        <p className="text-xs text-text mt-1.5">
+                            {status?.qcCleanupAggression && status.qcCleanupAggression !== 'custom' && (
+                                <span>
+                                    Cleanup:{' '}
+                                    <span className="font-bold text-plex">
+                                        {status.qcCleanupAggressionLabel
+                                            || status.qcCleanupAggression}
+                                    </span>
+                                </span>
+                            )}
+                            {status?.qcCleanupAggression && status.qcCleanupAggression !== 'custom'
+                                && status?.upgraderHuntIntensity && status.upgraderHuntIntensity !== 'custom' && (
+                                <span className="text-muted"> · </span>
+                            )}
+                            {status?.upgraderHuntIntensity && status.upgraderHuntIntensity !== 'custom' && (
+                                <span>
+                                    Hunt:{' '}
+                                    <span className="font-bold text-plex">
+                                        {status.upgraderHuntIntensityLabel
+                                            || status.upgraderHuntIntensity}
+                                    </span>
+                                </span>
+                            )}
+                        </p>
+                    ) : null}
                 </div>
                 {showSettingsLink && (
                     <a

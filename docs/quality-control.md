@@ -27,7 +27,7 @@ Hunt targets (Settings → Quality Control → Hunt preferences):
 - **Missing aired episodes** (Sonarr)
 - **Available movies** not yet in the library (Radarr)
 
-Caps and preferences (max actions/hour, max downloads per library, min score delta, DV/HDR/Atmos/Remux/season-pack boosts) live in the same settings section and on the **Rules** tab.
+Caps and preferences use **Hunt intensity** presets (or Advanced raw caps) plus DV/HDR/Atmos/Remux/season-pack boosts. Effective windows also appear on the **Rules** tab.
 
 ## Download health
 
@@ -35,7 +35,7 @@ Download health correlates Arr queue items with qBittorrent and/or SABnzbd to fi
 
 ### Download clients
 
-Credentials are configured in **Settings → Apps & Automation** (qBittorrent URL/username/password; SABnzbd URL/API key). Quality Control reads those values — it does not duplicate them under the QC tab (the QC settings panel shows configured/not-configured status only).
+Credentials are configured in **Settings → Quality Control → Downloads** (qBittorrent URL/username/password; SABnzbd URL/API key). Blocked extensions are edited on the **Quality Control → Clients** dashboard tab.
 
 The portal must reach Arr **and** the configured download client(s) from inside the container. Use Docker-reachable hostnames (see [Deployment](./deployment.md#docker-networking-tips)).
 
@@ -90,17 +90,18 @@ Full setup: **[Integrity import webhooks](./integrity-webhooks.md)**.
 
 ## Settings reference
 
-All QC settings are under **Settings → Quality Control (Admin Only)**:
+All QC settings are under **Settings → Quality Control (Admin Only)** (subtabs: Overview, Hunt, Downloads, Integrity):
 
 | Section | Controls |
 |---|---|
-| Enable Quality Control | Master switch + auto-hunt |
-| Download clients | Status + default blocked extensions (credentials in Apps & Automation) |
-| Download cleanup | Automation, strike thresholds, timing per reason |
-| Hunt preferences | Missing episodes/movies, caps, score delta, preference boosts |
-| Library integrity | Enable scans, automation, path maps, webhook auth, xxhash, concurrency, nightly hour, circuit breaker |
+| Overview | Master switch + auto-hunt |
+| Hunt | Missing episodes/movies, min size, **Hunt intensity** (Relaxed / Balanced / Aggressive), preference boosts; rate caps under Advanced |
+| Downloads | qBit/SAB credentials, cleanup automation, **Cleanup aggression** presets; raw strike timers under Advanced. Blocked extensions live on **Quality Control → Clients** (not Settings) |
+| Integrity | Webhooks, scans, automation, path maps, require audio; concurrency / xxhash / nightly under Advanced |
 
-Discord digest toggles for cleanup and integrity are in the same panel.
+Presets expand to the same timer and rate-limit keys as before (`qcMaxStrikes`, `qcMetaDlMinutes`, `upgraderMaxActionsPerHour`, etc.). The engine still reads those raw values — presets are a Settings UI projection. Choosing Advanced values that diverge from a preset stores **Custom**.
+
+Discord digest toggles for cleanup and integrity are on the Discord settings tab.
 
 ## Related docs
 

@@ -2,6 +2,7 @@ import type React from 'react';
 
 import { normalizeSectionLayout, type DashboardLayoutConfig } from '../shared/dashboardLayout';
 import { normalizeNavHiddenKeys, normalizeSettingsNavOrder } from './settingsNavOrder';
+import { detectCleanupPreset, detectHuntPreset } from './qcPresets';
 import type { ArrInstance } from '../shared/types';
 
 type SettingsHydrationSetters = {
@@ -88,6 +89,7 @@ type SettingsHydrationSetters = {
     setUpgraderMaxActionsPerHour: (value: number) => void;
     setUpgraderMaxDownloadsPerLibrary: (value: number) => void;
     setUpgraderMinScoreDelta: (value: number) => void;
+    setUpgraderHuntIntensity: (value: string) => void;
     setUpgraderPreferences: (value: {
         preferDolbyVisionHdr: boolean;
         preferAtmos: boolean;
@@ -95,6 +97,7 @@ type SettingsHydrationSetters = {
         preferSeasonPacks: boolean;
     }) => void;
     setQcCleanupAutomationEnabled: (value: boolean) => void;
+    setQcCleanupAggression: (value: string) => void;
     setQcIntegrityEnabled: (value: boolean) => void;
     setQcIntegrityAutomationEnabled: (value: boolean) => void;
     setQcIntegrityRequireAudio: (value: boolean) => void;
@@ -223,6 +226,12 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
         preferRemux: initialSettings.upgraderPreferences?.preferRemux !== false,
         preferSeasonPacks: initialSettings.upgraderPreferences?.preferSeasonPacks !== false,
     });
+    setters.setUpgraderHuntIntensity(detectHuntPreset({
+        upgraderHuntIntensity: initialSettings.upgraderHuntIntensity,
+        upgraderMaxActionsPerHour: initialSettings.upgraderMaxActionsPerHour,
+        upgraderMaxDownloadsPerLibrary: initialSettings.upgraderMaxDownloadsPerLibrary,
+        upgraderMinScoreDelta: initialSettings.upgraderMinScoreDelta,
+    }));
     setters.setQcCleanupAutomationEnabled(!!initialSettings.qcCleanupAutomationEnabled);
     setters.setQcIntegrityEnabled(!!initialSettings.qcIntegrityEnabled);
     setters.setQcIntegrityAutomationEnabled(!!initialSettings.qcIntegrityAutomationEnabled);
@@ -264,6 +273,16 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcMaxStrikes(Math.max(1, Number(initialSettings.qcMaxStrikes) || 3));
     setters.setQcResearchThrottleHours(Math.max(1, Number(initialSettings.qcResearchThrottleHours) || 24));
     setters.setQcSnoozeDefaultHours(Math.max(1, Number(initialSettings.qcSnoozeDefaultHours) || 24));
+    setters.setQcCleanupAggression(detectCleanupPreset({
+        qcCleanupAggression: initialSettings.qcCleanupAggression,
+        qcMaxStrikes: Math.max(1, Number(initialSettings.qcMaxStrikes) || 3),
+        qcMetaDlMinutes: Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 20),
+        qcStalledHours: Math.max(1, Number(initialSettings.qcStalledHours) || 2),
+        qcCompletedNotImportingMinutes: Math.max(1, Number(initialSettings.qcCompletedNotImportingMinutes) || 90),
+        qcOrphanGraceMinutes: Math.max(0, Number(initialSettings.qcOrphanGraceMinutes ?? 15) || 0),
+        qcSlowDownloadFloorKbps: Math.max(0, Number(initialSettings.qcSlowDownloadFloorKbps ?? 100) || 0),
+        qcSlowDownloadMinAgeHours: Math.max(0, Number(initialSettings.qcSlowDownloadMinAgeHours ?? 6) || 0),
+    }));
     setters.setQcDiscordDigestEnabled(!!initialSettings.qcDiscordDigestEnabled);
     setters.setQcQbitUrl(String(initialSettings.qcQbitUrl || ''));
     setters.setQcQbitUsername(String(initialSettings.qcQbitUsername || ''));

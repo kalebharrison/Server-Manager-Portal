@@ -64,6 +64,10 @@ export type UpgraderStatus = {
     maxActionsPerHour: number;
     maxDownloadsPerLibrary?: number;
     minScoreDelta?: number;
+    qcCleanupAggression?: string;
+    qcCleanupAggressionLabel?: string;
+    upgraderHuntIntensity?: string;
+    upgraderHuntIntensityLabel?: string;
     recentUpgradeCount: number;
     defaultPreset: string;
     defaultSort: UpgraderSort;

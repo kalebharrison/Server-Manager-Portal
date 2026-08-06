@@ -85,6 +85,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     upgraderMaxActionsPerHour: 25,
     upgraderMaxDownloadsPerLibrary: 5,
     upgraderMinScoreDelta: 10,
+    upgraderHuntIntensity: 'balanced',
     upgraderPreferences: {
         preferDolbyVisionHdr: true,
         preferAtmos: true,
@@ -92,6 +93,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
         preferSeasonPacks: true,
     },
     qcCleanupAutomationEnabled: false,
+    qcCleanupAggression: 'balanced',
     qcIntegrityEnabled: false,
     qcIntegrityAutomationEnabled: false,
     qcIntegrityRequireAudio: true,

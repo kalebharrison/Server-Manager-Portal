@@ -84,6 +84,7 @@ export type SettingsFormValues = {
     upgraderMaxActionsPerHour: number;
     upgraderMaxDownloadsPerLibrary: number;
     upgraderMinScoreDelta: number;
+    upgraderHuntIntensity: string;
     upgraderPreferences: {
         preferDolbyVisionHdr: boolean;
         preferAtmos: boolean;
@@ -91,6 +92,7 @@ export type SettingsFormValues = {
         preferSeasonPacks: boolean;
     };
     qcCleanupAutomationEnabled: boolean;
+    qcCleanupAggression: string;
     qcIntegrityEnabled: boolean;
     qcIntegrityAutomationEnabled: boolean;
     qcIntegrityRequireAudio: boolean;
