@@ -189,7 +189,9 @@ export const MainApp: React.FC = () => {
     const isImpersonating = !!sessionInfo?.impersonation?.active;
     const isPublicStatus = currentRoute === 'status' && !sessionInfo;
     const isPublicInvite = currentRoute === 'invite';
-    const isPublicView = isPublicStatus || isPublicInvite;
+    const isLoginView = currentRoute === 'login';
+    // Login (and public status/invite) must not show the app chrome — no session yet.
+    const isPublicView = isPublicStatus || isPublicInvite || isLoginView;
 
     return (
         <div className="relative flex w-full min-h-screen overflow-x-clip">
