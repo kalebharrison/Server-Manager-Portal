@@ -269,7 +269,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
 
     return (
         <div className="mb-8 animate-fade-in space-y-6">
-            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Quality Control</h3>
+            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 flex items-center gap-3 flex-wrap">
+                <span>Quality Control</span>
+                <span className="rounded border border-plex/20 bg-plex/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-plex">
+                    Admin only
+                </span>
+            </h3>
             <section id="upgrader" className="space-y-5 scroll-mt-24">
                 <p className="text-sm text-muted">
                     Hunts Sonarr/Radarr/Lidarr for higher custom-format scores and monitors download clients for doomed queues
@@ -376,7 +381,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <label className="text-sm font-semibold">Minimum file size (GB)
                                 <input
                                     type="number"

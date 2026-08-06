@@ -7,6 +7,8 @@ export type SettingsTab = {
     label: string;
     /** One-line purpose shown above the panel. */
     blurb: string;
+    /** Show an Admin badge in settings nav (page is already admin-gated). */
+    adminOnly?: boolean;
     keywords: string[];
 };
 
@@ -102,6 +104,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
                 id: 'upgrader',
                 label: 'Quality Control',
                 blurb: 'Hunt upgrades, download clients/cleanup, and library integrity.',
+                adminOnly: true,
                 keywords: [
                     'upgrade', 'qc', 'quality control', 'download', 'quality', 'score', 'remux', 'sonarr', 'radarr',
                     'custom format', 'admin', 'integrity', 'webhook', 'qbittorrent', 'qbit', 'sabnzbd', 'sab',

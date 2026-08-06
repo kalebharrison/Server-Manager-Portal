@@ -12,6 +12,12 @@ type SettingsNavigationProps = {
     onTabChange: (value: SettingsTabId) => void;
 };
 
+const AdminBadge: React.FC = () => (
+    <span className="ml-auto shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-muted">
+        Admin
+    </span>
+);
+
 export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
     activeTab,
     settingsSearch,
@@ -30,7 +36,10 @@ export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
                 options.push({ label: group.title, value: `group:${group.title}`, isGroup: true });
             }
             for (const tab of group.tabs) {
-                options.push({ label: tab.label, value: tab.id });
+                options.push({
+                    label: tab.adminOnly ? `${tab.label} (Admin)` : tab.label,
+                    value: tab.id,
+                });
             }
         }
         return options;
@@ -48,8 +57,8 @@ export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
                 />
             </div>
 
-            <aside className="hidden md:flex md:flex-col w-72 shrink-0 sticky top-20 max-h-[calc(100vh-6rem)] glass-card nav-shell p-6 shadow-2xl overflow-hidden">
-                <label className="text-muted text-xs uppercase tracking-wider font-bold mb-2 block shrink-0">Find Setting</label>
+            <aside className="hidden md:flex md:flex-col w-full sticky top-20 max-h-[calc(100vh-6rem)] glass-card nav-shell p-5 shadow-2xl overflow-hidden">
+                <label className="text-muted text-xs uppercase tracking-wider font-bold mb-2 block shrink-0 leading-none">Find Setting</label>
                 <input
                     type="text"
                     placeholder="Search settings..."
@@ -71,12 +80,13 @@ export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
                                             type="button"
                                             onClick={() => onTabChange(tab.id)}
                                             title={tab.blurb}
-                                            className={`w-full text-left px-3 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
+                                            className={`w-full flex items-center gap-2 text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
                                                 ? 'nav-item-active'
                                                 : 'text-muted hover:text-text hover:bg-white/5'
                                                 }`}
                                         >
-                                            {tab.label}
+                                            <span className="min-w-0 truncate">{tab.label}</span>
+                                            {tab.adminOnly ? <AdminBadge /> : null}
                                         </button>
                                     ))}
                                 </div>
