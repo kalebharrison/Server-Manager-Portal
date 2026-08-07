@@ -277,7 +277,7 @@ const pickRepresentative = (items: QcDownloadItem[]) => (
     })[0]
 );
 
-type RowTone = 'red' | 'yellow' | 'purple' | 'blue' | 'cyan' | 'neutral';
+type RowTone = 'red' | 'yellow' | 'purple' | 'blue' | 'green' | 'neutral';
 
 /** Arr-ish queue colors — border only; card body stays dark so text stays readable. */
 const TONE: Record<RowTone, { border: string }> = {
@@ -285,7 +285,7 @@ const TONE: Record<RowTone, { border: string }> = {
     yellow: { border: 'rgba(250, 204, 21, 0.75)' },
     purple: { border: 'rgba(192, 132, 252, 0.75)' },
     blue: { border: 'rgba(96, 165, 250, 0.75)' },
-    cyan: { border: 'rgba(34, 211, 238, 0.85)' },
+    green: { border: 'rgba(52, 211, 153, 0.85)' },
     neutral: { border: 'rgba(148, 163, 184, 0.30)' },
 };
 
@@ -315,13 +315,13 @@ const primaryTone = (item: QcDownloadItem): RowTone => {
 const rowShell = (item: QcDownloadItem, latestHunt = false): { className: string; style?: React.CSSProperties } => {
     const tone = primaryTone(item);
     if (latestHunt && tone !== 'neutral') {
-        // Diagonal BR→TL border only; solid dark fill behind text.
+        // Diagonal BR→TL border only; Latest green vs waiting blue.
         return {
             className: 'border-2 border-transparent',
             style: {
                 backgroundImage: [
                     `linear-gradient(${CARD_FILL}, ${CARD_FILL})`,
-                    `linear-gradient(to top left, ${TONE.cyan.border} 50%, ${TONE[tone].border} 50%)`,
+                    `linear-gradient(to top left, ${TONE.green.border} 50%, ${TONE[tone].border} 50%)`,
                 ].join(', '),
                 backgroundOrigin: 'border-box',
                 backgroundClip: 'padding-box, border-box',
@@ -329,7 +329,7 @@ const rowShell = (item: QcDownloadItem, latestHunt = false): { className: string
         };
     }
     if (latestHunt) {
-        return { className: 'border-2 border-cyan-400/70 bg-[#111318]' };
+        return { className: 'border-2 border-emerald-400/70 bg-[#111318]' };
     }
     if (tone === 'red') return { className: 'border border-red-400/70 bg-[#111318]' };
     if (tone === 'yellow') return { className: 'border border-yellow-400/70 bg-[#111318]' };
@@ -691,7 +691,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                         Downloads by library
                         <SettingHint>
                             Borders follow Arr queue colors: importing purple, waiting blue, import issues yellow,
-                            failed/strikes red; healthy downloads stay grey. Latest uses a cyan diagonal half when shared.
+                            failed/strikes red; healthy downloads stay grey. Latest uses a green diagonal half when shared.
                             Board is cached ~30s and refreshed in the background.
                         </SettingHint>
                     </h2>
@@ -853,7 +853,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                                         {mediaName}
                                                                     </div>
                                                                     {row.latestHunt && (
-                                                                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-cyan-300">
+                                                                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
                                                                             Latest
                                                                         </span>
                                                                     )}
