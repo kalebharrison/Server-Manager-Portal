@@ -4,7 +4,6 @@ export type UpgraderTab =
     | 'overview'
     | 'hunt'
     | 'integrity'
-    | 'downloads'
     | 'clients'
     | 'rules'
     | 'activity'
@@ -27,7 +26,6 @@ const VALID_TABS = new Set<UpgraderTab>([
     'overview',
     'hunt',
     'integrity',
-    'downloads',
     'clients',
     'rules',
     'activity',
@@ -40,6 +38,7 @@ const normalizeTab = (raw: string | null): UpgraderTab => {
     if (!raw || raw === 'browse') return 'overview';
     if (raw === 'history') return 'activity';
     if (raw === 'exclusions') return 'rules';
+    if (raw === 'downloads') return 'hunt';
     if (VALID_TABS.has(raw as UpgraderTab)) return raw as UpgraderTab;
     return 'overview';
 };

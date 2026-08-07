@@ -8,7 +8,6 @@ import {
     Settings2,
     LayoutDashboard,
     FlaskConical,
-    Download,
     HardDrive,
     Crosshair,
     ShieldCheck,
@@ -53,9 +52,8 @@ type LibraryGroup<T> = { key: string; label: string; items: T[] };
 
 const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode; title: string }> = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-3.5 h-3.5" />, title: 'Live status: automation, queues, and capacity' },
-    { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'Recent grabs, preview hunt, and how hunting works' },
+    { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'Preview hunts, recent grabs, and download cleanup' },
     { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-3.5 h-3.5" />, title: 'Scan library files for corruption (report-only unless you replace)' },
-    { id: 'downloads', label: 'Downloads', icon: <Download className="w-3.5 h-3.5" />, title: 'Download health, strikes, and cleanup' },
     { id: 'clients', label: 'Clients', icon: <HardDrive className="w-3.5 h-3.5" />, title: 'Optimize qBit/SAB and manage blocked extensions' },
     { id: 'rules', label: 'Rules', icon: <Ban className="w-3.5 h-3.5" />, title: 'Cleanup timing, hunt caps, and skip list' },
     { id: 'profiles', label: 'Arr scores', icon: <Settings2 className="w-3.5 h-3.5" />, title: 'Custom format repairs and Arr quality profile scores' },
@@ -380,7 +378,7 @@ export const UpgraderDashboard: React.FC = () => {
                             Quality Control
                         </h1>
                         <p className="text-sm text-muted mt-1">
-                            Live status and queues. Dig into tabs for hunt, downloads, clients, rules, and Arr scores.
+                            Live status and queues. Dig into tabs for hunt, clients, rules, and Arr scores.
                         </p>
                     </div>
                     {featureEnabled && (
@@ -466,7 +464,7 @@ export const UpgraderDashboard: React.FC = () => {
                                             {!status?.cleanupAutomationEnabled && (
                                                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                                     <p className="text-sm text-amber-100">
-                                                        Cleanup automation is off. Manual cleanup still works on the Downloads tab.
+                                                        Cleanup automation is off. Manual cleanup still works on the Hunt tab.
                                                     </p>
                                                     <a
                                                         href={portalUrl('/settings#upgrader')}
@@ -496,7 +494,7 @@ export const UpgraderDashboard: React.FC = () => {
                                             detail={cleanupAggression
                                                 ? `${cleanupAggression} · ${status?.qcThresholds?.maxStrikes ?? 3} strikes`
                                                 : `${status?.qcThresholds?.maxStrikes ?? 3} strikes to kill`}
-                                            onClick={() => handleTabChange('downloads')}
+                                            onClick={() => handleTabChange('hunt')}
                                         />
                                         <QcKpiTile
                                             label="Integrity"
@@ -530,7 +528,7 @@ export const UpgraderDashboard: React.FC = () => {
                                             detail={librariesAtCap > 0
                                                 ? `${librariesAtCap} librar${librariesAtCap === 1 ? 'y' : 'ies'} at cap`
                                                 : `Cap ${downloadCap} / library`}
-                                            onClick={() => handleTabChange('downloads')}
+                                            onClick={() => handleTabChange('hunt')}
                                         />
                                         <QcKpiTile
                                             label="Grabs this hour"
@@ -544,7 +542,7 @@ export const UpgraderDashboard: React.FC = () => {
                                             detail={status?.qcMetrics?.lastCleanupAt
                                                 ? `Last ${new Date(status.qcMetrics.lastCleanupAt).toLocaleString()}`
                                                 : 'Lifetime recorded'}
-                                            onClick={() => handleTabChange('downloads')}
+                                            onClick={() => handleTabChange('hunt')}
                                         />
                                         <QcKpiTile
                                             label="Clients"
@@ -571,9 +569,9 @@ export const UpgraderDashboard: React.FC = () => {
                                             <button
                                                 type="button"
                                                 className="text-xs font-bold text-plex hover:underline"
-                                                onClick={() => handleTabChange('downloads')}
+                                                onClick={() => handleTabChange('hunt')}
                                             >
-                                                Open Downloads
+                                                Open Hunt
                                             </button>
                                         </div>
                                         {activeByLibrary.length === 0 ? (
@@ -592,7 +590,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                             value={`${lib.active}/${lib.cap}`}
                                                             valueClassName={atCap ? 'text-amber-200' : 'text-text'}
                                                             detail={`${lib.remaining} free`}
-                                                            onClick={() => handleTabChange('downloads')}
+                                                            onClick={() => handleTabChange('hunt')}
                                                         >
                                                             <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
                                                                 <div
@@ -641,7 +639,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                 label="DL cap / library"
                                                 value={downloadCap}
                                                 detail={`${activeDownloadTotal} active now`}
-                                                onClick={() => handleTabChange('downloads')}
+                                                onClick={() => handleTabChange('hunt')}
                                             />
                                         </div>
 
@@ -754,6 +752,13 @@ export const UpgraderDashboard: React.FC = () => {
                                             </section>
                                         )}
 
+                                        <Suspense fallback={<TabPanelFallback />}>
+                                            <QcDownloadsPanel
+                                                onToast={addToast}
+                                                snoozeDefaultHours={status?.qcThresholds?.snoozeDefaultHours ?? 24}
+                                            />
+                                        </Suspense>
+
                                         <section className={`${QC_SECTION} space-y-3`}>
                                             <div className="flex flex-wrap items-center justify-between gap-2">
                                                 <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
@@ -842,15 +847,6 @@ export const UpgraderDashboard: React.FC = () => {
                                             )}
                                         </section>
                                     </div>
-                                )}
-
-                                {activeTab === 'downloads' && (
-                                    <Suspense fallback={<TabPanelFallback />}>
-                                        <QcDownloadsPanel
-                                            onToast={addToast}
-                                            snoozeDefaultHours={status?.qcThresholds?.snoozeDefaultHours ?? 24}
-                                        />
-                                    </Suspense>
                                 )}
 
                                 {activeTab === 'clients' && (
