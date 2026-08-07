@@ -279,15 +279,18 @@ const pickRepresentative = (items: QcDownloadItem[]) => (
 
 type RowTone = 'red' | 'yellow' | 'purple' | 'blue' | 'cyan' | 'neutral';
 
-/** Arr-ish queue colors + cyan for portal “Latest”. */
-const TONE: Record<RowTone, { border: string; fill: string }> = {
-    red: { border: 'rgba(239, 68, 68, 0.55)', fill: 'rgba(239, 68, 68, 0.10)' },
-    yellow: { border: 'rgba(234, 179, 8, 0.55)', fill: 'rgba(234, 179, 8, 0.10)' },
-    purple: { border: 'rgba(168, 85, 247, 0.55)', fill: 'rgba(168, 85, 247, 0.10)' },
-    blue: { border: 'rgba(59, 130, 246, 0.55)', fill: 'rgba(59, 130, 246, 0.10)' },
-    cyan: { border: 'rgba(34, 211, 238, 0.65)', fill: 'rgba(34, 211, 238, 0.10)' },
-    neutral: { border: 'rgba(148, 163, 184, 0.20)', fill: 'rgba(15, 23, 42, 0.20)' },
+/** Arr-ish queue colors — border only; card body stays dark so text stays readable. */
+const TONE: Record<RowTone, { border: string }> = {
+    red: { border: 'rgba(248, 113, 113, 0.75)' },
+    yellow: { border: 'rgba(250, 204, 21, 0.75)' },
+    purple: { border: 'rgba(192, 132, 252, 0.75)' },
+    blue: { border: 'rgba(96, 165, 250, 0.75)' },
+    cyan: { border: 'rgba(34, 211, 238, 0.85)' },
+    neutral: { border: 'rgba(148, 163, 184, 0.30)' },
 };
+
+/** Opaque card body — never wash text with status tint. */
+const CARD_FILL = 'rgb(17, 19, 24)';
 
 const isClientFailed = (item: QcDownloadItem) => {
     const state = String(item.client?.state || '').toLowerCase();
@@ -312,12 +315,12 @@ const primaryTone = (item: QcDownloadItem): RowTone => {
 const rowShell = (item: QcDownloadItem, latestHunt = false): { className: string; style?: React.CSSProperties } => {
     const tone = primaryTone(item);
     if (latestHunt && tone !== 'neutral') {
-        // Diagonal BR→TL: Latest cyan on the bottom-right half, status on the top-left half.
+        // Diagonal BR→TL border only; solid dark fill behind text.
         return {
             className: 'border-2 border-transparent',
             style: {
                 backgroundImage: [
-                    `linear-gradient(${TONE[tone].fill}, ${TONE[tone].fill})`,
+                    `linear-gradient(${CARD_FILL}, ${CARD_FILL})`,
                     `linear-gradient(to top left, ${TONE.cyan.border} 50%, ${TONE[tone].border} 50%)`,
                 ].join(', '),
                 backgroundOrigin: 'border-box',
@@ -326,13 +329,13 @@ const rowShell = (item: QcDownloadItem, latestHunt = false): { className: string
         };
     }
     if (latestHunt) {
-        return { className: 'border-2 border-cyan-400/50 bg-cyan-400/10' };
+        return { className: 'border-2 border-cyan-400/70 bg-[#111318]' };
     }
-    if (tone === 'red') return { className: 'border border-red-500/45 bg-red-500/10' };
-    if (tone === 'yellow') return { className: 'border border-yellow-500/45 bg-yellow-500/10' };
-    if (tone === 'purple') return { className: 'border border-purple-500/45 bg-purple-500/10' };
-    if (tone === 'blue') return { className: 'border border-blue-500/45 bg-blue-500/10' };
-    return { className: 'border border-border/30 bg-background/20' };
+    if (tone === 'red') return { className: 'border border-red-400/70 bg-[#111318]' };
+    if (tone === 'yellow') return { className: 'border border-yellow-400/70 bg-[#111318]' };
+    if (tone === 'purple') return { className: 'border border-purple-400/70 bg-[#111318]' };
+    if (tone === 'blue') return { className: 'border border-blue-400/70 bg-[#111318]' };
+    return { className: 'border border-border/40 bg-[#111318]' };
 };
 
 const statusBadge = (item: QcDownloadItem) => {
@@ -844,34 +847,34 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                                     onChange={() => toggleGroup(keys)}
                                                                 />
                                                             )}
-                                                            <div className="min-w-0 flex-1 space-y-0.5">
+                                                            <div className="min-w-0 flex-1 space-y-1">
                                                                 <div className="flex items-center gap-2 min-w-0">
-                                                                    <div className="text-xs font-semibold text-text truncate">
+                                                                    <div className="text-sm font-semibold text-white truncate">
                                                                         {mediaName}
                                                                     </div>
                                                                     {row.latestHunt && (
-                                                                        <span className="shrink-0 text-[10px] font-bold uppercase text-cyan-300">
+                                                                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-cyan-300">
                                                                             Latest
                                                                         </span>
                                                                     )}
                                                                     {badge ? (
-                                                                        <span className={`shrink-0 text-[10px] font-bold uppercase ${badge.className}`}>
+                                                                        <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide ${badge.className}`}>
                                                                             {badge.text}
                                                                         </span>
                                                                     ) : null}
                                                                 </div>
                                                                 {fileName && (
-                                                                    <div className="text-[11px] text-muted truncate" title={fileName}>
+                                                                    <div className="text-xs text-zinc-300 truncate" title={fileName}>
                                                                         {fileName}
                                                                     </div>
                                                                 )}
-                                                                <div className="text-[11px] text-muted/90 break-words">
+                                                                <div className="text-xs text-zinc-400 break-words leading-snug">
                                                                     {meta.join(' · ')}
                                                                 </div>
                                                                 {progress > 0 && progress < 1 && (
-                                                                    <div className="mt-1.5 h-1 rounded-full bg-white/10 overflow-hidden">
+                                                                    <div className="mt-1.5 h-1 rounded-full bg-white/15 overflow-hidden">
                                                                         <div
-                                                                            className="h-full rounded-full bg-plex/80"
+                                                                            className="h-full rounded-full bg-plex"
                                                                             style={{ width: `${Math.round(progress * 100)}%` }}
                                                                         />
                                                                     </div>
