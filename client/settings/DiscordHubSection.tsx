@@ -8,6 +8,7 @@ export type DiscordHubSectionProps = {
     discordChatChannelLabel: string;
     discordMediaChannelLabel: string;
     discordWebhookUrl: string;
+    discordAdminWebhookUrl: string;
     discordNotifyRequestUpdates: boolean;
     discordNotifyIssueReplies: boolean;
     discordNotifyWatchlistAvailable: boolean;
@@ -16,6 +17,7 @@ export type DiscordHubSectionProps = {
     onDiscordChatChannelLabelChange: (value: string) => void;
     onDiscordMediaChannelLabelChange: (value: string) => void;
     onDiscordWebhookUrlChange: (value: string) => void;
+    onDiscordAdminWebhookUrlChange: (value: string) => void;
     onDiscordNotifyRequestUpdatesChange: (value: boolean) => void;
     onDiscordNotifyIssueRepliesChange: (value: boolean) => void;
     onDiscordNotifyWatchlistAvailableChange: (value: boolean) => void;
@@ -27,6 +29,7 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
     discordChatChannelLabel,
     discordMediaChannelLabel,
     discordWebhookUrl,
+    discordAdminWebhookUrl,
     discordNotifyRequestUpdates,
     discordNotifyIssueReplies,
     discordNotifyWatchlistAvailable,
@@ -35,6 +38,7 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
     onDiscordChatChannelLabelChange,
     onDiscordMediaChannelLabelChange,
     onDiscordWebhookUrlChange,
+    onDiscordAdminWebhookUrlChange,
     onDiscordNotifyRequestUpdatesChange,
     onDiscordNotifyIssueRepliesChange,
     onDiscordNotifyWatchlistAvailableChange,
@@ -66,8 +70,13 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
             </div>
         </div>
         <div className="mb-4">
-            <label htmlFor="discordWebhookUrl">Channel webhook URL (optional)</label>
+            <label htmlFor="discordWebhookUrl">Member notifications webhook URL</label>
             <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordWebhookUrl" type="password" value={discordWebhookUrl} onChange={(event) => onDiscordWebhookUrlChange(event.target.value)} placeholder="https://discord.com/api/webhooks/..." disabled={!discordEnabled} autoComplete="off" />
+        </div>
+        <div className="mb-4">
+            <label htmlFor="discordAdminWebhookUrl">Admin issues webhook URL</label>
+            <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordAdminWebhookUrl" type="password" value={discordAdminWebhookUrl} onChange={(event) => onDiscordAdminWebhookUrlChange(event.target.value)} placeholder="https://discord.com/api/webhooks/..." disabled={!discordEnabled} autoComplete="off" />
+            <div className="mt-2"><SettingHint>QC digests and integrity issues post here. Falls back to the member webhook if blank.</SettingHint></div>
         </div>
         <div className="flex flex-col gap-2">
             <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyRequestUpdates} onChange={(event) => onDiscordNotifyRequestUpdatesChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Post request approve / decline</span></label>

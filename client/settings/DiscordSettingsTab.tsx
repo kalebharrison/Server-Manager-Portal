@@ -15,6 +15,7 @@ export type DiscordSettingsTabProps = {
     discordBotToken: string;
     discordBotEnabled: boolean;
     discordWebhookUrl: string;
+    discordAdminWebhookUrl: string;
     discordNotifyRequestUpdates: boolean;
     discordNotifyIssueReplies: boolean;
     discordNotifyWatchlistAvailable: boolean;
@@ -37,6 +38,7 @@ export type DiscordSettingsTabProps = {
     onDiscordBotTokenChange: (value: string) => void;
     onDiscordBotEnabledChange: (value: boolean) => void;
     onDiscordWebhookUrlChange: (value: string) => void;
+    onDiscordAdminWebhookUrlChange: (value: string) => void;
     onDiscordNotifyRequestUpdatesChange: (value: boolean) => void;
     onDiscordNotifyIssueRepliesChange: (value: boolean) => void;
     onDiscordNotifyWatchlistAvailableChange: (value: boolean) => void;
@@ -61,6 +63,7 @@ export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => 
             discordChatChannelLabel={props.discordChatChannelLabel}
             discordMediaChannelLabel={props.discordMediaChannelLabel}
             discordWebhookUrl={props.discordWebhookUrl}
+            discordAdminWebhookUrl={props.discordAdminWebhookUrl}
             discordNotifyRequestUpdates={props.discordNotifyRequestUpdates}
             discordNotifyIssueReplies={props.discordNotifyIssueReplies}
             discordNotifyWatchlistAvailable={props.discordNotifyWatchlistAvailable}
@@ -69,6 +72,7 @@ export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => 
             onDiscordChatChannelLabelChange={props.onDiscordChatChannelLabelChange}
             onDiscordMediaChannelLabelChange={props.onDiscordMediaChannelLabelChange}
             onDiscordWebhookUrlChange={props.onDiscordWebhookUrlChange}
+            onDiscordAdminWebhookUrlChange={props.onDiscordAdminWebhookUrlChange}
             onDiscordNotifyRequestUpdatesChange={props.onDiscordNotifyRequestUpdatesChange}
             onDiscordNotifyIssueRepliesChange={props.onDiscordNotifyIssueRepliesChange}
             onDiscordNotifyWatchlistAvailableChange={props.onDiscordNotifyWatchlistAvailableChange}

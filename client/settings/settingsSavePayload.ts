@@ -32,6 +32,7 @@ type SettingsSavePayloadInput = {
     discordBotToken: string;
     discordBotEnabled: boolean;
     discordWebhookUrl: string;
+    discordAdminWebhookUrl: string;
     discordNotifyRequestUpdates: boolean;
     discordNotifyIssueReplies: boolean;
     discordNotifyWatchlistAvailable: boolean;
@@ -110,6 +111,8 @@ type SettingsSavePayloadInput = {
     qcIntegrityDiscordDigestEnabled: boolean;
     qcIntegrityDecodeWindowSec: number;
     qcIntegrityDecodeTimeoutMs: number;
+    qcIntegrityDecodeRetries: number;
+    qcIntegritySoftDecodeTimeouts: boolean;
     qcIntegrityWebhookUsername: string;
     qcIntegrityWebhookPassword: string;
     qcMetaDlMinutes: number;

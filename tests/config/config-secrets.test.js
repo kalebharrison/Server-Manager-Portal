@@ -8,6 +8,7 @@ const KEY = 'test-config-encryption-key-0123456789abcdef';
 const QC_DISCORD_SECRET_FIELDS = [
     'discordBotToken',
     'discordWebhookUrl',
+    'discordAdminWebhookUrl',
     'qcQbitPassword',
     'qcSabApiKey',
     'qcIntegrityWebhookPassword',

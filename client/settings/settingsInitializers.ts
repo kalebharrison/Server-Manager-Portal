@@ -35,6 +35,7 @@ type SettingsHydrationSetters = {
     setDiscordBotToken: (value: string) => void;
     setDiscordBotEnabled: (value: boolean) => void;
     setDiscordWebhookUrl: (value: string) => void;
+    setDiscordAdminWebhookUrl: (value: string) => void;
     setDiscordNotifyRequestUpdates: (value: boolean) => void;
     setDiscordNotifyIssueReplies: (value: boolean) => void;
     setDiscordNotifyWatchlistAvailable: (value: boolean) => void;
@@ -114,6 +115,8 @@ type SettingsHydrationSetters = {
     setQcIntegrityDiscordDigestEnabled: (value: boolean) => void;
     setQcIntegrityDecodeWindowSec: (value: number) => void;
     setQcIntegrityDecodeTimeoutMs: (value: number) => void;
+    setQcIntegrityDecodeRetries: (value: number) => void;
+    setQcIntegritySoftDecodeTimeouts: (value: boolean) => void;
     setQcIntegrityWebhookUsername: (value: string) => void;
     setQcIntegrityWebhookPassword: (value: string) => void;
     setQcMetaDlMinutes: (value: number) => void;
@@ -167,6 +170,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setDiscordBotToken(initialSettings.discordBotToken || '');
     setters.setDiscordBotEnabled(!!initialSettings.discordBotEnabled);
     setters.setDiscordWebhookUrl(initialSettings.discordWebhookUrl || '');
+    setters.setDiscordAdminWebhookUrl(initialSettings.discordAdminWebhookUrl || '');
     setters.setDiscordNotifyRequestUpdates(initialSettings.discordNotifyRequestUpdates !== false);
     setters.setDiscordNotifyIssueReplies(initialSettings.discordNotifyIssueReplies !== false);
     setters.setDiscordNotifyWatchlistAvailable(initialSettings.discordNotifyWatchlistAvailable !== false);
@@ -261,7 +265,9 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityNightlyHour(Math.max(0, Math.min(23, Number(initialSettings.qcIntegrityNightlyHour ?? 2) || 2)));
     setters.setQcIntegrityDiscordDigestEnabled(!!initialSettings.qcIntegrityDiscordDigestEnabled);
     setters.setQcIntegrityDecodeWindowSec(Math.max(1, Number(initialSettings.qcIntegrityDecodeWindowSec) || 10));
-    setters.setQcIntegrityDecodeTimeoutMs(Math.max(1000, Number(initialSettings.qcIntegrityDecodeTimeoutMs) || 30000));
+    setters.setQcIntegrityDecodeTimeoutMs(Math.max(1000, Number(initialSettings.qcIntegrityDecodeTimeoutMs) || 90000));
+    setters.setQcIntegrityDecodeRetries(Math.max(0, Number(initialSettings.qcIntegrityDecodeRetries ?? 2) || 0));
+    setters.setQcIntegritySoftDecodeTimeouts(initialSettings.qcIntegritySoftDecodeTimeouts !== false);
     setters.setQcIntegrityWebhookUsername(String(initialSettings.qcIntegrityWebhookUsername || ''));
     setters.setQcIntegrityWebhookPassword('');
     setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 20));

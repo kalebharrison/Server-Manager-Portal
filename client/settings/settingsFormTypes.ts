@@ -36,6 +36,7 @@ export type SettingsFormValues = {
     discordBotToken: string;
     discordBotEnabled: boolean;
     discordWebhookUrl: string;
+    discordAdminWebhookUrl: string;
     discordNotifyRequestUpdates: boolean;
     discordNotifyIssueReplies: boolean;
     discordNotifyWatchlistAvailable: boolean;
@@ -109,6 +110,8 @@ export type SettingsFormValues = {
     qcIntegrityDiscordDigestEnabled: boolean;
     qcIntegrityDecodeWindowSec: number;
     qcIntegrityDecodeTimeoutMs: number;
+    qcIntegrityDecodeRetries: number;
+    qcIntegritySoftDecodeTimeouts: boolean;
     qcIntegrityWebhookUsername: string;
     qcIntegrityWebhookPassword: string;
     qcMetaDlMinutes: number;

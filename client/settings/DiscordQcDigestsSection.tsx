@@ -57,7 +57,7 @@ export const DiscordQcDigestsSection: React.FC<DiscordQcDigestsSectionProps> = (
                     onChange={(event) => onIntegrityDiscordDigestEnabledChange(event.target.checked)}
                 />
             </label>
-            <SettingHint>Uses the same Discord webhook as hub notifications.</SettingHint>
+            <SettingHint>Digests use the admin webhook (falls back to member webhook).</SettingHint>
         </div>
     </SettingsCollapseSection>
 );

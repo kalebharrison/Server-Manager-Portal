@@ -1059,3 +1059,127 @@ test('recheckFinding keeps and refreshes finding when still failing', async () =
     assert.equal(prefs.integrityFindings[0].reason, 'decode_start');
     assert.equal(result.finding.reason, 'decode_start');
 });
+
+test('baselineImport soft timeout does not blocklist and queues recheck', async () => {
+    let prefs = {};
+    const blocklistCalls = [];
+    const integrity = createQcIntegrity({
+        request: async () => {
+            blocklistCalls.push(1);
+            return {};
+        },
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version test`, stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: false, code: 1, timedOut: true, stdout: '', stderr: 'timeout' };
+        },
+    });
+
+    const result = await integrity.baselineImport({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegritySoftDecodeTimeouts: true,
+        qcIntegrityDecodeRetries: 0,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, {
+        ratingKey: 'radarr:r1:1',
+        title: 'Soft Timeout',
+        arrType: 'radarr',
+        arrInstanceId: 'r1',
+        entityId: 1,
+        movieFileId: 7,
+        filePath: '/movies/Soft.mkv',
+    });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.softTimeout, true);
+    assert.equal(result.blocklisted, false);
+    assert.equal(blocklistCalls.length, 0);
+    assert.ok((prefs.integritySoftRecheckQueue || []).includes(result.result.key));
+});
+
+test('baselineImport hard decode fail blocklists on import', async () => {
+    let prefs = {};
+    const requests = [];
+    const integrity = createQcIntegrity({
+        request: async (_instance, path, options = {}) => {
+            requests.push({ path, method: options.method || 'GET' });
+            if (String(path).includes('/history')) return [];
+            return {};
+        },
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version test`, stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: false, code: 1, timedOut: false, stdout: '', stderr: 'decode error' };
+        },
+    });
+
+    const result = await integrity.baselineImport({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegritySoftDecodeTimeouts: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, {
+        ratingKey: 'radarr:r1:1',
+        title: 'Hard Fail',
+        arrType: 'radarr',
+        arrInstanceId: 'r1',
+        entityId: 1,
+        movieFileId: 7,
+        filePath: '/movies/Hard.mkv',
+        downloadId: 'abc',
+        sourceTitle: 'Hard.Fail.mkv',
+    });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.result.shouldBlocklist, true);
+    assert.ok(requests.some((entry) => String(entry.path).includes('blocklist') || String(entry.path).includes('history')));
+});

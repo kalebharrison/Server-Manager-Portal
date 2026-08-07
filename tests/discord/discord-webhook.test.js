@@ -40,3 +40,19 @@ test('discord notifier respects enable + event toggles', async () => {
     }, { title: 'Movie', statusLabel: 'approved', requestedBy: { username: 'sam' } });
     assert.equal(calls.length, 1);
 });
+
+test('postAdminEvent prefers admin webhook over member webhook', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+        calls.push(url);
+        return { ok: true };
+    };
+    const notifier = createDiscordNotifier({ fetchImpl });
+    await notifier.postAdminEvent({
+        discordEnabled: true,
+        discordWebhookUrl: 'https://discord.com/api/webhooks/1/member',
+        discordAdminWebhookUrl: 'https://discord.com/api/webhooks/2/admin',
+    }, { title: 'Integrity', description: 'fail' });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0], 'https://discord.com/api/webhooks/2/admin');
+});

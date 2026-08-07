@@ -470,8 +470,10 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 <div>
                     <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h2>
                     <p className="text-xs text-muted mt-1 max-w-2xl">
-                        Verify Arr-known library files. Pick one check, or run all of them.
-                        Files playing on Plex are skipped. Dry-run only — nothing is deleted until you Replace a finding.
+                        Import/upgrade webhooks validate new files (playback → fingerprint → optional full hash).
+                        Nightly automation fingerprints the whole library and only escalates mismatches to playback/hash.
+                        Buttons below are manual tools. Dry-run only — nothing is deleted until you Replace a finding.
+                        Files playing on Plex are skipped.
                     </p>
                     {result?.setup && !result.setup.ready && (
                         <p className="text-xs text-amber-200 mt-2">
@@ -610,7 +612,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     {[
                         ['Probed', scanning ? (progress?.scanned || 0) : (result?.scanned || 0)],
-                        ['Cached skip', scanning ? (progress?.skipped || 0) : (result?.skipped || 0)],
+                        ['Already checked', scanning ? (progress?.skipped || 0) : (result?.skipped || 0)],
                         ['Playing skip', scanning ? (progress?.skippedPlaying || 0) : (result?.skippedPlaying || 0)],
                         ['Passed', scanning ? (progress?.passed || 0) : (result?.passed || 0)],
                         ['Findings', scanning ? (progress?.findingCount || 0) : (result?.findingCount || displayFindings.length || 0)],

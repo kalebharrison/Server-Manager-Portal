@@ -65,16 +65,24 @@ Integrity validates files Arr already knows about. It requires:
 
 See [Deployment — integrity mounts](./deployment.md#optional-quality-control-integrity-media-mounts).
 
+### Two pipelines
+
+**Import / upgrade (Arr webhooks)**  
+Playback check → quick fingerprint → optional full-file hash. Hard failures blocklist the release and (when automation is on) delete + re-search. Soft decode timeouts (toggle, default on) do **not** blocklist — they queue a recheck instead.
+
+**Nightly**  
+Full-library quick fingerprint vs cache. Matches move on. Mismatches escalate to playback then hash. Failures alert on the admin Discord webhook and, when automation is on, replace/search **without** blocklisting (same release may come back).
+
 ### Check modes
 
 | Mode | Label in UI | What it does |
 |---|---|---|
-| `playability` | Playback check | Decodes short samples at start, middle, and end via ffmpeg |
+| `playability` | Playback check | Decodes short samples at start, middle, and end via ffmpeg (retries + longer timeout) |
 | `imohash` | Quick fingerprint | Fast spot-check (file size + small slices); catches silent swaps |
 | `xxhash` | Full-file hash | Hashes the entire file; slowest — enable **Full-file hash (xxhash)** in Settings first |
 | `baseline` | Run all checks | Playback + quick fingerprint together; adds full-file hash when xxhash is enabled |
 
-Manual scans run from the **Integrity** tab (dry-run by default). **Enable integrity automation** allows nightly rechecks to delete bad files and trigger Arr re-search — leave off until you trust dry-run results.
+Manual scans on the Integrity tab are admin tools (dry-run by default). **Enable integrity automation** allows nightly escalate replace and import hard-fail replace — leave off until you trust dry-run results.
 
 Integrity skips files currently playing on Plex. A **circuit breaker** pauses scans when too many findings appear in one cycle.
 

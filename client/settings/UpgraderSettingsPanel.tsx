@@ -78,6 +78,8 @@ type Props = {
     integrityDiscordDigestEnabled: boolean;
     integrityDecodeWindowSec: number;
     integrityDecodeTimeoutMs: number;
+    integrityDecodeRetries: number;
+    integritySoftDecodeTimeouts: boolean;
     integrityWebhookUsername: string;
     integrityWebhookPassword: string;
     qcMetaDlMinutes: number;
@@ -123,6 +125,8 @@ type Props = {
     onIntegrityDiscordDigestEnabledChange: (value: boolean) => void;
     onIntegrityDecodeWindowSecChange: (value: number) => void;
     onIntegrityDecodeTimeoutMsChange: (value: number) => void;
+    onIntegrityDecodeRetriesChange: (value: number) => void;
+    onIntegritySoftDecodeTimeoutsChange: (value: boolean) => void;
     onIntegrityWebhookUsernameChange: (value: string) => void;
     onIntegrityWebhookPasswordChange: (value: string) => void;
     onQcMetaDlMinutesChange: (value: number) => void;
@@ -170,6 +174,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityNightlyHour,
     integrityDecodeWindowSec,
     integrityDecodeTimeoutMs,
+    integrityDecodeRetries,
+    integritySoftDecodeTimeouts,
     integrityWebhookUsername,
     integrityWebhookPassword,
     qcMetaDlMinutes,
@@ -213,6 +219,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityNightlyHourChange,
     onIntegrityDecodeWindowSecChange,
     onIntegrityDecodeTimeoutMsChange,
+    onIntegrityDecodeRetriesChange,
+    onIntegritySoftDecodeTimeoutsChange,
     onIntegrityWebhookUsernameChange,
     onIntegrityWebhookPasswordChange,
     onQcMetaDlMinutesChange,
@@ -976,6 +984,21 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityXxhashEnabledChange(event.target.checked)}
                                     />
                                 </label>
+                                <label className="flex items-center justify-between gap-4">
+                                    <span className="min-w-0">
+                                        <span className="font-semibold">Soft decode timeouts</span>
+                                        <div className="mt-1">
+                                            <SettingHint>Timeouts on import are not blocklisted; queued for recheck.</SettingHint>
+                                        </div>
+                                    </span>
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 accent-plex"
+                                        disabled={!enabled || !integrityEnabled}
+                                        checked={integritySoftDecodeTimeouts && integrityEnabled && enabled}
+                                        onChange={(event) => onIntegritySoftDecodeTimeoutsChange(event.target.checked)}
+                                    />
+                                </label>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <label className="text-sm font-semibold">Max files per cycle
@@ -1046,6 +1069,16 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         value={integrityDecodeTimeoutMs}
                                         disabled={!enabled || !integrityEnabled}
                                         onChange={(event) => onIntegrityDecodeTimeoutMsChange(Math.max(1000, Number(event.target.value) || 1000))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">Decode retries
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityDecodeRetries}
+                                        disabled={!enabled || !integrityEnabled}
+                                        onChange={(event) => onIntegrityDecodeRetriesChange(Math.max(0, Number(event.target.value) || 0))}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
