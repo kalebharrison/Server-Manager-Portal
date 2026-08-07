@@ -189,27 +189,30 @@ const isImporting = (item: QcDownloadItem) => (
     String(item.trackedDownloadState || '').toLowerCase() === 'importing'
 );
 
-const isStrikeProblem = (item: QcDownloadItem) => {
-    if (item.actionable || item.killReady || item.would?.kill || item.strikeEligible) return true;
-    const reason = String(item.reason || '');
-    // Waiting-to-import overdue is yellow caution, not strike red — unless already strike-eligible.
-    if (!reason || reason === 'completedNotImporting') return false;
-    return true;
-};
+/** Real strike/kill pressure — not every classified reason (held failed imports stay yellow). */
+const isStrikeProblem = (item: QcDownloadItem) => Boolean(
+    item.actionable
+    || item.killReady
+    || item.would?.kill
+    || item.strikeEligible
+    || (Number(item.would?.strikes ?? item.strikes ?? 0) > 0 && item.reason),
+);
 
 const isUnhealthy = (item: QcDownloadItem) => Boolean(
     isStrikeProblem(item)
-    || item.safetyHold,
+    || item.safetyHold
+    || (item.reason && item.reason !== 'completedNotImporting' && !item.safetyHold),
 );
 
 const healthRank = (item: QcDownloadItem) => {
     if (item.actionable || item.killReady || item.would?.kill) return 0;
     if (isStrikeProblem(item)) return 1;
     if (item.safetyHold) return 2;
-    if (isWaitingImport(item) && !isImporting(item)) return 3;
-    if (isImporting(item)) return 4;
-    if (item.snoozed) return 5;
-    return 6;
+    if (item.reason && item.reason !== 'completedNotImporting') return 3;
+    if (isWaitingImport(item) && !isImporting(item)) return 4;
+    if (isImporting(item)) return 5;
+    if (item.snoozed) return 6;
+    return 7;
 };
 
 const libraryLabelOf = (item: QcDownloadItem) => {
@@ -257,20 +260,21 @@ const primaryTone = (item: QcDownloadItem): RowTone => {
     if (isStrikeProblem(item)) return 'red';
     if (item.safetyHold) return 'yellow';
     if (isImporting(item)) return 'green';
-    if (isWaitingImport(item)) return 'yellow';
+    if (isWaitingImport(item) || item.reason === 'completedNotImporting') return 'yellow';
+    if (item.reason) return 'yellow';
     return 'neutral';
 };
 
 const rowShell = (item: QcDownloadItem, latestHunt = false): { className: string; style?: React.CSSProperties } => {
     const tone = primaryTone(item);
     if (latestHunt && tone !== 'neutral') {
-        // Diagonal BL→TR: Latest blue on the bottom half, status color on the top half.
+        // Diagonal BR→TL: Latest blue on the bottom-right half, status on the top-left half.
         return {
             className: 'border-2 border-transparent',
             style: {
                 backgroundImage: [
                     `linear-gradient(${TONE[tone].fill}, ${TONE[tone].fill})`,
-                    `linear-gradient(to top right, ${TONE.blue.border} 50%, ${TONE[tone].border} 50%)`,
+                    `linear-gradient(to top left, ${TONE.blue.border} 50%, ${TONE[tone].border} 50%)`,
                 ].join(', '),
                 backgroundOrigin: 'border-box',
                 backgroundClip: 'padding-box, border-box',
@@ -293,14 +297,17 @@ const statusBadge = (item: QcDownloadItem) => {
     if (isStrikeProblem(item)) {
         return { text: 'Strikes', className: 'text-red-300' };
     }
+    if (item.safetyHold) {
+        return { text: 'Held', className: 'text-yellow-200' };
+    }
     if (isImporting(item)) {
         return { text: 'Importing', className: 'text-emerald-300' };
     }
-    if (isWaitingImport(item)) {
+    if (isWaitingImport(item) || item.reason === 'completedNotImporting') {
         return { text: 'Waiting', className: 'text-yellow-200' };
     }
-    if (item.safetyHold) {
-        return { text: 'Held', className: 'text-yellow-200' };
+    if (item.reason) {
+        return { text: 'Watch', className: 'text-yellow-200' };
     }
     return null;
 };
@@ -576,8 +583,8 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                     <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
                         Downloads by library
                         <SettingHint>
-                            Every in-flight Arr download, grouped by library. Borders: importing green, waiting yellow,
-                            strikes red, latest blue — shared latest+status splits the border diagonally (blue on the bottom half).
+                            Borders: importing green, waiting/held yellow, strikes red, latest blue —
+                            shared latest+status splits diagonally (blue on the bottom-right half).
                             are highlighted — healthy ones stay muted.
                         </SettingHint>
                     </h2>
