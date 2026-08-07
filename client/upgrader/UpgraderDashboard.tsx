@@ -19,7 +19,7 @@ import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
 import { QcKpiTile } from './QcKpiTile';
 import { QC_PAGE, QC_SECTION, QC_TAB_BAR, qcTabButtonClass } from './qcUi';
-import { SettingsCollapseSection } from '../settings/SettingsCollapseSection';
+import { SettingHint } from '../settings/SettingHint';
 import type {
     UpgraderAuditEntry,
     UpgraderHuntResponse,
@@ -618,23 +618,48 @@ export const UpgraderDashboard: React.FC = () => {
                                 )}
 
                                 {activeTab === 'hunt' && (
-                                    <div className="flex flex-col gap-6">
+                                    <div className="flex flex-col gap-4">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                            <QcKpiTile
+                                                label="Auto-hunt"
+                                                value={status?.automationEnabled ? 'On' : 'Off'}
+                                                valueClassName={status?.automationEnabled ? 'text-emerald-300' : 'text-amber-200'}
+                                                detail={huntIntensity || 'Enable in Settings'}
+                                            />
+                                            <QcKpiTile
+                                                label="Grabs this hour"
+                                                value={`${usedActions}/${maxActions}`}
+                                                detail={`${remainingActions} remaining`}
+                                            />
+                                            <QcKpiTile
+                                                label="Score floor"
+                                                value={`+${minDelta}`}
+                                                detail="Min CF gain to grab"
+                                                onClick={() => handleTabChange('rules')}
+                                            />
+                                            <QcKpiTile
+                                                label="DL cap / library"
+                                                value={downloadCap}
+                                                detail={`${activeDownloadTotal} active now`}
+                                                onClick={() => handleTabChange('downloads')}
+                                            />
+                                        </div>
+
                                         {(dryRunning || dryRun) && (
-                                            <section className="space-y-4">
-                                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <section className={`${QC_SECTION} space-y-3`}>
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div>
                                                         <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Hunt preview</h2>
-                                                        <p className="text-xs text-muted mt-1">
+                                                        <p className="text-xs text-muted mt-0.5">
                                                             {dryRunning
-                                                                ? 'Searching Arr now (small sample per library). This can take a minute — nothing is grabbed.'
+                                                                ? 'Searching Arr (sample per library) — nothing is grabbed.'
                                                                 : (
                                                                     <>
-                                                                        Preview only — no grabs were sent.
+                                                                        Preview only.
                                                                         {' '}{dryRun?.wouldGrab || 0} would grab
                                                                         {' · '}{dryRun?.skipped || 0} skipped
                                                                         {' · '}{dryRun?.searched || 0} searched
-                                                                        {(dryRun?.libraries || []).length ? ` · ${(dryRun?.libraries || []).length} libraries` : ''}.
-                                                                        {dryRun?.reason ? ` ${dryRun.reason}` : ''}
+                                                                        {dryRun?.reason ? ` · ${dryRun.reason}` : ''}
                                                                     </>
                                                                 )}
                                                         </p>
@@ -645,215 +670,177 @@ export const UpgraderDashboard: React.FC = () => {
                                                             className="text-xs font-bold text-muted hover:text-text"
                                                             onClick={() => setDryRun(null)}
                                                         >
-                                                            Clear preview
+                                                            Clear
                                                         </button>
                                                     )}
                                                 </div>
                                                 {dryRunning && (
-                                                    <div className={`${QC_SECTION} border-amber-500/30 bg-amber-500/10 flex items-center gap-3 text-sm text-amber-100`}>
-                                                        <FlaskConical className="w-5 h-5 animate-pulse shrink-0" />
-                                                        Preview in progress — waiting on Arr release search…
+                                                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 flex items-center gap-2 text-sm text-amber-100">
+                                                        <FlaskConical className="w-4 h-4 animate-pulse shrink-0" />
+                                                        Waiting on Arr release search…
                                                     </div>
                                                 )}
                                                 {!dryRunning && dryRun && dryRunByLibrary.length === 0 && (
-                                                    <div className={`${QC_SECTION} text-center`}>
-                                                        <p className="text-sm text-muted">
-                                                            {dryRun.reason || 'No titles were searched. Refresh the index if your library looks empty.'}
-                                                        </p>
-                                                    </div>
+                                                    <p className="text-xs text-muted">
+                                                        {dryRun.reason || 'No titles were searched. Refresh the index if your library looks empty.'}
+                                                    </p>
                                                 )}
                                                 {!dryRunning && dryRunByLibrary.map((group) => {
                                                     const would = group.items.filter((entry) => entry.success);
                                                     const skipped = group.items.filter((entry) => !entry.success);
+                                                    if (!group.items.length && !would.length && !skipped.length) {
+                                                        return (
+                                                            <p key={`dry-${group.key}`} className="text-xs text-muted">
+                                                                <span className="font-semibold text-text">{group.label}:</span>{' '}
+                                                                {emptyDryRunMessage(group)}
+                                                            </p>
+                                                        );
+                                                    }
                                                     return (
-                                                        <div key={`dry-${group.key}`} className={`${QC_SECTION} space-y-3`}>
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <h3 className="text-sm font-bold text-text">{group.label}</h3>
+                                                        <div key={`dry-${group.key}`} className="space-y-1.5">
+                                                            <div className="flex items-center justify-between gap-2 pt-1">
+                                                                <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{group.label}</h3>
                                                                 <span className="text-[11px] text-muted">
                                                                     {would.length} would grab · {skipped.length} skipped
-                                                                    {group.withFiles != null ? ` · ${group.withFiles} with files in index` : ''}
                                                                 </span>
                                                             </div>
-                                                            {group.items.length === 0 && (
-                                                                <p className="text-xs text-muted">
-                                                                    {emptyDryRunMessage(group)}
-                                                                </p>
-                                                            )}
-                                                            {would.length > 0 && (
-                                                                <div className="space-y-2">
-                                                                    {would.map((entry: UpgraderHuntResult) => {
-                                                                        const isMissing = entry.huntPath === 'missing' || entry.action === 'missing_search';
-                                                                        const delta = entry.scoreDelta ?? (
-                                                                            entry.currentScore != null && entry.candidateScore != null
-                                                                                ? entry.candidateScore - entry.currentScore
-                                                                                : null
-                                                                        );
-                                                                        return (
-                                                                            <div key={`dry-${entry.ratingKey}-${entry.releaseTitle || entry.reason || ''}`} className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-                                                                                <div className="flex items-center justify-between gap-2">
-                                                                                    <div className="text-xs font-semibold text-text">{entry.title}</div>
-                                                                                    <span className="text-[10px] font-bold text-amber-200 shrink-0">
-                                                                                        {isMissing ? 'Would search missing' : 'Would grab'}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="text-[11px] text-muted mt-0.5">
-                                                                                    {isMissing
-                                                                                        ? [
-                                                                                            entry.missingAiredCount != null
-                                                                                                ? `${entry.missingAiredCount} missing aired`
-                                                                                                : null,
-                                                                                            entry.reason,
-                                                                                            entry.releaseTitle,
-                                                                                        ].filter(Boolean).join(' · ')
-                                                                                        : [
-                                                                                            entry.currentScore != null && entry.candidateScore != null
-                                                                                                ? `${entry.currentScore} → ${entry.candidateScore}`
-                                                                                                : null,
-                                                                                            delta != null ? `+${delta}` : null,
-                                                                                            entry.releaseTitle,
-                                                                                        ].filter(Boolean).join(' · ')}
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            )}
-                                                            {skipped.length > 0 && (
-                                                                <div className="space-y-2">
-                                                                    {skipped.map((entry) => (
-                                                                        <div key={`skip-${entry.ratingKey}`} className="rounded-lg border border-border/50 bg-background/40 px-3 py-2">
-                                                                            <div className="text-xs font-semibold text-text">{entry.title}</div>
-                                                                            <div className="text-[11px] text-muted mt-0.5">
-                                                                                {entry.reason || 'No better release found'}
-                                                                                {entry.currentScore != null ? ` · current score ${entry.currentScore}` : ''}
-                                                                            </div>
+                                                            {would.map((entry: UpgraderHuntResult) => {
+                                                                const isMissing = entry.huntPath === 'missing' || entry.action === 'missing_search';
+                                                                const delta = entry.scoreDelta ?? (
+                                                                    entry.currentScore != null && entry.candidateScore != null
+                                                                        ? entry.candidateScore - entry.currentScore
+                                                                        : null
+                                                                );
+                                                                return (
+                                                                    <div key={`dry-${entry.ratingKey}-${entry.releaseTitle || entry.reason || ''}`} className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-1.5">
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <div className="text-xs font-semibold text-text truncate">{entry.title}</div>
+                                                                            <span className="text-[10px] font-bold text-amber-200 shrink-0">
+                                                                                {isMissing ? 'Would search' : 'Would grab'}
+                                                                            </span>
                                                                         </div>
-                                                                    ))}
+                                                                        <div className="text-[11px] text-muted mt-0.5 truncate">
+                                                                            {isMissing
+                                                                                ? [
+                                                                                    entry.missingAiredCount != null
+                                                                                        ? `${entry.missingAiredCount} missing aired`
+                                                                                        : null,
+                                                                                    entry.reason,
+                                                                                    entry.releaseTitle,
+                                                                                ].filter(Boolean).join(' · ')
+                                                                                : [
+                                                                                    entry.currentScore != null && entry.candidateScore != null
+                                                                                        ? `${entry.currentScore} → ${entry.candidateScore}`
+                                                                                        : null,
+                                                                                    delta != null ? `+${delta}` : null,
+                                                                                    entry.releaseTitle,
+                                                                                ].filter(Boolean).join(' · ')}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {skipped.map((entry) => (
+                                                                <div key={`skip-${entry.ratingKey}`} className="rounded-lg border border-border/40 bg-background/30 px-3 py-1.5">
+                                                                    <div className="text-xs font-semibold text-text truncate">{entry.title}</div>
+                                                                    <div className="text-[11px] text-muted mt-0.5 truncate">
+                                                                        {entry.reason || 'No better release found'}
+                                                                        {entry.currentScore != null ? ` · score ${entry.currentScore}` : ''}
+                                                                    </div>
                                                                 </div>
-                                                            )}
+                                                            ))}
                                                         </div>
                                                     );
                                                 })}
                                             </section>
                                         )}
 
-                                        <section className="space-y-4">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div>
-                                                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Recent hunts</h2>
-                                                    <p className="text-xs text-muted mt-1">
-                                                        Successful grabs and failures from Arr (e.g. SAB rejected an NZB).
-                                                    </p>
+                                        <section className={`${QC_SECTION} space-y-3`}>
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
+                                                    Recent hunts
+                                                    <SettingHint>
+                                                        Fair per library, worst scores first, cooldown after tries, score floor +{minDelta}, no resolution downgrades.
+                                                        Preview and auto-hunt use the same rules.
+                                                    </SettingHint>
+                                                </h2>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        type="button"
+                                                        className="text-xs font-bold text-muted hover:text-text"
+                                                        onClick={() => handleTabChange('profiles')}
+                                                    >
+                                                        Arr scores
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="text-xs font-bold text-plex hover:underline"
+                                                        onClick={() => handleTabChange('activity')}
+                                                    >
+                                                        Full activity
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    className="text-xs font-bold text-plex hover:underline"
-                                                    onClick={() => handleTabChange('activity')}
-                                                >
-                                                    Full activity
-                                                </button>
                                             </div>
-                                            {grabsByLibrary.length === 0 ? (
-                                                <div className={`${QC_SECTION} text-center`}>
-                                                    <p className="text-sm text-muted">
-                                                        No hunt activity yet. Refresh the index, or run a preview from the header.
-                                                    </p>
-                                                </div>
+
+                                            {grabsByLibrary.every((group) => group.items.length === 0) ? (
+                                                <p className="text-xs text-muted py-1">
+                                                    No hunt activity yet. Run Preview hunt from the header, or wait for auto-hunt.
+                                                </p>
                                             ) : (
-                                                grabsByLibrary.map((group) => (
-                                                    <div key={group.key} className={`${QC_SECTION} space-y-3`}>
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <h3 className="text-sm font-bold text-text">{group.label}</h3>
-                                                            <span className="text-[11px] text-muted">
-                                                                {group.items.length ? `${group.items.length} recent` : 'No recent hunts'}
-                                                            </span>
-                                                        </div>
-                                                        {group.items.length === 0 ? (
-                                                            <p className="text-xs text-muted">Nothing hunted from {group.label} yet.</p>
-                                                        ) : (
-                                                            <div className="space-y-2">
-                                                                {group.items.slice(0, 10).map((entry) => {
-                                                                    const when = entryTime(entry);
-                                                                    const failed = entry.success === false;
-                                                                    const delta = !failed && entry.currentScore != null && entry.candidateScore != null
-                                                                        ? entry.candidateScore - entry.currentScore
-                                                                        : null;
-                                                                    return (
-                                                                        <div
-                                                                            key={entry.id}
-                                                                            className={`rounded-lg border px-3 py-2 ${
-                                                                                failed
-                                                                                    ? 'border-red-500/25 bg-red-500/5'
-                                                                                    : 'border-border/50 bg-background/40'
-                                                                            }`}
-                                                                        >
-                                                                            <div className="flex items-center justify-between gap-2">
-                                                                                <div className="text-xs font-semibold text-text">{entry.title}</div>
+                                                grabsByLibrary
+                                                    .filter((group) => group.items.length > 0)
+                                                    .map((group) => (
+                                                        <div key={group.key} className="space-y-1.5">
+                                                            <div className="flex items-center justify-between gap-2 pt-1 first:pt-0">
+                                                                <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{group.label}</h3>
+                                                                <span className="text-[11px] text-muted">{group.items.length} recent</span>
+                                                            </div>
+                                                            {group.items.slice(0, 8).map((entry) => {
+                                                                const when = entryTime(entry);
+                                                                const failed = entry.success === false;
+                                                                const delta = !failed && entry.currentScore != null && entry.candidateScore != null
+                                                                    ? entry.candidateScore - entry.currentScore
+                                                                    : null;
+                                                                return (
+                                                                    <div
+                                                                        key={entry.id}
+                                                                        className={`rounded-lg border px-3 py-1.5 ${
+                                                                            failed
+                                                                                ? 'border-red-500/25 bg-red-500/5'
+                                                                                : 'border-border/40 bg-background/30'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <div className="text-xs font-semibold text-text truncate">{entry.title}</div>
+                                                                            <div className="flex items-center gap-2 shrink-0">
                                                                                 {delta != null && (
-                                                                                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">+{delta}</span>
+                                                                                    <span className="text-[10px] font-bold text-emerald-300">+{delta}</span>
                                                                                 )}
                                                                                 {failed && (
-                                                                                    <span className="text-[10px] font-bold text-red-300 shrink-0">Failed</span>
+                                                                                    <span className="text-[10px] font-bold text-red-300">Failed</span>
                                                                                 )}
                                                                             </div>
-                                                                            <div className="text-[11px] text-muted mt-0.5">
-                                                                                {[
-                                                                                    failed ? 'Grab failed' : 'Grabbed',
-                                                                                    entry.releaseTitle,
-                                                                                    when ? new Date(when).toLocaleString() : null,
-                                                                                ].filter(Boolean).join(' · ')}
-                                                                            </div>
-                                                                            {failed && entry.reason && (
-                                                                                <p className="text-[11px] text-red-300 mt-1 line-clamp-2">
-                                                                                    {/SAB/i.test(String(entry.reason))
-                                                                                        ? 'SABnzbd rejected the grab — check SAB is up and Radarr can reach it.'
-                                                                                        : String(entry.reason).split(/\n|\bat\s/)[0].slice(0, 180)}
-                                                                                </p>
-                                                                            )}
                                                                         </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))
+                                                                        <div className="text-[11px] text-muted mt-0.5 truncate">
+                                                                            {[
+                                                                                failed ? 'Grab failed' : 'Grabbed',
+                                                                                entry.releaseTitle,
+                                                                                when ? new Date(when).toLocaleString() : null,
+                                                                            ].filter(Boolean).join(' · ')}
+                                                                        </div>
+                                                                        {failed && entry.reason && (
+                                                                            <p className="text-[11px] text-red-300 mt-0.5 line-clamp-1">
+                                                                                {/SAB/i.test(String(entry.reason))
+                                                                                    ? 'SABnzbd rejected the grab — check SAB is up and Radarr can reach it.'
+                                                                                    : String(entry.reason).split(/\n|\bat\s/)[0].slice(0, 140)}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ))
                                             )}
                                         </section>
-
-                                        <SettingsCollapseSection
-                                            title="How hunting works"
-                                            subtitle="Same rules for preview and auto-hunt"
-                                            defaultOpen={false}
-                                            headerRight={(
-                                                <button
-                                                    type="button"
-                                                    className="btn-secondary !px-2.5 !py-1 !text-[11px] !rounded-md"
-                                                    onClick={() => handleTabChange('profiles')}
-                                                >
-                                                    <Settings2 className="w-3.5 h-3.5" />
-                                                    Arr scores
-                                                </button>
-                                            )}
-                                        >
-                                            <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
-                                                <li>
-                                                    <span className="text-text font-semibold">Fair per library.</span>{' '}
-                                                    Each Arr root folder gets a turn every cycle. Hunting stops for a library at {status?.maxDownloadsPerLibrary ?? 5} in-flight downloads.
-                                                </li>
-                                                <li>
-                                                    <span className="text-text font-semibold">Worst scores first.</span>{' '}
-                                                    Lowest Arr custom-format scores are tried first inside each library.
-                                                </li>
-                                                <li>
-                                                    <span className="text-text font-semibold">Cooldown after tries.</span>{' '}
-                                                    After a grab or a “nothing better” result (~7 days), that title cools down.
-                                                </li>
-                                                <li>
-                                                    <span className="text-text font-semibold">Score floor {minDelta}+.</span>{' '}
-                                                    Never downgrades resolution (e.g. 1080p cannot beat a 4K season).
-                                                </li>
-                                            </ol>
-                                        </SettingsCollapseSection>
                                     </div>
                                 )}
 
