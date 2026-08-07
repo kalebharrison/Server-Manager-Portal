@@ -210,21 +210,21 @@ const librariesFromCoverage = (coverage: IntegrityCoverage | null): LibraryCover
     if (Array.isArray(coverage?.byLibrary) && coverage.byLibrary.length) {
         return coverage.byLibrary;
     }
-    return (['movie', 'show', 'album'] as const)
-        .map((key) => {
-            const bucket = coverage?.[key];
-            if (!bucket?.total) return null;
-            return {
-                key,
-                label: FALLBACK_LIBRARY_LABELS[key] || key,
-                mediaType: key,
-                total: bucket.total,
-                playability: bucket.playability,
-                imohash: bucket.imohash,
-                xxhash: bucket.xxhash,
-            } satisfies LibraryCoverage;
-        })
-        .filter((entry): entry is LibraryCoverage => !!entry);
+    const out: LibraryCoverage[] = [];
+    for (const key of ['movie', 'show', 'album'] as const) {
+        const bucket = coverage?.[key];
+        if (!bucket?.total) continue;
+        out.push({
+            key,
+            label: FALLBACK_LIBRARY_LABELS[key] || key,
+            mediaType: key,
+            total: bucket.total,
+            playability: bucket.playability,
+            imohash: bucket.imohash,
+            xxhash: bucket.xxhash,
+        });
+    }
+    return out;
 };
 
 export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = false }) => {
