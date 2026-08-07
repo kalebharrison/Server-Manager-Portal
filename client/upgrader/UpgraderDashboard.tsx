@@ -18,9 +18,7 @@ import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
 import { QcKpiTile } from './QcKpiTile';
 import { QC_PAGE, QC_SECTION, QC_TAB_BAR, qcTabButtonClass } from './qcUi';
-import { SettingsCollapseSection } from '../settings/SettingsCollapseSection';
 import type {
-    UpgraderAuditEntry,
     UpgraderHuntResponse,
     UpgraderHuntResult,
     UpgraderStatus,
@@ -48,8 +46,6 @@ const TabPanelFallback: React.FC = () => (
     <div className="min-h-[240px]" aria-hidden="true" />
 );
 
-type LibraryGroup<T> = { key: string; label: string; items: T[] };
-
 const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode; title: string }> = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-3.5 h-3.5" />, title: 'Live status: automation, queues, and capacity' },
     { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'Preview hunts, recent grabs, and download cleanup' },
@@ -59,41 +55,6 @@ const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode
     { id: 'profiles', label: 'Arr scores', icon: <Settings2 className="w-3.5 h-3.5" />, title: 'Custom format repairs and Arr quality profile scores' },
     { id: 'activity', label: 'Activity', icon: <History className="w-3.5 h-3.5" />, title: 'Hunt grabs and cleanup history' },
 ];
-
-const groupByLibrary = <T extends { arrInstanceName?: string | null; libraryName?: string | null; arrType?: string | null; libraryKey?: string | null }>(
-    entries: T[],
-    libraryOrder: Array<{ id?: string; name?: string; type?: string }> = [],
-): LibraryGroup<T>[] => {
-    const groups = new Map<string, LibraryGroup<T>>();
-    const ensure = (key: string, label: string) => {
-        if (!groups.has(key)) groups.set(key, { key, label, items: [] });
-        return groups.get(key)!;
-    };
-
-    const fallbackLabel = (type?: string | null) => (
-        type === 'radarr' ? 'Radarr'
-            : type === 'sonarr' ? 'Sonarr'
-                : type === 'lidarr' ? 'Music'
-                    : 'Library'
-    );
-
-    for (const lib of libraryOrder) {
-        const key = lib.id || `${lib.type || 'arr'}:${lib.name || 'unknown'}`;
-        ensure(key, lib.name || fallbackLabel(lib.type));
-    }
-
-    for (const entry of entries) {
-        const label = entry.libraryName
-            || entry.arrInstanceName
-            || fallbackLabel(entry.arrType);
-        const key = entry.libraryKey || `name:${label}`;
-        ensure(key, label).items.push(entry);
-    }
-
-    const ordered = [...groups.values()];
-    ordered.sort((a, b) => a.label.localeCompare(b.label));
-    return ordered;
-};
 
 const formatIndexAge = (generatedAt: string | null) => {
     if (!generatedAt) return 'never built';
@@ -105,8 +66,6 @@ const formatIndexAge = (generatedAt: string | null) => {
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
 };
-
-const entryTime = (entry: UpgraderAuditEntry) => entry.timestamp || entry.at || null;
 
 const isUpgraderDisabledError = (error: unknown) => {
     const msg = String((error as Error)?.message || error || '').toLowerCase();
@@ -123,8 +82,6 @@ export const UpgraderDashboard: React.FC = () => {
     const [featureEnabled, setFeatureEnabled] = useState(false);
     const [status, setStatus] = useState<UpgraderStatus | null>(null);
     const [summary, setSummary] = useState<UpgraderSummary | null>(null);
-    const [recentGrabs, setRecentGrabs] = useState<UpgraderAuditEntry[]>([]);
-    const [libraries, setLibraries] = useState<Array<{ id: string; name: string; type: string }>>([]);
     const [dryRun, setDryRun] = useState<UpgraderHuntResponse | null>(null);
     const [dryRunning, setDryRunning] = useState(false);
     const [activeTab, setActiveTab] = useState<UpgraderTab>(initialUrl.tab);
@@ -171,58 +128,13 @@ export const UpgraderDashboard: React.FC = () => {
             setFeatureEnabled(enabled);
             if (!enabled) return;
 
-            const [statusData, summaryData, auditData, profilesData] = await Promise.all([
+            const [statusData, summaryData] = await Promise.all([
                 apiFetch('/api/upgrader/status'),
                 apiFetch('/api/upgrader/summary'),
-                apiFetch('/api/upgrader/audit?limit=40'),
-                apiFetch('/api/upgrader/profiles').catch(() => null),
             ]);
 
             setStatus(statusData || null);
             setSummary(summaryData || null);
-            const indexedLibraries = Array.isArray(summaryData?.libraries)
-                ? summaryData.libraries.map((lib: any) => ({
-                    id: String(lib.key || lib.id),
-                    name: String(lib.type || lib.arrType) === 'lidarr'
-                        || /^(lidarr|artists?|music)$/i.test(String(lib.name || ''))
-                        ? 'Music'
-                        : String(lib.name || 'Library'),
-                    type: String(lib.type || 'arr'),
-                }))
-                : [];
-            const configuredLibraries = Array.isArray(profilesData?.libraries)
-                ? profilesData.libraries.map((lib: any) => ({
-                    id: String(lib.key || lib.id),
-                    name: String(lib.type || '') === 'lidarr'
-                        || /^(lidarr|artists?|music)$/i.test(String(lib.name || ''))
-                        ? 'Music'
-                        : String(lib.name || 'Library'),
-                    type: String(lib.type || 'arr'),
-                }))
-                : [];
-            const instanceList = Array.isArray(profilesData?.instances)
-                ? profilesData.instances.map((instance: any) => ({
-                    id: String(instance.id),
-                    name: String(instance.type || '') === 'lidarr'
-                        ? 'Music'
-                        : String(instance.name || (
-                            instance.type === 'radarr' ? 'Radarr' : 'Sonarr'
-                        )),
-                    type: String(instance.type || 'arr'),
-                }))
-                : [];
-            // Prefer configured Arr libraries (includes Music). Fall back to indexed / instances.
-            setLibraries(configuredLibraries.length
-                ? configuredLibraries
-                : (indexedLibraries.length ? indexedLibraries : instanceList));
-
-            const grabs = (Array.isArray(auditData?.entries) ? auditData.entries : [])
-                .filter((entry: UpgraderAuditEntry) => (
-                    (entry.action === 'upgrade' || entry.action === 'missing_search')
-                    && !entry.dryRun
-                ))
-                .slice(0, 48);
-            setRecentGrabs(grabs);
         } catch (e: any) {
             if (isUpgraderDisabledError(e)) {
                 setFeatureEnabled(false);
@@ -292,19 +204,6 @@ export const UpgraderDashboard: React.FC = () => {
             setDryRunning(false);
         }
     };
-
-    const grabsByLibrary = useMemo(
-        () => groupByLibrary(
-            recentGrabs.map((entry) => ({
-                ...entry,
-                libraryName: entry.libraryName || entry.arrInstanceName,
-                libraryKey: entry.libraryKey
-                    || (entry.arrInstanceId ? `${entry.arrType || 'arr'}:${entry.arrInstanceId}` : undefined),
-            })),
-            libraries,
-        ),
-        [recentGrabs, libraries],
-    );
 
     const dryRunByLibrary = useMemo(() => {
         if (!dryRun) return [];
@@ -760,76 +659,6 @@ export const UpgraderDashboard: React.FC = () => {
                                                 })}
                                             </section>
                                         )}
-
-                                        <SettingsCollapseSection
-                                            title="Recent hunts"
-                                            subtitle="Latest grabs and failures · Preview hunt is in the header"
-                                            defaultOpen={false}
-                                            headerRight={(
-                                                <button
-                                                    type="button"
-                                                    className="text-xs font-bold text-plex hover:underline"
-                                                    onClick={() => handleTabChange('activity')}
-                                                >
-                                                    Full activity
-                                                </button>
-                                            )}
-                                        >
-                                            {grabsByLibrary.every((group) => group.items.length === 0) ? (
-                                                <p className="text-xs text-muted py-1">
-                                                    No hunt activity yet. Run Preview hunt from the header, or wait for auto-hunt.
-                                                </p>
-                                            ) : (
-                                                <div className="space-y-3">
-                                                    {grabsByLibrary
-                                                        .filter((group) => group.items.length > 0)
-                                                        .map((group) => (
-                                                            <div key={group.key} className="space-y-1.5">
-                                                                <div className="flex items-center justify-between gap-2">
-                                                                    <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{group.label}</h3>
-                                                                    <span className="text-[11px] text-muted">{group.items.length} recent</span>
-                                                                </div>
-                                                                {group.items.slice(0, 6).map((entry) => {
-                                                                    const when = entryTime(entry);
-                                                                    const failed = entry.success === false;
-                                                                    const delta = !failed && entry.currentScore != null && entry.candidateScore != null
-                                                                        ? entry.candidateScore - entry.currentScore
-                                                                        : null;
-                                                                    return (
-                                                                        <div
-                                                                            key={entry.id}
-                                                                            className={`rounded-lg border px-3 py-1.5 ${
-                                                                                failed
-                                                                                    ? 'border-red-500/25 bg-red-500/5'
-                                                                                    : 'border-border/40 bg-background/30'
-                                                                            }`}
-                                                                        >
-                                                                            <div className="flex items-center justify-between gap-2">
-                                                                                <div className="text-xs font-semibold text-text truncate">{entry.title}</div>
-                                                                                <div className="flex items-center gap-2 shrink-0">
-                                                                                    {delta != null && (
-                                                                                        <span className="text-[10px] font-bold text-emerald-300">+{delta}</span>
-                                                                                    )}
-                                                                                    {failed && (
-                                                                                        <span className="text-[10px] font-bold text-red-300">Failed</span>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="text-[11px] text-muted mt-0.5 truncate">
-                                                                                {[
-                                                                                    failed ? 'Grab failed' : 'Grabbed',
-                                                                                    entry.releaseTitle,
-                                                                                    when ? new Date(when).toLocaleString() : null,
-                                                                                ].filter(Boolean).join(' · ')}
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                            )}
-                                        </SettingsCollapseSection>
                                     </div>
                                 )}
 

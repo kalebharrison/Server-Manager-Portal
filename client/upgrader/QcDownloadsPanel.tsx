@@ -19,6 +19,7 @@ type QcDownloadItem = {
     size?: number;
     sizeleft?: number;
     progress?: number;
+    ageMs?: number | null;
     snoozed?: boolean;
     actionable?: boolean;
     strikeEligible?: boolean;
@@ -78,6 +79,21 @@ type Props = {
     snoozeDefaultHours?: number;
     activeByLibrary?: ActiveLibrary[];
     downloadCap?: number;
+};
+
+const formatAge = (ageMs?: number | null) => {
+    const ms = Number(ageMs);
+    if (!Number.isFinite(ms) || ms <= 0) return null;
+    const minutes = Math.floor(ms / 60_000);
+    if (minutes < 1) return '<1m';
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 48) {
+        const rem = minutes % 60;
+        return rem ? `${hours}h ${rem}m` : `${hours}h`;
+    }
+    const days = Math.floor(hours / 24);
+    return `${days}d`;
 };
 
 const clientStateLabel = (item: QcDownloadItem) => {
@@ -140,7 +156,7 @@ const pickRepresentative = (items: QcDownloadItem[]) => (
         const as = Number(a.would?.strikes ?? a.strikes ?? 0);
         const bs = Number(b.would?.strikes ?? b.strikes ?? 0);
         if (bs !== as) return bs - as;
-        return 0;
+        return Number(b.ageMs || 0) - Number(a.ageMs || 0);
     })[0]
 );
 
@@ -530,6 +546,11 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                                     <div className="text-xs font-semibold text-text truncate">
                                                                         {item.title || 'Unknown'}
                                                                     </div>
+                                                                    {formatAge(item.ageMs) && (
+                                                                        <span className="shrink-0 text-[10px] font-bold text-muted tabular-nums">
+                                                                            {formatAge(item.ageMs)}
+                                                                        </span>
+                                                                    )}
                                                                     {row.unhealthy && (
                                                                         <span className="shrink-0 text-[10px] font-bold uppercase text-amber-200">
                                                                             {item.actionable || item.killReady || item.would?.kill
