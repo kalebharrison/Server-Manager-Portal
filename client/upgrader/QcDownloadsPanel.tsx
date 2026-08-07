@@ -3,7 +3,11 @@ import { Loader2, RefreshCw, FlaskConical, Trash2, Clock, X } from 'lucide-react
 import { apiFetch } from '../shared/api';
 import { formatSizeCeil } from '../shared/format';
 import { SettingHint } from '../settings/SettingHint';
+import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { QC_KPI, QC_SECTION } from './qcUi';
+
+const QC_DOWNLOADS_CACHE_KEY = 'qc-downloads-snapshot-v1';
+const QC_DOWNLOADS_POLL_MS = 30_000;
 
 type QcDownloadItem = {
     key: string;
@@ -48,6 +52,31 @@ type Snapshot = {
     orphans?: QcDownloadItem[];
     metricsPreview?: { actionableCount?: number; strikeEligibleCount?: number };
     generatedAt?: string;
+    cache?: { hit?: boolean; stale?: boolean; ageMs?: number };
+};
+
+const readCachedSnapshot = (): Snapshot | null => {
+    try {
+        const raw = sessionStorage.getItem(QC_DOWNLOADS_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return parsed as Snapshot;
+    } catch {
+        return null;
+    }
+};
+
+const writeCachedSnapshot = (data: Snapshot | null) => {
+    try {
+        if (!data) {
+            sessionStorage.removeItem(QC_DOWNLOADS_CACHE_KEY);
+            return;
+        }
+        sessionStorage.setItem(QC_DOWNLOADS_CACHE_KEY, JSON.stringify(data));
+    } catch {
+        /* ignore quota */
+    }
 };
 
 type GroupedRow = {
@@ -396,30 +425,49 @@ export const QcDownloadsPanel: React.FC<Props> = ({
     activeByLibrary = [],
     downloadCap = 5,
 }) => {
-    const [loading, setLoading] = useState(true);
+    const cached = readCachedSnapshot();
+    const [loading, setLoading] = useState(!cached);
+    const [refreshing, setRefreshing] = useState(false);
     const [busy, setBusy] = useState(false);
-    const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+    const [snapshot, setSnapshot] = useState<Snapshot | null>(cached);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [dryPreview, setDryPreview] = useState<QcDownloadItem[] | null>(null);
     const [showHealthy, setShowHealthy] = useState(true);
 
-    const loadSnapshot = useCallback(async (silent = false) => {
-        if (!silent) setLoading(true);
+    const loadSnapshot = useCallback(async (opts: { silent?: boolean; force?: boolean } = {}) => {
+        const silent = opts.silent === true;
+        const force = opts.force === true;
+        const hasData = Boolean(readCachedSnapshot());
+        if (!silent && !hasData) setLoading(true);
+        else setRefreshing(true);
         try {
-            const data = await apiFetch('/api/upgrader/qc/downloads');
+            const data = await apiFetch(
+                force ? '/api/upgrader/qc/downloads?refresh=1' : '/api/upgrader/qc/downloads',
+                {
+                    cacheTtlMs: force ? 0 : 10_000,
+                    staleIfErrorMs: 120_000,
+                    forceRefresh: force,
+                    cacheKey: 'GET /api/upgrader/qc/downloads',
+                },
+            );
             setSnapshot(data || null);
+            writeCachedSnapshot(data || null);
             setDryPreview(null);
         } catch (e: any) {
-            onToast(e.message || 'Failed to load download health', 'error');
+            if (!hasData) onToast(e.message || 'Failed to load download health', 'error');
         } finally {
-            if (!silent) setLoading(false);
+            setLoading(false);
+            setRefreshing(false);
         }
     }, [onToast]);
 
     useEffect(() => {
-        loadSnapshot();
-    }, [loadSnapshot]);
+        void loadSnapshot({ silent: Boolean(cached) });
+        // Mount-only hydrate + background refresh.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
+    useVisibleInterval(() => loadSnapshot({ silent: true }), QC_DOWNLOADS_POLL_MS);
     const allItems = useMemo(() => {
         if (dryPreview) return dryPreview;
         const items = Array.isArray(snapshot?.items) ? snapshot!.items! : [];
@@ -589,7 +637,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                 'success',
             );
             setSelected(new Set());
-            await loadSnapshot(true);
+            await loadSnapshot({ silent: true, force: true });
         } catch (e: any) {
             onToast(e.message || 'Live cleanup failed', 'error');
         } finally {
@@ -604,7 +652,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                 body: JSON.stringify({ key, hours: snoozeDefaultHours }),
             })));
             onToast(`Snoozed for ${snoozeDefaultHours}h.`, 'success');
-            await loadSnapshot(true);
+            await loadSnapshot({ silent: true, force: true });
         } catch (e: any) {
             onToast(e.message || 'Snooze failed', 'error');
         }
@@ -617,7 +665,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                 body: JSON.stringify({ key }),
             })));
             onToast('Snooze cleared.', 'success');
-            await loadSnapshot(true);
+            await loadSnapshot({ silent: true, force: true });
         } catch (e: any) {
             onToast(e.message || 'Clear snooze failed', 'error');
         }
@@ -641,7 +689,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                         <SettingHint>
                             Borders follow Arr queue colors: importing purple, waiting blue, import issues yellow,
                             failed/strikes red; healthy downloads stay grey. Latest uses a cyan diagonal half when shared.
-                            are highlighted — healthy ones stay muted.
+                            Board is cached ~30s and refreshed in the background.
                         </SettingHint>
                     </h2>
                     <p className="text-xs text-muted mt-1">
@@ -649,6 +697,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                             ? `Dry-run preview · ${dryPreview.filter((item) => item.killReady || item.would?.kill).length} would kill`
                             : `${groupedRows.length} downloads · ${unhealthyTotal} unhealthy · ${actionableKeys.length} ready to kill`}
                         {snapshot?.generatedAt ? ` · ${new Date(snapshot.generatedAt).toLocaleTimeString()}` : ''}
+                        {refreshing ? ' · refreshing…' : ''}
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -662,10 +711,10 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                     <button
                         type="button"
                         className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
-                        onClick={() => loadSnapshot()}
-                        disabled={busy}
+                        onClick={() => loadSnapshot({ force: true })}
+                        disabled={busy || refreshing}
                     >
-                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-3.5 h-3.5 ${refreshing || loading ? 'animate-spin' : ''}`} />
                         Refresh
                     </button>
                     <button

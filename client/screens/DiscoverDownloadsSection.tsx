@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowUpCircle, CircleHelp, DownloadCloud, Film, Music, Sparkles, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
@@ -10,9 +10,37 @@ import { groupOnTheWayDownloads } from '../../lib/media-stack/on-the-way-group.j
 import { mapQueueRecords } from './media-stack/mediaStackUtils';
 import { PosterImage } from './DiscoverContent';
 
+const QUEUE_CACHE_KEY = 'discover-on-the-way-v1';
+const QUEUE_POLL_MS = 15_000;
+
 const queueRecords = (queue: any) => (
     Array.isArray(queue?.records) ? queue.records : Array.isArray(queue) ? queue : []
 );
+
+const mapQueuePayload = (queue: any) => groupOnTheWayDownloads([
+    ...mapQueueRecords(queueRecords(queue?.sonarr?.queue), 'Sonarr'),
+    ...mapQueueRecords(queueRecords(queue?.radarr?.queue), 'Radarr'),
+    ...mapQueueRecords(queueRecords(queue?.lidarr?.queue), 'Lidarr'),
+].filter((item) => item.hasMediaTitle && item.progress >= 0 && item.progress < 100));
+
+const readCachedDownloads = (): any[] | null => {
+    try {
+        const raw = sessionStorage.getItem(QUEUE_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : null;
+    } catch {
+        return null;
+    }
+};
+
+const writeCachedDownloads = (items: any[]) => {
+    try {
+        sessionStorage.setItem(QUEUE_CACHE_KEY, JSON.stringify(items));
+    } catch {
+        /* ignore quota */
+    }
+};
 
 const phaseClass = (phase: string) => {
     const value = phase.toLowerCase();
@@ -81,34 +109,35 @@ export const DiscoverDownloadsSection: React.FC<Props> = ({
     useScrollRevealAnimations,
     layout = 'grid',
 }) => {
-    const [downloads, setDownloads] = useState<any[]>([]);
-    const [loaded, setLoaded] = useState(false);
-    const initialLoadRef = useRef(true);
+    const seeded = readCachedDownloads();
+    const [downloads, setDownloads] = useState<any[]>(() => seeded || []);
+    const [loaded, setLoaded] = useState(() => seeded != null);
     const isRail = layout === 'rail';
 
     const loadDownloads = useCallback(async () => {
-        const forceRefresh = initialLoadRef.current;
-        initialLoadRef.current = false;
         try {
-            const queue = await apiFetch('/api/media-stack/queue', { cacheTtlMs: 15_000, forceRefresh });
-            const next = groupOnTheWayDownloads([
-                ...mapQueueRecords(queueRecords(queue?.sonarr?.queue), 'Sonarr'),
-                ...mapQueueRecords(queueRecords(queue?.radarr?.queue), 'Radarr'),
-                ...mapQueueRecords(queueRecords(queue?.lidarr?.queue), 'Lidarr'),
-            ].filter((item) => item.hasMediaTitle && item.progress >= 0 && item.progress < 100));
+            const queue = await apiFetch('/api/media-stack/queue', {
+                cacheTtlMs: 15_000,
+                staleIfErrorMs: 120_000,
+                cacheKey: 'GET /api/media-stack/queue',
+            });
+            const next = mapQueuePayload(queue);
             setDownloads(next);
+            writeCachedDownloads(next);
         } catch {
-            setDownloads([]);
+            /* keep cached posters if the refresh fails */
         } finally {
             setLoaded(true);
         }
     }, []);
 
     useEffect(() => {
-        loadDownloads();
-    }, [loadDownloads]);
+        void loadDownloads();
+        // Mount-only: show session cache immediately, refresh in background.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    useVisibleInterval(loadDownloads, 15_000);
+    useVisibleInterval(loadDownloads, QUEUE_POLL_MS);
 
     const visibleDownloads = useMemo(() => downloads.slice(0, 20), [downloads]);
 
