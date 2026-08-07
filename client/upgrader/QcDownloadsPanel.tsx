@@ -20,6 +20,7 @@ type QcDownloadItem = {
     sizeleft?: number;
     progress?: number;
     ageMs?: number | null;
+    seeding?: boolean;
     snoozed?: boolean;
     actionable?: boolean;
     strikeEligible?: boolean;
@@ -54,6 +55,7 @@ type GroupedRow = {
     anySelectable: boolean;
     allSnoozed: boolean;
     unhealthy: boolean;
+    waitingImport: boolean;
 };
 
 type LibraryBucket = {
@@ -96,12 +98,80 @@ const formatAge = (ageMs?: number | null) => {
     return `${days}d`;
 };
 
-const clientStateLabel = (item: QcDownloadItem) => {
+const humanReason = (reason?: string | null) => {
+    switch (String(reason || '')) {
+        case 'completedNotImporting': return 'waiting to import (overdue)';
+        case 'slowDownload': return 'slow download';
+        case 'stalled': return 'stalled';
+        case 'metaDL': return 'stuck fetching metadata';
+        case 'failedImport': return 'import failed';
+        case 'qualityDowngrade': return 'resolution downgrade';
+        case 'blockedExtension': return 'blocked extension';
+        case 'duplicate': return 'duplicate';
+        case 'orphan': return 'orphan';
+        default: return reason || null;
+    }
+};
+
+/** Prefer Arr import phase over raw qBit seeding jargon (stalledUP / stoppedUP). */
+const phaseLabel = (item: QcDownloadItem) => {
+    const tracked = String(item.trackedDownloadState || '').toLowerCase();
+    const status = String(item.status || '').toLowerCase();
+    if (item.reason) return humanReason(item.reason);
+    if (tracked === 'importing') return 'importing';
+    if (tracked === 'importpending') return 'waiting to import';
+    if (tracked === 'importfailed' || tracked === 'failed') return 'import failed';
+    if (status === 'completed' && tracked !== 'imported') return 'waiting to import';
+    if (item.seeding || (Number(item.progress) >= 1 && /up$/i.test(String(item.client?.state || '')))) {
+        return 'downloaded · seeding';
+    }
+    if (Number(item.progress) >= 1) return 'downloaded';
+    return 'downloading';
+};
+
+const isWaitingImport = (item: QcDownloadItem) => {
+    const tracked = String(item.trackedDownloadState || '').toLowerCase();
+    const status = String(item.status || '').toLowerCase();
+    if (item.reason === 'completedNotImporting') return true;
+    if (tracked === 'importpending' || tracked === 'importing') return true;
+    return status === 'completed' && tracked !== 'imported';
+};
+
+const humanClientState = (item: QcDownloadItem) => {
     const client = item.client;
-    if (client?.state) return `${client.client || 'client'}: ${client.state}`;
-    if (item.trackedDownloadState) return item.trackedDownloadState;
-    if (item.status) return item.status;
-    return '—';
+    if (!client?.state && !client?.client) return null;
+    const raw = String(client.state || '').toLowerCase();
+    const name = client.client === 'qbit' ? 'qBit'
+        : client.client === 'sab' ? 'SAB'
+            : (client.client || 'client');
+    const labels: Record<string, string> = {
+        stalledup: 'seeding',
+        stoppedup: 'seeding paused',
+        pausedup: 'seeding paused',
+        uploading: 'seeding',
+        forcedup: 'seeding',
+        queuedup: 'seed queued',
+        checkingup: 'checking',
+        moving: 'moving',
+        downloading: 'downloading',
+        stalleddl: 'stalled',
+        forceddl: 'downloading',
+        queueddl: 'queued',
+        metadl: 'fetching metadata',
+        allocating: 'allocating',
+        checkingdl: 'checking',
+        pauseddl: 'paused',
+        stoppeddl: 'stopped',
+        error: 'error',
+        missingfiles: 'missing files',
+        completed: 'completed',
+        extracting: 'extracting',
+        running: 'downloading',
+        queued: 'queued',
+        paused: 'paused',
+        failed: 'failed',
+    };
+    return `${name}: ${labels[raw] || raw || '—'}`;
 };
 
 const safetyHoldLabel = (hold?: QcDownloadItem['safetyHold']) => {
@@ -126,8 +196,9 @@ const healthRank = (item: QcDownloadItem) => {
     if (item.actionable || item.killReady || item.would?.kill) return 0;
     if (item.strikeEligible) return 1;
     if (item.reason || item.safetyHold) return 2;
-    if (item.snoozed) return 3;
-    return 4;
+    if (isWaitingImport(item)) return 3;
+    if (item.snoozed) return 4;
+    return 5;
 };
 
 const libraryLabelOf = (item: QcDownloadItem) => {
@@ -170,7 +241,26 @@ const rowShellClass = (item: QcDownloadItem) => {
     if (item.safetyHold) {
         return 'border-amber-500/20 bg-amber-500/5';
     }
+    if (isWaitingImport(item)) {
+        return 'border-plex/30 bg-plex/8';
+    }
     return 'border-border/40 bg-background/25';
+};
+
+const statusBadge = (item: QcDownloadItem) => {
+    if (item.actionable || item.killReady || item.would?.kill) {
+        return { text: 'Kill ready', className: 'text-red-300' };
+    }
+    if (item.strikeEligible || item.reason) {
+        return { text: 'Strikes', className: 'text-amber-200' };
+    }
+    if (String(item.trackedDownloadState || '').toLowerCase() === 'importing') {
+        return { text: 'Importing', className: 'text-plex' };
+    }
+    if (isWaitingImport(item)) {
+        return { text: 'Import', className: 'text-plex' };
+    }
+    return null;
 };
 
 export const QcDownloadsPanel: React.FC<Props> = ({
@@ -228,6 +318,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                 anySelectable: items.some((entry) => entry.actionable || entry.strikeEligible),
                 allSnoozed: items.every((entry) => entry.snoozed),
                 unhealthy: items.some((entry) => isUnhealthy(entry)),
+                waitingImport: items.some((entry) => isWaitingImport(entry)),
             };
         }).sort((a, b) => healthRank(a.item) - healthRank(b.item));
     }, [allItems]);
@@ -470,7 +561,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                     {libraries.map((library) => {
                         const visibleRows = showHealthy
                             ? library.rows
-                            : library.rows.filter((row) => row.unhealthy);
+                            : library.rows.filter((row) => row.unhealthy || row.waitingImport);
                         const atCap = library.active != null && library.cap != null && library.active >= library.cap;
                         const pct = library.active != null && library.cap
                             ? Math.min(100, Math.round((library.active / Math.max(1, library.cap)) * 100))
@@ -546,31 +637,26 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                                     <div className="text-xs font-semibold text-text truncate">
                                                                         {item.title || 'Unknown'}
                                                                     </div>
-                                                                    {formatAge(item.ageMs) && (
-                                                                        <span className="shrink-0 text-[10px] font-bold text-muted tabular-nums">
-                                                                            {formatAge(item.ageMs)}
-                                                                        </span>
-                                                                    )}
-                                                                    {row.unhealthy && (
-                                                                        <span className="shrink-0 text-[10px] font-bold uppercase text-amber-200">
-                                                                            {item.actionable || item.killReady || item.would?.kill
-                                                                                ? 'Kill ready'
-                                                                                : item.strikeEligible
-                                                                                    ? 'Strikes'
-                                                                                    : 'Issue'}
-                                                                        </span>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const badge = statusBadge(item);
+                                                                        return badge ? (
+                                                                            <span className={`shrink-0 text-[10px] font-bold uppercase ${badge.className}`}>
+                                                                                {badge.text}
+                                                                            </span>
+                                                                        ) : null;
+                                                                    })()}
                                                                 </div>
                                                                 <div className="text-[11px] text-muted mt-0.5 break-words">
                                                                     {[
+                                                                        phaseLabel(item),
+                                                                        formatAge(item.ageMs),
                                                                         episodeCount > 1 ? `${episodeCount} episodes` : null,
-                                                                        item.reason || (item.would?.reason ?? null) || (row.unhealthy ? null : 'healthy'),
                                                                         (item.maxStrikes || item.would?.strikes != null)
                                                                             ? `strikes ${(item.would?.strikes ?? item.strikes ?? 0)}/${item.maxStrikes ?? 3}`
                                                                             : null,
                                                                         item.upgrade ? 'upgrade' : null,
                                                                         item.size ? formatSizeCeil(item.size) : null,
-                                                                        clientStateLabel(item),
+                                                                        humanClientState(item),
                                                                         item.snoozed ? 'snoozed' : null,
                                                                         safetyHoldLabel(item.safetyHold),
                                                                         item.would?.action ? `would ${item.would.action}` : null,
