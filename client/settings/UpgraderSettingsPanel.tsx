@@ -1000,17 +1000,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <label className="text-sm font-semibold">Max files per cycle
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={integrityMaxPerCycle}
-                                        disabled={!enabled || !integrityEnabled}
-                                        onChange={(event) => onIntegrityMaxPerCycleChange(Math.max(1, Number(event.target.value) || 1))}
-                                    />
-                                </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <label className="text-sm font-semibold">
                                     <span className="inline-flex items-center gap-0">
                                         Fingerprint / full-hash concurrency
