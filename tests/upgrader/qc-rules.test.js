@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import {
     QC_REASONS,
     classifyQueueItem,
+    cniThresholdMinutes,
     findDuplicates,
     findOrphans,
     isDoomedImportFailure,
+    isLikelySeasonPack,
     isMetaDlActionable,
     isReasonActionable,
     isResearchThrottled,
