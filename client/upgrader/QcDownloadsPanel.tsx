@@ -8,6 +8,9 @@ import { QC_KPI, QC_SECTION } from './qcUi';
 type QcDownloadItem = {
     key: string;
     title?: string;
+    mediaTitle?: string | null;
+    fileName?: string | null;
+    episodeLabel?: string | null;
     reason?: string | null;
     arrType?: string | null;
     arrInstanceId?: string | null;
@@ -245,22 +248,34 @@ const pickRepresentative = (items: QcDownloadItem[]) => (
     })[0]
 );
 
-type RowTone = 'red' | 'yellow' | 'green' | 'blue' | 'neutral';
+type RowTone = 'red' | 'yellow' | 'purple' | 'blue' | 'cyan' | 'neutral';
 
+/** Arr-ish queue colors + cyan for portal “Latest”. */
 const TONE: Record<RowTone, { border: string; fill: string }> = {
     red: { border: 'rgba(239, 68, 68, 0.55)', fill: 'rgba(239, 68, 68, 0.10)' },
     yellow: { border: 'rgba(234, 179, 8, 0.55)', fill: 'rgba(234, 179, 8, 0.10)' },
-    green: { border: 'rgba(16, 185, 129, 0.50)', fill: 'rgba(16, 185, 129, 0.10)' },
-    blue: { border: 'rgba(59, 130, 246, 0.60)', fill: 'rgba(59, 130, 246, 0.12)' },
-    neutral: { border: 'rgba(148, 163, 184, 0.25)', fill: 'rgba(15, 23, 42, 0.25)' },
+    purple: { border: 'rgba(168, 85, 247, 0.55)', fill: 'rgba(168, 85, 247, 0.10)' },
+    blue: { border: 'rgba(59, 130, 246, 0.55)', fill: 'rgba(59, 130, 246, 0.10)' },
+    cyan: { border: 'rgba(34, 211, 238, 0.65)', fill: 'rgba(34, 211, 238, 0.10)' },
+    neutral: { border: 'rgba(148, 163, 184, 0.20)', fill: 'rgba(15, 23, 42, 0.20)' },
 };
 
-/** Status tone only — Latest is layered separately (and can split the border). */
+const isClientFailed = (item: QcDownloadItem) => {
+    const state = String(item.client?.state || '').toLowerCase();
+    return state === 'failed' || state === 'error' || state === 'missingfiles';
+};
+
+/**
+ * Arr-aligned status tone:
+ * importing purple · waiting blue · import failure yellow · failed/strikes red · downloading grey.
+ */
 const primaryTone = (item: QcDownloadItem): RowTone => {
     if (isStrikeProblem(item)) return 'red';
+    if (isClientFailed(item) && !item.safetyHold) return 'red';
+    if (item.reason === 'failedImport' || item.safetyHold === 'genericImport') return 'yellow';
     if (item.safetyHold) return 'yellow';
-    if (isImporting(item)) return 'green';
-    if (isWaitingImport(item) || item.reason === 'completedNotImporting') return 'yellow';
+    if (isImporting(item)) return 'purple';
+    if (isWaitingImport(item) || item.reason === 'completedNotImporting') return 'blue';
     if (item.reason) return 'yellow';
     return 'neutral';
 };
@@ -268,13 +283,13 @@ const primaryTone = (item: QcDownloadItem): RowTone => {
 const rowShell = (item: QcDownloadItem, latestHunt = false): { className: string; style?: React.CSSProperties } => {
     const tone = primaryTone(item);
     if (latestHunt && tone !== 'neutral') {
-        // Diagonal BR→TL: Latest blue on the bottom-right half, status on the top-left half.
+        // Diagonal BR→TL: Latest cyan on the bottom-right half, status on the top-left half.
         return {
             className: 'border-2 border-transparent',
             style: {
                 backgroundImage: [
                     `linear-gradient(${TONE[tone].fill}, ${TONE[tone].fill})`,
-                    `linear-gradient(to top left, ${TONE.blue.border} 50%, ${TONE[tone].border} 50%)`,
+                    `linear-gradient(to top left, ${TONE.cyan.border} 50%, ${TONE[tone].border} 50%)`,
                 ].join(', '),
                 backgroundOrigin: 'border-box',
                 backgroundClip: 'padding-box, border-box',
@@ -282,12 +297,13 @@ const rowShell = (item: QcDownloadItem, latestHunt = false): { className: string
         };
     }
     if (latestHunt) {
-        return { className: 'border-2 border-blue-500/50 bg-blue-500/10' };
+        return { className: 'border-2 border-cyan-400/50 bg-cyan-400/10' };
     }
     if (tone === 'red') return { className: 'border border-red-500/45 bg-red-500/10' };
     if (tone === 'yellow') return { className: 'border border-yellow-500/45 bg-yellow-500/10' };
-    if (tone === 'green') return { className: 'border border-emerald-500/45 bg-emerald-500/10' };
-    return { className: 'border border-border/40 bg-background/25' };
+    if (tone === 'purple') return { className: 'border border-purple-500/45 bg-purple-500/10' };
+    if (tone === 'blue') return { className: 'border border-blue-500/45 bg-blue-500/10' };
+    return { className: 'border border-border/30 bg-background/20' };
 };
 
 const statusBadge = (item: QcDownloadItem) => {
@@ -297,19 +313,59 @@ const statusBadge = (item: QcDownloadItem) => {
     if (isStrikeProblem(item)) {
         return { text: 'Strikes', className: 'text-red-300' };
     }
+    if (isClientFailed(item) && !item.safetyHold) {
+        return { text: 'Failed', className: 'text-red-300' };
+    }
+    if (item.reason === 'failedImport' || item.safetyHold === 'genericImport') {
+        return { text: 'Import fail', className: 'text-yellow-200' };
+    }
     if (item.safetyHold) {
         return { text: 'Held', className: 'text-yellow-200' };
     }
     if (isImporting(item)) {
-        return { text: 'Importing', className: 'text-emerald-300' };
+        return { text: 'Importing', className: 'text-purple-300' };
     }
     if (isWaitingImport(item) || item.reason === 'completedNotImporting') {
-        return { text: 'Waiting', className: 'text-yellow-200' };
+        return { text: 'Waiting', className: 'text-blue-300' };
     }
     if (item.reason) {
         return { text: 'Watch', className: 'text-yellow-200' };
     }
     return null;
+};
+
+const displayMediaTitle = (item: QcDownloadItem, episodeCount: number) => {
+    const base = item.mediaTitle || item.title || 'Unknown';
+    if (episodeCount > 1) return base;
+    if (item.episodeLabel && !base.includes(item.episodeLabel)) {
+        return `${base} ${item.episodeLabel}`;
+    }
+    return base;
+};
+
+const displayFileName = (item: QcDownloadItem) => {
+    const file = String(item.fileName || item.client?.name || '').trim();
+    const media = String(item.mediaTitle || item.title || '').trim();
+    if (!file) return null;
+    if (media && file.toLowerCase() === media.toLowerCase()) return null;
+    return file;
+};
+
+const portalStateLabel = (item: QcDownloadItem) => {
+    if (item.actionable || item.killReady || item.would?.kill) return 'kill ready';
+    if (isStrikeProblem(item)) {
+        const n = item.would?.strikes ?? item.strikes ?? 0;
+        const max = item.maxStrikes ?? 3;
+        return `strikes ${n}/${max}`;
+    }
+    const hold = safetyHoldLabel(item.safetyHold);
+    if (hold) return hold.replace(/^held:\s*/i, 'held · ');
+    if (item.reason === 'failedImport') return 'import failed';
+    if (isImporting(item)) return 'importing';
+    if (isWaitingImport(item) || item.reason === 'completedNotImporting') return 'waiting to import';
+    if (item.reason) return humanReason(item.reason) || phaseLabel(item);
+    if (item.upgrade) return 'upgrade · downloading';
+    return phaseLabel(item);
 };
 
 /** Youngest in-flight download in the library; prefer portal upgrade grabs on ties. */
@@ -583,8 +639,8 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                     <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
                         Downloads by library
                         <SettingHint>
-                            Borders: importing green, waiting/held yellow, strikes red, latest blue —
-                            shared latest+status splits diagonally (blue on the bottom-right half).
+                            Borders follow Arr queue colors: importing purple, waiting blue, import issues yellow,
+                            failed/strikes red; healthy downloads stay grey. Latest uses a cyan diagonal half when shared.
                             are highlighted — healthy ones stay muted.
                         </SettingHint>
                     </h2>
@@ -711,6 +767,18 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                             const isSelected = keys.length > 0 && keys.every((key) => selected.has(key));
                                             const progress = Math.max(0, Math.min(1, Number(item.progress) || 0));
                                             const shell = rowShell(item, row.latestHunt);
+                                            const mediaName = displayMediaTitle(item, episodeCount);
+                                            const fileName = displayFileName(item);
+                                            const badge = statusBadge(item);
+                                            const meta = [
+                                                formatAge(item.ageMs),
+                                                portalStateLabel(item),
+                                                episodeCount > 1 ? `${episodeCount} episodes` : null,
+                                                item.size ? formatSizeCeil(item.size) : null,
+                                                humanClientState(item),
+                                                item.snoozed ? 'snoozed' : null,
+                                                item.would?.action ? `would ${item.would.action}` : null,
+                                            ].filter(Boolean);
                                             return (
                                                 <div
                                                     key={row.groupKey}
@@ -727,40 +795,29 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                                     onChange={() => toggleGroup(keys)}
                                                                 />
                                                             )}
-                                                            <div className="min-w-0 flex-1">
+                                                            <div className="min-w-0 flex-1 space-y-0.5">
                                                                 <div className="flex items-center gap-2 min-w-0">
                                                                     <div className="text-xs font-semibold text-text truncate">
-                                                                        {item.title || 'Unknown'}
+                                                                        {mediaName}
                                                                     </div>
                                                                     {row.latestHunt && (
-                                                                        <span className="shrink-0 text-[10px] font-bold uppercase text-blue-300">
+                                                                        <span className="shrink-0 text-[10px] font-bold uppercase text-cyan-300">
                                                                             Latest
                                                                         </span>
                                                                     )}
-                                                                    {(() => {
-                                                                        const badge = statusBadge(item);
-                                                                        return badge ? (
-                                                                            <span className={`shrink-0 text-[10px] font-bold uppercase ${badge.className}`}>
-                                                                                {badge.text}
-                                                                            </span>
-                                                                        ) : null;
-                                                                    })()}
+                                                                    {badge ? (
+                                                                        <span className={`shrink-0 text-[10px] font-bold uppercase ${badge.className}`}>
+                                                                            {badge.text}
+                                                                        </span>
+                                                                    ) : null}
                                                                 </div>
-                                                                <div className="text-[11px] text-muted mt-0.5 break-words">
-                                                                    {[
-                                                                        phaseLabel(item),
-                                                                        formatAge(item.ageMs),
-                                                                        episodeCount > 1 ? `${episodeCount} episodes` : null,
-                                                                        (item.maxStrikes || item.would?.strikes != null)
-                                                                            ? `strikes ${(item.would?.strikes ?? item.strikes ?? 0)}/${item.maxStrikes ?? 3}`
-                                                                            : null,
-                                                                        item.upgrade ? 'upgrade' : null,
-                                                                        item.size ? formatSizeCeil(item.size) : null,
-                                                                        humanClientState(item),
-                                                                        item.snoozed ? 'snoozed' : null,
-                                                                        safetyHoldLabel(item.safetyHold),
-                                                                        item.would?.action ? `would ${item.would.action}` : null,
-                                                                    ].filter(Boolean).join(' · ')}
+                                                                {fileName && (
+                                                                    <div className="text-[11px] text-muted truncate" title={fileName}>
+                                                                        {fileName}
+                                                                    </div>
+                                                                )}
+                                                                <div className="text-[11px] text-muted/90 break-words">
+                                                                    {meta.join(' · ')}
                                                                 </div>
                                                                 {progress > 0 && progress < 1 && (
                                                                     <div className="mt-1.5 h-1 rounded-full bg-white/10 overflow-hidden">
