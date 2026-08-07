@@ -615,11 +615,24 @@ test('completedNotImporting ages from completion not grab time', () => {
         clientItem: {
             client: 'sab',
             state: 'completed',
-            progress: 1,
             completedAt: now - 5 * minute,
         },
     });
     assert.equal(reason, null);
+});
+
+test('season pack titles get extra CNI grace', () => {
+    assert.equal(isLikelySeasonPack({ arrItem: { title: 'Pose.S02.1080p.AMZN.WEB-DL' } }), true);
+    assert.equal(isLikelySeasonPack({ arrItem: { title: 'Show.S01E03.1080p' } }), false);
+    const pack = cniThresholdMinutes({
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 90 }),
+        arrItem: { title: 'Pose.S02.1080p.AMZN.WEB-DL', size: 33 * (1024 ** 3) },
+    });
+    const episode = cniThresholdMinutes({
+        thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 90 }),
+        arrItem: { title: 'Show.S01E03.1080p', size: 33 * (1024 ** 3) },
+    });
+    assert.equal(pack - episode, 120);
 });
 
 test('classifyQueueItem returns null when healthy', () => {

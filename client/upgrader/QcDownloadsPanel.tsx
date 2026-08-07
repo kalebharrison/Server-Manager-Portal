@@ -340,30 +340,71 @@ const rowShell = (item: QcDownloadItem, latestHunt = false): { className: string
 
 const statusBadge = (item: QcDownloadItem) => {
     if (item.actionable || item.killReady || item.would?.kill) {
-        return { text: 'Kill ready', className: 'text-red-300' };
+        return { text: 'Kill ready', className: 'text-red-300 border-red-500/40 bg-red-500/10' };
     }
     if (isStrikeProblem(item)) {
-        return { text: 'Strikes', className: 'text-red-300' };
+        const n = item.would?.strikes ?? item.strikes ?? 0;
+        const max = item.maxStrikes ?? 3;
+        return { text: `Strikes ${n}/${max}`, className: 'text-red-300 border-red-500/40 bg-red-500/10' };
     }
     if (isClientFailed(item) && !item.safetyHold) {
-        return { text: 'Failed', className: 'text-red-300' };
+        return { text: 'Failed', className: 'text-red-300 border-red-500/40 bg-red-500/10' };
     }
     if (item.reason === 'failedImport' || item.safetyHold === 'genericImport') {
-        return { text: 'Import fail', className: 'text-yellow-200' };
+        return { text: 'Import fail', className: 'text-yellow-200 border-yellow-500/40 bg-yellow-500/10' };
     }
     if (item.safetyHold) {
-        return { text: 'Held', className: 'text-yellow-200' };
+        return { text: 'Held', className: 'text-yellow-200 border-yellow-500/40 bg-yellow-500/10' };
     }
     if (isImporting(item)) {
-        return { text: 'Importing', className: 'text-purple-300' };
+        return { text: 'Importing', className: 'text-purple-300 border-purple-500/40 bg-purple-500/10' };
     }
     if (isWaitingImport(item) || item.reason === 'completedNotImporting') {
-        return { text: 'Waiting', className: 'text-blue-300' };
+        return { text: 'Waiting', className: 'text-blue-300 border-blue-500/40 bg-blue-500/10' };
+    }
+    if (item.reason === 'stalled' || item.reason === 'slowDownload') {
+        return { text: humanReason(item.reason) || 'Watch', className: 'text-yellow-200 border-yellow-500/40 bg-yellow-500/10' };
     }
     if (item.reason) {
-        return { text: 'Watch', className: 'text-yellow-200' };
+        return { text: 'Watch', className: 'text-yellow-200 border-yellow-500/40 bg-yellow-500/10' };
     }
     return null;
+};
+
+const clientBadge = (item: QcDownloadItem) => {
+    const client = String(item.client?.client || '').toLowerCase();
+    if (client === 'sab') return { text: 'SAB', className: 'text-amber-100 border-amber-500/35 bg-amber-500/10' };
+    if (client === 'qbit') return { text: 'qBit', className: 'text-sky-200 border-sky-500/35 bg-sky-500/10' };
+    if (client) return { text: client, className: 'text-zinc-300 border-white/15 bg-white/5' };
+    return null;
+};
+
+const itemChips = (item: QcDownloadItem, opts: { latestHunt?: boolean; episodeCount?: number } = {}) => {
+    const chips: { text: string; className: string }[] = [];
+    if (opts.latestHunt) {
+        chips.push({ text: 'Latest', className: 'text-emerald-300 border-emerald-500/40 bg-emerald-500/10' });
+    }
+    const status = statusBadge(item);
+    if (status) chips.push(status);
+    const client = clientBadge(item);
+    if (client) chips.push(client);
+    if (item.upgrade) {
+        chips.push({ text: 'Upgrade', className: 'text-violet-200 border-violet-500/35 bg-violet-500/10' });
+    }
+    if ((opts.episodeCount || 0) > 1 || /\bS\d{1,2}[.\-_ ]/i.test(String(item.fileName || item.title || ''))
+        && !/\bS\d{1,2}E\d{1,2}\b/i.test(String(item.fileName || item.title || ''))) {
+        chips.push({
+            text: (opts.episodeCount || 0) > 1 ? `Pack · ${opts.episodeCount}` : 'Pack',
+            className: 'text-zinc-200 border-white/20 bg-white/5',
+        });
+    }
+    if (item.seeding || /up$/i.test(String(item.client?.state || ''))) {
+        chips.push({ text: 'Seeding', className: 'text-teal-200 border-teal-500/30 bg-teal-500/10' });
+    }
+    if (item.snoozed) {
+        chips.push({ text: 'Snoozed', className: 'text-zinc-300 border-white/15 bg-white/5' });
+    }
+    return chips;
 };
 
 const displayMediaTitle = (item: QcDownloadItem, episodeCount: number) => {
@@ -821,14 +862,12 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                             const shell = rowShell(item, row.latestHunt);
                                             const mediaName = displayMediaTitle(item, episodeCount);
                                             const fileName = displayFileName(item);
-                                            const badge = statusBadge(item);
+                                            const chips = itemChips(item, { latestHunt: row.latestHunt, episodeCount });
                                             const meta = [
                                                 formatAge(item.ageMs),
                                                 portalStateLabel(item),
-                                                episodeCount > 1 ? `${episodeCount} episodes` : null,
                                                 item.size ? formatSizeCeil(item.size) : null,
                                                 humanClientState(item),
-                                                item.snoozed ? 'snoozed' : null,
                                                 item.would?.action ? `would ${item.would.action}` : null,
                                             ].filter(Boolean);
                                             return (
@@ -848,21 +887,21 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                                 />
                                                             )}
                                                             <div className="min-w-0 flex-1 space-y-1">
-                                                                <div className="flex items-center gap-2 min-w-0">
-                                                                    <div className="text-sm font-semibold text-white truncate">
-                                                                        {mediaName}
-                                                                    </div>
-                                                                    {row.latestHunt && (
-                                                                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
-                                                                            Latest
-                                                                        </span>
-                                                                    )}
-                                                                    {badge ? (
-                                                                        <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide ${badge.className}`}>
-                                                                            {badge.text}
-                                                                        </span>
-                                                                    ) : null}
+                                                                <div className="text-sm font-semibold text-white truncate">
+                                                                    {mediaName}
                                                                 </div>
+                                                                {chips.length > 0 && (
+                                                                    <div className="flex flex-wrap items-center gap-1">
+                                                                        {chips.map((chip) => (
+                                                                            <span
+                                                                                key={`${row.groupKey}-${chip.text}`}
+                                                                                className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${chip.className}`}
+                                                                            >
+                                                                                {chip.text}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
                                                                 {fileName && (
                                                                     <div className="text-xs text-zinc-300 truncate" title={fileName}>
                                                                         {fileName}
