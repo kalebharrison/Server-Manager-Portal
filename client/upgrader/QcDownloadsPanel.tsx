@@ -56,6 +56,7 @@ type GroupedRow = {
     allSnoozed: boolean;
     unhealthy: boolean;
     waitingImport: boolean;
+    latestHunt: boolean;
 };
 
 type LibraryBucket = {
@@ -66,6 +67,7 @@ type LibraryBucket = {
     remaining?: number;
     rows: GroupedRow[];
     unhealthyCount: number;
+    latestGroupKey: string | null;
 };
 
 type ActiveLibrary = {
@@ -231,7 +233,8 @@ const pickRepresentative = (items: QcDownloadItem[]) => (
     })[0]
 );
 
-const rowShellClass = (item: QcDownloadItem) => {
+/** Health/action chrome always wins over “latest hunt” tint. */
+const rowShellClass = (item: QcDownloadItem, latestHunt = false) => {
     if (item.actionable || item.killReady || item.would?.kill) {
         return 'border-red-500/35 bg-red-500/10';
     }
@@ -243,6 +246,9 @@ const rowShellClass = (item: QcDownloadItem) => {
     }
     if (isWaitingImport(item)) {
         return 'border-plex/30 bg-plex/8';
+    }
+    if (latestHunt) {
+        return 'border-plex/40 bg-plex/10 ring-1 ring-plex/25';
     }
     return 'border-border/40 bg-background/25';
 };
@@ -261,6 +267,28 @@ const statusBadge = (item: QcDownloadItem) => {
         return { text: 'Import', className: 'text-plex' };
     }
     return null;
+};
+
+/** Youngest in-flight download in the library; prefer portal upgrade grabs on ties. */
+const pickLatestHuntGroupKey = (rows: GroupedRow[]) => {
+    let best: GroupedRow | null = null;
+    for (const row of rows) {
+        const age = Number(row.item.ageMs);
+        if (!Number.isFinite(age) || age < 0) continue;
+        if (!best) {
+            best = row;
+            continue;
+        }
+        const bestAge = Number(best.item.ageMs) || 0;
+        if (age < bestAge) {
+            best = row;
+            continue;
+        }
+        if (age === bestAge && row.item.upgrade && !best.item.upgrade) {
+            best = row;
+        }
+    }
+    return best?.groupKey || null;
 };
 
 export const QcDownloadsPanel: React.FC<Props> = ({
@@ -319,6 +347,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                 allSnoozed: items.every((entry) => entry.snoozed),
                 unhealthy: items.some((entry) => isUnhealthy(entry)),
                 waitingImport: items.some((entry) => isWaitingImport(entry)),
+                latestHunt: false,
             };
         }).sort((a, b) => healthRank(a.item) - healthRank(b.item));
     }, [allItems]);
@@ -335,6 +364,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                     remaining: meta?.remaining,
                     rows: [],
                     unhealthyCount: 0,
+                    latestGroupKey: null,
                 });
             }
             return buckets.get(key)!;
@@ -358,6 +388,25 @@ export const QcDownloadsPanel: React.FC<Props> = ({
             const bucket = ensure(key, label);
             bucket.rows.push(row);
             if (row.unhealthy) bucket.unhealthyCount += 1;
+        }
+
+        for (const bucket of buckets.values()) {
+            const latestGroupKey = pickLatestHuntGroupKey(bucket.rows);
+            bucket.latestGroupKey = latestGroupKey;
+            if (!latestGroupKey) continue;
+            bucket.rows = bucket.rows.map((row) => (
+                row.groupKey === latestGroupKey
+                    ? { ...row, latestHunt: true }
+                    : row
+            ));
+            // Unhealthy first; latest hunt sits just under that band.
+            bucket.rows.sort((a, b) => {
+                const health = healthRank(a.item) - healthRank(b.item);
+                if (health !== 0) return health;
+                if (a.latestHunt !== b.latestHunt) return a.latestHunt ? -1 : 1;
+                return Number(a.item.ageMs || Number.POSITIVE_INFINITY)
+                    - Number(b.item.ageMs || Number.POSITIVE_INFINITY);
+            });
         }
 
         return [...buckets.values()]
@@ -492,6 +541,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                         Downloads by library
                         <SettingHint>
                             Every in-flight Arr download, grouped by library. Unhealthy rows (strikes, stalls, doomed imports)
+                            stay amber; the youngest grab per library gets a Latest badge (and keeps strikes chrome if both apply).
                             are highlighted — healthy ones stay muted.
                         </SettingHint>
                     </h2>
@@ -561,7 +611,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                     {libraries.map((library) => {
                         const visibleRows = showHealthy
                             ? library.rows
-                            : library.rows.filter((row) => row.unhealthy || row.waitingImport);
+                            : library.rows.filter((row) => row.unhealthy || row.waitingImport || row.latestHunt);
                         const atCap = library.active != null && library.cap != null && library.active >= library.cap;
                         const pct = library.active != null && library.cap
                             ? Math.min(100, Math.round((library.active / Math.max(1, library.cap)) * 100))
@@ -620,7 +670,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                             return (
                                                 <div
                                                     key={row.groupKey}
-                                                    className={`rounded-lg border px-3 py-2 ${rowShellClass(item)}`}
+                                                    className={`rounded-lg border px-3 py-2 ${rowShellClass(item, row.latestHunt)}`}
                                                 >
                                                     <div className="flex flex-wrap items-start justify-between gap-2">
                                                         <label className="flex items-start gap-2 min-w-0 flex-1 cursor-pointer">
@@ -637,6 +687,11 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                                     <div className="text-xs font-semibold text-text truncate">
                                                                         {item.title || 'Unknown'}
                                                                     </div>
+                                                                    {row.latestHunt && (
+                                                                        <span className="shrink-0 text-[10px] font-bold uppercase text-plex">
+                                                                            Latest
+                                                                        </span>
+                                                                    )}
                                                                     {(() => {
                                                                         const badge = statusBadge(item);
                                                                         return badge ? (
