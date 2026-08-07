@@ -185,22 +185,31 @@ const safetyHoldLabel = (hold?: QcDownloadItem['safetyHold']) => {
     return null;
 };
 
+const isImporting = (item: QcDownloadItem) => (
+    String(item.trackedDownloadState || '').toLowerCase() === 'importing'
+);
+
+const isStrikeProblem = (item: QcDownloadItem) => {
+    if (item.actionable || item.killReady || item.would?.kill || item.strikeEligible) return true;
+    const reason = String(item.reason || '');
+    // Waiting-to-import overdue is yellow caution, not strike red — unless already strike-eligible.
+    if (!reason || reason === 'completedNotImporting') return false;
+    return true;
+};
+
 const isUnhealthy = (item: QcDownloadItem) => Boolean(
-    item.actionable
-    || item.killReady
-    || item.would?.kill
-    || item.strikeEligible
-    || item.reason
+    isStrikeProblem(item)
     || item.safetyHold,
 );
 
 const healthRank = (item: QcDownloadItem) => {
     if (item.actionable || item.killReady || item.would?.kill) return 0;
-    if (item.strikeEligible) return 1;
-    if (item.reason || item.safetyHold) return 2;
-    if (isWaitingImport(item)) return 3;
-    if (item.snoozed) return 4;
-    return 5;
+    if (isStrikeProblem(item)) return 1;
+    if (item.safetyHold) return 2;
+    if (isWaitingImport(item) && !isImporting(item)) return 3;
+    if (isImporting(item)) return 4;
+    if (item.snoozed) return 5;
+    return 6;
 };
 
 const libraryLabelOf = (item: QcDownloadItem) => {
@@ -233,38 +242,65 @@ const pickRepresentative = (items: QcDownloadItem[]) => (
     })[0]
 );
 
-/** Health/action chrome always wins over “latest hunt” tint. */
-const rowShellClass = (item: QcDownloadItem, latestHunt = false) => {
-    if (item.actionable || item.killReady || item.would?.kill) {
-        return 'border-red-500/35 bg-red-500/10';
-    }
-    if (item.strikeEligible || item.reason) {
-        return 'border-amber-500/30 bg-amber-500/8';
-    }
-    if (item.safetyHold) {
-        return 'border-amber-500/20 bg-amber-500/5';
-    }
-    if (isWaitingImport(item)) {
-        return 'border-plex/30 bg-plex/8';
+type RowTone = 'red' | 'yellow' | 'green' | 'blue' | 'neutral';
+
+const TONE: Record<RowTone, { border: string; fill: string }> = {
+    red: { border: 'rgba(239, 68, 68, 0.55)', fill: 'rgba(239, 68, 68, 0.10)' },
+    yellow: { border: 'rgba(234, 179, 8, 0.55)', fill: 'rgba(234, 179, 8, 0.10)' },
+    green: { border: 'rgba(16, 185, 129, 0.50)', fill: 'rgba(16, 185, 129, 0.10)' },
+    blue: { border: 'rgba(59, 130, 246, 0.60)', fill: 'rgba(59, 130, 246, 0.12)' },
+    neutral: { border: 'rgba(148, 163, 184, 0.25)', fill: 'rgba(15, 23, 42, 0.25)' },
+};
+
+/** Status tone only — Latest is layered separately (and can split the border). */
+const primaryTone = (item: QcDownloadItem): RowTone => {
+    if (isStrikeProblem(item)) return 'red';
+    if (item.safetyHold) return 'yellow';
+    if (isImporting(item)) return 'green';
+    if (isWaitingImport(item)) return 'yellow';
+    return 'neutral';
+};
+
+const rowShell = (item: QcDownloadItem, latestHunt = false): { className: string; style?: React.CSSProperties } => {
+    const tone = primaryTone(item);
+    if (latestHunt && tone !== 'neutral') {
+        // Diagonal BL→TR: Latest blue on the bottom half, status color on the top half.
+        return {
+            className: 'border-2 border-transparent',
+            style: {
+                backgroundImage: [
+                    `linear-gradient(${TONE[tone].fill}, ${TONE[tone].fill})`,
+                    `linear-gradient(to top right, ${TONE.blue.border} 50%, ${TONE[tone].border} 50%)`,
+                ].join(', '),
+                backgroundOrigin: 'border-box',
+                backgroundClip: 'padding-box, border-box',
+            },
+        };
     }
     if (latestHunt) {
-        return 'border-plex/40 bg-plex/10 ring-1 ring-plex/25';
+        return { className: 'border-2 border-blue-500/50 bg-blue-500/10' };
     }
-    return 'border-border/40 bg-background/25';
+    if (tone === 'red') return { className: 'border border-red-500/45 bg-red-500/10' };
+    if (tone === 'yellow') return { className: 'border border-yellow-500/45 bg-yellow-500/10' };
+    if (tone === 'green') return { className: 'border border-emerald-500/45 bg-emerald-500/10' };
+    return { className: 'border border-border/40 bg-background/25' };
 };
 
 const statusBadge = (item: QcDownloadItem) => {
     if (item.actionable || item.killReady || item.would?.kill) {
         return { text: 'Kill ready', className: 'text-red-300' };
     }
-    if (item.strikeEligible || item.reason) {
-        return { text: 'Strikes', className: 'text-amber-200' };
+    if (isStrikeProblem(item)) {
+        return { text: 'Strikes', className: 'text-red-300' };
     }
-    if (String(item.trackedDownloadState || '').toLowerCase() === 'importing') {
-        return { text: 'Importing', className: 'text-plex' };
+    if (isImporting(item)) {
+        return { text: 'Importing', className: 'text-emerald-300' };
     }
     if (isWaitingImport(item)) {
-        return { text: 'Import', className: 'text-plex' };
+        return { text: 'Waiting', className: 'text-yellow-200' };
+    }
+    if (item.safetyHold) {
+        return { text: 'Held', className: 'text-yellow-200' };
     }
     return null;
 };
@@ -540,8 +576,8 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                     <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
                         Downloads by library
                         <SettingHint>
-                            Every in-flight Arr download, grouped by library. Unhealthy rows (strikes, stalls, doomed imports)
-                            stay amber; the youngest grab per library gets a Latest badge (and keeps strikes chrome if both apply).
+                            Every in-flight Arr download, grouped by library. Borders: importing green, waiting yellow,
+                            strikes red, latest blue — shared latest+status splits the border diagonally (blue on the bottom half).
                             are highlighted — healthy ones stay muted.
                         </SettingHint>
                     </h2>
@@ -620,7 +656,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                             <section
                                 key={library.key}
                                 className={`${QC_SECTION} space-y-3 ${
-                                    library.unhealthyCount > 0 ? 'border-amber-500/25' : ''
+                                    library.unhealthyCount > 0 ? 'border-red-500/25' : ''
                                 }`}
                             >
                                 <div className="flex items-start justify-between gap-3">
@@ -636,7 +672,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                         </p>
                                     </div>
                                     {library.unhealthyCount > 0 ? (
-                                        <span className="shrink-0 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-200">
+                                        <span className="shrink-0 rounded-md border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-300">
                                             {library.unhealthyCount} issue{library.unhealthyCount === 1 ? '' : 's'}
                                         </span>
                                     ) : (
@@ -667,10 +703,12 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                             const { item, keys, episodeCount } = row;
                                             const isSelected = keys.length > 0 && keys.every((key) => selected.has(key));
                                             const progress = Math.max(0, Math.min(1, Number(item.progress) || 0));
+                                            const shell = rowShell(item, row.latestHunt);
                                             return (
                                                 <div
                                                     key={row.groupKey}
-                                                    className={`rounded-lg border px-3 py-2 ${rowShellClass(item, row.latestHunt)}`}
+                                                    className={`rounded-lg px-3 py-2 ${shell.className}`}
+                                                    style={shell.style}
                                                 >
                                                     <div className="flex flex-wrap items-start justify-between gap-2">
                                                         <label className="flex items-start gap-2 min-w-0 flex-1 cursor-pointer">
@@ -688,7 +726,7 @@ export const QcDownloadsPanel: React.FC<Props> = ({
                                                                         {item.title || 'Unknown'}
                                                                     </div>
                                                                     {row.latestHunt && (
-                                                                        <span className="shrink-0 text-[10px] font-bold uppercase text-plex">
+                                                                        <span className="shrink-0 text-[10px] font-bold uppercase text-blue-300">
                                                                             Latest
                                                                         </span>
                                                                     )}
