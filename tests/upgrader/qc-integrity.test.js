@@ -576,6 +576,7 @@ test('imohash mismatch does not blocklist', async () => {
 
 test('import baseline playability fail requests blocklist', async () => {
     const requests = [];
+    let cache = { entries: {} };
     const integrity = createQcIntegrity({
         request: async (instance, reqPath, options = {}) => {
             requests.push({ path: reqPath, method: options.method || 'GET', body: options.body });
@@ -585,9 +586,11 @@ test('import baseline playability fail requests blocklist', async () => {
         loadPrefs: async () => ({}),
         savePrefs: async () => {},
         appendAudit: async () => {},
-        loadCache: async () => ({ entries: {} }),
-        saveCache: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:bad' }),
         statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
         execImpl: async (bin, args = []) => {
             if (args.includes('-version')) {
                 return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
@@ -611,6 +614,7 @@ test('import baseline playability fail requests blocklist', async () => {
     const result = await integrity.baselineImport({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
         arrInstances: [{
             id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
         }],
@@ -623,11 +627,14 @@ test('import baseline playability fail requests blocklist', async () => {
         title: 'Bad',
         downloadId: 'dl-1',
         sourceTitle: 'Bad.Release',
+        ratingKey: 'radarr:r1:1',
+        key: 'radarr:r1:1:file:7',
     });
 
     assert.equal(result.ran, true);
     assert.equal(result.ok, false);
     assert.equal(result.blocklisted, true);
+    assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, 'imo:bad');
     assert.ok(requests.some((entry) => String(entry.path).includes('failed') || String(entry.path).includes('blocklist')));
 });
 
@@ -1065,6 +1072,7 @@ test('recheckFinding keeps and refreshes finding when still failing', async () =
 
 test('baselineImport soft timeout does not blocklist and queues recheck', async () => {
     let prefs = {};
+    let cache = { entries: {} };
     const blocklistCalls = [];
     const integrity = createQcIntegrity({
         request: async () => {
@@ -1075,8 +1083,9 @@ test('baselineImport soft timeout does not blocklist and queues recheck', async 
         loadPrefs: async () => prefs,
         savePrefs: async (next) => { prefs = next; },
         appendAudit: async () => {},
-        loadCache: async () => ({ entries: {} }),
-        saveCache: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:soft' }),
         statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
         realpathImpl: async (target) => target,
         execImpl: async (bin, args = []) => {
@@ -1123,10 +1132,12 @@ test('baselineImport soft timeout does not blocklist and queues recheck', async 
     assert.equal(result.blocklisted, false);
     assert.equal(blocklistCalls.length, 0);
     assert.ok((prefs.integritySoftRecheckQueue || []).includes(result.result.key));
+    assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, 'imo:soft');
 });
 
 test('baselineImport hard decode fail blocklists on import', async () => {
     let prefs = {};
+    let cache = { entries: {} };
     const requests = [];
     const integrity = createQcIntegrity({
         request: async (_instance, path, options = {}) => {
@@ -1138,8 +1149,9 @@ test('baselineImport hard decode fail blocklists on import', async () => {
         loadPrefs: async () => prefs,
         savePrefs: async (next) => { prefs = next; },
         appendAudit: async () => {},
-        loadCache: async () => ({ entries: {} }),
-        saveCache: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:hard' }),
         statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
         realpathImpl: async (target) => target,
         execImpl: async (bin, args = []) => {
@@ -1184,5 +1196,96 @@ test('baselineImport hard decode fail blocklists on import', async () => {
 
     assert.equal(result.ok, false);
     assert.equal(result.result.shouldBlocklist, true);
+    assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, 'imo:hard');
     assert.ok(requests.some((entry) => String(entry.path).includes('blocklist') || String(entry.path).includes('history')));
+});
+
+test('scanIntegrity libraryKey only probes that library and keeps other cache', async () => {
+    let cache = {
+        entries: {
+            'radarr:r1:1:file:1': {
+                ok: true, imohash: 'imo:keep', size: 10, mtimeMs: 1, playabilityAt: '2026-01-01T00:00:00.000Z',
+            },
+            'radarr:r1:2:file:2': {
+                ok: true, size: 10, mtimeMs: 1,
+            },
+        },
+    };
+    let prefs = {};
+    const probed = [];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            generatedAt: '2026-08-07T00:00:00.000Z',
+            items: [
+                {
+                    ratingKey: 'radarr:r1:1',
+                    title: 'Movies Title',
+                    hasFile: true,
+                    mediaType: 'movie',
+                    arrType: 'radarr',
+                    arrInstanceId: 'r1',
+                    entityId: 1,
+                    movieFileId: 1,
+                    filePath: '/movies/A.mkv',
+                    libraryKey: 'radarr:r1:movies',
+                    libraryName: 'Movies',
+                },
+                {
+                    ratingKey: 'radarr:r1:2',
+                    title: 'Anime Title',
+                    hasFile: true,
+                    mediaType: 'movie',
+                    arrType: 'radarr',
+                    arrInstanceId: 'r1',
+                    entityId: 2,
+                    movieFileId: 2,
+                    filePath: '/anime/B.mkv',
+                    libraryKey: 'radarr:r1:anime-movies',
+                    libraryName: 'Anime Movies',
+                },
+            ],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        imohashImpl: async (filePath) => {
+            probed.push(filePath);
+            return { ok: true, imohash: 'imo:new' };
+        },
+        statImpl: async () => ({ ok: true, size: 10, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.scanIntegrity({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityPathMaps: [
+            { from: '/movies', to: '/movies' },
+            { from: '/anime', to: '/anime' },
+        ],
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, {
+        dryRun: true,
+        force: true,
+        full: true,
+        mode: 'imohash',
+        libraryKey: 'radarr:r1:anime-movies',
+    });
+
+    assert.equal(result.ran, true);
+    assert.deepEqual(probed, ['/anime/B.mkv']);
+    assert.equal(cache.entries['radarr:r1:1:file:1']?.imohash, 'imo:keep');
+    assert.equal(cache.entries['radarr:r1:2:file:2']?.imohash, 'imo:new');
+    assert.equal(result.coverage.byLibrary.length, 2);
 });

@@ -33,6 +33,8 @@ type IntegrityProgress = {
     findingCount?: number;
     currentTitle?: string | null;
     mode?: string | null;
+    libraryKey?: string | null;
+    libraryLabel?: string | null;
 };
 
 type CoverageBucket = {
@@ -108,6 +110,7 @@ type IntegrityStatus = {
         skippedPlaying?: number;
         passed?: number;
         findingCount?: number;
+        libraryKey?: string | null;
         findings?: IntegrityFinding[];
     } | null;
     setup?: IntegrityScanResponse['setup'];
@@ -129,28 +132,33 @@ const MODE_LABELS: Record<IntegrityScanMode, string> = {
 const SCAN_ACTIONS: Array<{
     mode: IntegrityScanMode;
     label: string;
+    shortLabel: string;
     blurb: string;
     xxhashOnly?: boolean;
 }> = [
     {
         mode: 'playability',
         label: MODE_LABELS.playability,
+        shortLabel: 'Playback',
         blurb: 'Decode samples at the start, middle, and end. Catches unplayable or truncated files.',
     },
     {
         mode: 'imohash',
         label: MODE_LABELS.imohash,
+        shortLabel: 'Fingerprint',
         blurb: 'Fast spot-check of file size plus small slices. Good for catching silent swaps.',
     },
     {
         mode: 'xxhash',
         label: MODE_LABELS.xxhash,
+        shortLabel: 'Hash',
         blurb: 'Hashes the entire file. Slowest; enable in Settings first.',
         xxhashOnly: true,
     },
     {
         mode: 'baseline',
         label: MODE_LABELS.baseline,
+        shortLabel: 'All',
         blurb: 'Runs playback + fingerprint together (and full-file hash when that option is on).',
     },
 ];
@@ -316,24 +324,47 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         return stopPolling;
     }, [integrityEnabled, loadStatus, startPolling, stopPolling]);
 
-    const runScan = useCallback(async (mode: IntegrityScanMode = 'baseline') => {
+    const runScan = useCallback(async (
+        mode: IntegrityScanMode = 'baseline',
+        scope?: { libraryKey?: string; libraryLabel?: string },
+    ) => {
         setScanning(true);
-        setProgress({ scanned: 0, target: 0, currentTitle: 'Starting…', mode });
+        setProgress({
+            scanned: 0,
+            target: 0,
+            currentTitle: 'Starting…',
+            mode,
+            libraryKey: scope?.libraryKey || null,
+            libraryLabel: scope?.libraryLabel || null,
+        });
         startPolling();
+        const scopeLabel = scope?.libraryLabel ? ` · ${scope.libraryLabel}` : '';
         try {
             const payload = await apiFetch('/api/upgrader/qc/integrity/scan', {
                 method: 'POST',
-                body: JSON.stringify({ mode, dryRun: true, force: false, full: true }),
+                body: JSON.stringify({
+                    mode,
+                    dryRun: true,
+                    force: false,
+                    full: true,
+                    libraryKey: scope?.libraryKey || undefined,
+                    libraryLabel: scope?.libraryLabel || undefined,
+                }),
             }) as IntegrityScanResponse & { started?: boolean };
 
             if (payload.scanning || payload.started || payload.reason === 'Scan already in progress') {
                 onToast?.(
                     payload.started
-                        ? `${labelForMode(mode)} started — this can take a while. Watching progress.`
+                        ? `${labelForMode(mode)}${scopeLabel} started — this can take a while. Watching progress.`
                         : 'A scan is already running — watching progress.',
                     'info',
                 );
-                setProgress(payload.progress || { mode, currentTitle: 'Running…' });
+                setProgress(payload.progress || {
+                    mode,
+                    currentTitle: 'Running…',
+                    libraryKey: scope?.libraryKey || null,
+                    libraryLabel: scope?.libraryLabel || null,
+                });
                 return;
             }
 
@@ -346,7 +377,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 onToast?.(payload.reason || 'Integrity scan did not run.', 'error');
             } else {
                 onToast?.(
-                    `${labelForMode(mode)}: ${payload.findingCount || 0} findings · ${payload.scanned || 0} probed · ${payload.skippedPlaying || 0} playing skip.`,
+                    `${labelForMode(mode)}${scopeLabel}: ${payload.findingCount || 0} findings · ${payload.scanned || 0} probed · ${payload.skippedPlaying || 0} playing skip.`,
                     'success',
                 );
             }
@@ -508,6 +539,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     {scanning && (
                         <p className="text-xs text-amber-100 mt-2">
                             Running {labelForMode(progress?.mode)}
+                            {progress?.libraryLabel ? ` · ${progress.libraryLabel}` : ''}
                             {progress?.currentTitle ? `: ${progress.currentTitle}` : '…'}
                             {progress?.target != null ? ` · ${progress.scanned || 0}/${progress.target} probed` : ''}
                             {progress?.findingCount ? ` · ${progress.findingCount} findings so far` : ''}
@@ -518,8 +550,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 <div>
                     <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Status by library</h3>
                     <p className="text-[11px] text-muted mt-1 max-w-3xl">
-                        Quick fingerprint is the full-library goal. Playback and full-file hash only fill from new imports,
-                        mismatch escalations, and manual runs — so those bars stay low until you sweep a library.
+                        New imports/upgrades fingerprint first so coverage should stay near 100% on that bar.
+                        Playback and full-file hash still fill from import stages, escalations, and the buttons below.
                     </p>
                     <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         {libraries.length === 0 && (
@@ -527,48 +559,74 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                 <p className="text-xs text-muted">Coverage loads with the library index…</p>
                             </div>
                         )}
-                        {libraries.map((lib) => (
-                            <div key={lib.key} className={QC_KPI}>
-                                <div className="flex items-baseline justify-between gap-2">
-                                    <div className="text-sm font-bold text-text truncate">{lib.label}</div>
-                                    <span className="text-[11px] text-muted tabular-nums shrink-0">
-                                        {Number(lib.total || 0).toLocaleString()} files
-                                    </span>
-                                </div>
-                                <div className="mt-2 space-y-2">
-                                    {visibleStatus.map((check) => {
-                                        const done = Number(lib[check.key] || 0);
-                                        const total = Number(lib.total || 0);
-                                        const pct = coveragePct(done, total);
-                                        return (
-                                            <div key={check.key}>
-                                                <div className="flex items-baseline justify-between gap-2">
-                                                    <span className="text-[11px] text-muted">{check.label}</span>
-                                                    <span className="text-[11px] font-semibold text-text tabular-nums">
-                                                        {formatPair(done, total)}
-                                                        <span className="text-muted font-medium"> · {pct}%</span>
-                                                    </span>
+                        {libraries.map((lib) => {
+                            const activeHere = scanning && progress?.libraryKey === lib.key;
+                            return (
+                                <div key={lib.key} className={QC_KPI}>
+                                    <div className="flex items-baseline justify-between gap-2">
+                                        <div className="text-sm font-bold text-text truncate">{lib.label}</div>
+                                        <span className="text-[11px] text-muted tabular-nums shrink-0">
+                                            {Number(lib.total || 0).toLocaleString()} files
+                                        </span>
+                                    </div>
+                                    <div className="mt-2 space-y-2">
+                                        {visibleStatus.map((check) => {
+                                            const done = Number(lib[check.key] || 0);
+                                            const total = Number(lib.total || 0);
+                                            const pct = coveragePct(done, total);
+                                            return (
+                                                <div key={check.key}>
+                                                    <div className="flex items-baseline justify-between gap-2">
+                                                        <span className="text-[11px] text-muted">{check.label}</span>
+                                                        <span className="text-[11px] font-semibold text-text tabular-nums">
+                                                            {formatPair(done, total)}
+                                                            <span className="text-muted font-medium"> · {pct}%</span>
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-1 h-1.5 rounded-full bg-border/50 overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-full bg-plex/80 transition-[width]"
+                                                            style={{ width: `${pct}%` }}
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div className="mt-1 h-1.5 rounded-full bg-border/50 overflow-hidden">
-                                                    <div
-                                                        className="h-full rounded-full bg-plex/80 transition-[width]"
-                                                        style={{ width: `${pct}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                        {visibleActions.map((entry) => {
+                                            const active = activeHere && progress?.mode === entry.mode;
+                                            return (
+                                                <button
+                                                    key={entry.mode}
+                                                    type="button"
+                                                    className="px-2 py-1 rounded-md border border-border/60 text-[10px] font-bold text-text hover:border-plex/40 disabled:opacity-50 inline-flex items-center gap-1"
+                                                    disabled={scanning}
+                                                    title={`${entry.label} — ${lib.label}`}
+                                                    onClick={() => void runScan(entry.mode, {
+                                                        libraryKey: lib.key,
+                                                        libraryLabel: lib.label,
+                                                    })}
+                                                >
+                                                    {active
+                                                        ? <Loader2 className="w-3 h-3 animate-spin text-plex" />
+                                                        : null}
+                                                    {entry.shortLabel}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
                 <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Run a check</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Run all libraries</h3>
                     <div className="mt-2 grid gap-2 sm:grid-cols-2">
                         {visibleActions.map((entry) => {
-                            const active = scanning && progress?.mode === entry.mode;
+                            const active = scanning && !progress?.libraryKey && progress?.mode === entry.mode;
                             return (
                                 <button
                                     key={entry.mode}
