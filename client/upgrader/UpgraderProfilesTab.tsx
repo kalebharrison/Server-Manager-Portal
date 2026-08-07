@@ -6,6 +6,7 @@ import { UpgraderQualityProfileModal } from './UpgraderQualityProfileModal';
 import type { UpgraderProfilesUrlState } from './upgraderUrlState';
 import { SettingHint } from '../settings/SettingHint';
 import { QC_SECTION } from './qcUi';
+import { QcCfRepairsPanel } from './QcCfRepairsPanel';
 
 interface ArrInstance {
     id: string;
@@ -85,6 +86,7 @@ type UpgraderProfilesTabProps = {
     initialFormatPage?: number;
     initialProfilePage?: number;
     onUrlStateChange?: (patch: Partial<UpgraderProfilesUrlState>) => void;
+    onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
 };
 
 export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
@@ -92,6 +94,7 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
     initialFormatPage = 1,
     initialProfilePage = 1,
     onUrlStateChange,
+    onToast,
 }) => {
     const [loading, setLoading] = useState(true);
     const [instances, setInstances] = useState<ArrInstance[]>([]);
@@ -240,6 +243,8 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
 
     return (
         <div className="flex flex-col gap-6">
+            <QcCfRepairsPanel onToast={onToast} />
+
             <div className={`${QC_SECTION} p-6`}>
                 <div className="flex items-center justify-between mb-4">
                     <div>

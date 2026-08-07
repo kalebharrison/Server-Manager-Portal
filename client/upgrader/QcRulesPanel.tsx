@@ -12,14 +12,14 @@ type Props = {
     onChanged?: () => void;
 };
 
-/** Full policy + skip list. Live pressure / automation live on Overview. */
+/** Cleanup / hunt policy + skip list. Live pressure stays on Overview. */
 export const QcRulesPanel: React.FC<Props> = ({ status, onToast, onChanged }) => (
     <div className="space-y-6">
         <section className={QC_SECTION}>
             <QcPolicySummary status={status} />
         </section>
 
-        <div className="space-y-4">
+        <section className="space-y-4">
             <div>
                 <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
                     Skip list
@@ -28,14 +28,14 @@ export const QcRulesPanel: React.FC<Props> = ({ status, onToast, onChanged }) =>
                     </SettingHint>
                 </h2>
                 <p className="text-xs text-muted mt-1">
-                    Excluded titles skip auto-hunt only.
+                    Excluded titles skip auto-hunt only. Timing and caps are above; Arr custom formats live under Arr scores.
                 </p>
             </div>
             <UpgraderExclusionsPanel
                 addToast={(message, type) => onToast(message, type)}
                 onChanged={onChanged}
             />
-        </div>
+        </section>
     </div>
 );
 

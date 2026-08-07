@@ -17,8 +17,6 @@ import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
-import { QcOptimizeClientsButton } from './QcOptimizeClientsButton';
-import { QcPolicySummary } from './QcPolicySummary';
 import { QcKpiTile } from './QcKpiTile';
 import { QC_PAGE, QC_SECTION, QC_TAB_BAR, qcTabButtonClass } from './qcUi';
 import { SettingsCollapseSection } from '../settings/SettingsCollapseSection';
@@ -46,7 +44,6 @@ const QcClientsPanel = lazyPanel(() => import('./QcClientsPanel').then((m) => ({
 const QcRulesPanel = lazyPanel(() => import('./QcRulesPanel').then((m) => ({ default: m.QcRulesPanel })));
 const UpgraderProfilesTab = lazyPanel(() => import('./UpgraderProfilesTab').then((m) => ({ default: m.UpgraderProfilesTab })));
 const UpgraderHistoryPanel = lazyPanel(() => import('./UpgraderHistoryPanel').then((m) => ({ default: m.UpgraderHistoryPanel })));
-const QcCfRepairsPanel = lazyPanel(() => import('./QcCfRepairsPanel').then((m) => ({ default: m.QcCfRepairsPanel })));
 
 const TabPanelFallback: React.FC = () => (
     <div className="min-h-[240px]" aria-hidden="true" />
@@ -55,13 +52,14 @@ const TabPanelFallback: React.FC = () => (
 type LibraryGroup<T> = { key: string; label: string; items: T[] };
 
 const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode; title: string }> = [
-    { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-3.5 h-3.5" />, title: 'Active downloads, timing, and recent activity' },
-    { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'Recent grabs, how hunting works, and dry-run preview' },
+    { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-3.5 h-3.5" />, title: 'Live status: automation, queues, and capacity' },
+    { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'Recent grabs, preview hunt, and how hunting works' },
     { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-3.5 h-3.5" />, title: 'Scan library files for corruption (report-only unless you replace)' },
     { id: 'downloads', label: 'Downloads', icon: <Download className="w-3.5 h-3.5" />, title: 'Download health, strikes, and cleanup' },
     { id: 'clients', label: 'Clients', icon: <HardDrive className="w-3.5 h-3.5" />, title: 'Optimize qBit/SAB and manage blocked extensions' },
-    { id: 'rules', label: 'Rules', icon: <Ban className="w-3.5 h-3.5" />, title: 'Full policy: timing, caps, hunt targets, skip list' },
-    { id: 'activity', label: 'Activity', icon: <History className="w-3.5 h-3.5" />, title: 'Live hunt grabs and cleanup history' },
+    { id: 'rules', label: 'Rules', icon: <Ban className="w-3.5 h-3.5" />, title: 'Cleanup timing, hunt caps, and skip list' },
+    { id: 'profiles', label: 'Arr scores', icon: <Settings2 className="w-3.5 h-3.5" />, title: 'Custom format repairs and Arr quality profile scores' },
+    { id: 'activity', label: 'Activity', icon: <History className="w-3.5 h-3.5" />, title: 'Hunt grabs and cleanup history' },
 ];
 
 const groupByLibrary = <T extends { arrInstanceName?: string | null; libraryName?: string | null; arrType?: string | null; libraryKey?: string | null }>(
@@ -382,7 +380,7 @@ export const UpgraderDashboard: React.FC = () => {
                             Quality Control
                         </h1>
                         <p className="text-sm text-muted mt-1">
-                            Hunt better releases and clean doomed downloads.
+                            Live status and queues. Dig into tabs for hunt, downloads, clients, rules, and Arr scores.
                         </p>
                     </div>
                     {featureEnabled && (
@@ -442,17 +440,6 @@ export const UpgraderDashboard: React.FC = () => {
                                 <span className="whitespace-nowrap">{tab.label}</span>
                             </button>
                         ))}
-                        {activeTab === 'profiles' && (
-                            <button
-                                type="button"
-                                className={tabButtonClass('profiles')}
-                                onClick={() => handleTabChange('profiles')}
-                                title="Tune Arr custom formats / quality profiles"
-                            >
-                                <Settings2 className="w-3.5 h-3.5" />
-                                <span className="whitespace-nowrap">Arr scores</span>
-                            </button>
-                        )}
                     </div>
 
                     {loading ? (
@@ -552,40 +539,12 @@ export const UpgraderDashboard: React.FC = () => {
                                             onClick={() => handleTabChange('hunt')}
                                         />
                                         <QcKpiTile
-                                            label="Score floor"
-                                            value={`+${minDelta}`}
-                                            detail="Min Arr CF gain to grab"
-                                            onClick={() => handleTabChange('rules')}
-                                        />
-                                        <QcKpiTile
                                             label="Cleanup kills"
                                             value={cleanupKills}
                                             detail={status?.qcMetrics?.lastCleanupAt
                                                 ? `Last ${new Date(status.qcMetrics.lastCleanupAt).toLocaleString()}`
                                                 : 'Lifetime recorded'}
                                             onClick={() => handleTabChange('downloads')}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        <QcKpiTile
-                                            label="Missing TV"
-                                            value={status?.huntMissingEpisodes === false ? 'Off' : 'On'}
-                                            valueClassName={status?.huntMissingEpisodes === false ? 'text-amber-200' : 'text-emerald-300'}
-                                            detail="Hunt aired gaps"
-                                            onClick={() => handleTabChange('hunt')}
-                                        />
-                                        <QcKpiTile
-                                            label="Movies"
-                                            value={status?.huntAvailableMovies === false ? 'Off' : 'On'}
-                                            valueClassName={status?.huntAvailableMovies === false ? 'text-amber-200' : 'text-emerald-300'}
-                                            detail="Hunt when digitally available"
-                                            onClick={() => handleTabChange('hunt')}
-                                        />
-                                        <QcKpiTile
-                                            label="Libraries"
-                                            value={libraries.length || (status?.arrConfigured ? '—' : 0)}
-                                            detail={status?.arrConfigured ? 'Arr roots indexed' : 'Arr not configured'}
                                         />
                                         <QcKpiTile
                                             label="Clients"
@@ -596,19 +555,10 @@ export const UpgraderDashboard: React.FC = () => {
                                                     SAB {status?.clientsConfigured?.sab ? '✓' : '—'}
                                                 </>
                                             )}
-                                            detail="Download clients"
+                                            detail="Optimize & extensions on Clients"
                                             onClick={() => handleTabChange('clients')}
                                         />
                                     </div>
-
-                                    {(status?.clientsConfigured?.qbit || status?.clientsConfigured?.sab) && (
-                                        <div className={`${QC_SECTION} flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3`}>
-                                            <p className="text-xs text-muted">
-                                                Tune SAB/qBit so hunt research and remux imports are not blocked by dupe discard or tiny seed windows.
-                                            </p>
-                                            <QcOptimizeClientsButton onToast={addToast} variant="compact" />
-                                        </div>
-                                    )}
 
                                     <section className="space-y-3">
                                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -656,24 +606,6 @@ export const UpgraderDashboard: React.FC = () => {
                                             </div>
                                         )}
                                     </section>
-
-                                    <Suspense fallback={<TabPanelFallback />}>
-                                        <SettingsCollapseSection
-                                            title="Custom format repairs"
-                                            subtitle="TRaSH / CF score gaps across Arr profiles"
-                                            defaultOpen={false}
-                                        >
-                                            <QcCfRepairsPanel onToast={addToast} embedded />
-                                        </SettingsCollapseSection>
-                                    </Suspense>
-
-                                    <SettingsCollapseSection
-                                        title="Cleanup & hunt policy"
-                                        subtitle="Effective strike windows and rate caps"
-                                        defaultOpen={false}
-                                    >
-                                        <QcPolicySummary status={status} compact showSettingsLink />
-                                    </SettingsCollapseSection>
                                 </div>
                             )}
                                 {activeTab === 'integrity' && (
@@ -963,6 +895,7 @@ export const UpgraderDashboard: React.FC = () => {
                                             initialFormatPage={profilesUrl.formatPage}
                                             initialProfilePage={profilesUrl.profilePage}
                                             onUrlStateChange={handleProfilesUrlChange}
+                                            onToast={addToast}
                                         />
                                     </Suspense>
                                 )}
