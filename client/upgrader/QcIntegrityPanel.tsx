@@ -3,7 +3,6 @@ import { FlaskConical, Loader2, RefreshCw, ShieldAlert } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { SettingHint } from '../settings/SettingHint';
-import { SettingsCollapseSection } from '../settings/SettingsCollapseSection';
 import { QC_KPI, QC_SECTION } from './qcUi';
 
 type IntegrityFinding = {
@@ -45,10 +44,17 @@ type CoverageBucket = {
     baselined?: number;
 };
 
+type LibraryCoverage = CoverageBucket & {
+    key: string;
+    label: string;
+    mediaType?: 'movie' | 'show' | 'album' | string;
+};
+
 type IntegrityCoverage = {
     movie?: CoverageBucket;
     show?: CoverageBucket;
     album?: CoverageBucket;
+    byLibrary?: LibraryCoverage[];
 };
 
 type IntegrityBreaker = {
@@ -194,15 +200,31 @@ const coveragePct = (done?: number, total?: number) => {
     return Math.min(99, Math.floor((d / t) * 100));
 };
 
-const coverageTotals = (coverage: IntegrityCoverage | null) => {
-    const totals = { total: 0, playability: 0, imohash: 0, xxhash: 0 };
-    for (const bucket of [coverage?.movie, coverage?.show, coverage?.album]) {
-        totals.total += Number(bucket?.total || 0);
-        totals.playability += Number(bucket?.playability || 0);
-        totals.imohash += Number(bucket?.imohash || 0);
-        totals.xxhash += Number(bucket?.xxhash || 0);
+const FALLBACK_LIBRARY_LABELS: Record<string, string> = {
+    movie: 'Movies',
+    show: 'TV',
+    album: 'Music',
+};
+
+const librariesFromCoverage = (coverage: IntegrityCoverage | null): LibraryCoverage[] => {
+    if (Array.isArray(coverage?.byLibrary) && coverage.byLibrary.length) {
+        return coverage.byLibrary;
     }
-    return totals;
+    return (['movie', 'show', 'album'] as const)
+        .map((key) => {
+            const bucket = coverage?.[key];
+            if (!bucket?.total) return null;
+            return {
+                key,
+                label: FALLBACK_LIBRARY_LABELS[key] || key,
+                mediaType: key,
+                total: bucket.total,
+                playability: bucket.playability,
+                imohash: bucket.imohash,
+                xxhash: bucket.xxhash,
+            } satisfies LibraryCoverage;
+        })
+        .filter((entry): entry is LibraryCoverage => !!entry);
 };
 
 export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = false }) => {
@@ -460,12 +482,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const displayFindings = findings.length ? findings : (result?.findings || []);
     const visibleActions = SCAN_ACTIONS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
     const visibleStatus = CHECK_STATUS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
-    const totals = coverageTotals(coverage);
-    const mediaCols: Array<{ key: 'movie' | 'show' | 'album'; label: string }> = [
-        { key: 'movie', label: 'Movies' },
-        { key: 'show', label: 'TV' },
-        { key: 'album', label: 'Music' },
-    ];
+    const libraries = librariesFromCoverage(coverage);
 
     return (
         <div className="space-y-4">
@@ -499,29 +516,51 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 </div>
 
                 <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Status</h3>
-                    <div className={`mt-2 grid gap-3 ${visibleStatus.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'} grid-cols-1`}>
-                        {visibleStatus.map((check) => {
-                            const done = totals[check.key];
-                            const total = totals.total;
-                            const pct = coveragePct(done, total);
-                            return (
-                                <div key={check.key} className={QC_KPI}>
-                                    <div className="text-sm font-bold text-text">{check.label}</div>
-                                    <p className="text-[11px] text-muted mt-0.5">{check.blurb}</p>
-                                    <div className="mt-2 flex items-baseline justify-between gap-2">
-                                        <span className="text-lg font-bold text-text tabular-nums">{formatPair(done, total)}</span>
-                                        <span className="text-xs font-semibold text-muted tabular-nums">{pct}%</span>
-                                    </div>
-                                    <div className="mt-2 h-1.5 rounded-full bg-border/50 overflow-hidden">
-                                        <div
-                                            className="h-full rounded-full bg-plex/80 transition-[width]"
-                                            style={{ width: `${pct}%` }}
-                                        />
-                                    </div>
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Status by library</h3>
+                    <p className="text-[11px] text-muted mt-1 max-w-3xl">
+                        Quick fingerprint is the full-library goal. Playback and full-file hash only fill from new imports,
+                        mismatch escalations, and manual runs — so those bars stay low until you sweep a library.
+                    </p>
+                    <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {libraries.length === 0 && (
+                            <div className={`${QC_KPI} sm:col-span-2 xl:col-span-3`}>
+                                <p className="text-xs text-muted">Coverage loads with the library index…</p>
+                            </div>
+                        )}
+                        {libraries.map((lib) => (
+                            <div key={lib.key} className={QC_KPI}>
+                                <div className="flex items-baseline justify-between gap-2">
+                                    <div className="text-sm font-bold text-text truncate">{lib.label}</div>
+                                    <span className="text-[11px] text-muted tabular-nums shrink-0">
+                                        {Number(lib.total || 0).toLocaleString()} files
+                                    </span>
                                 </div>
-                            );
-                        })}
+                                <div className="mt-2 space-y-2">
+                                    {visibleStatus.map((check) => {
+                                        const done = Number(lib[check.key] || 0);
+                                        const total = Number(lib.total || 0);
+                                        const pct = coveragePct(done, total);
+                                        return (
+                                            <div key={check.key}>
+                                                <div className="flex items-baseline justify-between gap-2">
+                                                    <span className="text-[11px] text-muted">{check.label}</span>
+                                                    <span className="text-[11px] font-semibold text-text tabular-nums">
+                                                        {formatPair(done, total)}
+                                                        <span className="text-muted font-medium"> · {pct}%</span>
+                                                    </span>
+                                                </div>
+                                                <div className="mt-1 h-1.5 rounded-full bg-border/50 overflow-hidden">
+                                                    <div
+                                                        className="h-full rounded-full bg-plex/80 transition-[width]"
+                                                        style={{ width: `${pct}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
@@ -571,47 +610,6 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     </button>
                 </div>
             )}
-
-            <SettingsCollapseSection
-                title="Coverage by library"
-                subtitle="Movies / TV / Music breakdown"
-            >
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                        <thead>
-                            <tr className="text-[11px] uppercase tracking-wide text-muted border-b border-border/40">
-                                <th className="py-2 pr-3 font-semibold">Check</th>
-                                {mediaCols.map((col) => (
-                                    <th key={col.key} className="py-2 pr-3 font-semibold">{col.label}</th>
-                                ))}
-                                <th className="py-2 font-semibold">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {visibleStatus.map((row) => {
-                                const totalDone = totals[row.key];
-                                const totalAll = totals.total;
-                                return (
-                                    <tr key={row.key} className="border-b border-border/20 last:border-0">
-                                        <td className="py-2.5 pr-3 font-semibold text-text">{row.label}</td>
-                                        {mediaCols.map((col) => {
-                                            const bucket = coverage?.[col.key];
-                                            return (
-                                                <td key={col.key} className="py-2.5 pr-3 text-text tabular-nums">
-                                                    {formatPair(bucket?.[row.key], bucket?.total)}
-                                                </td>
-                                            );
-                                        })}
-                                        <td className="py-2.5 text-text font-bold tabular-nums">
-                                            {formatPair(totalDone, totalAll)}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            </SettingsCollapseSection>
 
             {(result?.ran || scanning) && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

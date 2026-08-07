@@ -893,6 +893,9 @@ test('getStatus reuses prefs integrityCoverage without re-expanding candidates',
     });
     assert.ok(itemAccessCount > 0, 'first getStatus should expand index items');
     assert.equal(first.coverage.movie.total, 1);
+    assert.ok(Array.isArray(first.coverage.byLibrary));
+    assert.equal(first.coverage.byLibrary.length, 1);
+    assert.equal(first.coverage.byLibrary[0].total, 1);
     assert.equal(saved.length, 1);
     assert.equal(prefs.integrityCoverageIndexAt, generatedAt);
     assert.equal(prefs.integrityCoverageIncludeMusic, true);
