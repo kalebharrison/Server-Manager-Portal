@@ -19,7 +19,8 @@ import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
 import { QcOptimizeClientsButton } from './QcOptimizeClientsButton';
 import { QcPolicySummary } from './QcPolicySummary';
-import { QC_KPI, QC_PAGE, QC_SECTION, QC_TAB_BAR, qcTabButtonClass } from './qcUi';
+import { QcKpiTile } from './QcKpiTile';
+import { QC_PAGE, QC_SECTION, QC_TAB_BAR, qcTabButtonClass } from './qcUi';
 import { SettingsCollapseSection } from '../settings/SettingsCollapseSection';
 import type {
     UpgraderAuditEntry,
@@ -354,6 +355,21 @@ export const UpgraderDashboard: React.FC = () => {
         : [];
     const activeDownloadTotal = Number(status?.activeDownloadTotal) || 0;
     const downloadCap = Math.max(1, Number(status?.maxDownloadsPerLibrary) || 5);
+    const librariesAtCap = activeByLibrary.filter((lib) => lib.active >= lib.cap).length;
+    const cleanupKills = Object.values(status?.qcMetrics?.killsByReason || {})
+        .reduce((sum, n) => sum + (Number(n) || 0), 0);
+    const huntIntensity = status?.upgraderHuntIntensity && status.upgraderHuntIntensity !== 'custom'
+        ? (status.upgraderHuntIntensityLabel || status.upgraderHuntIntensity)
+        : null;
+    const cleanupAggression = status?.qcCleanupAggression && status.qcCleanupAggression !== 'custom'
+        ? (status.qcCleanupAggressionLabel || status.qcCleanupAggression)
+        : null;
+    const libraryLabel = (lib: { key?: string; label?: string }) => (
+        String(lib.key || '').startsWith('lidarr:')
+            || /^(lidarr|artists?|music)$/i.test(String(lib.label || ''))
+            ? 'Music'
+            : (lib.label || 'Library')
+    );
 
     return (
         <div className={QC_PAGE}>
@@ -477,52 +493,112 @@ export const UpgraderDashboard: React.FC = () => {
                                     )}
 
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        <div className={QC_KPI}>
-                                            <div className="text-[11px] uppercase tracking-wide text-muted">Auto-hunt</div>
-                                            <div className={`mt-1 text-lg font-bold ${status?.automationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
-                                                {status?.automationEnabled ? 'On' : 'Off'}
-                                            </div>
-                                            <p className="mt-1 text-[11px] text-muted">
-                                                {usedActions}/{maxActions} grabs · {remainingActions} left
-                                            </p>
-                                        </div>
-                                        <div className={QC_KPI}>
-                                            <div className="text-[11px] uppercase tracking-wide text-muted">Cleanup</div>
-                                            <div className={`mt-1 text-lg font-bold ${status?.cleanupAutomationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
-                                                {status?.cleanupAutomationEnabled ? 'On' : 'Off'}
-                                            </div>
-                                            <p className="mt-1 text-[11px] text-muted">
-                                                {status?.qcThresholds?.maxStrikes ?? 3} strikes · {activeDownloadTotal} active
-                                            </p>
-                                        </div>
-                                        <div className={QC_KPI}>
-                                            <div className="text-[11px] uppercase tracking-wide text-muted">Integrity</div>
-                                            <div className={`mt-1 text-lg font-bold ${status?.integrityEnabled ? (status?.integrityAutomationEnabled ? 'text-emerald-300' : 'text-amber-200') : 'text-amber-200'}`}>
-                                                {!status?.integrityEnabled
-                                                    ? 'Off'
-                                                    : status?.integrityAutomationEnabled
-                                                        ? 'Auto'
-                                                        : 'Manual'}
-                                            </div>
-                                            <p className="mt-1 text-[11px] text-muted">
-                                                {status?.integrity?.setup?.ready
-                                                    ? 'Tools ready'
-                                                    : status?.integrityEnabled
-                                                        ? 'Check mounts/tools'
-                                                        : 'Disabled'}
-                                            </p>
-                                        </div>
-                                        <div className={QC_KPI}>
-                                            <div className="text-[11px] uppercase tracking-wide text-muted">Index</div>
-                                            <div className="mt-1 text-lg font-bold text-text">
-                                                {summary?.totalItems ?? status?.itemCount ?? 0}
-                                            </div>
-                                            <p className="mt-1 text-[11px] text-muted">
-                                                {formatIndexAge(summary?.generatedAt || status?.generatedAt || null)}
-                                                {' · '}qBit {status?.clientsConfigured?.qbit ? '✓' : '—'}
-                                                {' / '}SAB {status?.clientsConfigured?.sab ? '✓' : '—'}
-                                            </p>
-                                        </div>
+                                        <QcKpiTile
+                                            label="Auto-hunt"
+                                            value={status?.automationEnabled ? 'On' : 'Off'}
+                                            valueClassName={status?.automationEnabled ? 'text-emerald-300' : 'text-amber-200'}
+                                            detail={huntIntensity
+                                                ? `${huntIntensity} · ${remainingActions} grabs left`
+                                                : `${remainingActions} grabs left this hour`}
+                                            onClick={() => handleTabChange('hunt')}
+                                        />
+                                        <QcKpiTile
+                                            label="Cleanup"
+                                            value={status?.cleanupAutomationEnabled ? 'On' : 'Off'}
+                                            valueClassName={status?.cleanupAutomationEnabled ? 'text-emerald-300' : 'text-amber-200'}
+                                            detail={cleanupAggression
+                                                ? `${cleanupAggression} · ${status?.qcThresholds?.maxStrikes ?? 3} strikes`
+                                                : `${status?.qcThresholds?.maxStrikes ?? 3} strikes to kill`}
+                                            onClick={() => handleTabChange('downloads')}
+                                        />
+                                        <QcKpiTile
+                                            label="Integrity"
+                                            value={!status?.integrityEnabled
+                                                ? 'Off'
+                                                : status?.integrityAutomationEnabled
+                                                    ? 'Auto'
+                                                    : 'Manual'}
+                                            valueClassName={status?.integrityEnabled
+                                                ? (status?.integrityAutomationEnabled ? 'text-emerald-300' : 'text-amber-200')
+                                                : 'text-amber-200'}
+                                            detail={status?.integrity?.setup?.ready
+                                                ? 'Tools ready'
+                                                : status?.integrityEnabled
+                                                    ? 'Check mounts/tools'
+                                                    : 'Disabled'}
+                                            onClick={() => handleTabChange('integrity')}
+                                        />
+                                        <QcKpiTile
+                                            label="Index"
+                                            value={summary?.totalItems ?? status?.itemCount ?? 0}
+                                            detail={formatIndexAge(summary?.generatedAt || status?.generatedAt || null)}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <QcKpiTile
+                                            label="Active downloads"
+                                            value={activeDownloadTotal}
+                                            valueClassName={librariesAtCap > 0 ? 'text-amber-200' : 'text-text'}
+                                            detail={librariesAtCap > 0
+                                                ? `${librariesAtCap} librar${librariesAtCap === 1 ? 'y' : 'ies'} at cap`
+                                                : `Cap ${downloadCap} / library`}
+                                            onClick={() => handleTabChange('downloads')}
+                                        />
+                                        <QcKpiTile
+                                            label="Grabs this hour"
+                                            value={`${usedActions}/${maxActions}`}
+                                            detail={`${remainingActions} remaining`}
+                                            onClick={() => handleTabChange('hunt')}
+                                        />
+                                        <QcKpiTile
+                                            label="Score floor"
+                                            value={`+${minDelta}`}
+                                            detail="Min Arr CF gain to grab"
+                                            onClick={() => handleTabChange('rules')}
+                                        />
+                                        <QcKpiTile
+                                            label="Cleanup kills"
+                                            value={cleanupKills}
+                                            detail={status?.qcMetrics?.lastCleanupAt
+                                                ? `Last ${new Date(status.qcMetrics.lastCleanupAt).toLocaleString()}`
+                                                : 'Lifetime recorded'}
+                                            onClick={() => handleTabChange('downloads')}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <QcKpiTile
+                                            label="Missing TV"
+                                            value={status?.huntMissingEpisodes === false ? 'Off' : 'On'}
+                                            valueClassName={status?.huntMissingEpisodes === false ? 'text-amber-200' : 'text-emerald-300'}
+                                            detail="Hunt aired gaps"
+                                            onClick={() => handleTabChange('hunt')}
+                                        />
+                                        <QcKpiTile
+                                            label="Movies"
+                                            value={status?.huntAvailableMovies === false ? 'Off' : 'On'}
+                                            valueClassName={status?.huntAvailableMovies === false ? 'text-amber-200' : 'text-emerald-300'}
+                                            detail="Hunt when digitally available"
+                                            onClick={() => handleTabChange('hunt')}
+                                        />
+                                        <QcKpiTile
+                                            label="Libraries"
+                                            value={libraries.length || (status?.arrConfigured ? '—' : 0)}
+                                            detail={status?.arrConfigured ? 'Arr roots indexed' : 'Arr not configured'}
+                                        />
+                                        <QcKpiTile
+                                            label="Clients"
+                                            value={(
+                                                <>
+                                                    qBit {status?.clientsConfigured?.qbit ? '✓' : '—'}
+                                                    <span className="text-muted font-semibold"> / </span>
+                                                    SAB {status?.clientsConfigured?.sab ? '✓' : '—'}
+                                                </>
+                                            )}
+                                            detail="Download clients"
+                                            onClick={() => handleTabChange('clients')}
+                                        />
                                     </div>
 
                                     {(status?.clientsConfigured?.qbit || status?.clientsConfigured?.sab) && (
@@ -534,7 +610,7 @@ export const UpgraderDashboard: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <section className={`${QC_SECTION} space-y-3`}>
+                                    <section className="space-y-3">
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                             <div>
                                                 <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Active downloads by library</h2>
@@ -551,35 +627,30 @@ export const UpgraderDashboard: React.FC = () => {
                                             </button>
                                         </div>
                                         {activeByLibrary.length === 0 ? (
-                                            <p className="text-xs text-muted">No library download counts yet. Refresh after Arr queues are reachable.</p>
+                                            <div className={`${QC_SECTION} text-center`}>
+                                                <p className="text-xs text-muted">No library download counts yet. Refresh after Arr queues are reachable.</p>
+                                            </div>
                                         ) : (
-                                            <div className="space-y-2">
+                                            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                                                 {activeByLibrary.map((lib) => {
                                                     const pct = Math.min(100, Math.round((lib.active / Math.max(1, lib.cap)) * 100));
                                                     const atCap = lib.active >= lib.cap;
                                                     return (
-                                                        <div key={lib.key} className="px-1 py-2">
-                                                            <div className="flex items-center justify-between gap-3 text-xs">
-                                                                <span className="font-semibold text-text truncate">
-                                                                    {String(lib.key || '').startsWith('lidarr:')
-                                                                        || /^(lidarr|artists?|music)$/i.test(String(lib.label || ''))
-                                                                        ? 'Music'
-                                                                        : lib.label}
-                                                                </span>
-                                                                <span className={`font-bold shrink-0 ${atCap ? 'text-amber-200' : 'text-text'}`}>
-                                                                    {lib.active}/{lib.cap}
-                                                                    <span className="ml-1 font-semibold text-muted">
-                                                                        ({lib.remaining} free)
-                                                                    </span>
-                                                                </span>
-                                                            </div>
+                                                        <QcKpiTile
+                                                            key={lib.key}
+                                                            label={libraryLabel(lib)}
+                                                            value={`${lib.active}/${lib.cap}`}
+                                                            valueClassName={atCap ? 'text-amber-200' : 'text-text'}
+                                                            detail={`${lib.remaining} free`}
+                                                            onClick={() => handleTabChange('downloads')}
+                                                        >
                                                             <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
                                                                 <div
                                                                     className={`h-full rounded-full ${atCap ? 'bg-amber-400' : 'bg-plex'}`}
                                                                     style={{ width: `${pct}%` }}
                                                                 />
                                                             </div>
-                                                        </div>
+                                                        </QcKpiTile>
                                                     );
                                                 })}
                                             </div>

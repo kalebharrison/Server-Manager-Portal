@@ -1,6 +1,7 @@
 import React from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { portalUrl } from '../shared/basePath';
+import { QcKpiTile } from './QcKpiTile';
 import type { UpgraderStatus } from './types';
 
 type TimingRow = {
@@ -206,65 +207,49 @@ export const QcPolicySummary: React.FC<Props> = ({
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                    <div className="text-[11px] uppercase tracking-wide text-muted">Max strikes</div>
-                    <div className="mt-1 text-lg font-bold text-text">{strikes}</div>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                    <div className="text-[11px] uppercase tracking-wide text-muted">DL cap / library</div>
-                    <div className="mt-1 text-lg font-bold text-text">{maxDownloads}</div>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                    <div className="text-[11px] uppercase tracking-wide text-muted">Hunt grabs / hour</div>
-                    <div className="mt-1 text-lg font-bold text-text">{maxActions}</div>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                    <div className="text-[11px] uppercase tracking-wide text-muted">Min score delta</div>
-                    <div className="mt-1 text-lg font-bold text-text">{minDelta}</div>
-                </div>
+                <QcKpiTile label="Max strikes" value={strikes} />
+                <QcKpiTile label="DL cap / library" value={maxDownloads} />
+                <QcKpiTile label="Hunt grabs / hour" value={maxActions} />
+                <QcKpiTile label="Min score delta" value={minDelta} />
             </div>
 
             {!compact && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3 space-y-1.5">
-                        <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Hunt targets</div>
-                        <p className="text-text">
-                            Missing aired episodes:{' '}
-                            <span className="font-bold">{status?.huntMissingEpisodes === false ? 'Off' : 'On'}</span>
-                        </p>
-                        <p className="text-text">
-                            Digitally available movies:{' '}
-                            <span className="font-bold">{status?.huntAvailableMovies === false ? 'Off' : 'On'}</span>
-                        </p>
-                        <p className="text-text">
-                            Min file size:{' '}
-                            <span className="font-bold">{Number(status?.minSizeGB) || 0} GB</span>
-                        </p>
-                    </div>
-                    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3 space-y-1.5">
-                        <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Other policy</div>
-                        <p className="text-text">
-                            Research throttle:{' '}
-                            <span className="font-bold">{status?.qcThresholds?.researchThrottleHours ?? 24}h</span>
-                        </p>
-                        <p className="text-text">
-                            Snooze default:{' '}
-                            <span className="font-bold">{status?.qcThresholds?.snoozeDefaultHours ?? 24}h</span>
-                        </p>
-                        <p className="text-text">
-                            Discord cleanup digest:{' '}
-                            <span className="font-bold">{status?.discordDigestEnabled ? 'On' : 'Off'}</span>
-                        </p>
-                        <p className="text-muted pt-1">
-                            Boosts:{' '}
-                            {[
-                                prefs?.preferDolbyVisionHdr !== false ? 'DV/HDR' : null,
-                                prefs?.preferAtmos !== false ? 'Atmos' : null,
-                                prefs?.preferRemux !== false ? 'Remux' : null,
-                                prefs?.preferSeasonPacks !== false ? 'Season packs' : null,
-                            ].filter(Boolean).join(' · ') || 'none'}
-                        </p>
-                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <QcKpiTile
+                        label="Missing TV"
+                        value={status?.huntMissingEpisodes === false ? 'Off' : 'On'}
+                        valueClassName={status?.huntMissingEpisodes === false ? 'text-amber-200' : 'text-emerald-300'}
+                        detail="Aired episode gaps"
+                    />
+                    <QcKpiTile
+                        label="Movies"
+                        value={status?.huntAvailableMovies === false ? 'Off' : 'On'}
+                        valueClassName={status?.huntAvailableMovies === false ? 'text-amber-200' : 'text-emerald-300'}
+                        detail="Digitally available"
+                    />
+                    <QcKpiTile
+                        label="Min file size"
+                        value={`${Number(status?.minSizeGB) || 0} GB`}
+                    />
+                    <QcKpiTile
+                        label="Research throttle"
+                        value={`${status?.qcThresholds?.researchThrottleHours ?? 24}h`}
+                    />
+                    <QcKpiTile
+                        label="Snooze default"
+                        value={`${status?.qcThresholds?.snoozeDefaultHours ?? 24}h`}
+                    />
+                    <QcKpiTile
+                        label="Discord digest"
+                        value={status?.discordDigestEnabled ? 'On' : 'Off'}
+                        valueClassName={status?.discordDigestEnabled ? 'text-emerald-300' : 'text-muted'}
+                        detail={[
+                            prefs?.preferDolbyVisionHdr !== false ? 'DV/HDR' : null,
+                            prefs?.preferAtmos !== false ? 'Atmos' : null,
+                            prefs?.preferRemux !== false ? 'Remux' : null,
+                            prefs?.preferSeasonPacks !== false ? 'Season packs' : null,
+                        ].filter(Boolean).join(' · ') || 'No boost prefs'}
+                    />
                 </div>
             )}
         </div>
