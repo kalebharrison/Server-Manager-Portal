@@ -18,7 +18,7 @@ import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
 import { QcKpiTile } from './QcKpiTile';
 import { QC_PAGE, QC_SECTION, QC_TAB_BAR, qcTabButtonClass } from './qcUi';
-import { SettingHint } from '../settings/SettingHint';
+import { SettingsCollapseSection } from '../settings/SettingsCollapseSection';
 import type {
     UpgraderAuditEntry,
     UpgraderHuntResponse,
@@ -643,6 +643,15 @@ export const UpgraderDashboard: React.FC = () => {
                                             />
                                         </div>
 
+                                        <Suspense fallback={<TabPanelFallback />}>
+                                            <QcDownloadsPanel
+                                                onToast={addToast}
+                                                snoozeDefaultHours={status?.qcThresholds?.snoozeDefaultHours ?? 24}
+                                                activeByLibrary={activeByLibrary}
+                                                downloadCap={downloadCap}
+                                            />
+                                        </Suspense>
+
                                         {(dryRunning || dryRun) && (
                                             <section className={`${QC_SECTION} space-y-3`}>
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -752,100 +761,75 @@ export const UpgraderDashboard: React.FC = () => {
                                             </section>
                                         )}
 
-                                        <Suspense fallback={<TabPanelFallback />}>
-                                            <QcDownloadsPanel
-                                                onToast={addToast}
-                                                snoozeDefaultHours={status?.qcThresholds?.snoozeDefaultHours ?? 24}
-                                            />
-                                        </Suspense>
-
-                                        <section className={`${QC_SECTION} space-y-3`}>
-                                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                                <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
-                                                    Recent hunts
-                                                    <SettingHint>
-                                                        Fair per library, worst scores first, cooldown after tries, score floor +{minDelta}, no resolution downgrades.
-                                                        Preview and auto-hunt use the same rules.
-                                                    </SettingHint>
-                                                </h2>
-                                                <div className="flex items-center gap-3">
-                                                    <button
-                                                        type="button"
-                                                        className="text-xs font-bold text-muted hover:text-text"
-                                                        onClick={() => handleTabChange('profiles')}
-                                                    >
-                                                        Arr scores
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className="text-xs font-bold text-plex hover:underline"
-                                                        onClick={() => handleTabChange('activity')}
-                                                    >
-                                                        Full activity
-                                                    </button>
-                                                </div>
-                                            </div>
-
+                                        <SettingsCollapseSection
+                                            title="Recent hunts"
+                                            subtitle="Latest grabs and failures · Preview hunt is in the header"
+                                            defaultOpen={false}
+                                            headerRight={(
+                                                <button
+                                                    type="button"
+                                                    className="text-xs font-bold text-plex hover:underline"
+                                                    onClick={() => handleTabChange('activity')}
+                                                >
+                                                    Full activity
+                                                </button>
+                                            )}
+                                        >
                                             {grabsByLibrary.every((group) => group.items.length === 0) ? (
                                                 <p className="text-xs text-muted py-1">
                                                     No hunt activity yet. Run Preview hunt from the header, or wait for auto-hunt.
                                                 </p>
                                             ) : (
-                                                grabsByLibrary
-                                                    .filter((group) => group.items.length > 0)
-                                                    .map((group) => (
-                                                        <div key={group.key} className="space-y-1.5">
-                                                            <div className="flex items-center justify-between gap-2 pt-1 first:pt-0">
-                                                                <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{group.label}</h3>
-                                                                <span className="text-[11px] text-muted">{group.items.length} recent</span>
-                                                            </div>
-                                                            {group.items.slice(0, 8).map((entry) => {
-                                                                const when = entryTime(entry);
-                                                                const failed = entry.success === false;
-                                                                const delta = !failed && entry.currentScore != null && entry.candidateScore != null
-                                                                    ? entry.candidateScore - entry.currentScore
-                                                                    : null;
-                                                                return (
-                                                                    <div
-                                                                        key={entry.id}
-                                                                        className={`rounded-lg border px-3 py-1.5 ${
-                                                                            failed
-                                                                                ? 'border-red-500/25 bg-red-500/5'
-                                                                                : 'border-border/40 bg-background/30'
-                                                                        }`}
-                                                                    >
-                                                                        <div className="flex items-center justify-between gap-2">
-                                                                            <div className="text-xs font-semibold text-text truncate">{entry.title}</div>
-                                                                            <div className="flex items-center gap-2 shrink-0">
-                                                                                {delta != null && (
-                                                                                    <span className="text-[10px] font-bold text-emerald-300">+{delta}</span>
-                                                                                )}
-                                                                                {failed && (
-                                                                                    <span className="text-[10px] font-bold text-red-300">Failed</span>
-                                                                                )}
+                                                <div className="space-y-3">
+                                                    {grabsByLibrary
+                                                        .filter((group) => group.items.length > 0)
+                                                        .map((group) => (
+                                                            <div key={group.key} className="space-y-1.5">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{group.label}</h3>
+                                                                    <span className="text-[11px] text-muted">{group.items.length} recent</span>
+                                                                </div>
+                                                                {group.items.slice(0, 6).map((entry) => {
+                                                                    const when = entryTime(entry);
+                                                                    const failed = entry.success === false;
+                                                                    const delta = !failed && entry.currentScore != null && entry.candidateScore != null
+                                                                        ? entry.candidateScore - entry.currentScore
+                                                                        : null;
+                                                                    return (
+                                                                        <div
+                                                                            key={entry.id}
+                                                                            className={`rounded-lg border px-3 py-1.5 ${
+                                                                                failed
+                                                                                    ? 'border-red-500/25 bg-red-500/5'
+                                                                                    : 'border-border/40 bg-background/30'
+                                                                            }`}
+                                                                        >
+                                                                            <div className="flex items-center justify-between gap-2">
+                                                                                <div className="text-xs font-semibold text-text truncate">{entry.title}</div>
+                                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                                    {delta != null && (
+                                                                                        <span className="text-[10px] font-bold text-emerald-300">+{delta}</span>
+                                                                                    )}
+                                                                                    {failed && (
+                                                                                        <span className="text-[10px] font-bold text-red-300">Failed</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="text-[11px] text-muted mt-0.5 truncate">
+                                                                                {[
+                                                                                    failed ? 'Grab failed' : 'Grabbed',
+                                                                                    entry.releaseTitle,
+                                                                                    when ? new Date(when).toLocaleString() : null,
+                                                                                ].filter(Boolean).join(' · ')}
                                                                             </div>
                                                                         </div>
-                                                                        <div className="text-[11px] text-muted mt-0.5 truncate">
-                                                                            {[
-                                                                                failed ? 'Grab failed' : 'Grabbed',
-                                                                                entry.releaseTitle,
-                                                                                when ? new Date(when).toLocaleString() : null,
-                                                                            ].filter(Boolean).join(' · ')}
-                                                                        </div>
-                                                                        {failed && entry.reason && (
-                                                                            <p className="text-[11px] text-red-300 mt-0.5 line-clamp-1">
-                                                                                {/SAB/i.test(String(entry.reason))
-                                                                                    ? 'SABnzbd rejected the grab — check SAB is up and Radarr can reach it.'
-                                                                                    : String(entry.reason).split(/\n|\bat\s/)[0].slice(0, 140)}
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    ))
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ))}
+                                                </div>
                                             )}
-                                        </section>
+                                        </SettingsCollapseSection>
                                     </div>
                                 )}
 
