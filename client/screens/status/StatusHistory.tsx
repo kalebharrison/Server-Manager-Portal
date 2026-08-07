@@ -5,7 +5,7 @@ export const StatusHistory: React.FC<{ services: any[]; healthData: Record<strin
         {services.map((service) => {
             const rows = Object.entries(healthData[service.id]?.dailyHistory || {}).sort((a, b) => b[0].localeCompare(a[0]));
             return (
-                <section key={service.id} className="bg-card border border-white/5 rounded-lg overflow-hidden">
+                <section key={service.id} className="glass-card-sm overflow-hidden">
                     <div className="px-4 py-3 bg-black/20 border-b border-border/50"><h2 className="font-bold text-text">{service.name}</h2></div>
                     {rows.length === 0 ? <p className="p-5 text-sm text-muted">No history collected yet.</p> : (
                         <div className="overflow-x-auto">

@@ -38,19 +38,20 @@ export const AdminDashboardView: React.FC<AdminDashboardState> = ({
     filteredUserIds,
     allFilteredSelected,
 }) => (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col gap-6">
         <Loader isLoading={isLoading} />
         <ToastContainer toasts={toasts} setToasts={setToasts} />
 
-        <header className="page-header">
-            <h1 className="page-title">Users Management</h1>
+        <header className="border-b border-white/10 pb-5">
+            <h1 className="text-2xl md:text-3xl font-black text-text tracking-tight">Users</h1>
+            <p className="text-sm text-muted mt-1">Manage access, expiry, and sync from {mediaServerLabel}.</p>
         </header>
-        <main>
+        <main className="flex flex-col gap-6">
             {isConfigured && (
-                <div className="flex flex-col md:flex-row gap-4 md:items-center mb-8 glass-card-sm p-4 shadow-md">
+                <div className="flex flex-col md:flex-row gap-4 md:items-center glass-card-sm p-4">
                     <span className="font-bold text-muted uppercase tracking-wider text-sm hidden md:inline-block mr-2">Quick Actions:</span>
                     <div className="grid grid-cols-2 md:flex md:flex-row gap-3 w-full md:w-auto flex-1">
-                        <button className="col-span-2 md:col-span-1 px-3 py-2 bg-plex text-background rounded-md font-bold hover:bg-plex-hover transition-colors flex items-center justify-center gap-2 text-sm md:text-base" onClick={handleImportUsers} disabled={isLoading}>
+                        <button className="col-span-2 md:col-span-1 btn-primary !shadow-none" onClick={handleImportUsers} disabled={isLoading}>
                             Sync {mediaServerLabel} Users
                         </button>
                     </div>
@@ -58,7 +59,7 @@ export const AdminDashboardView: React.FC<AdminDashboardState> = ({
             )}
 
             {isConfigured && (
-                <div className="flex flex-col xl:flex-row justify-between xl:items-center bg-card border border-border p-4 rounded-xl mb-8 gap-4 xl:gap-6 w-full">
+                <div className="flex flex-col xl:flex-row justify-between xl:items-center glass-card-sm p-4 gap-4 xl:gap-6 w-full">
                     <div className="relative w-full xl:w-auto xl:flex-1 min-w-[250px]">
                         <input
                             type="text"
@@ -72,11 +73,11 @@ export const AdminDashboardView: React.FC<AdminDashboardState> = ({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-3 sm:flex sm:flex-row bg-background p-1 rounded-lg border border-border overflow-x-auto custom-scrollbar w-full xl:w-auto">
+                    <div className="grid grid-cols-3 sm:flex sm:flex-row bg-black/40 p-1 rounded-lg border border-white/5 overflow-x-auto custom-scrollbar w-full xl:w-auto">
                         {(['all', 'active', 'trial', 'expiring', 'expired', 'revoked'] as const).map((status) => (
                             <button
                                 key={status}
-                                className={`col-span-1 px-2 sm:px-4 py-2 rounded-md font-medium transition-all text-xs sm:text-sm text-center ${statusFilter === status ? 'bg-plex text-background shadow-md font-bold' : 'text-muted hover:bg-white/5 hover:text-text'}`}
+                                className={`col-span-1 px-2 sm:px-4 py-2 rounded-md font-medium transition-all text-xs sm:text-sm text-center ${statusFilter === status ? 'bg-plex text-white shadow-lg font-bold' : 'text-muted hover:bg-white/5 hover:text-text'}`}
                                 onClick={() => setStatusFilter(status)}
                             >
                                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -104,7 +105,7 @@ export const AdminDashboardView: React.FC<AdminDashboardState> = ({
             )}
 
             {selectedUserIds.length > 0 && (
-                <div className="glass-card-sm p-4 flex justify-between items-center mb-8 flex-wrap gap-4 w-full">
+                <div className="glass-card-sm p-4 flex justify-between items-center flex-wrap gap-4 w-full">
                     <div className="flex items-center flex-wrap gap-4 text-sm font-medium">
                         <span className="text-plex">{selectedUserIds.length} selected</span>
                         {allFilteredSelected ? (
@@ -143,7 +144,7 @@ export const AdminDashboardView: React.FC<AdminDashboardState> = ({
             )}
 
             {isConfigured && filteredAndSortedUsers.length === 0 && !isLoading && (
-                <p className="text-center text-muted p-8 border border-dashed border-border rounded-xl mt-4 w-full">No users found matching your filters. Try syncing or widening filters.</p>
+                <p className="text-center text-muted p-8 glass-card-sm border-dashed w-full">No users found matching your filters. Try syncing or widening filters.</p>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
                 {filteredAndSortedUsers.map((user) => (

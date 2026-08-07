@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2, RefreshCw, FlaskConical, Trash2, Clock, X } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { formatSizeCeil } from '../shared/format';
+import { SettingHint } from '../settings/SettingHint';
+import { QC_SECTION } from './qcUi';
 
 type QcDownloadItem = {
     key: string;
@@ -267,19 +269,21 @@ export const QcDownloadsPanel: React.FC<Props> = ({
 
     return (
         <div className="space-y-4">
-            <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
+            <section className={`${QC_SECTION} space-y-4`}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Download health</h2>
+                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
+                            Download health
+                            <SettingHint>
+                                Cleanup uses strikes: a problem must be seen across multiple healthy scans before a kill.
+                                Season packs are grouped as one download. Manual Live cleanup on a selection can still force-remove earlier.
+                            </SettingHint>
+                        </h2>
                         <p className="text-xs text-muted mt-1">
                             {dryPreview
                                 ? `Dry-run preview · ${dryPreview.filter((item) => item.killReady || item.would?.kill).length} would kill · ${dryPreview.length} strike-eligible`
                                 : `${actionableKeys.length} ready to kill · ${selectableKeys.length} strike-eligible · ${groupedRows.length} downloads`}
                             {snapshot?.generatedAt ? ` · ${new Date(snapshot.generatedAt).toLocaleString()}` : ''}
-                        </p>
-                        <p className="text-[11px] text-muted mt-1 max-w-2xl">
-                            Cleanup uses strikes: a problem must be seen across multiple healthy scans before a kill.
-                            Season packs are grouped as one download. Manual Live cleanup on a selection can still force-remove earlier.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">

@@ -64,16 +64,16 @@ export const StatusDashboard: React.FC<{ onBack: () => void; isAdmin: boolean; i
     const announcement = statusData?.config?.announcement;
 
     return (
-        <div className="w-full flex flex-col">
-            <header className="flex items-center gap-3 w-full mb-6 pb-4 border-b border-border">
+        <div className="w-full flex flex-col gap-6">
+            <header className="flex items-center gap-3 w-full border-b border-white/10 pb-5">
                 {isPublic && <button onClick={onBack} aria-label="Back" className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-muted hover:text-text"><ArrowLeft className="w-5 h-5" /></button>}
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-text">Server Status</h1>
+                    <h1 className="text-2xl md:text-3xl font-black text-text tracking-tight">Server Status</h1>
                     <p className="text-sm text-muted mt-1">Current availability and recent service history.</p>
                 </div>
             </header>
 
-            <section className={`mb-6 rounded-lg border px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${hasIncident ? 'border-amber-500/30 bg-amber-500/10' : isStarting ? 'border-white/10 bg-white/5' : 'border-green-500/25 bg-green-500/10'}`}>
+            <section className={`glass-card-sm px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${hasIncident ? 'border-amber-500/30 bg-amber-500/10' : isStarting ? '' : 'border-green-500/25 bg-green-500/10'}`}>
                 <div className="flex items-center gap-3">
                     {hasIncident ? <AlertCircle className="w-5 h-5 text-amber-300" /> : isStarting ? <Activity className="w-5 h-5 text-muted" /> : <CheckCircle2 className="w-5 h-5 text-green-400" />}
                     <span className="font-bold text-text">{summaryLabel}</span>
@@ -82,17 +82,17 @@ export const StatusDashboard: React.FC<{ onBack: () => void; isAdmin: boolean; i
             </section>
 
             {announcement && (typeof announcement === 'string' || announcement.enabled) && (
-                <div className="mb-6 rounded-lg border border-plex/25 bg-plex/10 px-4 py-3 text-sm text-text">{typeof announcement === 'string' ? announcement : announcement.message}</div>
+                <div className="glass-card-sm px-4 py-3 text-sm text-text border-plex/25 bg-plex/10">{typeof announcement === 'string' ? announcement : announcement.message}</div>
             )}
 
-            <div className="flex gap-1 mb-8 p-1 bg-black/20 rounded-lg border border-border w-fit">
+            <div className="flex bg-black/40 rounded-lg p-1 border border-white/5 w-fit">
                 {([['overview', 'Overview'], ['history', 'History']] as const).map(([id, label]) => (
-                    <button key={id} onClick={() => setActiveTab(id)} className={`px-5 py-2 rounded-md font-bold text-sm transition-colors ${activeTab === id ? 'bg-plex text-background' : 'text-muted hover:text-text hover:bg-white/5'}`}>{label}</button>
+                    <button key={id} onClick={() => setActiveTab(id)} className={`px-4 py-2 rounded-md text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === id ? 'bg-plex text-white shadow-lg' : 'text-muted hover:text-white'}`}>{label}</button>
                 ))}
             </div>
 
             {services.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-10 text-center border border-dashed border-border rounded-lg bg-card/40">
+                <div className="glass-card-sm flex flex-col items-center justify-center p-10 text-center border-dashed">
                     <Activity className="w-10 h-10 text-muted mb-3 opacity-50" />
                     <h2 className="text-lg font-bold text-text">No services configured</h2>
                     <p className="text-sm text-muted mt-2">{isAdmin ? 'Add monitors under Settings > Status Page.' : 'The server administrator has not published any monitors yet.'}</p>

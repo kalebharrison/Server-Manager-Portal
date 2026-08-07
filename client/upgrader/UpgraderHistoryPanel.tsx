@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, CheckCircle2, XCircle, Search, ArrowUpFromLine, Trash2, Ban, Settings2 } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import type { UpgraderAuditEntry } from './types';
+import { SettingHint } from '../settings/SettingHint';
+import { QC_SECTION, QC_SECTION_FLUSH } from './qcUi';
 
 const entryTime = (entry: UpgraderAuditEntry) => entry.timestamp || entry.at || null;
 
@@ -121,11 +123,14 @@ export const UpgraderHistoryPanel: React.FC = () => {
 
     if (!visible.length) {
         return (
-            <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center space-y-2">
+            <div className={`${QC_SECTION} p-8 text-center space-y-2`}>
                 <p className="text-sm font-semibold text-text">No activity yet</p>
-                <p className="text-sm text-muted max-w-md mx-auto">
-                    This log shows live hunt grabs/searches and download cleanups (remove + blocklist + re-search).
-                    Dry-run previews stay on Overview / Downloads.
+                <p className="text-sm text-muted max-w-md mx-auto inline-flex items-center justify-center flex-wrap gap-x-1">
+                    Live hunt grabs and QC cleanups appear here.
+                    <SettingHint>
+                        This log shows live hunt grabs/searches and download cleanups (remove + blocklist + re-search).
+                        Dry-run previews stay on Overview / Downloads.
+                    </SettingHint>
                 </p>
             </div>
         );
@@ -133,10 +138,11 @@ export const UpgraderHistoryPanel: React.FC = () => {
 
     return (
         <div className="space-y-3">
-            <p className="text-xs text-muted px-1">
-                Live hunt grabs and Quality Control cleanups. Dry runs are not listed here.
+            <p className="text-xs text-muted px-1 inline-flex items-center flex-wrap gap-x-1">
+                Live hunt grabs and Quality Control cleanups.
+                <SettingHint>Dry runs are not listed here.</SettingHint>
             </p>
-            <div className="rounded-2xl border border-border/60 bg-card/40 overflow-hidden">
+            <div className={QC_SECTION_FLUSH}>
                 <div className="divide-y divide-border/50">
                     {visible.map((entry) => {
                         const when = entryTime(entry);

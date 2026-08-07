@@ -19,6 +19,8 @@ import { Loader, ToastContainer, pushToast } from '../shared/toast';
 import type { ToastMessage } from '../shared/types';
 import { QcOptimizeClientsButton } from './QcOptimizeClientsButton';
 import { QcPolicySummary } from './QcPolicySummary';
+import { QC_KPI, QC_PAGE, QC_SECTION, QC_TAB_BAR, qcTabButtonClass } from './qcUi';
+import { SettingsCollapseSection } from '../settings/SettingsCollapseSection';
 import type {
     UpgraderAuditEntry,
     UpgraderHuntResponse,
@@ -341,12 +343,7 @@ export const UpgraderDashboard: React.FC = () => {
         return 'Nothing sampled from this library. Try dry-run again.';
     };
 
-    const tabButtonClass = (tab: UpgraderTab) =>
-        `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
-            activeTab === tab
-                ? 'bg-plex text-background shadow-sm'
-                : 'text-muted hover:text-text hover:bg-white/5'
-        }`;
+    const tabButtonClass = (tab: UpgraderTab) => qcTabButtonClass(activeTab === tab);
 
     const maxActions = status?.maxActionsPerHour ?? 25;
     const usedActions = status?.recentUpgradeCount ?? 0;
@@ -359,33 +356,35 @@ export const UpgraderDashboard: React.FC = () => {
     const downloadCap = Math.max(1, Number(status?.maxDownloadsPerLibrary) || 5);
 
     return (
-        <div className="page-shell">
+        <div className={QC_PAGE}>
             <ToastContainer toasts={toasts} setToasts={setToasts} />
-            <div className="flex flex-col gap-5">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <header className="flex flex-col gap-4 mb-2 border-b border-white/10 pb-5">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                     <div className="min-w-0">
-                        <div className="flex items-center gap-2.5">
-                            <ArrowUpCircle className="w-6 h-6 text-plex shrink-0" />
-                            <h1 className="page-title text-2xl md:text-3xl">Quality Control</h1>
-                        </div>
-                        <p className="text-xs text-muted mt-1 sm:pl-[2.125rem]">
+                        <h1 className="text-2xl md:text-3xl font-black text-text flex items-center gap-3 tracking-tight">
+                            <ArrowUpCircle className="w-7 h-7 text-plex shrink-0" />
+                            Quality Control
+                        </h1>
+                        <p className="text-sm text-muted mt-1">
                             Hunt better releases and clean doomed downloads.
                         </p>
                     </div>
                     {featureEnabled && (
                         <div className="flex flex-wrap gap-2 shrink-0">
+                            {activeTab === 'hunt' && (
+                                <button
+                                    type="button"
+                                    className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
+                                    onClick={handleDryRun}
+                                    disabled={dryRunning || rebuilding || !!status?.rebuildInProgress}
+                                >
+                                    <FlaskConical className={`w-3.5 h-3.5 ${dryRunning ? 'animate-pulse' : ''}`} />
+                                    {dryRunning ? 'Previewing…' : 'Preview hunt'}
+                                </button>
+                            )}
                             <button
                                 type="button"
-                                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40 transition-colors disabled:opacity-50"
-                                onClick={handleDryRun}
-                                disabled={dryRunning || rebuilding || !!status?.rebuildInProgress}
-                            >
-                                <FlaskConical className={`w-3.5 h-3.5 ${dryRunning ? 'animate-pulse' : ''}`} />
-                                {dryRunning ? 'Previewing…' : 'Preview hunt'}
-                            </button>
-                            <button
-                                type="button"
-                                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold hover:bg-plex-hover transition-colors disabled:opacity-50"
+                                className="btn-primary !px-3 !py-1.5 !text-xs !rounded-lg !shadow-none"
                                 onClick={handleRebuild}
                                 disabled={rebuilding || !!status?.rebuildInProgress}
                             >
@@ -395,245 +394,217 @@ export const UpgraderDashboard: React.FC = () => {
                         </div>
                     )}
                 </div>
+            </header>
 
-                {!featureEnabled && (
-                    <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
-                        <h3 className="text-xl font-bold text-plex mb-2">Quality Control is off</h3>
-                        <p className="text-sm text-muted mb-3">Turn it on to index Arr libraries, hunt upgrades, and monitor download health.</p>
-                        <p className="text-xs text-muted mb-4">Settings → Quality Control → enable, then save.</p>
-                        <a
-                            href={portalUrl('/settings#upgrader')}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-plex text-background font-bold no-underline hover:bg-plex-hover transition-colors"
-                        >
-                            <SettingsIcon className="w-4 h-4" />
-                            Open Settings
-                        </a>
+            {!featureEnabled && (
+                <div className={`${QC_SECTION} text-center border-yellow-500/30 bg-yellow-500/10`}>
+                    <h3 className="text-xl font-bold text-plex mb-2">Quality Control is off</h3>
+                    <p className="text-sm text-muted mb-3">Turn it on to index Arr libraries, hunt upgrades, and monitor download health.</p>
+                    <p className="text-xs text-muted mb-4">Settings → Quality Control → enable, then save.</p>
+                    <a
+                        href={portalUrl('/settings#upgrader')}
+                        className="btn-primary inline-flex no-underline"
+                    >
+                        <SettingsIcon className="w-4 h-4" />
+                        Open Settings
+                    </a>
+                </div>
+            )}
+
+            {featureEnabled && (
+                <>
+                    <div className={QC_TAB_BAR}>
+                        {CHROME_TABS.map((tab) => (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                className={tabButtonClass(tab.id)}
+                                onClick={() => handleTabChange(tab.id)}
+                                title={tab.title}
+                            >
+                                {tab.icon}
+                                <span className="whitespace-nowrap">{tab.label}</span>
+                            </button>
+                        ))}
+                        {activeTab === 'profiles' && (
+                            <button
+                                type="button"
+                                className={tabButtonClass('profiles')}
+                                onClick={() => handleTabChange('profiles')}
+                                title="Tune Arr custom formats / quality profiles"
+                            >
+                                <Settings2 className="w-3.5 h-3.5" />
+                                <span className="whitespace-nowrap">Arr scores</span>
+                            </button>
+                        )}
                     </div>
-                )}
 
-                {featureEnabled && (
-                    <>
-                        <div className="inline-flex flex-wrap gap-0.5 p-1 rounded-xl border border-border/60 bg-card/40 w-fit max-w-full">
-                            {CHROME_TABS.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    className={tabButtonClass(tab.id)}
-                                    onClick={() => handleTabChange(tab.id)}
-                                    title={tab.title}
-                                >
-                                    {tab.icon}
-                                    {tab.label}
-                                </button>
-                            ))}
-                            {activeTab === 'profiles' && (
-                                <button
-                                    type="button"
-                                    className={tabButtonClass('profiles')}
-                                    onClick={() => handleTabChange('profiles')}
-                                    title="Tune Arr custom formats / quality profiles"
-                                >
-                                    <Settings2 className="w-3.5 h-3.5" />
-                                    Arr scores
-                                </button>
-                            )}
-                        </div>
+                    {loading ? (
+                        <Loader isLoading />
+                    ) : (
+                        <>
+                            {activeTab === 'overview' && (
+                                <div className="flex flex-col gap-6">
+                                    {(!status?.automationEnabled || !status?.cleanupAutomationEnabled) && (
+                                        <div className="space-y-3">
+                                            {!status?.automationEnabled && (
+                                                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                    <p className="text-sm text-amber-100">
+                                                        Auto-hunt is off. Nothing will be grabbed until you enable it in Settings.
+                                                    </p>
+                                                    <a
+                                                        href={portalUrl('/settings#upgrader')}
+                                                        className="inline-flex items-center gap-2 text-xs font-bold text-plex hover:underline shrink-0"
+                                                    >
+                                                        Open Settings
+                                                    </a>
+                                                </div>
+                                            )}
+                                            {!status?.cleanupAutomationEnabled && (
+                                                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                    <p className="text-sm text-amber-100">
+                                                        Cleanup automation is off. Manual cleanup still works on the Downloads tab.
+                                                    </p>
+                                                    <a
+                                                        href={portalUrl('/settings#upgrader')}
+                                                        className="inline-flex items-center gap-2 text-xs font-bold text-plex hover:underline shrink-0"
+                                                    >
+                                                        Open Settings
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
-                        {loading ? (
-                            <Loader isLoading />
-                        ) : (
-                            <>
-                                {activeTab === 'overview' && (
-                                    <div className="flex flex-col gap-6">
-                                        {(!status?.automationEnabled || !status?.cleanupAutomationEnabled) && (
-                                            <div className="space-y-3">
-                                                {!status?.automationEnabled && (
-                                                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                                        <p className="text-sm text-amber-100">
-                                                            Auto-hunt is off. Nothing will be grabbed until you enable it.
-                                                        </p>
-                                                        <a
-                                                            href={portalUrl('/settings#upgrader')}
-                                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
-                                                        >
-                                                            <SettingsIcon className="w-3.5 h-3.5" />
-                                                            Open Settings
-                                                        </a>
-                                                    </div>
-                                                )}
-                                                {!status?.cleanupAutomationEnabled && (
-                                                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                                        <p className="text-sm text-amber-100">
-                                                            Download cleanup automation is off. Manual cleanup still works on the Downloads tab.
-                                                        </p>
-                                                        <a
-                                                            href={portalUrl('/settings#upgrader')}
-                                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
-                                                        >
-                                                            <SettingsIcon className="w-3.5 h-3.5" />
-                                                            Open Settings
-                                                        </a>
-                                                    </div>
-                                                )}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div className={QC_KPI}>
+                                            <div className="text-[11px] uppercase tracking-wide text-muted">Auto-hunt</div>
+                                            <div className={`mt-1 text-lg font-bold ${status?.automationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
+                                                {status?.automationEnabled ? 'On' : 'Off'}
+                                            </div>
+                                            <p className="mt-1 text-[11px] text-muted">
+                                                {usedActions}/{maxActions} grabs · {remainingActions} left
+                                            </p>
+                                        </div>
+                                        <div className={QC_KPI}>
+                                            <div className="text-[11px] uppercase tracking-wide text-muted">Cleanup</div>
+                                            <div className={`mt-1 text-lg font-bold ${status?.cleanupAutomationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
+                                                {status?.cleanupAutomationEnabled ? 'On' : 'Off'}
+                                            </div>
+                                            <p className="mt-1 text-[11px] text-muted">
+                                                {status?.qcThresholds?.maxStrikes ?? 3} strikes · {activeDownloadTotal} active
+                                            </p>
+                                        </div>
+                                        <div className={QC_KPI}>
+                                            <div className="text-[11px] uppercase tracking-wide text-muted">Integrity</div>
+                                            <div className={`mt-1 text-lg font-bold ${status?.integrityEnabled ? (status?.integrityAutomationEnabled ? 'text-emerald-300' : 'text-amber-200') : 'text-amber-200'}`}>
+                                                {!status?.integrityEnabled
+                                                    ? 'Off'
+                                                    : status?.integrityAutomationEnabled
+                                                        ? 'Auto'
+                                                        : 'Manual'}
+                                            </div>
+                                            <p className="mt-1 text-[11px] text-muted">
+                                                {status?.integrity?.setup?.ready
+                                                    ? 'Tools ready'
+                                                    : status?.integrityEnabled
+                                                        ? 'Check mounts/tools'
+                                                        : 'Disabled'}
+                                            </p>
+                                        </div>
+                                        <div className={QC_KPI}>
+                                            <div className="text-[11px] uppercase tracking-wide text-muted">Index</div>
+                                            <div className="mt-1 text-lg font-bold text-text">
+                                                {summary?.totalItems ?? status?.itemCount ?? 0}
+                                            </div>
+                                            <p className="mt-1 text-[11px] text-muted">
+                                                {formatIndexAge(summary?.generatedAt || status?.generatedAt || null)}
+                                                {' · '}qBit {status?.clientsConfigured?.qbit ? '✓' : '—'}
+                                                {' / '}SAB {status?.clientsConfigured?.sab ? '✓' : '—'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {(status?.clientsConfigured?.qbit || status?.clientsConfigured?.sab) && (
+                                        <div className={`${QC_SECTION} flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3`}>
+                                            <p className="text-xs text-muted">
+                                                Tune SAB/qBit so hunt research and remux imports are not blocked by dupe discard or tiny seed windows.
+                                            </p>
+                                            <QcOptimizeClientsButton onToast={addToast} variant="compact" />
+                                        </div>
+                                    )}
+
+                                    <section className={`${QC_SECTION} space-y-3`}>
+                                        <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <div>
+                                                <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Active downloads by library</h2>
+                                                <p className="text-xs text-muted mt-1">
+                                                    In-flight Arr queue vs hunt cap ({downloadCap} / library).
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="text-xs font-bold text-plex hover:underline"
+                                                onClick={() => handleTabChange('downloads')}
+                                            >
+                                                Open Downloads
+                                            </button>
+                                        </div>
+                                        {activeByLibrary.length === 0 ? (
+                                            <p className="text-xs text-muted">No library download counts yet. Refresh after Arr queues are reachable.</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {activeByLibrary.map((lib) => {
+                                                    const pct = Math.min(100, Math.round((lib.active / Math.max(1, lib.cap)) * 100));
+                                                    const atCap = lib.active >= lib.cap;
+                                                    return (
+                                                        <div key={lib.key} className="px-1 py-2">
+                                                            <div className="flex items-center justify-between gap-3 text-xs">
+                                                                <span className="font-semibold text-text truncate">
+                                                                    {String(lib.key || '').startsWith('lidarr:')
+                                                                        || /^(lidarr|artists?|music)$/i.test(String(lib.label || ''))
+                                                                        ? 'Music'
+                                                                        : lib.label}
+                                                                </span>
+                                                                <span className={`font-bold shrink-0 ${atCap ? 'text-amber-200' : 'text-text'}`}>
+                                                                    {lib.active}/{lib.cap}
+                                                                    <span className="ml-1 font-semibold text-muted">
+                                                                        ({lib.remaining} free)
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+                                                            <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full ${atCap ? 'bg-amber-400' : 'bg-plex'}`}
+                                                                    style={{ width: `${pct}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         )}
+                                    </section>
 
-                                        <Suspense fallback={<TabPanelFallback />}>
-                                            <QcCfRepairsPanel onToast={addToast} />
-                                        </Suspense>
+                                    <Suspense fallback={<TabPanelFallback />}>
+                                        <SettingsCollapseSection
+                                            title="Custom format repairs"
+                                            subtitle="TRaSH / CF score gaps across Arr profiles"
+                                            defaultOpen={false}
+                                        >
+                                            <QcCfRepairsPanel onToast={addToast} embedded />
+                                        </SettingsCollapseSection>
+                                    </Suspense>
 
-                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
-                                            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Automation</h2>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Auto-hunt</div>
-                                                    <div className={`mt-1 text-lg font-bold ${status?.automationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
-                                                        {status?.automationEnabled ? 'On' : 'Off'}
-                                                    </div>
-                                                    <p className="mt-1 text-[11px] text-muted">
-                                                        Missing TV {status?.huntMissingEpisodes === false ? 'off' : 'on'}
-                                                        {' · '}Movies {status?.huntAvailableMovies === false ? 'off' : 'on'}
-                                                    </p>
-                                                </div>
-                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Cleanup</div>
-                                                    <div className={`mt-1 text-lg font-bold ${status?.cleanupAutomationEnabled ? 'text-emerald-300' : 'text-amber-200'}`}>
-                                                        {status?.cleanupAutomationEnabled ? 'On' : 'Off'}
-                                                    </div>
-                                                    <p className="mt-1 text-[11px] text-muted">
-                                                        {status?.qcThresholds?.maxStrikes ?? 3} strikes to kill
-                                                    </p>
-                                                </div>
-                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Integrity</div>
-                                                    <div className={`mt-1 text-lg font-bold ${status?.integrityEnabled ? (status?.integrityAutomationEnabled ? 'text-emerald-300' : 'text-amber-200') : 'text-amber-200'}`}>
-                                                        {!status?.integrityEnabled
-                                                            ? 'Off'
-                                                            : status?.integrityAutomationEnabled
-                                                                ? 'Auto'
-                                                                : 'Manual'}
-                                                    </div>
-                                                    <p className="mt-1 text-[11px] text-muted">
-                                                        {status?.integrity?.setup?.ready
-                                                            ? 'Tools ready'
-                                                            : status?.integrityEnabled
-                                                                ? 'Check mounts/tools'
-                                                                : 'Disabled'}
-                                                    </p>
-                                                </div>
-                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Grabs this hour</div>
-                                                    <div className="mt-1 text-lg font-bold text-text">
-                                                        {usedActions}/{maxActions}
-                                                        <span className="ml-1 text-xs font-semibold text-muted">({remainingActions} left)</span>
-                                                    </div>
-                                                    <p className="mt-1 text-[11px] text-muted">
-                                                        Cap {downloadCap} DLs / library
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Active downloads</div>
-                                                    <div className="mt-1 text-lg font-bold text-text">{activeDownloadTotal}</div>
-                                                </div>
-                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Index</div>
-                                                    <div className="mt-1 text-lg font-bold text-text">
-                                                        {summary?.totalItems ?? status?.itemCount ?? 0}
-                                                        <span className="ml-1 text-xs font-semibold text-muted">· {formatIndexAge(summary?.generatedAt || status?.generatedAt || null)}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Libraries</div>
-                                                    <div className="mt-1 text-lg font-bold text-text">
-                                                        {libraries.length || (status?.arrConfigured ? 'Configured' : 'None')}
-                                                    </div>
-                                                </div>
-                                                <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
-                                                    <div className="text-[11px] uppercase tracking-wide text-muted">Clients</div>
-                                                    <div className="mt-1 text-sm font-bold text-text">
-                                                        qBit {status?.clientsConfigured?.qbit ? '✓' : '—'}
-                                                        {' · '}SAB {status?.clientsConfigured?.sab ? '✓' : '—'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {summary && (
-                                                <p className="text-xs text-muted">
-                                                    {summary.upgradeCandidates ?? 0} titles with files
-                                                    {summary.avgCustomFormatScore != null ? ` · avg Arr score ${summary.avgCustomFormatScore}` : ''}
-                                                    {' · '}min score gain {minDelta}
-                                                    {summary.scoreUnknownCount ? ` · ${summary.scoreUnknownCount} shows unscored` : ''}
-                                                </p>
-                                            )}
-                                            {(status?.clientsConfigured?.qbit || status?.clientsConfigured?.sab) && (
-                                                <div className="pt-2 border-t border-border/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                                    <p className="text-xs text-muted">
-                                                        Tune SAB/qBit so hunt research and remux imports are not blocked by dupe discard or tiny seed windows.
-                                                    </p>
-                                                    <QcOptimizeClientsButton onToast={addToast} variant="compact" />
-                                                </div>
-                                            )}
-                                        </section>
-
-                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
-                                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <div>
-                                                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Active downloads by library</h2>
-                                                    <p className="text-xs text-muted mt-1">
-                                                        In-flight Arr queue items vs hunt cap ({downloadCap} / library).
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    className="text-xs font-bold text-plex hover:underline"
-                                                    onClick={() => handleTabChange('downloads')}
-                                                >
-                                                    Open Downloads
-                                                </button>
-                                            </div>
-                                            {activeByLibrary.length === 0 ? (
-                                                <p className="text-xs text-muted">No library download counts yet. Refresh after Arr queues are reachable.</p>
-                                            ) : (
-                                                <div className="space-y-2">
-                                                    {activeByLibrary.map((lib) => {
-                                                        const pct = Math.min(100, Math.round((lib.active / Math.max(1, lib.cap)) * 100));
-                                                        const atCap = lib.active >= lib.cap;
-                                                        return (
-                                                            <div key={lib.key} className="rounded-xl border border-border/50 bg-background/40 px-3 py-2.5">
-                                                                <div className="flex items-center justify-between gap-3 text-xs">
-                                                                    <span className="font-semibold text-text truncate">
-                                                                        {String(lib.key || '').startsWith('lidarr:')
-                                                                            || /^(lidarr|artists?|music)$/i.test(String(lib.label || ''))
-                                                                            ? 'Music'
-                                                                            : lib.label}
-                                                                    </span>
-                                                                    <span className={`font-bold shrink-0 ${atCap ? 'text-amber-200' : 'text-text'}`}>
-                                                                        {lib.active}/{lib.cap}
-                                                                        <span className="ml-1 font-semibold text-muted">
-                                                                            ({lib.remaining} free)
-                                                                        </span>
-                                                                    </span>
-                                                                </div>
-                                                                <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                                                                    <div
-                                                                        className={`h-full rounded-full ${atCap ? 'bg-amber-400' : 'bg-plex'}`}
-                                                                        style={{ width: `${pct}%` }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </section>
-
-                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
-                                            <QcPolicySummary status={status} compact />
-                                        </section>
-                                    </div>
-                                )}
-
+                                    <SettingsCollapseSection
+                                        title="Cleanup & hunt policy"
+                                        subtitle="Effective strike windows and rate caps"
+                                        defaultOpen={false}
+                                    >
+                                        <QcPolicySummary status={status} compact showSettingsLink />
+                                    </SettingsCollapseSection>
+                                </div>
+                            )}
                                 {activeTab === 'integrity' && (
                                     <Suspense fallback={<TabPanelFallback />}>
                                         <QcIntegrityPanel
@@ -645,137 +616,6 @@ export const UpgraderDashboard: React.FC = () => {
 
                                 {activeTab === 'hunt' && (
                                     <div className="flex flex-col gap-6">
-                                        <section className="space-y-4">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div>
-                                                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Recent hunts</h2>
-                                                    <p className="text-xs text-muted mt-1">
-                                                        Successful grabs and failures from Arr (e.g. SAB rejected an NZB).
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    className="text-xs font-bold text-plex hover:underline"
-                                                    onClick={() => handleTabChange('activity')}
-                                                >
-                                                    Full activity
-                                                </button>
-                                            </div>
-                                            {grabsByLibrary.length === 0 ? (
-                                                <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
-                                                    <p className="text-sm text-muted">
-                                                        No hunt activity yet. Refresh the index, or run a preview below.
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                grabsByLibrary.map((group) => (
-                                                    <div key={group.key} className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <h3 className="text-sm font-bold text-text">{group.label}</h3>
-                                                            <span className="text-[11px] text-muted">
-                                                                {group.items.length ? `${group.items.length} recent` : 'No recent hunts'}
-                                                            </span>
-                                                        </div>
-                                                        {group.items.length === 0 ? (
-                                                            <p className="text-xs text-muted">Nothing hunted from {group.label} yet.</p>
-                                                        ) : (
-                                                            <div className="space-y-2">
-                                                                {group.items.slice(0, 10).map((entry) => {
-                                                                    const when = entryTime(entry);
-                                                                    const failed = entry.success === false;
-                                                                    const delta = !failed && entry.currentScore != null && entry.candidateScore != null
-                                                                        ? entry.candidateScore - entry.currentScore
-                                                                        : null;
-                                                                    return (
-                                                                        <div
-                                                                            key={entry.id}
-                                                                            className={`rounded-lg border px-3 py-2 ${
-                                                                                failed
-                                                                                    ? 'border-red-500/25 bg-red-500/5'
-                                                                                    : 'border-border/50 bg-background/40'
-                                                                            }`}
-                                                                        >
-                                                                            <div className="flex items-center justify-between gap-2">
-                                                                                <div className="text-xs font-semibold text-text">{entry.title}</div>
-                                                                                {delta != null && (
-                                                                                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">+{delta}</span>
-                                                                                )}
-                                                                                {failed && (
-                                                                                    <span className="text-[10px] font-bold text-red-300 shrink-0">Failed</span>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="text-[11px] text-muted mt-0.5">
-                                                                                {[
-                                                                                    failed ? 'Grab failed' : 'Grabbed',
-                                                                                    entry.releaseTitle,
-                                                                                    when ? new Date(when).toLocaleString() : null,
-                                                                                ].filter(Boolean).join(' · ')}
-                                                                            </div>
-                                                                            {failed && entry.reason && (
-                                                                                <p className="text-[11px] text-red-300 mt-1 line-clamp-2">
-                                                                                    {/SAB/i.test(String(entry.reason))
-                                                                                        ? 'SABnzbd rejected the grab — check SAB is up and Radarr can reach it.'
-                                                                                        : String(entry.reason).split(/\n|\bat\s/)[0].slice(0, 180)}
-                                                                                </p>
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))
-                                            )}
-                                        </section>
-
-                                        <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
-                                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <div>
-                                                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">How it hunts</h2>
-                                                    <p className="text-xs text-muted mt-1">
-                                                        Preview searches Arr without grabbing. Auto-hunt uses the same rules when enabled in Settings.
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text hover:border-plex/40"
-                                                    onClick={() => handleTabChange('profiles')}
-                                                >
-                                                    <Settings2 className="w-3.5 h-3.5" />
-                                                    Arr scores
-                                                </button>
-                                            </div>
-                                            <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
-                                                <li>
-                                                    <span className="text-text font-semibold">Fair per library.</span>{' '}
-                                                    Each Arr root folder gets a turn every cycle. Hunting stops for a library at {status?.maxDownloadsPerLibrary ?? 5} in-flight downloads.
-                                                </li>
-                                                <li>
-                                                    <span className="text-text font-semibold">Worst scores first.</span>{' '}
-                                                    Lowest Arr custom-format scores are tried first inside each library.
-                                                </li>
-                                                <li>
-                                                    <span className="text-text font-semibold">Cooldownoldown after tries.</span>{' '}
-                                                    After a grab or a “nothing better” result (~7 days), that title cools down.
-                                                </li>
-                                                <li>
-                                                    <span className="text-text font-semibold">Score floor {minDelta}+.</span>{' '}
-                                                    Never downgrades resolution (e.g. 1080p cannot beat a 4K season).
-                                                </li>
-                                            </ol>
-                                            <div className="pt-2">
-                                                <button
-                                                    type="button"
-                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-bold text-text hover:border-plex/40 disabled:opacity-50"
-                                                    onClick={handleDryRun}
-                                                    disabled={dryRunning || rebuilding || !!status?.rebuildInProgress}
-                                                >
-                                                    <FlaskConical className={`w-4 h-4 ${dryRunning ? 'animate-pulse' : ''}`} />
-                                                    {dryRunning ? 'Previewing…' : 'Preview hunt (no grabs)'}
-                                                </button>
-                                            </div>
-                                        </section>
-
                                         {(dryRunning || dryRun) && (
                                             <section className="space-y-4">
                                                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -807,13 +647,13 @@ export const UpgraderDashboard: React.FC = () => {
                                                     )}
                                                 </div>
                                                 {dryRunning && (
-                                                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 flex items-center gap-3 text-sm text-amber-100">
+                                                    <div className={`${QC_SECTION} border-amber-500/30 bg-amber-500/10 flex items-center gap-3 text-sm text-amber-100`}>
                                                         <FlaskConical className="w-5 h-5 animate-pulse shrink-0" />
                                                         Preview in progress — waiting on Arr release search…
                                                     </div>
                                                 )}
                                                 {!dryRunning && dryRun && dryRunByLibrary.length === 0 && (
-                                                    <div className="rounded-2xl border border-border/60 bg-card/40 p-6 text-center">
+                                                    <div className={`${QC_SECTION} text-center`}>
                                                         <p className="text-sm text-muted">
                                                             {dryRun.reason || 'No titles were searched. Refresh the index if your library looks empty.'}
                                                         </p>
@@ -823,7 +663,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                     const would = group.items.filter((entry) => entry.success);
                                                     const skipped = group.items.filter((entry) => !entry.success);
                                                     return (
-                                                        <div key={`dry-${group.key}`} className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+                                                        <div key={`dry-${group.key}`} className={`${QC_SECTION} space-y-3`}>
                                                             <div className="flex items-center justify-between gap-2">
                                                                 <h3 className="text-sm font-bold text-text">{group.label}</h3>
                                                                 <span className="text-[11px] text-muted">
@@ -893,6 +733,124 @@ export const UpgraderDashboard: React.FC = () => {
                                                 })}
                                             </section>
                                         )}
+
+                                        <section className="space-y-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div>
+                                                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Recent hunts</h2>
+                                                    <p className="text-xs text-muted mt-1">
+                                                        Successful grabs and failures from Arr (e.g. SAB rejected an NZB).
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="text-xs font-bold text-plex hover:underline"
+                                                    onClick={() => handleTabChange('activity')}
+                                                >
+                                                    Full activity
+                                                </button>
+                                            </div>
+                                            {grabsByLibrary.length === 0 ? (
+                                                <div className={`${QC_SECTION} text-center`}>
+                                                    <p className="text-sm text-muted">
+                                                        No hunt activity yet. Refresh the index, or run a preview from the header.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                grabsByLibrary.map((group) => (
+                                                    <div key={group.key} className={`${QC_SECTION} space-y-3`}>
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <h3 className="text-sm font-bold text-text">{group.label}</h3>
+                                                            <span className="text-[11px] text-muted">
+                                                                {group.items.length ? `${group.items.length} recent` : 'No recent hunts'}
+                                                            </span>
+                                                        </div>
+                                                        {group.items.length === 0 ? (
+                                                            <p className="text-xs text-muted">Nothing hunted from {group.label} yet.</p>
+                                                        ) : (
+                                                            <div className="space-y-2">
+                                                                {group.items.slice(0, 10).map((entry) => {
+                                                                    const when = entryTime(entry);
+                                                                    const failed = entry.success === false;
+                                                                    const delta = !failed && entry.currentScore != null && entry.candidateScore != null
+                                                                        ? entry.candidateScore - entry.currentScore
+                                                                        : null;
+                                                                    return (
+                                                                        <div
+                                                                            key={entry.id}
+                                                                            className={`rounded-lg border px-3 py-2 ${
+                                                                                failed
+                                                                                    ? 'border-red-500/25 bg-red-500/5'
+                                                                                    : 'border-border/50 bg-background/40'
+                                                                            }`}
+                                                                        >
+                                                                            <div className="flex items-center justify-between gap-2">
+                                                                                <div className="text-xs font-semibold text-text">{entry.title}</div>
+                                                                                {delta != null && (
+                                                                                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">+{delta}</span>
+                                                                                )}
+                                                                                {failed && (
+                                                                                    <span className="text-[10px] font-bold text-red-300 shrink-0">Failed</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="text-[11px] text-muted mt-0.5">
+                                                                                {[
+                                                                                    failed ? 'Grab failed' : 'Grabbed',
+                                                                                    entry.releaseTitle,
+                                                                                    when ? new Date(when).toLocaleString() : null,
+                                                                                ].filter(Boolean).join(' · ')}
+                                                                            </div>
+                                                                            {failed && entry.reason && (
+                                                                                <p className="text-[11px] text-red-300 mt-1 line-clamp-2">
+                                                                                    {/SAB/i.test(String(entry.reason))
+                                                                                        ? 'SABnzbd rejected the grab — check SAB is up and Radarr can reach it.'
+                                                                                        : String(entry.reason).split(/\n|\bat\s/)[0].slice(0, 180)}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </section>
+
+                                        <SettingsCollapseSection
+                                            title="How hunting works"
+                                            subtitle="Same rules for preview and auto-hunt"
+                                            defaultOpen={false}
+                                            headerRight={(
+                                                <button
+                                                    type="button"
+                                                    className="btn-secondary !px-2.5 !py-1 !text-[11px] !rounded-md"
+                                                    onClick={() => handleTabChange('profiles')}
+                                                >
+                                                    <Settings2 className="w-3.5 h-3.5" />
+                                                    Arr scores
+                                                </button>
+                                            )}
+                                        >
+                                            <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
+                                                <li>
+                                                    <span className="text-text font-semibold">Fair per library.</span>{' '}
+                                                    Each Arr root folder gets a turn every cycle. Hunting stops for a library at {status?.maxDownloadsPerLibrary ?? 5} in-flight downloads.
+                                                </li>
+                                                <li>
+                                                    <span className="text-text font-semibold">Worst scores first.</span>{' '}
+                                                    Lowest Arr custom-format scores are tried first inside each library.
+                                                </li>
+                                                <li>
+                                                    <span className="text-text font-semibold">Cooldown after tries.</span>{' '}
+                                                    After a grab or a “nothing better” result (~7 days), that title cools down.
+                                                </li>
+                                                <li>
+                                                    <span className="text-text font-semibold">Score floor {minDelta}+.</span>{' '}
+                                                    Never downgrades resolution (e.g. 1080p cannot beat a 4K season).
+                                                </li>
+                                            </ol>
+                                        </SettingsCollapseSection>
                                     </div>
                                 )}
 
@@ -941,7 +899,6 @@ export const UpgraderDashboard: React.FC = () => {
                         )}
                     </>
                 )}
-            </div>
         </div>
     );
 };

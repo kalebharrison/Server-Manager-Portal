@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, Save, ExternalLink } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
+import { SettingHint } from '../settings/SettingHint';
 import { QcOptimizeClientsButton } from './QcOptimizeClientsButton';
+import { QC_KPI, QC_SECTION } from './qcUi';
 
 type ExtensionPolicy = {
     qbit?: string[];
@@ -95,12 +97,17 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                 </div>
             )}
 
-            <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-3">
+            <section className={`${QC_SECTION} space-y-3`}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Download clients</h2>
+                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
+                            Download clients
+                            <SettingHint>
+                                Connection settings live in Settings. Optimize tunes SAB/qBit for QC hunt and cleanup.
+                            </SettingHint>
+                        </h2>
                         <p className="text-xs text-muted mt-1">
-                            Connection settings live in Settings. Optimize tunes SAB/qBit for QC hunt and cleanup.
+                            Credentials and connection settings are in Settings.
                         </p>
                     </div>
                     <a
@@ -112,7 +119,7 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                     </a>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                    <div className={QC_KPI}>
                         <div className="text-[11px] uppercase tracking-wide text-muted">qBittorrent</div>
                         <div className={`mt-1 text-sm font-semibold ${qbitConfigured ? 'text-emerald-300' : 'text-muted'}`}>
                             {qbitConfigured ? 'Configured' : 'Not configured'}
@@ -121,7 +128,7 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                             <p className="text-[11px] text-amber-200 mt-1">{policy.errors.qbit}</p>
                         )}
                     </div>
-                    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                    <div className={QC_KPI}>
                         <div className="text-[11px] uppercase tracking-wide text-muted">SABnzbd</div>
                         <div className={`mt-1 text-sm font-semibold ${sabConfigured ? 'text-emerald-300' : 'text-muted'}`}>
                             {sabConfigured ? 'Configured' : 'Not configured'}
@@ -134,12 +141,17 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
             </section>
 
             {clientsConfigured && (
-                <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
+                <section className={`${QC_SECTION} space-y-4`}>
                     <div>
-                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Optimize for QC</h2>
+                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
+                            Optimize for QC
+                            <SettingHint>
+                                Turns off SAB identical-NZB discard (so research re-grabs work) and raises qBit seed time /
+                                active torrent caps so imports and packs are not false-killed.
+                            </SettingHint>
+                        </h2>
                         <p className="text-xs text-muted mt-1">
-                            Turns off SAB identical-NZB discard (so research re-grabs work) and raises qBit seed time /
-                            active torrent caps so imports and packs are not false-killed.
+                            Align SAB and qBit for hunt and cleanup.
                             {aligned === true ? ' Currently aligned.' : aligned === false ? ' Currently needs apply.' : ''}
                         </p>
                     </div>
@@ -151,22 +163,27 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                 </section>
             )}
 
-            <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Blocked extensions</h2>
+            <section className={`${QC_SECTION} space-y-4`}>
+                <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
+                    Blocked extensions
+                    <SettingHint>
+                        Apply pushes one shared list to every configured client (qBit excluded filenames,
+                        SAB unwanted extensions). Comma or newline separated
+                        (e.g. exe, bat, lnk).
+                    </SettingHint>
+                </h2>
                 <p className="text-xs text-muted">
-                    Apply pushes one shared list to every configured client (qBit excluded filenames,
-                    SAB unwanted extensions). Comma or newline separated
-                    (e.g. <code className="text-text">exe, bat, lnk</code>).
+                    One shared list pushed to qBit and SAB on Apply.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                    <div className={QC_KPI}>
                         <div className="text-[11px] uppercase tracking-wide text-muted mb-1">qBittorrent</div>
                         <div className="text-text break-words">
                             {qbitEmpty ? <span className="text-muted">Empty blacklist</span> : listLabel(policy?.qbit)}
                         </div>
                     </div>
-                    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                    <div className={QC_KPI}>
                         <div className="text-[11px] uppercase tracking-wide text-muted mb-1">SABnzbd</div>
                         <div className="text-text break-words">
                             {sabEmpty
@@ -174,7 +191,7 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                                 : listLabel(policy?.sab)}
                         </div>
                     </div>
-                    <div className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                    <div className={QC_KPI}>
                         <div className="text-[11px] uppercase tracking-wide text-muted mb-1">Shared list</div>
                         <div className="text-text break-words">{listLabel(policy?.union)}</div>
                     </div>

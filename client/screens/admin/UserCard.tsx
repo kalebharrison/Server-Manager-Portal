@@ -50,7 +50,7 @@ export const UserCard: React.FC<{
     }, [user.expiryDate]);
 
     return (
-        <div className={`bg-card/45 backdrop-blur-md rounded-xl p-5 shadow-lg border border-white/5 border-l-4 ${borderClass} ${glowClass} hover:-translate-y-1 hover:scale-[1.01] transition-all duration-300 flex flex-col relative cursor-pointer ${isSelected ? 'border-plex/40 shadow-[0_0_15px_rgba(229,160,13,0.12)] bg-card/75' : ''}`} onClick={() => onSelect(user.id)}>
+        <div className={`glass-card-sm p-5 border-l-4 ${borderClass} ${glowClass} hover:-translate-y-1 hover:scale-[1.01] transition-all duration-300 flex flex-col relative cursor-pointer ${isSelected ? 'border-plex/40 shadow-[0_0_15px_rgba(229,160,13,0.12)]' : ''}`} onClick={() => onSelect(user.id)}>
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2.5 min-w-0">
                     <input className="w-4 h-4 flex-shrink-0 appearance-none rounded-full border border-muted checked:bg-plex checked:border-plex transition-colors cursor-pointer relative checked:after:content-[''] checked:after:block checked:after:w-1.5 checked:after:h-1.5 checked:after:bg-background checked:after:rounded-full checked:after:absolute checked:after:top-1/2 checked:after:left-1/2 checked:after:-translate-x-1/2 checked:after:-translate-y-1/2"

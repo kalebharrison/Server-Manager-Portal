@@ -86,7 +86,7 @@ export const InvitesSettings: React.FC<{ addToast: (msg: string, type: 'success'
                 <SettingHint>Generate unique links to automatically invite users to your Plex server.</SettingHint>
             </h3>
 
-            <div className="space-y-6 mb-8">
+            <div className="space-y-6 mb-8 glass-card-sm p-4 md:p-5">
                 <h4 className="font-bold">Create New Invite Link</h4>
                 <div className="flex flex-col md:flex-row gap-4 items-end mb-6">
                     <div className="flex-1 w-full">
@@ -139,7 +139,7 @@ export const InvitesSettings: React.FC<{ addToast: (msg: string, type: 'success'
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto glass-card-sm">
                 <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead>
                         <tr className="border-b border-border text-muted text-sm uppercase tracking-wider">

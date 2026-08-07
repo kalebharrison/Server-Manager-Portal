@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import type { ToastMessage } from '../shared/types';
+import { SettingHint } from '../settings/SettingHint';
+import { QC_SECTION } from './qcUi';
 
 type PrefsShape = {
     excludedRatingKeys?: string[];
@@ -131,11 +133,13 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
 
     return (
         <div className="space-y-6">
-            <section className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                <h3 className="text-sm font-bold text-text">Snoozed</h3>
-                <p className="text-xs text-muted">
-                    Hunt snoozes hide titles from auto-hunt. Download snoozes skip cleanup for a queue row.
-                </p>
+            <section className={`${QC_SECTION} space-y-3`}>
+                <h3 className="text-sm font-bold text-text inline-flex items-center flex-wrap gap-x-1">
+                    Snoozed
+                    <SettingHint>
+                        Hunt snoozes hide titles from auto-hunt. Download snoozes skip cleanup for a queue row.
+                    </SettingHint>
+                </h3>
                 {snoozedRows.length === 0 ? (
                     <p className="text-xs text-muted">Nothing snoozed right now.</p>
                 ) : snoozedRows.map((entry) => (
@@ -158,7 +162,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
                 ))}
             </section>
 
-            <section className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+            <section className={`${QC_SECTION} space-y-3`}>
                 <h3 className="text-sm font-bold text-text">Always skip (exact title)</h3>
                 <div className="flex gap-2">
                     <input

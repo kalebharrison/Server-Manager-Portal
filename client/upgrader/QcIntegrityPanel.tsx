@@ -2,6 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlaskConical, Loader2, RefreshCw, ShieldAlert } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
+import { SettingHint } from '../settings/SettingHint';
+import { SettingsCollapseSection } from '../settings/SettingsCollapseSection';
+import { QC_KPI, QC_SECTION } from './qcUi';
 
 type IntegrityFinding = {
     key: string;
@@ -434,7 +437,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
 
     if (!integrityEnabled) {
         return (
-            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-5 space-y-3">
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-5 space-y-3">
                 <div className="flex items-start gap-3">
                     <ShieldAlert className="w-5 h-5 text-amber-200 shrink-0 mt-0.5" />
                     <div>
@@ -466,14 +469,19 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
 
     return (
         <div className="space-y-4">
-            <div className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-4">
+            <div className={`${QC_SECTION} space-y-4`}>
                 <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h2>
+                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
+                        Library integrity
+                        <SettingHint>
+                            Import/upgrade webhooks validate new files (playback → fingerprint → optional full hash).
+                            Nightly automation fingerprints the whole library and only escalates mismatches to playback/hash.
+                            Buttons below are manual tools. Dry-run only — nothing is deleted until you Replace a finding.
+                            Files playing on Plex are skipped.
+                        </SettingHint>
+                    </h2>
                     <p className="text-xs text-muted mt-1 max-w-2xl">
-                        Import/upgrade webhooks validate new files (playback → fingerprint → optional full hash).
-                        Nightly automation fingerprints the whole library and only escalates mismatches to playback/hash.
-                        Buttons below are manual tools. Dry-run only — nothing is deleted until you Replace a finding.
-                        Files playing on Plex are skipped.
+                        Manual checks — dry-run only until you Replace a finding.
                     </p>
                     {result?.setup && !result.setup.ready && (
                         <p className="text-xs text-amber-200 mt-2">
@@ -498,7 +506,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                             const total = totals.total;
                             const pct = coveragePct(done, total);
                             return (
-                                <div key={check.key} className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                <div key={check.key} className={QC_KPI}>
                                     <div className="text-sm font-bold text-text">{check.label}</div>
                                     <p className="text-[11px] text-muted mt-0.5">{check.blurb}</p>
                                     <div className="mt-2 flex items-baseline justify-between gap-2">
@@ -564,13 +572,10 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 </div>
             )}
 
-            <div className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
-                <div>
-                    <h3 className="text-sm font-bold text-text">Coverage by library</h3>
-                    <p className="text-xs text-muted mt-1">
-                        Same three checks, split by Movies / TV / Music.
-                    </p>
-                </div>
+            <SettingsCollapseSection
+                title="Coverage by library"
+                subtitle="Movies / TV / Music breakdown"
+            >
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                         <thead>
@@ -606,7 +611,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </SettingsCollapseSection>
 
             {(result?.ran || scanning) && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -617,7 +622,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         ['Passed', scanning ? (progress?.passed || 0) : (result?.passed || 0)],
                         ['Findings', scanning ? (progress?.findingCount || 0) : (result?.findingCount || displayFindings.length || 0)],
                     ].map(([label, value]) => (
-                        <div key={String(label)} className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                        <div key={String(label)} className={QC_KPI}>
                             <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
                             <div className="mt-1 text-lg font-bold text-text">{value}</div>
                         </div>
@@ -625,7 +630,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 </div>
             )}
 
-            <section className="rounded-2xl border border-border/60 bg-card/40 p-4 space-y-3">
+            <section className={`${QC_SECTION} space-y-3`}>
                 <div className="flex items-center justify-between gap-2">
                     <h3 className="text-sm font-bold text-text">Findings</h3>
                     <button

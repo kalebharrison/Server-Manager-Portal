@@ -4,6 +4,8 @@ import { apiFetch } from '../shared/api';
 import { UpgraderCustomFormatModal } from './UpgraderCustomFormatModal';
 import { UpgraderQualityProfileModal } from './UpgraderQualityProfileModal';
 import type { UpgraderProfilesUrlState } from './upgraderUrlState';
+import { SettingHint } from '../settings/SettingHint';
+import { QC_SECTION } from './qcUi';
 
 interface ArrInstance {
     id: string;
@@ -238,15 +240,19 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="bg-card border border-border shadow-sm rounded-xl p-6">
+            <div className={`${QC_SECTION} p-6`}>
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h3 className="text-lg font-bold text-text flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-text flex items-center gap-2 flex-wrap">
                             <Settings2 className="w-5 h-5 text-plex" />
                             Arr scores setup
+                            <SettingHint>
+                                Tune Sonarr/Radarr custom formats and quality profiles so scores reward Remux, DV/HDR, and Atmos.
+                                Quality Control uses those scores when grabbing upgrades.
+                            </SettingHint>
                         </h3>
                         <p className="text-sm text-muted mt-1">
-                            Tune Sonarr/Radarr custom formats and quality profiles so scores reward Remux, DV/HDR, and Atmos. Quality Control uses those scores when grabbing upgrades.
+                            Custom formats and quality profiles for upgrade scoring.
                         </p>
                     </div>
                     <div className="flex items-center gap-3">

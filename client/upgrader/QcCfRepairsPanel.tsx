@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, ShieldCheck, Wrench } from 'lucide-react';
 import { apiFetch } from '../shared/api';
+import { SettingHint } from '../settings/SettingHint';
+import { QC_KPI, QC_SECTION } from './qcUi';
 
 type RepairCatalogEntry = {
     id: string;
@@ -34,9 +36,11 @@ type RepairsResponse = {
 
 type Props = {
     onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
+    /** Skip outer glass card when nested in SettingsCollapseSection. */
+    embedded?: boolean;
 };
 
-export const QcCfRepairsPanel: React.FC<Props> = ({ onToast }) => {
+export const QcCfRepairsPanel: React.FC<Props> = ({ onToast, embedded = false }) => {
     const [loading, setLoading] = useState(true);
     const [repairing, setRepairing] = useState(false);
     const [status, setStatus] = useState<RepairsResponse | null>(null);
@@ -82,16 +86,21 @@ export const QcCfRepairsPanel: React.FC<Props> = ({ onToast }) => {
     const results = status?.results || [];
 
     return (
-        <section className="rounded-2xl border border-border/60 bg-card/40 p-5 space-y-4">
+        <section className={`${embedded ? 'space-y-4' : `${QC_SECTION} space-y-4`}`}>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted flex items-center gap-2">
+                    {!embedded && (
+                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted flex items-center gap-2 flex-wrap">
                         <Wrench className="w-4 h-4 text-plex" />
                         Custom format repairs
+                        <SettingHint>
+                            Known TRaSH/CF holes that block good upgrades. Checked against live Sonarr/Radarr formats
+                            so we do not forget them after a sync.
+                        </SettingHint>
                     </h2>
-                    <p className="text-xs text-muted mt-1 max-w-2xl">
-                        Known TRaSH/CF holes that block good upgrades. Checked against live Sonarr/Radarr formats
-                        so we do not forget them after a sync.
+                    )}
+                    <p className={`text-xs text-muted max-w-2xl ${embedded ? '' : 'mt-1'}`}>
+                        Auto-checks known CF gaps against live Arr instances.
                     </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -144,7 +153,7 @@ export const QcCfRepairsPanel: React.FC<Props> = ({ onToast }) => {
                                     }))
                             ));
                             return (
-                                <div key={entry.id} className="rounded-xl border border-border/50 bg-background/40 px-3 py-3">
+                                <div key={entry.id} className={QC_KPI}>
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
                                             <div className="text-sm font-semibold text-text">{entry.title}</div>

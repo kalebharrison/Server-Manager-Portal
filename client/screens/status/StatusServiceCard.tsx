@@ -27,7 +27,7 @@ export const StatusServiceCard: React.FC<{ service: any; health?: any }> = ({ se
     }, [days, health.dailyHistory]);
 
     return (
-        <article className="bg-card rounded-lg p-5 border border-white/5 shadow-lg min-w-0">
+        <article className="glass-card-sm p-5 min-w-0">
             <div className="flex justify-between items-start gap-4">
                 <div className="min-w-0">
                     <h3 className="font-bold text-text text-lg truncate">{service.name}</h3>
