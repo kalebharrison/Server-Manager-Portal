@@ -14,7 +14,7 @@ import {
 test('test mail html requests a constrained inline logo', () => {
     const html = buildSmtpTestHtml({ smtpFrom: 'LostWaldo <a@b.c>' });
     assert.equal(shouldAttachInlineLogo(html), true);
-    assert.match(html, /max-height:36px/);
+    assert.match(html, /max-height:72px/);
     assert.equal(shouldAttachInlineLogo('<p>no logo</p>'), false);
 });
 

@@ -38,15 +38,21 @@ test('mock catalog covers every outbound email type', () => {
         assert.match(entry.html, /color-scheme" content="light"/, `${entry.id} is missing light chrome`);
         assert.match(entry.html, /#f4f6f9/, `${entry.id} is missing portal background`);
         assert.match(entry.html, /cid:logo/, `${entry.id} is missing constrained logo`);
-        assert.match(entry.html, /max-height:36px/, `${entry.id} logo is not size-capped`);
+        assert.match(entry.html, /max-height:72px/, `${entry.id} logo is not size-capped`);
         assert.match(entry.html, /LostWaldo/, `${entry.id} is missing friendly server name`);
         assert.doesNotMatch(entry.html, /font-size:13px[^>]*>\s*ABFAADCCEEA3/i, `${entry.id} used a Plex machine id as the heading`);
         assert.doesNotMatch(entry.html, /PLEX SERVER/, `${entry.id} still uses the old dark header`);
     }
+    const approved = catalog.find((entry) => entry.id === 'request_approved');
+    assert.match(approved.subject, /Request Approved: Dune/);
+    assert.match(approved.html, /Request Approved/);
+    assert.match(approved.html, /image\.tmdb\.org\/t\/p\/w342\/d5NXSklXo0qyIYkgV94XAgMIckC\.jpg/);
     const available = catalog.find((entry) => entry.id === 'request_available');
+    assert.match(available.html, /Now Available/);
     assert.match(available.html, /Open in Portal/);
     assert.match(available.html, /Watch on Plex/);
     assert.match(available.html, /\/discovery\/tv\/95396/);
+    assert.match(available.html, /image\.tmdb\.org\/t\/p\/w342\/lFf6LLrQjYqM7WI4BNhut3vhvZR\.jpg/);
 });
 
 test('sendMockEmailCatalog delivers every template to the requested address', async () => {

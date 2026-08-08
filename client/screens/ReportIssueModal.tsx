@@ -15,7 +15,13 @@ export const ReportIssueModal: React.FC<{ item: any, onClose: () => void }> = ({
             const res = await apiFetch('/api/plex/report-issue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: item.title, key: item.key || item.ratingKey, issue })
+                body: JSON.stringify({
+                    title: item.title,
+                    key: item.key || item.ratingKey,
+                    issue,
+                    posterPath: item.posterPath || null,
+                    thumbUrl: item.thumbUrl || null,
+                })
             });
             if (res.success) {
                 setStatus('success');

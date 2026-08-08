@@ -38,13 +38,16 @@ test('request approved always emails even when the user opted out', async () => 
         requestId: 9,
         mediaType: 'movie',
         tmdbId: 438631,
+        posterPath: '/d5NXSklXo0qyIYkgV94XAgMIckC.jpg',
     });
 
     assert.equal(notices.length, 1);
     assert.equal(notices[0].type, 'request_update');
-    assert.match(notices[0].subject, /\[LostWaldo\] Request approved/);
+    assert.match(notices[0].subject, /\[LostWaldo\] Request Approved: Dune/);
+    assert.match(notices[0].html, /Request Approved/);
     assert.match(notices[0].html, /\/discovery\/movie\/438631/);
     assert.match(notices[0].html, /Open in Portal/);
+    assert.match(notices[0].html, /image\.tmdb\.org\/t\/p\/w342\/d5NXSklXo0qyIYkgV94XAgMIckC\.jpg/);
     assert.equal(dms.length, 1);
     assert.equal(dms[0].discordId, '123456789012345678');
 });
@@ -75,7 +78,13 @@ test('issue reply always emails even when the user opted out', async () => {
     });
 
     await notify.notifyIssueReply({}, {
-        issue: { id: 'iss-1', title: 'Bad audio', reporterId: 'u1', updatedAt: '2026-01-01' },
+        issue: {
+            id: 'iss-1',
+            title: 'Bad audio',
+            reporterId: 'u1',
+            updatedAt: '2026-01-01',
+            posterPath: '/d5NXSklXo0qyIYkgV94XAgMIckC.jpg',
+        },
         replyAuthor: 'Admin',
     });
 
