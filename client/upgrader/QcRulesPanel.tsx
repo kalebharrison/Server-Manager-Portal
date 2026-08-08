@@ -12,28 +12,30 @@ type Props = {
     onChanged?: () => void;
 };
 
-/** Cleanup / hunt policy + skip list. Live pressure stays on Overview. */
+/** Live cleanup cheat sheet + skip/snooze list. Strike numbers stay in Settings. */
 export const QcRulesPanel: React.FC<Props> = ({ status, onToast, onChanged }) => (
-    <div className="space-y-6">
+    <div className="space-y-4">
         <section className={QC_SECTION}>
             <QcPolicySummary status={status} />
         </section>
 
-        <section className="space-y-4">
+        <section className={`${QC_SECTION} space-y-3`}>
             <div>
                 <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
-                    Skip list
+                    Skip & snooze
                     <SettingHint>
-                        Titles here are never hunted for upgrades. Cleanup and integrity still apply.
+                        Title skips never auto-hunt. Hunt snoozes hide a title for a while.
+                        Download snoozes skip cleanup for one queue row. Integrity still applies.
                     </SettingHint>
                 </h2>
                 <p className="text-xs text-muted mt-1">
-                    Excluded titles skip auto-hunt only. Timing and caps are above; Arr custom formats live under Arr scores.
+                    This is the only list you edit here. Strike timers and hunt caps live in Settings.
                 </p>
             </div>
             <UpgraderExclusionsPanel
                 addToast={(message, type) => onToast(message, type)}
                 onChanged={onChanged}
+                embedded
             />
         </section>
     </div>

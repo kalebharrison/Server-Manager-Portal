@@ -19,6 +19,7 @@ type SnoozeRow = { key: string; until: string; kind: 'hunt' | 'download' };
 type UpgraderExclusionsPanelProps = {
     addToast: (message: string, type?: ToastMessage['type']) => void;
     onChanged?: () => void;
+    embedded?: boolean;
 };
 
 const activeSnoozeRows = (prefs: PrefsShape): SnoozeRow[] => {
@@ -48,7 +49,11 @@ const activeSnoozeRows = (prefs: PrefsShape): SnoozeRow[] => {
     return rows.sort((a, b) => Date.parse(a.until) - Date.parse(b.until));
 };
 
-export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = ({ addToast, onChanged }) => {
+export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = ({
+    addToast,
+    onChanged,
+    embedded = false,
+}) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [prefs, setPrefs] = useState<PrefsShape | null>(null);
@@ -131,14 +136,19 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
     const titles = Array.isArray(prefs.excludedTitles) ? prefs.excludedTitles : [];
     const snoozedRows = activeSnoozeRows(prefs);
 
+    const wrapClass = embedded ? 'space-y-4' : 'space-y-6';
+    const sectionClass = embedded ? 'space-y-3' : `${QC_SECTION} space-y-3`;
+
     return (
-        <div className="space-y-6">
-            <section className={`${QC_SECTION} space-y-3`}>
+        <div className={wrapClass}>
+            <section className={sectionClass}>
                 <h3 className="text-sm font-bold text-text inline-flex items-center flex-wrap gap-x-1">
                     Snoozed
-                    <SettingHint>
-                        Hunt snoozes hide titles from auto-hunt. Download snoozes skip cleanup for a queue row.
-                    </SettingHint>
+                    {!embedded && (
+                        <SettingHint>
+                            Hunt snoozes hide titles from auto-hunt. Download snoozes skip cleanup for a queue row.
+                        </SettingHint>
+                    )}
                 </h3>
                 {snoozedRows.length === 0 ? (
                     <p className="text-xs text-muted">Nothing snoozed right now.</p>
@@ -162,7 +172,7 @@ export const UpgraderExclusionsPanel: React.FC<UpgraderExclusionsPanelProps> = (
                 ))}
             </section>
 
-            <section className={`${QC_SECTION} space-y-3`}>
+            <section className={sectionClass}>
                 <h3 className="text-sm font-bold text-text">Always skip (exact title)</h3>
                 <div className="flex gap-2">
                     <input

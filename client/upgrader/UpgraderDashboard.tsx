@@ -51,7 +51,7 @@ const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode
     { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'Preview hunts, recent grabs, and download cleanup' },
     { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-3.5 h-3.5" />, title: 'Scan library files for corruption (report-only unless you replace)' },
     { id: 'clients', label: 'Clients', icon: <HardDrive className="w-3.5 h-3.5" />, title: 'qBit/SAB health, optimize, and blocked extensions' },
-    { id: 'rules', label: 'Rules', icon: <Ban className="w-3.5 h-3.5" />, title: 'Cleanup timing, hunt caps, and skip list' },
+    { id: 'rules', label: 'Rules', icon: <Ban className="w-3.5 h-3.5" />, title: 'Cleanup windows, skip list, and snoozes' },
     { id: 'profiles', label: 'Arr scores', icon: <Settings2 className="w-3.5 h-3.5" />, title: 'Custom format repairs and Arr quality profile scores' },
     { id: 'activity', label: 'Activity', icon: <History className="w-3.5 h-3.5" />, title: 'Hunt grabs and cleanup history' },
 ];
