@@ -46,8 +46,9 @@ test('embed labels upgrades vs new and lists episodes', () => {
             { episodeNumber: 2, episodeTitle: 'Next' },
         ],
     });
-    assert.equal(ready.author.name, 'Show available');
+    assert.equal(ready.author.name, 'New show available');
     assert.equal(ready.title, 'Show (S01E01–E02)');
+    assert.ok(ready.fields.some((field) => field.name === 'Status' && field.value === 'New'));
     assert.ok(ready.fields.some((field) => field.name === 'Episodes' && /Pilot/.test(field.value)));
 
     const filenames = buildMediaAnnounceEmbed({
@@ -75,6 +76,7 @@ test('embed labels upgrades vs new and lists episodes', () => {
     });
     assert.equal(upgraded.author.name, 'Upgraded movie available');
     assert.equal(upgraded.title, 'Movie');
+    assert.ok(upgraded.fields.some((field) => field.name === 'Status' && field.value === 'Upgraded'));
     assert.match(upgraded.image, /w780/);
     assert.equal(upgraded.thumbnail, undefined);
     assert.match(upgraded.fields.find((field) => field.name === 'Links').value, /\[Plex\].*\[TMDb\].*\[IMDb\].*\[Trakt\]/);
@@ -252,7 +254,8 @@ test('postTestAnnounces posts movie and TV immediately', async () => {
     assert.equal(posts.length, 2);
     assert.equal(posts[0].content, undefined);
     assert.equal(posts[0].title, 'Dune');
-    assert.equal(posts[0].author.name, 'Movie available');
+    assert.equal(posts[0].author.name, 'New movie available');
+    assert.ok(posts[0].fields.some((field) => field.name === 'Status' && field.value === 'New'));
     assert.equal(posts[0].footer, 'Test preview — not a new import');
     assert.ok(posts[0].image);
     assert.match(posts[0].fields.find((field) => field.name === 'Links').value, /\[Plex\].*\[TMDb\].*\[IMDb\].*\[Trakt\]/);
