@@ -6,6 +6,7 @@ import {
     buildMediaAnnounceEmbed,
     buildMediaAnnounceGroupKey,
     createDiscordMediaAnnounce,
+    pickTestMediaAnnounceGroups,
 } from '../../lib/discord/discord-media-announce.js';
 
 test('group keys lump TV by series+season', () => {
@@ -148,4 +149,58 @@ test('enqueue requires playability and debounce flush posts once', async () => {
     const second = await announce.flushDue(config);
     assert.equal(second.flushed, 0);
     assert.equal(posts.length, 1);
+});
+
+test('test announce groups prefer library titles then samples', () => {
+    const fromIndex = pickTestMediaAnnounceGroups({
+        items: [
+            { mediaType: 'movie', hasFile: true, title: 'Wicker', addedAt: '2026-01-02', ratingKey: 'radarr:1:9' },
+            {
+                mediaType: 'show',
+                arrType: 'sonarr',
+                hasFile: true,
+                title: 'Ted Lasso',
+                addedAt: '2026-01-03',
+                ratingKey: 'sonarr:1:4',
+                episodes: [
+                    { seasonNumber: 1, episodeNumber: 1, title: 'Pilot' },
+                    { seasonNumber: 1, episodeNumber: 2, title: 'Biscuits' },
+                    { seasonNumber: 2, episodeNumber: 1, title: 'Goodbye' },
+                ],
+            },
+        ],
+    });
+    assert.equal(fromIndex[0].title, 'Wicker');
+    assert.equal(fromIndex[0].source, 'library');
+    assert.equal(fromIndex[1].title, 'Ted Lasso');
+    assert.equal(fromIndex[1].seasonNumber, 1);
+    assert.equal(fromIndex[1].items.length, 2);
+
+    const samples = pickTestMediaAnnounceGroups({ items: [] });
+    assert.equal(samples[0].source, 'sample');
+    assert.equal(samples[1].source, 'sample');
+    assert.equal(samples[1].arrType, 'sonarr');
+});
+
+test('postTestAnnounces posts movie and TV immediately', async () => {
+    const posts = [];
+    const announce = createDiscordMediaAnnounce({
+        loadPrefs: async () => ({}),
+        savePrefs: async () => {},
+        getDiscordNotifier: () => ({
+            postEvent: async (_config, payload) => {
+                posts.push(payload);
+                return true;
+            },
+        }),
+    });
+    const result = await announce.postTestAnnounces({
+        discordEnabled: true,
+        discordWebhookUrl: 'https://discord.com/api/webhooks/1/x',
+    }, { index: { items: [] } });
+    assert.equal(result.posted.length, 2);
+    assert.equal(posts.length, 2);
+    assert.match(posts[0].content, /Test preview/);
+    assert.equal(posts[0].title, 'Now available');
+    assert.match(posts[1].description, /Season 1/);
 });

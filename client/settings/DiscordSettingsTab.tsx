@@ -69,6 +69,7 @@ export type DiscordSettingsTabProps = {
     onDiscordMentionNlChange: (value: boolean) => void;
     onQcDiscordDigestEnabledChange: (value: boolean) => void;
     onIntegrityDiscordDigestEnabledChange: (value: boolean) => void;
+    addToast?: (message: string, type?: 'success' | 'error') => void;
 };
 
 export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => (
@@ -108,6 +109,7 @@ export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => 
             onDiscordMediaAnnounceDebounceMinutesChange={props.onDiscordMediaAnnounceDebounceMinutesChange}
             onIntegrityWebhookUsernameChange={props.onIntegrityWebhookUsernameChange}
             onIntegrityWebhookPasswordChange={props.onIntegrityWebhookPasswordChange}
+            addToast={props.addToast}
         />
         <DiscordBotSection
             discordEnabled={props.discordEnabled}

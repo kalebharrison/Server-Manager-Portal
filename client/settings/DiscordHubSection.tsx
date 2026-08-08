@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 
+import { apiFetch } from '../shared/api';
 import { SettingHint } from './SettingHint';
 
 export type DiscordHubSectionProps = {
@@ -37,6 +38,7 @@ export type DiscordHubSectionProps = {
     onDiscordMediaAnnounceDebounceMinutesChange: (value: number) => void;
     onIntegrityWebhookUsernameChange: (value: string) => void;
     onIntegrityWebhookPasswordChange: (value: string) => void;
+    addToast?: (message: string, type?: 'success' | 'error') => void;
 };
 
 export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
@@ -74,7 +76,23 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
     onDiscordMediaAnnounceDebounceMinutesChange,
     onIntegrityWebhookUsernameChange,
     onIntegrityWebhookPasswordChange,
-}) => (
+    addToast,
+}) => {
+    const [isTestingMedia, setIsTestingMedia] = useState(false);
+
+    const handleTestMediaAnnounce = async () => {
+        setIsTestingMedia(true);
+        try {
+            const result = await apiFetch('/api/discord/test-media-announce', { method: 'POST' });
+            addToast?.(result.message || 'Test media posts sent.', 'success');
+        } catch (error) {
+            addToast?.(error instanceof Error ? error.message : 'Test media posts failed.', 'error');
+        } finally {
+            setIsTestingMedia(false);
+        }
+    };
+
+    return (
     <div className="mb-8">
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
             Hub &amp; notifications
@@ -138,6 +156,21 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
             />
             <div className="mt-2"><SettingHint>Groups TV season episodes into one post after the last episode arrives.</SettingHint></div>
         </div>
+        <div className="mb-4">
+            <button
+                type="button"
+                className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors disabled:opacity-50"
+                onClick={handleTestMediaAnnounce}
+                disabled={!discordEnabled || isTestingMedia}
+            >
+                {isTestingMedia ? 'Posting…' : 'Post test movie + TV announce'}
+            </button>
+            <div className="mt-2">
+                <SettingHint>
+                    Uses a real library title when QC index has one, otherwise sample titles. Posts immediately to the saved member webhook and labels them as a test.
+                </SettingHint>
+            </div>
+        </div>
 
         <h4 className="text-sm font-bold uppercase tracking-wide text-muted mt-6 mb-3">Arr import hooks</h4>
         <p className="text-xs text-muted mb-3">
@@ -173,4 +206,5 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
             </div>
         </div>
     </div>
-);
+    );
+};

@@ -70,7 +70,7 @@ export const buildSettingsTabPanelProps = ({
         broadcast: buildBroadcastTabPanelProps({ resources }),
         status: buildStatusTabPanelProps({ values, onChange, resources, setStatusDraft }),
         contact: buildContactTabPanelProps({ values, onChange, handlePushAnnouncement, isPushingAnnouncement }),
-        discord: buildDiscordTabPanelProps({ values, onChange }),
+        discord: buildDiscordTabPanelProps({ values, onChange, addToast }),
         publicAccess: buildPublicAccessTabPanelProps({ values, onChange, resources }),
         branding: buildBrandingTabPanelProps({ values, onChange, addToast }),
         invites: buildInvitesTabPanelProps({ addToast }),

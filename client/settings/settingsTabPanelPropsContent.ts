@@ -154,7 +154,8 @@ export const buildContactTabPanelProps = ({
 export const buildDiscordTabPanelProps = ({
     values,
     onChange,
-}: Pick<ContentTabPanelPropsInput, 'values' | 'onChange'>): SettingsTabPanelProps['discord'] => ({
+    addToast,
+}: Pick<ContentTabPanelPropsInput, 'values' | 'onChange' | 'addToast'>): SettingsTabPanelProps['discord'] => ({
     discordEnabled: values.discordEnabled,
     discordInviteUrl: values.discordInviteUrl,
     discordChatChannelLabel: values.discordChatChannelLabel,
@@ -217,6 +218,7 @@ export const buildDiscordTabPanelProps = ({
     onDiscordMentionNlChange: onChange('discordMentionNl'),
     onQcDiscordDigestEnabledChange: onChange('qcDiscordDigestEnabled'),
     onIntegrityDiscordDigestEnabledChange: onChange('qcIntegrityDiscordDigestEnabled'),
+    addToast,
 });
 
 export const buildPublicAccessTabPanelProps = ({
