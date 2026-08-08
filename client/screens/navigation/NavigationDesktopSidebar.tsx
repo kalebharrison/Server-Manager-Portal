@@ -25,8 +25,8 @@ export const NavigationDesktopSidebar: React.FC<NavigationDesktopSidebarProps> =
     normalizedNavOrder,
     navItemsConfig,
 }) => (
-    <div className="hidden md:flex flex-col w-72 nav-shell border-r p-6 sticky top-0 h-screen overflow-y-auto custom-scrollbar shadow-2xl">
-        <div className="flex flex-col gap-2 mt-4">
+    <div className="hidden md:flex flex-col w-72 nav-shell border-r px-5 py-6 sticky top-0 h-screen shadow-2xl">
+        <div className="flex flex-col gap-1.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
             {normalizedNavOrder.map((key) => {
                 const item = navItemsConfig[key];
                 if (!item) return null;
@@ -36,23 +36,24 @@ export const NavigationDesktopSidebar: React.FC<NavigationDesktopSidebarProps> =
 
                 if (item.href) {
                     return (
-                        <a key={key} href={item.href} target="_blank" rel="noreferrer" className="flex items-center gap-4 p-3 text-muted no-underline rounded-lg transition-all font-medium hover:bg-white/5 hover:text-text">
-                            <item.icon className="w-5 h-5 flex-shrink-0" /> {item.label}
+                        <a key={key} href={item.href} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-3 py-2.5 text-muted no-underline rounded-lg transition-all font-medium hover:bg-white/5 hover:text-text whitespace-nowrap">
+                            <item.icon className="w-5 h-5 shrink-0" />
+                            <span className="min-w-0 truncate">{item.label}</span>
                         </a>
                     );
                 }
 
                 return (
-                    <button key={key} type="button" className={`flex items-center gap-3 p-3 rounded-xl transition-all font-medium bg-transparent border-0 cursor-pointer ${isCurrent ? 'nav-item-active' : 'text-muted hover:bg-white/5 hover:text-text'}`} onClick={(e) => { e.preventDefault(); if (item.onClick) item.onClick(e); else onNavigate(item.route as any); }}>
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                        <span>{item.label}</span>
-                        {item.adminOnly && <span className="ml-auto rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-muted">Admin</span>}
+                    <button key={key} type="button" className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium bg-transparent border-0 cursor-pointer whitespace-nowrap ${isCurrent ? 'nav-item-active' : 'text-muted hover:bg-white/5 hover:text-text'}`} onClick={(e) => { e.preventDefault(); if (item.onClick) item.onClick(e); else onNavigate(item.route as any); }}>
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        <span className="min-w-0 truncate">{item.label}</span>
+                        {item.adminOnly && <span className="ml-auto shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-muted">Admin</span>}
                     </button>
                 );
             })}
         </div>
 
-        <div className="flex flex-col items-center w-full mt-auto pt-10 pb-4 group cursor-default">
+        <div className="flex flex-col items-center w-full shrink-0 mt-4 pt-6 pb-1 group cursor-default">
             <div className={`relative mb-6 ${customLogoUrl ? 'w-48 flex items-center justify-center' : ''}`}>
                 {customLogoUrl ? (
                     <img

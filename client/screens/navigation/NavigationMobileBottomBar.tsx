@@ -21,7 +21,13 @@ const NavButton: React.FC<{
     compact?: boolean;
 }> = ({ itemKey, item, currentRoute, onNavigate, onAfterNavigate, compact }) => {
     const isCurrent = item.route ? isNavCurrent(currentRoute, itemKey, item.route) : false;
-    const labelOverride = itemKey === 'mediastack' ? 'Media' : itemKey === 'request' ? 'Request' : item.label;
+    const labelOverride = itemKey === 'mediastack'
+        ? 'Media'
+        : itemKey === 'request'
+            ? 'Request'
+            : itemKey === 'upgrader'
+                ? 'QC'
+                : item.label;
 
     if (item.href) {
         return (
