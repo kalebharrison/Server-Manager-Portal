@@ -708,6 +708,43 @@ test('hybrid qBit v2 torrent ids still match Arr v1 downloadIds', () => {
     assert.equal(orphans.length, 0);
 });
 
+test('recent Arr imports keep qBit seeds from looking orphaned', () => {
+    const downloadId = '802217a9c9fc716faaf73aebb90d4cd4df1e9a1a';
+    const client = {
+        id: downloadId,
+        hash: downloadId,
+        name: 'Saw.2004.DC.BDREMUX.2160p.HDR.DV8.seleZen',
+        client: 'qbit',
+        state: 'uploading',
+        progress: 1,
+    };
+    assert.equal(findOrphans({
+        arrDownloadIds: [],
+        arrItems: [],
+        importedDownloadIds: [downloadId.toUpperCase()],
+        clientItems: [client],
+    }).length, 0);
+    assert.equal(findOrphans({
+        arrDownloadIds: [],
+        arrItems: [],
+        importedItems: [{ title: 'Saw.2004.DC.BDREMUX.2160p.HDR.DV8.seleZen' }],
+        clientItems: [{ ...client, id: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef', hash: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef' }],
+    }).length, 0);
+    assert.equal(findOrphans({
+        arrDownloadIds: [],
+        arrItems: [],
+        importedItems: [{ title: 'Saw.2004.DC.BDREMUX.2160p.HDR.DV8.seleZen' }],
+        clientItems: [{
+            id: 'ffff',
+            hash: 'ffff',
+            name: 'Saw.2004.Directors.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX.SHD13.mkv',
+            client: 'qbit',
+            state: 'stalledDL',
+            progress: 0.1,
+        }],
+    }).length, 1);
+});
+
 test('short movie titles still match qBit names via year', () => {
     const orphans = findOrphans({
         arrDownloadIds: ['not-the-qbit-hash'],
