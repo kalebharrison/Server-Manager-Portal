@@ -13,7 +13,7 @@ export const FinishStep: React.FC<{ stepNumber: number; form: SetupWizardForm }>
         <h2 className="text-3xl sm:text-4xl font-black text-text tracking-tight mb-4">Ready to launch</h2>
         <p className="text-muted text-base leading-relaxed mb-8">
             Your {form.mediaServerType === 'jellyfin' ? 'Jellyfin' : 'Plex'} server{form.sonarrUrl ? ', Sonarr' : ''}{form.radarrUrl ? ', Radarr' : ''}{form.tautulliUrl ? ', Tautulli' : ''}{form.jellystatUrl ? ', Jellystat' : ''} will be saved.
-            {form.smtpHost ? ' Email notifications enabled.' : ' You can add email later in Settings.'}
+            {form.smtpHost && form.smtpUser && form.smtpPass ? ' Email notifications enabled.' : ' You can add email later in Settings.'}
         </p>
         <div className={`${SETUP_SECTION_CARD_CLASS} text-left text-sm space-y-3`}>
             <p className="flex justify-between gap-4 border-b border-white/5 pb-3"><span className="text-muted">Server</span> <strong className="text-text truncate">{form.mediaServerType === 'jellyfin' ? (form.jellyfinUrl || '—') : (form.serverIdentifier || '—')}</strong></p>

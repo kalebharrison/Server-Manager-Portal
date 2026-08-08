@@ -16,6 +16,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     showLoginServerStats: false,
     publicStatusEnabled: false,
     defaultLibraryIds: [],
+    smtpEnabled: false,
     smtpHost: '',
     smtpPort: 587,
     smtpUser: '',

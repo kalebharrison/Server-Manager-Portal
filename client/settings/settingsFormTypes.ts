@@ -15,6 +15,7 @@ export type SettingsFormValues = {
     showLoginServerStats: boolean;
     publicStatusEnabled: boolean;
     defaultLibraryIds: string[];
+    smtpEnabled: boolean;
     smtpHost: string;
     smtpPort: number;
     smtpUser: string;

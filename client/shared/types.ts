@@ -66,6 +66,7 @@ export interface AppSettings {
     jellyfinUrl?: string;
     jellyfinApiKey?: string;
     checkIntervalMinutes: number;
+    smtpEnabled?: boolean;
     smtpHost?: string;
     smtpPort?: number;
     smtpUser?: string;

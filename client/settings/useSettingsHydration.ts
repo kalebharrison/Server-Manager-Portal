@@ -37,6 +37,7 @@ export const useSettingsHydration = ({
             setJellyfinApiKey: set('jellyfinApiKey'),
             setSelectedServer: set('selectedServer'),
             setCheckInterval: set('checkInterval'),
+            setSmtpEnabled: set('smtpEnabled'),
             setSmtpHost: set('smtpHost'),
             setSmtpPort: set('smtpPort'),
             setSmtpUser: set('smtpUser'),

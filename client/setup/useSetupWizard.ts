@@ -120,6 +120,7 @@ export const useSetupWizard = (onComplete: () => void) => {
                     serverIdentifier: form.serverIdentifier.trim(),
                     plexServerUrl: form.plexServerUrl || undefined,
                     brandTheme: undefined,
+                    smtpEnabled: !!(form.smtpHost && form.smtpUser && form.smtpPass),
                 }),
             });
             sessionStorage.removeItem(SETUP_PLEX_STORAGE_KEY);

@@ -13,6 +13,7 @@ type SettingsHydrationSetters = {
     setJellyfinApiKey: (value: string) => void;
     setSelectedServer: (value: string) => void;
     setCheckInterval: (value: number) => void;
+    setSmtpEnabled: (value: boolean) => void;
     setSmtpHost: (value: string) => void;
     setSmtpPort: (value: number) => void;
     setSmtpUser: (value: string) => void;
@@ -154,6 +155,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setJellyfinApiKey(initialSettings.jellyfinApiKey || '');
     setters.setSelectedServer(initialSettings.serverIdentifier || '');
     setters.setCheckInterval(initialSettings.checkIntervalMinutes || 60);
+    setters.setSmtpEnabled(initialSettings.smtpEnabled !== false);
     setters.setSmtpHost(initialSettings.smtpHost || '');
     setters.setSmtpPort(initialSettings.smtpPort || 587);
     setters.setSmtpUser(initialSettings.smtpUser || '');

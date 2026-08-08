@@ -21,7 +21,7 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
                 <Mail className="w-5 h-5 text-plex mt-0.5" />
                 <div>
                     <h2 className="font-bold text-text">Email notifications</h2>
-                    <p className="text-sm text-muted mt-1">Request and issue updates are always emailed. Link Discord under Preferences to also get bot DMs. Newsletter and expiry notices stay opt-in.</p>
+                    <p className="text-sm text-muted mt-1">Request and issue updates are emailed when the server has email on. Link Discord under Preferences to also get bot DMs. Newsletter and expiry notices stay opt-in.</p>
                 </div>
             </div>
             <div className="flex items-center justify-between gap-4 pl-8">
