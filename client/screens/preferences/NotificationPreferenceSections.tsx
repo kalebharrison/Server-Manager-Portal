@@ -9,12 +9,8 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
         setNewsletterEnabled,
         notifyAccessExpiry,
         setNotifyAccessExpiry,
-        notifyRequestUpdates,
-        setNotifyRequestUpdates,
         notifyIssueReplies,
         setNotifyIssueReplies,
-        notifyWatchlistAvailable,
-        setNotifyWatchlistAvailable,
         saving,
         saveAccountPrefs,
     } = prefs;
@@ -25,7 +21,10 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
         <section className="p-5 flex flex-col gap-4">
             <div className="flex gap-3">
                 <Mail className="w-5 h-5 text-plex mt-0.5" />
-                <div><h2 className="font-bold text-text">Email notifications</h2><p className="text-sm text-muted mt-1">All off until you opt in.</p></div>
+                <div>
+                    <h2 className="font-bold text-text">Email notifications</h2>
+                    <p className="text-sm text-muted mt-1">Request approved and available emails are always sent. Link Discord under Preferences to also get bot DMs. Newsletter, expiry, and issue replies stay opt-in.</p>
+                </div>
             </div>
             <div className="flex items-center justify-between gap-4 pl-8">
                 <div>
@@ -61,22 +60,6 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
             </div>
             <div className="flex items-center justify-between gap-4 pl-8">
                 <div>
-                    <p className="text-sm text-text font-medium">Request updates</p>
-                    <p className="text-xs text-muted mt-1">Email when approved or declined. Linked Discord IDs also get a bot DM.</p>
-                </div>
-                <ToggleRow
-                    checked={notifyRequestUpdates}
-                    disabled={saving || readOnly}
-                    label="Request updates"
-                    onToggle={() => {
-                        const next = !notifyRequestUpdates;
-                        setNotifyRequestUpdates(next);
-                        void saveAccountPrefs({ notifyRequestUpdates: next });
-                    }}
-                />
-            </div>
-            <div className="flex items-center justify-between gap-4 pl-8">
-                <div>
                     <p className="text-sm text-text font-medium">Issue replies</p>
                     <p className="text-xs text-muted mt-1">When an admin replies to your issue</p>
                 </div>
@@ -88,22 +71,6 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
                         const next = !notifyIssueReplies;
                         setNotifyIssueReplies(next);
                         void saveAccountPrefs({ notifyIssueReplies: next });
-                    }}
-                />
-            </div>
-            <div className="flex items-center justify-between gap-4 pl-8">
-                <div>
-                    <p className="text-sm text-text font-medium">Request available</p>
-                    <p className="text-xs text-muted mt-1">When a title you requested — or chose Notify on — becomes available to watch</p>
-                </div>
-                <ToggleRow
-                    checked={notifyWatchlistAvailable}
-                    disabled={saving || readOnly}
-                    label="Request available"
-                    onToggle={() => {
-                        const next = !notifyWatchlistAvailable;
-                        setNotifyWatchlistAvailable(next);
-                        void saveAccountPrefs({ notifyWatchlistAvailable: next });
                     }}
                 />
             </div>

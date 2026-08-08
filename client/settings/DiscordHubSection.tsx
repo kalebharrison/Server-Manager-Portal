@@ -97,9 +97,9 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
             Hub &amp; notifications
             <SettingHint>
-                Member webhook: new/upgraded media after Integrity, plus announcement / broadcast / newsletter mirrors.
-                Admin webhook: QC cleanup when something is actually removed, and integrity failures.
-                Request approve/decline, issue replies, and “now available” are bot DMs to the linked member — not channel posts.
+                Request flow: approve email is always sent (no opt-out). When the file is ready, they get the available email, and the member webhook posts the New media card after Integrity.
+                Linked Discord IDs get the same approve + available notices as bot DMs.
+                Member webhook also mirrors announcements. Admin webhook is QC cleanup + integrity failures only.
             </SettingHint>
         </h3>
         <label className="flex items-center gap-3 mb-4 cursor-pointer">
