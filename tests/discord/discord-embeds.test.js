@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
     DISCORD_COLORS,
+    listEmbed,
     mediaEmbed,
     mediaTypeLabel,
     parseCustomId,
@@ -68,6 +69,23 @@ test('mediaEmbed largeImage uses setImage', () => {
         posterPath: '/poster.jpg',
     }, { largeImage: true }).toJSON();
     assert.equal(data.image.url, 'https://image.tmdb.org/t/p/w780/poster.jpg');
+});
+
+test('listEmbed keeps description-only bodies without Nothing to show', () => {
+    const data = listEmbed({
+        title: 'Your stats',
+        description: 'Portal user: Kaleb\nMembership: active',
+        lines: [],
+    }).toJSON();
+    assert.match(data.description, /Portal user: Kaleb/);
+    assert.doesNotMatch(data.description, /Nothing to show/);
+});
+
+test('listEmbed numbers lines and falls back when empty', () => {
+    const numbered = listEmbed({ title: 'Status', lines: ['Plex: online'] }).toJSON();
+    assert.match(numbered.description, /\*\*1\.\*\* Plex: online/);
+    const empty = listEmbed({ title: 'Empty' }).toJSON();
+    assert.equal(empty.description, '_Nothing to show._');
 });
 
 test('parseCustomId splits kind and parts', () => {
