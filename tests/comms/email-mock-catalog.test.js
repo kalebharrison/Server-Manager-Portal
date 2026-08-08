@@ -23,7 +23,12 @@ const EXPECTED_IDS = [
 
 test('mock catalog covers every outbound email type', () => {
     const catalog = buildMockEmailCatalog({
-        config: { serverIdentifier: 'LostWaldo', contactEmail: 'owner@example.com' },
+        config: {
+            smtpFrom: 'Requests - LostWaldo <requests@lostwaldo.net>',
+            publicDomain: 'https://plex-beta.lostwaldo.net',
+            serverIdentifier: 'ABFAADCCEEA3EA4383616E4A3DCDEE88A1086E2F',
+            contactEmail: 'owner@example.com',
+        },
         to: 'kalebrharrison@gmail.com',
     });
     assert.deepEqual(catalog.map((entry) => entry.id), EXPECTED_IDS);
@@ -32,9 +37,16 @@ test('mock catalog covers every outbound email type', () => {
         assert.ok(String(entry.html || '').trim(), `${entry.id} is missing html`);
         assert.match(entry.html, /color-scheme" content="light"/, `${entry.id} is missing light chrome`);
         assert.match(entry.html, /#f4f6f9/, `${entry.id} is missing portal background`);
-        assert.doesNotMatch(entry.html, /cid:logo/i, `${entry.id} should not inline a logo`);
+        assert.match(entry.html, /cid:logo/, `${entry.id} is missing constrained logo`);
+        assert.match(entry.html, /max-height:36px/, `${entry.id} logo is not size-capped`);
+        assert.match(entry.html, /LostWaldo/, `${entry.id} is missing friendly server name`);
+        assert.doesNotMatch(entry.html, /font-size:13px[^>]*>\s*ABFAADCCEEA3/i, `${entry.id} used a Plex machine id as the heading`);
         assert.doesNotMatch(entry.html, /PLEX SERVER/, `${entry.id} still uses the old dark header`);
     }
+    const available = catalog.find((entry) => entry.id === 'request_available');
+    assert.match(available.html, /Open in Portal/);
+    assert.match(available.html, /Watch on Plex/);
+    assert.match(available.html, /\/discovery\/tv\/95396/);
 });
 
 test('sendMockEmailCatalog delivers every template to the requested address', async () => {

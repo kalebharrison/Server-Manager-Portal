@@ -11,9 +11,11 @@ import {
     isSmtpReady,
 } from '../../lib/comms/smtp-ready.js';
 
-test('test mail html does not request an inline logo', () => {
-    assert.equal(shouldAttachInlineLogo(buildSmtpTestHtml()), false);
-    assert.equal(shouldAttachInlineLogo('<img src="cid:logo" alt="">'), true);
+test('test mail html requests a constrained inline logo', () => {
+    const html = buildSmtpTestHtml({ smtpFrom: 'LostWaldo <a@b.c>' });
+    assert.equal(shouldAttachInlineLogo(html), true);
+    assert.match(html, /max-height:36px/);
+    assert.equal(shouldAttachInlineLogo('<p>no logo</p>'), false);
 });
 
 test('smtp helpers treat missing smtpEnabled as on', () => {

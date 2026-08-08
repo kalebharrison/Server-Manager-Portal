@@ -28,16 +28,23 @@ test('request approved always emails even when the user opted out', async () => 
         },
     });
 
-    await notify.notifyRequestUpdate({}, {
+    await notify.notifyRequestUpdate({
+        publicDomain: 'https://plex-beta.lostwaldo.net',
+        smtpFrom: 'Requests - LostWaldo <requests@lostwaldo.net>',
+    }, {
         requestedBy: { id: 'u1' },
         title: 'Dune',
         statusLabel: 'approved',
         requestId: 9,
+        mediaType: 'movie',
+        tmdbId: 438631,
     });
 
     assert.equal(notices.length, 1);
     assert.equal(notices[0].type, 'request_update');
-    assert.match(notices[0].subject, /approved/);
+    assert.match(notices[0].subject, /\[LostWaldo\] Request approved/);
+    assert.match(notices[0].html, /\/discovery\/movie\/438631/);
+    assert.match(notices[0].html, /Open in Portal/);
     assert.equal(dms.length, 1);
     assert.equal(dms[0].discordId, '123456789012345678');
 });

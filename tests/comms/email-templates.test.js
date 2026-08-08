@@ -28,7 +28,8 @@ test('expiry and invite mail share the light portal chrome', () => {
     });
     for (const html of [warning, invite]) {
         assert.match(html, /color-scheme" content="light"/);
-        assert.doesNotMatch(html, /cid:logo/i);
+        assert.match(html, /cid:logo/);
+        assert.match(html, /max-height:36px/);
         assert.doesNotMatch(html, /background-color: #282A2D/);
     }
 });
