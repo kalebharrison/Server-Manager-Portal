@@ -45,9 +45,8 @@ test('embed labels upgrades vs new and lists episodes', () => {
             { episodeNumber: 2, episodeTitle: 'Next' },
         ],
     });
-    assert.equal(ready.title, 'Show (2022)');
-    assert.match(ready.description, /Office mystery/);
-    assert.match(ready.description, /Season 1 is on the server/);
+    assert.equal(ready.author.name, 'Show available');
+    assert.equal(ready.title, 'Show (S01E01–E02)');
     assert.ok(ready.fields.some((field) => field.name === 'Episodes' && /Pilot/.test(field.value)));
 
     const filenames = buildMediaAnnounceEmbed({
@@ -59,18 +58,22 @@ test('embed labels upgrades vs new and lists episodes', () => {
             { episodeNumber: 8, episodeTitle: 'Season04/Bravest.Warriors-S04E08-x265.AAC.mkv' },
         ],
     });
-    const episodeField = filenames.fields.find((field) => field.name === 'Episodes');
-    assert.match(episodeField.value, /E01–E08/);
-    assert.doesNotMatch(episodeField.value, /\.mkv/);
+    assert.equal(filenames.title, 'Bravest Warriors (S04E01–E08)');
+    assert.equal(filenames.fields.some((field) => field.name === 'Episodes'), false);
 
     const upgraded = buildMediaAnnounceEmbed({
         title: 'Movie',
         arrType: 'radarr',
         isUpgrade: true,
         items: [{ title: 'Movie' }],
+        thumbUrl: 'https://image.tmdb.org/t/p/w185/poster.jpg',
+    }, {
+        links: [{ label: 'Plex', url: 'https://app.plex.tv/desktop/#!/server/x/details?key=%2Flibrary%2Fmetadata%2F1' }],
     });
+    assert.equal(upgraded.author.name, 'Upgraded movie available');
     assert.equal(upgraded.title, 'Movie');
-    assert.ok(upgraded.fields.some((field) => field.name === 'Status' && field.value === 'Upgraded'));
+    assert.match(upgraded.thumbnail, /w500/);
+    assert.match(upgraded.fields.find((field) => field.name === 'Links').value, /\[Plex\]/);
 });
 
 test('enqueue requires playability and debounce flush posts once', async () => {
@@ -135,7 +138,7 @@ test('enqueue requires playability and debounce flush posts once', async () => {
     const first = await announce.flushDue(config);
     assert.equal(first.flushed, 1);
     assert.equal(posts.length, 1);
-    assert.equal(posts[0].fields.find((field) => field.name === 'Status')?.value, 'Upgraded');
+    assert.equal(posts[0].author.name, 'Upgraded show available');
 
     // Dedupes identical content
     prefs.discordMediaAnnouncePending = [{
@@ -210,6 +213,11 @@ test('postTestAnnounces posts movie and TV immediately', async () => {
     const announce = createDiscordMediaAnnounce({
         loadPrefs: async () => ({}),
         savePrefs: async () => {},
+        resolveLibraryLinks: async (_config, query) => (
+            query.mediaType === 'movie'
+                ? [{ label: 'Plex', url: 'https://app.plex.tv/desktop/#!/server/x/details?key=%2Flibrary%2Fmetadata%2F1' }]
+                : [{ label: 'Jellyfin', url: 'https://jf.example/web/#/details?id=abc' }]
+        ),
         getDiscordNotifier: () => ({
             postEvent: async (_config, payload) => {
                 posts.push(payload);
@@ -224,8 +232,11 @@ test('postTestAnnounces posts movie and TV immediately', async () => {
     assert.equal(result.posted.length, 2);
     assert.equal(posts.length, 2);
     assert.equal(posts[0].content, undefined);
-    assert.equal(posts[0].title, 'Dune (2021)');
+    assert.equal(posts[0].title, 'Dune');
+    assert.equal(posts[0].author.name, 'Movie available');
     assert.equal(posts[0].footer, 'Test preview — not a new import');
     assert.ok(posts[0].thumbnail);
-    assert.match(posts[1].description, /Season 1/);
+    assert.match(posts[0].fields.find((field) => field.name === 'Links').value, /\[Plex\]/);
+    assert.equal(posts[1].title, 'Severance (S01E01–E03)');
+    assert.match(posts[1].fields.find((field) => field.name === 'Links').value, /\[Jellyfin\]/);
 });
