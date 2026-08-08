@@ -68,8 +68,8 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             {
                 id: 'contact',
                 label: 'Support',
-                blurb: 'Support contact and the portal announcement banner.',
-                keywords: ['email', 'support', 'announcement', 'banner', 'contact'],
+                blurb: 'Need Help mailto (public), expiry extension link, and how portal mail replies stay in-app.',
+                keywords: ['email', 'support', 'announcement', 'banner', 'contact', 'mailto', 'reply', 'inbound', 'need help'],
             },
         ],
     },
@@ -166,8 +166,8 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             {
                 id: 'smtp',
                 label: 'Email Delivery',
-                blurb: 'SMTP server used for portal email.',
-                keywords: ['mail', 'smtp', 'test'],
+                blurb: 'Outbound SMTP. Request and issue replies return to the portal, not Contact Email.',
+                keywords: ['mail', 'smtp', 'test', 'reply', 'inbound', 'parse'],
             },
             {
                 id: 'newsletter',

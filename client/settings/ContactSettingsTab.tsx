@@ -26,23 +26,47 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
 }) => (
     <div className="mb-8 animate-fade-in space-y-4">
         <SettingsCollapseSection
-            title="Contact Details"
-            subtitle="Shown in the Need Help box on the user dashboard"
+            title="Need Help box"
+            subtitle="Public member dashboard — this can expose your inbox"
+            defaultOpen
         >
+            <p className="text-sm text-muted mb-4">
+                Members see Discord (if enabled) and an Email button when an address is set.
+                That button is a normal mailto to the address below. Leave it empty to hide Email
+                and keep support in Discord or in-portal issues.
+            </p>
             <div className="mb-4">
-                <label htmlFor="contactEmail">Email Address (Optional)</label>
+                <label htmlFor="contactEmail">Public support email</label>
                 <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactEmail" type="email" value={contactEmail} onChange={(e) => onContactEmailChange(e.target.value)} placeholder="e.g. admin@example.com" />
                 <div className="mt-2">
-                    <SettingHint>Owner inbox for playback reports and expiry contact links — not the SMTP username. Request and issue replies go back into the portal, not this address.</SettingHint>
+                    <SettingHint>
+                        Also the owner inbox for playback reports. Not the SMTP username, and not
+                        Reply-To on request or issue mail.
+                    </SettingHint>
                 </div>
             </div>
             <div>
-                <label htmlFor="contactUrl">Access Extension Link (Optional)</label>
-                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactUrl" type="text" value={contactUrl} onChange={(event) => onContactUrlChange(event.target.value)} placeholder="mailto:admin@example.com or https://example.com/support" />
+                <label htmlFor="contactUrl">Access extension link</label>
+                <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactUrl" type="text" value={contactUrl} onChange={(event) => onContactUrlChange(event.target.value)} placeholder="https://discord.gg/… or mailto:admin@example.com" />
                 <div className="mt-2">
-                    <SettingHint>Destination used by the Request Extension button in expiry emails.</SettingHint>
+                    <SettingHint>
+                        Request Extension button in expiry emails. If empty, those emails fall back
+                        to the public support email.
+                    </SettingHint>
                 </div>
             </div>
+        </SettingsCollapseSection>
+
+        <SettingsCollapseSection
+            title="Portal mail replies"
+            subtitle="Separate from the Need Help mailto"
+            defaultOpen
+        >
+            <ul className="text-sm text-muted space-y-2 list-disc pl-5">
+                <li>Request approved, available, and issue notices use a portal Reply-To on the reply subdomain. Replies land in the portal (and Logs), not this inbox.</li>
+                <li>Newsletter, broadcast, and expiry mail have no Reply-To, so members cannot write back to From.</li>
+                <li>Confirm the loop with Email Delivery → Send Test, then reply. Check Settings → Logs for Inbound Email Received.</li>
+            </ul>
         </SettingsCollapseSection>
 
         <SettingsCollapseSection

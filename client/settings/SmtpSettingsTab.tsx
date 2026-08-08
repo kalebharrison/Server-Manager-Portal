@@ -73,7 +73,7 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
         </label>
         <div className="mt-1 mb-4">
             <SettingHint>
-                Master switch for outbound mail. Admins only skips every member address — use it while testing. SMTP tests still send to the address you type. Member mail goes to each user's contact email, then their account email. Owner mail uses Contact Email. Discord DMs keep working either way.
+                Master switch for outbound mail. Admins only skips member addresses while you test. SMTP tests still send to the address you type. Member notices go to each user's contact email, then account email. Playback reports go to Support → public support email. Discord DMs keep working either way.
             </SettingHint>
         </div>
         <div className={!smtpEnabled ? 'opacity-50 pointer-events-none' : undefined}>
@@ -101,8 +101,15 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
                 <div className="flex-2">
                     <label htmlFor="smtpFrom">Sender Address (From)</label>
                     <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="smtpFrom" type="text" value={smtpFrom} onChange={e => onSmtpFromChange(e.target.value)} placeholder="Server Manager Portal <noreply@yourdomain.com>" disabled={!smtpEnabled} />
-                    <div className="mt-2">
-                        <SettingHint>Request and issue mail uses Reply-To on reply.lostwaldo.net. A successful test reply shows up in Settings → Logs.</SettingHint>
+                    <p className="text-xs text-muted mt-2">
+                        From is send-only. Request, issue, available, and this Send Test use a portal Reply-To
+                        on the reply subdomain. Newsletter, broadcast, and expiry have no Reply-To.
+                    </p>
+                    <div className="mt-1">
+                        <SettingHint>
+                            A successful test reply shows Inbound Email Received in Settings → Logs. Support →
+                            public support email is not used as Reply-To.
+                        </SettingHint>
                     </div>
                 </div>
                 <div className="form-group flex-1 checkbox-group">
@@ -141,7 +148,10 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
                         {isSendingAllMocks ? 'Sending mocks...' : 'Send all mock emails'}
                     </button>
                 </div>
-                <SettingHint>Preview HTML opens every template in the browser with your branding logo. Use send only when you want a real inbox check.</SettingHint>
+                <SettingHint>
+                    Preview HTML opens every template in the browser. Send Test also checks inbound: reply to
+                    that message and look in Settings → Logs. Send all mocks is a full inbox sweep.
+                </SettingHint>
             </div>
         </div>
     </div>
