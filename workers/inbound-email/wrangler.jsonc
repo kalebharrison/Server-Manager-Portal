@@ -1,0 +1,9 @@
+{
+  "name": "portal-inbound-email",
+  "main": "index.js",
+  "compatibility_date": "2026-08-08",
+  "workers_dev": false,
+  "vars": {
+    "PORTAL_WEBHOOK_URL": "https://plex-beta.lostwaldo.net/api/webhooks/mailjet-inbound"
+  }
+}

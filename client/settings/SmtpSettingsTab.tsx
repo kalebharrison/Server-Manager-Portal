@@ -102,7 +102,7 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
                     <label htmlFor="smtpFrom">Sender Address (From)</label>
                     <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="smtpFrom" type="text" value={smtpFrom} onChange={e => onSmtpFromChange(e.target.value)} placeholder="Server Manager Portal <noreply@yourdomain.com>" disabled={!smtpEnabled} />
                     <div className="mt-2">
-                        <SettingHint>Request and issue mail uses Reply-To on the reply subdomain so members never see the owner inbox. A successful test reply shows up in Settings → Logs.</SettingHint>
+                        <SettingHint>Request and issue mail uses Reply-To on reply.lostwaldo.net. A successful test reply shows up in Settings → Logs.</SettingHint>
                     </div>
                 </div>
                 <div className="form-group flex-1 checkbox-group">
