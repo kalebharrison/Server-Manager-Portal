@@ -228,13 +228,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                 {section === 'qc-hunt' && (
                     <div className="space-y-4">
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Enable Quality Control</h4>
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Quality Control</h4>
                             <label className="flex items-center justify-between gap-4">
-                                <span className="font-semibold">Enable Quality Control</span>
+                                <span className="font-semibold">Turn on Quality Control</span>
                                 <input type="checkbox" className="h-4 w-4 accent-plex" checked={enabled} onChange={(event) => onEnabledChange(event.target.checked)} />
                             </label>
                             <label className="flex items-center justify-between gap-4">
-                                <span className="font-semibold">Enable auto-hunt</span>
+                                <span className="font-semibold">Automatically hunt upgrades</span>
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 accent-plex"
@@ -245,10 +245,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             </label>
                         </div>
                     <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                        <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Hunt preferences</h4>
+                        <h4 className="text-sm font-bold uppercase tracking-wide text-muted">What to hunt</h4>
                         <div className="space-y-3">
                             <label className="flex items-center justify-between gap-4">
-                                <span className="font-semibold">Hunt missing aired episodes</span>
+                                <span className="font-semibold">Missing TV episodes that have aired</span>
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 accent-plex"
@@ -258,7 +258,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="flex items-center justify-between gap-4">
-                                <span className="font-semibold">Hunt digitally available movies</span>
+                                <span className="font-semibold">Movies that are digitally available</span>
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 accent-plex"
@@ -269,7 +269,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             </label>
                         </div>
                         <label className="text-sm font-semibold block max-w-md">
-                            Minimum file size (GB)
+                            Ignore files smaller than (GB)
                             <input
                                 type="number"
                                 min="0"
@@ -280,12 +280,12 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                         <div className="pt-2 border-t border-border/40 space-y-3">
-                            <p className="text-xs font-bold uppercase tracking-wide text-muted">Portal preference boosts</p>
+                            <p className="text-xs font-bold uppercase tracking-wide text-muted">When choosing an upgrade, prefer</p>
                             {([
-                                ['preferDolbyVisionHdr', 'Prefer Dolby Vision + HDR'],
-                                ['preferAtmos', 'Prefer Atmos / TrueHD'],
-                                ['preferRemux', 'Prefer Remux'],
-                                ['preferSeasonPacks', 'Prefer season packs (TV, never downgrade res)'],
+                                ['preferDolbyVisionHdr', 'Dolby Vision + HDR'],
+                                ['preferAtmos', 'Atmos / TrueHD'],
+                                ['preferRemux', 'Remux'],
+                                ['preferSeasonPacks', 'Season packs (never lower resolution)'],
                             ] as const).map(([key, label]) => (
                                 <label key={key} className="flex items-center justify-between gap-4">
                                     <span className="text-sm font-semibold">{label}</span>
@@ -302,7 +302,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
 
                         <div className="pt-2 border-t border-border/40 space-y-4">
                             <label className="text-sm font-semibold block max-w-md">
-                                Hunt intensity
+                                How hard to hunt
                                 <select
                                     className={selectClassName}
                                     value={upgraderHuntIntensity || 'balanced'}
@@ -316,7 +316,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             </label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <label className="text-sm font-semibold">
-                                    Maximum actions per hour
+                                    Max upgrades per hour
                                     <input
                                         type="number"
                                         min="1"
@@ -330,7 +330,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Max downloads per library
+                                    Max downloads at once per library
                                     <input
                                         type="number"
                                         min="1"
@@ -344,7 +344,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Minimum score delta
+                                    Min score gain to upgrade
                                     <input
                                         type="number"
                                         min="0"
@@ -365,9 +365,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
 
                 {section === 'qc-downloads' && (
                     <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                        <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
+                        <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Stuck download cleanup</h4>
                         <label className="flex items-center justify-between gap-4">
-                            <span className="font-semibold">Enable cleanup</span>
+                            <span className="font-semibold">Automatically remove stuck downloads</span>
                             <input
                                 type="checkbox"
                                 className="h-4 w-4 accent-plex"
@@ -377,7 +377,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
                         <label className="text-sm font-semibold block max-w-md">
-                            Aggression
+                            How quickly to remove them
                             <select
                                 className={selectClassName}
                                 value={qcCleanupAggression || 'balanced'}
@@ -392,7 +392,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             <label className="text-sm font-semibold">
-                                Strikes before kill
+                                Warnings before remove
                                 <input
                                     type="number"
                                     min="1"
@@ -406,7 +406,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="text-sm font-semibold">
-                                Metadata stuck (min / strike)
+                                Stuck getting torrent info (minutes)
                                 <input
                                     type="number"
                                     min="1"
@@ -420,7 +420,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="text-sm font-semibold">
-                                Stalled (hours / strike)
+                                No progress (hours)
                                 <input
                                     type="number"
                                     min="1"
@@ -434,7 +434,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="text-sm font-semibold">
-                                Min speed (KB/s)
+                                Too slow if under (KB/s)
                                 <input
                                     type="number"
                                     min="0"
@@ -448,7 +448,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="text-sm font-semibold">
-                                Age before slow check (hours)
+                                Wait this long before slow check (hours)
                                 <input
                                     type="number"
                                     min="0"
@@ -462,7 +462,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="text-sm font-semibold">
-                                Waiting to import (min / strike)
+                                Finished download, not in library yet (minutes)
                                 <input
                                     type="number"
                                     min="1"
@@ -476,7 +476,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="text-sm font-semibold">
-                                Orphan (min / strike)
+                                In downloader with no Arr job (minutes)
                                 <input
                                     type="number"
                                     min="0"
@@ -490,7 +490,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="text-sm font-semibold">
-                                Re-search wait (hours)
+                                Wait between re-searches (hours)
                                 <input
                                     type="number"
                                     min="1"
@@ -504,7 +504,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="text-sm font-semibold">
-                                Snooze duration (hours)
+                                How long a snooze lasts (hours)
                                 <input
                                     type="number"
                                     min="1"
@@ -524,9 +524,9 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                 {section === 'qc-integrity' && (
                     <div className="space-y-4">
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Integrity</h4>
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library checks</h4>
                             <label className="flex items-center justify-between gap-4">
-                                <span className="font-semibold">Enable integrity</span>
+                                <span className="font-semibold">Scan library files for problems</span>
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 accent-plex"
@@ -537,8 +537,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             </label>
                             <label className="flex items-center justify-between gap-4">
                                 <span className="min-w-0">
-                                    <span className="font-semibold">Enable automation</span>
-                                    <p className="text-xs text-muted font-normal mt-0.5">Can delete bad files and re-search. Prefer dry-run first.</p>
+                                    <span className="font-semibold">Delete bad files and re-search replacements</span>
+                                    <p className="text-xs text-muted font-normal mt-0.5">Prefer dry-run on the QC dashboard first.</p>
                                 </span>
                                 <input
                                     type="checkbox"
@@ -551,15 +551,15 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         </div>
 
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Arr webhooks</h4>
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Arr import hooks</h4>
                             <p className="text-xs text-muted">
-                                Connect paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
+                                Point Arr at: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
                                 <code className="text-[11px]">/triggers/radarr</code>,{' '}
                                 <code className="text-[11px]">/triggers/lidarr</code>
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <label className="text-sm font-semibold">
-                                    Username
+                                    Hook username
                                     <input
                                         type="text"
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
@@ -570,7 +570,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Password
+                                    Hook password
                                     <input
                                         type="password"
                                         className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
@@ -586,12 +586,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         </div>
 
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Scan options</h4>
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">What to check</h4>
                             <label className="text-sm font-semibold block">
-                                Path maps
-                                <p className="text-xs text-muted font-normal mt-0.5 mb-2">One per line: Arr path = container path</p>
+                                Path translation (Arr path = path inside this container)
                                 <textarea
-                                    className="w-full min-h-[90px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
+                                    className="mt-2 w-full min-h-[90px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
                                     disabled={!enabled || !integrityEnabled}
                                     value={(integrityPathMaps || []).map((entry) => `${entry.from}=${entry.to}`).join('\n')}
                                     placeholder={'/movies=/media/movies\n/tv=/media/tv'}
@@ -614,7 +613,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="flex items-center justify-between gap-4">
-                                <span className="font-semibold">Require audio</span>
+                                <span className="font-semibold">Fail files with no audio track</span>
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 accent-plex"
@@ -624,7 +623,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="flex items-center justify-between gap-4">
-                                <span className="font-semibold">Include music</span>
+                                <span className="font-semibold">Also scan music libraries</span>
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 accent-plex"
@@ -634,7 +633,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="flex items-center justify-between gap-4">
-                                <span className="font-semibold">Full-file hash</span>
+                                <span className="font-semibold">Hash the whole file (slower, stricter)</span>
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 accent-plex"
@@ -644,10 +643,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                             <label className="flex items-center justify-between gap-4">
-                                <span className="min-w-0">
-                                    <span className="font-semibold">Soft decode timeouts</span>
-                                    <p className="text-xs text-muted font-normal mt-0.5">Timeouts requeue instead of failing the file.</p>
-                                </span>
+                                <span className="font-semibold">Retry later if a playback check times out</span>
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 accent-plex"
@@ -659,10 +655,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                         </div>
 
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Tuning</h4>
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Scan speed &amp; limits</h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <label className="text-sm font-semibold">
-                                    Fingerprint workers
+                                    Files fingerprinting at once
                                     <input
                                         type="number"
                                         min="1"
@@ -673,7 +669,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Playback workers
+                                    Files playback-checking at once
                                     <input
                                         type="number"
                                         min="1"
@@ -684,7 +680,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Nightly scan hour (0–23)
+                                    Nightly scan start hour (0–23)
                                     <input
                                         type="number"
                                         min="0"
@@ -696,7 +692,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Decode sample (seconds)
+                                    Seconds of video to test-play
                                     <input
                                         type="number"
                                         min="1"
@@ -707,7 +703,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Decode timeout (ms)
+                                    Give up on a test-play after (ms)
                                     <input
                                         type="number"
                                         min="1000"
@@ -719,7 +715,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Decode retries
+                                    Extra tries after a failed test-play
                                     <input
                                         type="number"
                                         min="0"
@@ -730,8 +726,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Pause while this many are watching
-                                    <p className="text-xs text-muted font-normal mt-0.5">Plex streams. 0 = ignore Plex activity.</p>
+                                    Pause scans when this many are watching
                                     <input
                                         type="number"
                                         min="0"
@@ -742,7 +737,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Stop after findings
+                                    Stop a scan after this many bad files
                                     <input
                                         type="number"
                                         min="1"
@@ -753,7 +748,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Stop after library %
+                                    Stop a scan after this % of library is bad
                                     <input
                                         type="number"
                                         min="0.1"
