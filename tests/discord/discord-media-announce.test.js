@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    buildExternalMediaLinks,
     buildMediaAnnounceContentHash,
     buildMediaAnnounceEmbed,
     buildMediaAnnounceGroupKey,
@@ -67,13 +68,31 @@ test('embed labels upgrades vs new and lists episodes', () => {
         isUpgrade: true,
         items: [{ title: 'Movie' }],
         thumbUrl: 'https://image.tmdb.org/t/p/w185/poster.jpg',
+        tmdbId: 438631,
+        imdbId: 'tt1160419',
     }, {
         links: [{ label: 'Plex', url: 'https://app.plex.tv/desktop/#!/server/x/details?key=%2Flibrary%2Fmetadata%2F1' }],
     });
     assert.equal(upgraded.author.name, 'Upgraded movie available');
     assert.equal(upgraded.title, 'Movie');
-    assert.match(upgraded.thumbnail, /w500/);
-    assert.match(upgraded.fields.find((field) => field.name === 'Links').value, /\[Plex\]/);
+    assert.match(upgraded.image, /w780/);
+    assert.equal(upgraded.thumbnail, undefined);
+    assert.match(upgraded.fields.find((field) => field.name === 'Links').value, /\[Plex\].*\[TMDb\].*\[IMDb\].*\[Trakt\]/);
+});
+
+test('external links match Notifiarr movie vs show sets', () => {
+    assert.deepEqual(buildExternalMediaLinks({
+        arrType: 'radarr',
+        tmdbId: 11,
+        imdbId: 'tt0076759',
+    }).map((link) => link.label), ['TMDb', 'IMDb', 'Trakt']);
+    assert.deepEqual(buildExternalMediaLinks({
+        arrType: 'sonarr',
+        mediaType: 'show',
+        tvdbId: 99,
+        tmdbId: 12,
+        imdbId: 'tt1234567',
+    }).map((link) => link.label), ['TVDb', 'IMDb', 'Trakt']);
 });
 
 test('enqueue requires playability and debounce flush posts once', async () => {
@@ -235,8 +254,8 @@ test('postTestAnnounces posts movie and TV immediately', async () => {
     assert.equal(posts[0].title, 'Dune');
     assert.equal(posts[0].author.name, 'Movie available');
     assert.equal(posts[0].footer, 'Test preview — not a new import');
-    assert.ok(posts[0].thumbnail);
-    assert.match(posts[0].fields.find((field) => field.name === 'Links').value, /\[Plex\]/);
+    assert.ok(posts[0].image);
+    assert.match(posts[0].fields.find((field) => field.name === 'Links').value, /\[Plex\].*\[TMDb\].*\[IMDb\].*\[Trakt\]/);
     assert.equal(posts[1].title, 'Severance (S01E01–E03)');
-    assert.match(posts[1].fields.find((field) => field.name === 'Links').value, /\[Jellyfin\]/);
+    assert.match(posts[1].fields.find((field) => field.name === 'Links').value, /\[Jellyfin\].*\[TVDb\].*\[IMDb\].*\[Trakt\]/);
 });
