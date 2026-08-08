@@ -17,6 +17,7 @@ const intentionallyPublic = [
     /^GET \/api\/invites\/:code\/info$/,
     /^POST \/api\/invites\/:code\/claim$/,
     /^GET \/api\/jellyfin\/branding\/(splash|icon|favicon)$/,
+    /^POST \/api\/webhooks\/mailjet-inbound$/,
 ];
 
 const walkJsFiles = async (dir) => {
