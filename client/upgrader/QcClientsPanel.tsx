@@ -158,7 +158,7 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
             ]);
             setPolicy(extData || null);
             if (force || !editorHydratedRef.current) {
-                setText((extData?.union || []).join('\n'));
+                setText((extData?.union || []).join(', '));
                 editorHydratedRef.current = true;
             }
             setSnapshot(snap || null);
@@ -385,10 +385,12 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                                 <div>
                                     <div className="text-muted uppercase tracking-wide">Network</div>
                                     <div className="mt-0.5 text-text font-semibold">
-                                        {sabHealth?.dnslookup || sabHealth?.publicIpv4 || '—'}
+                                        {sabHealth?.dnslookup === 'OK'
+                                            ? 'DNS OK'
+                                            : sabHealth?.dnslookup || sabHealth?.publicIpv4 || '—'}
                                     </div>
                                     <div className="text-muted mt-0.5">
-                                        {sabHealth?.publicIpv4 && sabHealth?.dnslookup ? sabHealth.publicIpv4 : 'Usenet DNS / IP'}
+                                        {sabHealth?.publicIpv4 || 'Public IP unknown'}
                                     </div>
                                 </div>
                                 <div>
@@ -436,8 +438,7 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                         Blocked extensions
                         <SettingHint>
                             Apply pushes one shared list to every configured client (qBit excluded filenames,
-                            SAB unwanted extensions). Comma or newline separated
-                            (e.g. exe, bat, lnk).
+                            SAB unwanted extensions). Comma-separated (e.g. exe, bat, lnk).
                         </SettingHint>
                     </h2>
                     <p className="text-xs text-muted mt-1">
@@ -477,11 +478,12 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
 
                 <label className="block text-sm font-semibold">
                     Edit shared list
-                    <textarea
-                        className="mt-2 w-full min-h-[120px] p-3 rounded-lg border border-border bg-background text-text text-sm font-mono"
+                    <input
+                        type="text"
+                        className="mt-2 w-full p-3 rounded-lg border border-border bg-background text-text text-sm font-mono"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        placeholder={"exe\nbat\nlnk"}
+                        placeholder="exe, bat, lnk"
                         disabled={!clientsConfigured}
                     />
                 </label>

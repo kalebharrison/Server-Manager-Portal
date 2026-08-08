@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createQbitClient } from '../../lib/upgrader/download-clients/qbittorrent.js';
-import { createSabClient } from '../../lib/upgrader/download-clients/sabnzbd.js';
+import { createSabClient, interpretSabDnsLookup } from '../../lib/upgrader/download-clients/sabnzbd.js';
 
 test('qBit network health treats disconnected and dead DHT as down', async () => {
     const disconnected = createQbitClient({
@@ -73,7 +73,37 @@ test('qBit network health treats disconnected and dead DHT as down', async () =>
     assert.equal(up.ok, true);
 });
 
+test('interpretSabDnsLookup accepts boolean and OK/Failed strings', () => {
+    assert.deepEqual(interpretSabDnsLookup(true), { failed: false, label: 'OK' });
+    assert.deepEqual(interpretSabDnsLookup(false), { failed: true, label: 'Failed' });
+    assert.deepEqual(interpretSabDnsLookup('OK'), { failed: false, label: 'OK' });
+    assert.deepEqual(interpretSabDnsLookup('Failed'), { failed: true, label: 'Failed' });
+    assert.deepEqual(interpretSabDnsLookup('true'), { failed: false, label: 'OK' });
+    assert.deepEqual(interpretSabDnsLookup('google.com'), { failed: false, label: 'google.com' });
+    assert.deepEqual(interpretSabDnsLookup(''), { failed: false, label: null });
+});
+
 test('SAB network health treats DNS and server errors as down', async () => {
+    const sabDnsBool = createSabClient({
+        fetchWithTimeout: async () => ({
+            ok: true,
+            json: async () => ({ status: { dnslookup: true, publicipv4: '1.2.3.4', servers: [] } }),
+        }),
+    });
+    const dnsOk = await sabDnsBool.getNetworkHealth({ qcSabUrl: 'http://sab:8080', qcSabApiKey: 'k' });
+    assert.equal(dnsOk.ok, true);
+    assert.equal(dnsOk.dnslookup, 'OK');
+
+    const sabDnsFalse = createSabClient({
+        fetchWithTimeout: async () => ({
+            ok: true,
+            json: async () => ({ status: { dnslookup: false, publicipv4: '', servers: [] } }),
+        }),
+    });
+    const dnsFalse = await sabDnsFalse.getNetworkHealth({ qcSabUrl: 'http://sab:8080', qcSabApiKey: 'k' });
+    assert.equal(dnsFalse.ok, false);
+    assert.equal(dnsFalse.reason, 'dns_failed');
+
     const sabDns = createSabClient({
         fetchWithTimeout: async () => ({
             ok: true,
