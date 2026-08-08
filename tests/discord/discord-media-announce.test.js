@@ -6,6 +6,7 @@ import {
     buildMediaAnnounceEmbed,
     buildMediaAnnounceGroupKey,
     createDiscordMediaAnnounce,
+    isUsableEpisodeTitle,
     pickTestMediaAnnounceGroups,
 } from '../../lib/discord/discord-media-announce.js';
 
@@ -25,9 +26,17 @@ test('group keys lump TV by series+season', () => {
     }), 'lidarr:7');
 });
 
+test('usable episode titles reject release filenames', () => {
+    assert.equal(isUsableEpisodeTitle('Pilot'), true);
+    assert.equal(isUsableEpisodeTitle('Season04/Bravest.Warriors-S04E01-x265.AAC.mkv'), false);
+    assert.equal(isUsableEpisodeTitle('Bravest.Warriors-S04E01-x265.AAC.mkv'), false);
+});
+
 test('embed labels upgrades vs new and lists episodes', () => {
     const ready = buildMediaAnnounceEmbed({
         title: 'Show',
+        year: 2022,
+        overview: 'Office mystery.',
         arrType: 'sonarr',
         seasonNumber: 1,
         isUpgrade: false,
@@ -36,9 +45,23 @@ test('embed labels upgrades vs new and lists episodes', () => {
             { episodeNumber: 2, episodeTitle: 'Next' },
         ],
     });
-    assert.equal(ready.title, 'Now available');
-    assert.match(ready.description, /Season 1/);
-    assert.equal(ready.fields[0].name, 'Episodes');
+    assert.equal(ready.title, 'Show (2022)');
+    assert.match(ready.description, /Office mystery/);
+    assert.match(ready.description, /Season 1 is on the server/);
+    assert.ok(ready.fields.some((field) => field.name === 'Episodes' && /Pilot/.test(field.value)));
+
+    const filenames = buildMediaAnnounceEmbed({
+        title: 'Bravest Warriors',
+        arrType: 'sonarr',
+        seasonNumber: 4,
+        items: [
+            { episodeNumber: 1, episodeTitle: 'Season04/Bravest.Warriors-S04E01-x265.AAC.mkv' },
+            { episodeNumber: 8, episodeTitle: 'Season04/Bravest.Warriors-S04E08-x265.AAC.mkv' },
+        ],
+    });
+    const episodeField = filenames.fields.find((field) => field.name === 'Episodes');
+    assert.match(episodeField.value, /E01–E08/);
+    assert.doesNotMatch(episodeField.value, /\.mkv/);
 
     const upgraded = buildMediaAnnounceEmbed({
         title: 'Movie',
@@ -46,8 +69,8 @@ test('embed labels upgrades vs new and lists episodes', () => {
         isUpgrade: true,
         items: [{ title: 'Movie' }],
     });
-    assert.equal(upgraded.title, 'Upgraded');
-    assert.match(upgraded.description, /upgraded/);
+    assert.equal(upgraded.title, 'Movie');
+    assert.ok(upgraded.fields.some((field) => field.name === 'Status' && field.value === 'Upgraded'));
 });
 
 test('enqueue requires playability and debounce flush posts once', async () => {
@@ -112,7 +135,7 @@ test('enqueue requires playability and debounce flush posts once', async () => {
     const first = await announce.flushDue(config);
     assert.equal(first.flushed, 1);
     assert.equal(posts.length, 1);
-    assert.equal(posts[0].title, 'Upgraded');
+    assert.equal(posts[0].fields.find((field) => field.name === 'Status')?.value, 'Upgraded');
 
     // Dedupes identical content
     prefs.discordMediaAnnouncePending = [{
@@ -200,7 +223,9 @@ test('postTestAnnounces posts movie and TV immediately', async () => {
     }, { index: { items: [] } });
     assert.equal(result.posted.length, 2);
     assert.equal(posts.length, 2);
-    assert.match(posts[0].content, /Test preview/);
-    assert.equal(posts[0].title, 'Now available');
+    assert.equal(posts[0].content, undefined);
+    assert.equal(posts[0].title, 'Dune (2021)');
+    assert.equal(posts[0].footer, 'Test preview — not a new import');
+    assert.ok(posts[0].thumbnail);
     assert.match(posts[1].description, /Season 1/);
 });
