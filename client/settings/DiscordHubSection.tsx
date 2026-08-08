@@ -97,9 +97,9 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
             Hub &amp; notifications
             <SettingHint>
-                Request flow: approve email is always sent (no opt-out). When the file is ready, they get the available email, and the member webhook posts the New media card after Integrity.
-                Linked Discord IDs get the same approve + available notices as bot DMs.
-                Member webhook also mirrors announcements. Admin webhook is QC cleanup + integrity failures only.
+                Requests and issues always email the member (approved, available, issue reply/resolved) — no opt-out.
+                Linked Discord IDs get the same notices as bot DMs. The member webhook posts New media cards after Integrity, plus announcement mirrors.
+                Admin webhook is QC cleanup + integrity failures only.
             </SettingHint>
         </h3>
         <label className="flex items-center gap-3 mb-4 cursor-pointer">

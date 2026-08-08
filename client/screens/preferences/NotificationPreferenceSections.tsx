@@ -9,8 +9,6 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
         setNewsletterEnabled,
         notifyAccessExpiry,
         setNotifyAccessExpiry,
-        notifyIssueReplies,
-        setNotifyIssueReplies,
         saving,
         saveAccountPrefs,
     } = prefs;
@@ -23,7 +21,7 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
                 <Mail className="w-5 h-5 text-plex mt-0.5" />
                 <div>
                     <h2 className="font-bold text-text">Email notifications</h2>
-                    <p className="text-sm text-muted mt-1">Request approved and available emails are always sent. Link Discord under Preferences to also get bot DMs. Newsletter, expiry, and issue replies stay opt-in.</p>
+                    <p className="text-sm text-muted mt-1">Request and issue updates are always emailed. Link Discord under Preferences to also get bot DMs. Newsletter and expiry notices stay opt-in.</p>
                 </div>
             </div>
             <div className="flex items-center justify-between gap-4 pl-8">
@@ -55,22 +53,6 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
                         const next = !notifyAccessExpiry;
                         setNotifyAccessExpiry(next);
                         void saveAccountPrefs({ notifyAccessExpiry: next });
-                    }}
-                />
-            </div>
-            <div className="flex items-center justify-between gap-4 pl-8">
-                <div>
-                    <p className="text-sm text-text font-medium">Issue replies</p>
-                    <p className="text-xs text-muted mt-1">When an admin replies to your issue</p>
-                </div>
-                <ToggleRow
-                    checked={notifyIssueReplies}
-                    disabled={saving || readOnly}
-                    label="Issue replies"
-                    onToggle={() => {
-                        const next = !notifyIssueReplies;
-                        setNotifyIssueReplies(next);
-                        void saveAccountPrefs({ notifyIssueReplies: next });
                     }}
                 />
             </div>

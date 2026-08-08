@@ -14,6 +14,7 @@ Goal: manage Discord invites and a member-facing Discord bot from this portal so
 | Discord member slash commands | Portal Discord bot (in-process) |
 | New / upgraded media channel posts | Portal **member webhook** after Integrity verifies |
 | Request approved + available | Always emailed (no opt-out). Linked Discord IDs also get bot DMs. Channel only gets the New media card. |
+| Issue reply / resolved | Always emailed (no opt-out). Linked Discord IDs also get bot DMs. |
 | QC cleanup removals + integrity failures | Portal **admin webhook** (falls back to member webhook if blank) |
 | Announcement / broadcast / newsletter mirrors | Portal **member webhook** |
 
