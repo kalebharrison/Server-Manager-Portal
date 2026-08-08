@@ -30,6 +30,10 @@ test('mock catalog covers every outbound email type', () => {
     for (const entry of catalog) {
         assert.match(entry.subject, /^\[MOCK\] /);
         assert.ok(String(entry.html || '').trim(), `${entry.id} is missing html`);
+        assert.match(entry.html, /color-scheme" content="light"/, `${entry.id} is missing light chrome`);
+        assert.match(entry.html, /#f4f6f9/, `${entry.id} is missing portal background`);
+        assert.doesNotMatch(entry.html, /cid:logo/i, `${entry.id} should not inline a logo`);
+        assert.doesNotMatch(entry.html, /PLEX SERVER/, `${entry.id} still uses the old dark header`);
     }
 });
 
