@@ -12,8 +12,12 @@ Goal: manage Discord invites and a member-facing Discord bot from this portal so
 |---|---|
 | Browse / request in the browser | Portal → TMDB Discover + Arr |
 | Discord member slash commands | Portal Discord bot (in-process) |
-| “Movie ready” Discord posts / DMs | **Notifiarr** (keep this) |
-| Portal channel webhook | Optional — leave blank when Notifiarr owns media posts |
+| New / upgraded media channel posts | Portal **member webhook** after Integrity verifies (Notifiarr optional) |
+| Request approve / decline, issue replies, “now available” | Portal bot **DMs** the linked member (not the channel) |
+| QC cleanup removals + integrity failures | Portal **admin webhook** (falls back to member webhook if blank) |
+| Announcement / broadcast / newsletter mirrors | Portal **member webhook** |
+
+Members must paste their Discord user ID under Preferences. Bot DMs require View Channel on the configured member channel.
 
 ---
 
@@ -76,14 +80,16 @@ Optional `@bot …` mention routing requires **Message Content Intent** and “A
 2. **Optional webhook** — portal can post request/issue/available events; default for Notifiarr setups is leave webhook blank  
 3. **Bot** — in-process discord.js gateway, guild slash commands, membership gate before any action  
 
-Admin approve/decline stays in the web UI. Discord-as-login is out of scope.
+Admin approve/decline stays in the web UI (and can auto-approve per global + per-user override). Discord-as-login is out of scope.
 
 ```text
 Portal (web requests + membership)
     │
-    ├─► Arr ──► Notifiarr Discord  (media posts stay here)
+    ├─► Arr ──► Integrity ──► member webhook  (new / upgraded media)
     │
-    └─► Discord bot ──► same request / issues / analytics / status services
+    ├─► admin webhook  (QC cleanup + integrity failures)
+    │
+    └─► Discord bot ──► slash commands + DMs for that member's requests/issues
             ▲
             └── invite link shown in portal
 ```
@@ -101,7 +107,8 @@ Operator API map (Dockhand, Notifiarr keys, etc.): see [`.local/README.md`](../.
 - [ ] `/ask what's downloading` (ops phrase)  
 - [ ] `/ask` multi-constraint discovery with agent + SearXNG (e.g. zombie movie in a casino) → researched titles + request buttons  
 - [ ] Revoked or unlinked Discord ID is denied with Preferences hint  
-- [ ] Portal webhook blank while Notifiarr posts media events (no double posts)
+- [ ] Linked member gets a bot DM on approve/decline (nothing posted to the member channel)
+- [ ] Portal member webhook posts media cards; admin webhook gets QC/integrity only
 
 ---
 

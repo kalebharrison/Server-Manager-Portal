@@ -36,7 +36,7 @@ See [`.env.example`](../.env.example) for the full template.
 | Apps & automation | Sonarr / Radarr / Lidarr, Tautulli / Jellystat |
 | Access & privacy | Referrals, public login stats, status page visibility, stream privacy |
 | Branding | Theme, logo, animations, poster badges |
-| Support → Discord | Invite URL, optional channel webhook posts, `/request` bot token/guild (see [Discord plan](./discord-integration-plan.md)) |
+| Discord | Invite, bot token/guild, member webhook (media + announcements), admin webhook (QC cleanup + integrity failures), bot DMs for request/issue updates. See [Discord plan](./discord-integration-plan.md) |
 | Home layout | Section order/visibility for member home |
 | SMTP / newsletter | Outbound mail and newsletter schedule |
 | Status | Monitored services and public status page |

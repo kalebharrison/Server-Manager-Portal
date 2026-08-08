@@ -62,7 +62,7 @@ export const EmailNotificationsSection: React.FC<SectionProps> = ({ account, rea
             <div className="flex items-center justify-between gap-4 pl-8">
                 <div>
                     <p className="text-sm text-text font-medium">Request updates</p>
-                    <p className="text-xs text-muted mt-1">Approved or declined request status</p>
+                    <p className="text-xs text-muted mt-1">Email when approved or declined. Linked Discord IDs also get a bot DM.</p>
                 </div>
                 <ToggleRow
                     checked={notifyRequestUpdates}

@@ -97,7 +97,9 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
             Hub &amp; notifications
             <SettingHint>
-                Member channel webhook posts announcements, email mirrors, and post-integrity media/upgrades. Admin webhook is for QC/integrity failures.
+                Member webhook: new/upgraded media after Integrity, plus announcement / broadcast / newsletter mirrors.
+                Admin webhook: QC cleanup when something is actually removed, and integrity failures.
+                Request approve/decline, issue replies, and “now available” are bot DMs to the linked member — not channel posts.
             </SettingHint>
         </h3>
         <label className="flex items-center gap-3 mb-4 cursor-pointer">
@@ -127,16 +129,17 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
         <div className="mb-4">
             <label htmlFor="discordWebhookUrl">Member notifications webhook URL</label>
             <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordWebhookUrl" type="password" value={discordWebhookUrl} onChange={(event) => onDiscordWebhookUrlChange(event.target.value)} placeholder="https://discord.com/api/webhooks/..." disabled={!discordEnabled} autoComplete="off" />
+            <div className="mt-2"><SettingHint>Channel posts for media cards and server-wide announcements only. Request updates go out as bot DMs.</SettingHint></div>
         </div>
         <div className="mb-4">
             <label htmlFor="discordAdminWebhookUrl">Admin issues webhook URL</label>
             <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordAdminWebhookUrl" type="password" value={discordAdminWebhookUrl} onChange={(event) => onDiscordAdminWebhookUrlChange(event.target.value)} placeholder="https://discord.com/api/webhooks/..." disabled={!discordEnabled} autoComplete="off" />
-            <div className="mt-2"><SettingHint>QC digests and integrity failures post here. Falls back to the member webhook if blank.</SettingHint></div>
+            <div className="mt-2"><SettingHint>Only QC cleanup removals and integrity failures. Falls back to the member webhook if blank — set this so ops noise stays out of the member channel.</SettingHint></div>
         </div>
         <div className="flex flex-col gap-2 mb-4">
-            <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyRequestUpdates} onChange={(event) => onDiscordNotifyRequestUpdatesChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Post request approve / decline</span></label>
-            <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyIssueReplies} onChange={(event) => onDiscordNotifyIssueRepliesChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Post issue replies</span></label>
-            <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyWatchlistAvailable} onChange={(event) => onDiscordNotifyWatchlistAvailableChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Post newly available requests (when portal emails fire)</span></label>
+            <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyRequestUpdates} onChange={(event) => onDiscordNotifyRequestUpdatesChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">DM members about request approve / decline</span></label>
+            <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyIssueReplies} onChange={(event) => onDiscordNotifyIssueRepliesChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">DM members about issue replies</span></label>
+            <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyWatchlistAvailable} onChange={(event) => onDiscordNotifyWatchlistAvailableChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">DM members when a requested title is ready to watch</span></label>
             <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyAnnouncements} onChange={(event) => onDiscordNotifyAnnouncementsChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Mirror portal announcements</span></label>
             <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyBroadcasts} onChange={(event) => onDiscordNotifyBroadcastsChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Mirror broadcast emails</span></label>
             <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyNewsletters} onChange={(event) => onDiscordNotifyNewslettersChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">Mirror newsletters</span></label>

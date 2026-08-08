@@ -48,7 +48,11 @@ export const DiscordQcDigestsSection: React.FC<DiscordQcDigestsSectionProps> = (
                     onChange={(event) => onIntegrityDiscordDigestEnabledChange(event.target.checked)}
                 />
             </label>
-            <SettingHint>Failure digests use the admin webhook (falls back to member webhook). Successful media announces use the member webhook after Integrity verifies.</SettingHint>
+            <SettingHint>
+                These two digests post to the admin webhook only (cleanup when a download is removed, integrity when a check fails).
+                If admin webhook is blank they fall back onto the member channel — keep admin set.
+                New/upgraded media cards still use the member webhook after Integrity passes.
+            </SettingHint>
         </div>
     </SettingsCollapseSection>
 );

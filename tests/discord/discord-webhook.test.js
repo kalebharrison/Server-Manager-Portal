@@ -21,24 +21,35 @@ test('postDiscordWebhook posts JSON payloads', async () => {
 
 test('discord notifier respects enable + event toggles', async () => {
     const calls = [];
+    const dms = [];
     const fetchImpl = async () => {
         calls.push(1);
         return { ok: true };
     };
-    const notifier = createDiscordNotifier({ fetchImpl });
+    const notifier = createDiscordNotifier({
+        fetchImpl,
+        sendMemberDm: async (_config, discordId, payload) => {
+            dms.push({ discordId, payload });
+            return true;
+        },
+    });
     await notifier.notifyRequestUpdate({
         discordEnabled: true,
         discordWebhookUrl: 'https://discord.com/api/webhooks/1/token',
         discordNotifyRequestUpdates: false,
-    }, { title: 'Movie', statusLabel: 'approved' });
+    }, { title: 'Movie', statusLabel: 'approved', discordId: '123' });
     assert.equal(calls.length, 0);
+    assert.equal(dms.length, 0);
 
     await notifier.notifyRequestUpdate({
         discordEnabled: true,
         discordWebhookUrl: 'https://discord.com/api/webhooks/1/token',
         discordNotifyRequestUpdates: true,
-    }, { title: 'Movie', statusLabel: 'approved', requestedBy: { username: 'sam' } });
-    assert.equal(calls.length, 1);
+    }, { title: 'Movie', statusLabel: 'approved', discordId: '123456789012345678' });
+    assert.equal(calls.length, 0);
+    assert.equal(dms.length, 1);
+    assert.equal(dms[0].discordId, '123456789012345678');
+    assert.match(dms[0].payload.description, /Movie/);
 });
 
 test('postAdminEvent prefers admin webhook over member webhook', async () => {
