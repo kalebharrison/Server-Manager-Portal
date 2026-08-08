@@ -27,6 +27,7 @@ export const useSettingsEmailActions = ({
     testRecipient,
 }: UseSettingsEmailActionsOptions) => {
     const [isTestingSmtp, setIsTestingSmtp] = useState(false);
+    const [isSendingAllMocks, setIsSendingAllMocks] = useState(false);
     const [isTestingNewsletter, setIsTestingNewsletter] = useState(false);
     const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
 
@@ -54,6 +55,33 @@ export const useSettingsEmailActions = ({
             addToast(error instanceof Error ? error.message : 'SMTP test failed.', 'error');
         } finally {
             setIsTestingSmtp(false);
+        }
+    }, [addToast, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, testRecipient]);
+
+    const handleSendAllMockEmails = useCallback(async () => {
+        if (!smtpHost || !smtpUser || !smtpPass || !testRecipient) {
+            addToast('Please fill out SMTP Host, User, Password, and Test Recipient.', 'error');
+            return;
+        }
+        setIsSendingAllMocks(true);
+        try {
+            const result = await apiFetch('/api/config/test-all-emails', {
+                method: 'POST',
+                body: JSON.stringify({
+                    smtpHost,
+                    smtpPort,
+                    smtpUser,
+                    smtpPass,
+                    smtpFrom,
+                    smtpSecure,
+                    testRecipient,
+                }),
+            });
+            addToast(result.message || 'Mock emails sent.', 'success');
+        } catch (error) {
+            addToast(error instanceof Error ? error.message : 'Mock email sweep failed.', 'error');
+        } finally {
+            setIsSendingAllMocks(false);
         }
     }, [addToast, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, testRecipient]);
 
@@ -85,9 +113,11 @@ export const useSettingsEmailActions = ({
 
     return {
         isTestingSmtp,
+        isSendingAllMocks,
         isTestingNewsletter,
         isSendingNewsletter,
         handleTestEmail,
+        handleSendAllMockEmails,
         handleTestNewsletter,
         handleSendNewsletterNow,
     };

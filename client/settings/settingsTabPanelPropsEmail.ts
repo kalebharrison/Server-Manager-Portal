@@ -25,6 +25,7 @@ export const buildSmtpTabPanelProps = ({
     emailDaysBefore: values.emailDaysBefore,
     testRecipient: values.testRecipient,
     isTestingSmtp: emailActions.isTestingSmtp,
+    isSendingAllMocks: emailActions.isSendingAllMocks,
     onSmtpEnabledChange: onChange('smtpEnabled'),
     onSmtpAdminOnlyChange: onChange('smtpAdminOnly'),
     onSmtpHostChange: onChange('smtpHost'),
@@ -36,6 +37,7 @@ export const buildSmtpTabPanelProps = ({
     onEmailDaysBeforeChange: onChange('emailDaysBefore'),
     onTestRecipientChange: onChange('testRecipient'),
     onTestEmail: emailActions.handleTestEmail,
+    onSendAllMockEmails: emailActions.handleSendAllMockEmails,
 });
 
 export const buildNewsletterTabPanelProps = ({

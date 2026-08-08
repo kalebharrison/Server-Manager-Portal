@@ -14,6 +14,7 @@ type SmtpSettingsTabProps = {
     emailDaysBefore: number;
     testRecipient: string;
     isTestingSmtp: boolean;
+    isSendingAllMocks: boolean;
     onSmtpEnabledChange: (value: boolean) => void;
     onSmtpAdminOnlyChange: (value: boolean) => void;
     onSmtpHostChange: (value: string) => void;
@@ -25,6 +26,7 @@ type SmtpSettingsTabProps = {
     onEmailDaysBeforeChange: (value: number) => void;
     onTestRecipientChange: (value: string) => void;
     onTestEmail: () => void;
+    onSendAllMockEmails: () => void;
 };
 
 export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
@@ -39,6 +41,7 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
     emailDaysBefore,
     testRecipient,
     isTestingSmtp,
+    isSendingAllMocks,
     onSmtpEnabledChange,
     onSmtpAdminOnlyChange,
     onSmtpHostChange,
@@ -50,6 +53,7 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
     onEmailDaysBeforeChange,
     onTestRecipientChange,
     onTestEmail,
+    onSendAllMockEmails,
 }) => (
     <div className="mb-8">
         <label className="flex items-center gap-3 cursor-pointer mb-4">
@@ -122,10 +126,14 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
                         className="flex-grow p-3 rounded-lg border border-border bg-background text-text text-sm outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
                         disabled={!smtpEnabled}
                     />
-                    <button className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center gap-2" onClick={onTestEmail} disabled={!smtpEnabled || isTestingSmtp || !testRecipient}>
+                    <button className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center gap-2" onClick={onTestEmail} disabled={!smtpEnabled || isTestingSmtp || isSendingAllMocks || !testRecipient}>
                         {isTestingSmtp ? 'Sending...' : 'Send Test'}
                     </button>
+                    <button className="px-4 py-2 bg-plex text-white rounded-md font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 whitespace-nowrap" onClick={onSendAllMockEmails} disabled={!smtpEnabled || isTestingSmtp || isSendingAllMocks || !testRecipient}>
+                        {isSendingAllMocks ? 'Sending mocks...' : 'Send all mock emails'}
+                    </button>
                 </div>
+                <SettingHint>Send all mock emails sends every outbound template (request, issue, expiry, invite, newsletter, broadcast, announcement, and playback report) to the test recipient. Subjects are prefixed with [MOCK].</SettingHint>
             </div>
         </div>
     </div>
