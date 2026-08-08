@@ -68,7 +68,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             {
                 id: 'contact',
                 label: 'Support',
-                blurb: 'Need Help mailto (public), expiry extension link, and how portal mail replies stay in-app.',
+                blurb: 'Need Help mailto (public) and expiry extension. Portal email replies are under Email Delivery.',
                 keywords: ['email', 'support', 'announcement', 'banner', 'contact', 'mailto', 'reply', 'inbound', 'need help'],
             },
         ],
@@ -166,8 +166,8 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             {
                 id: 'smtp',
                 label: 'Email Delivery',
-                blurb: 'Outbound SMTP. Request and issue replies return to the portal, not Contact Email.',
-                keywords: ['mail', 'smtp', 'test', 'reply', 'inbound', 'parse'],
+                blurb: 'Outbound SMTP plus optional inbound Reply-To webhook so request and issue replies land in the portal.',
+                keywords: ['mail', 'smtp', 'test', 'reply', 'inbound', 'webhook', 'cloudflare'],
             },
             {
                 id: 'newsletter',

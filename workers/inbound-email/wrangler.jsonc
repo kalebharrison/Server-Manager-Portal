@@ -4,6 +4,6 @@
   "compatibility_date": "2026-08-08",
   "workers_dev": false,
   "vars": {
-    "PORTAL_WEBHOOK_URL": "https://plex-beta.lostwaldo.net/api/webhooks/mailjet-inbound"
+    "PORTAL_WEBHOOK_URL": "https://your-portal.example/api/webhooks/inbound-email"
   }
 }

@@ -59,14 +59,14 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
 
         <SettingsCollapseSection
             title="Portal mail replies"
-            subtitle="Separate from the Need Help mailto"
+            subtitle="Configured under Email Delivery — not this address"
             defaultOpen
         >
-            <ul className="text-sm text-muted space-y-2 list-disc pl-5">
-                <li>Request approved, available, and issue notices use a portal Reply-To on the reply subdomain. Replies land in the portal (and Logs), not this inbox.</li>
-                <li>Newsletter, broadcast, and expiry mail have no Reply-To, so members cannot write back to From.</li>
-                <li>Confirm the loop with Email Delivery → Send Test, then reply. Check Settings → Logs for Inbound Email Received.</li>
-            </ul>
+            <p className="text-sm text-muted">
+                Request, available, and issue replies go back into the portal when inbound mail is set up
+                in Notifications → Email Delivery → Portal replies. That uses a dedicated inbound domain
+                and webhook, not the public support email above.
+            </p>
         </SettingsCollapseSection>
 
         <SettingsCollapseSection

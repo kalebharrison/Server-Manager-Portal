@@ -22,6 +22,9 @@ type SettingsHydrationSetters = {
     setSmtpFrom: (value: string) => void;
     setSmtpSecure: (value: boolean) => void;
     setEmailDaysBefore: (value: number) => void;
+    setInboundRepliesEnabled: (value: boolean) => void;
+    setInboundReplyDomain: (value: string) => void;
+    setInboundReplyReady: (value: boolean) => void;
     setNewsletterFrequency: (value: string) => void;
     setNewsletterDay: (value: number) => void;
     setInactiveCleanupEnabled: (value: boolean) => void;
@@ -165,6 +168,9 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setSmtpFrom(initialSettings.smtpFrom || '');
     setters.setSmtpSecure(!!initialSettings.smtpSecure);
     setters.setEmailDaysBefore(initialSettings.emailDaysBefore || 7);
+    setters.setInboundRepliesEnabled(initialSettings.inboundRepliesEnabled !== false);
+    setters.setInboundReplyDomain(initialSettings.inboundReplyDomain || '');
+    setters.setInboundReplyReady(!!initialSettings.inboundReplyReady);
     setters.setNewsletterFrequency(initialSettings.newsletterFrequency || 'disabled');
     setters.setNewsletterDay(initialSettings.newsletterDay || 0);
     setters.setInactiveCleanupEnabled(!!initialSettings.inactiveCleanupEnabled);

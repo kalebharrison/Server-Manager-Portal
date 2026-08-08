@@ -14,6 +14,8 @@ type UseSettingsEmailActionsOptions = {
     smtpPass: string;
     smtpFrom: string;
     smtpSecure: boolean;
+    inboundRepliesEnabled: boolean;
+    inboundReplyDomain: string;
     testRecipient: string;
 };
 
@@ -25,6 +27,8 @@ export const useSettingsEmailActions = ({
     smtpPass,
     smtpFrom,
     smtpSecure,
+    inboundRepliesEnabled,
+    inboundReplyDomain,
     testRecipient,
 }: UseSettingsEmailActionsOptions) => {
     const [isTestingSmtp, setIsTestingSmtp] = useState(false);
@@ -48,6 +52,8 @@ export const useSettingsEmailActions = ({
                     smtpPass,
                     smtpFrom,
                     smtpSecure,
+                    inboundRepliesEnabled,
+                    inboundReplyDomain,
                     testRecipient,
                 }),
             });
@@ -57,7 +63,7 @@ export const useSettingsEmailActions = ({
         } finally {
             setIsTestingSmtp(false);
         }
-    }, [addToast, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, testRecipient]);
+    }, [addToast, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, inboundRepliesEnabled, inboundReplyDomain, testRecipient]);
 
     const handleSendAllMockEmails = useCallback(async () => {
         if (!smtpHost || !smtpUser || !smtpPass || !testRecipient) {
@@ -75,6 +81,8 @@ export const useSettingsEmailActions = ({
                     smtpPass,
                     smtpFrom,
                     smtpSecure,
+                    inboundRepliesEnabled,
+                    inboundReplyDomain,
                     testRecipient,
                 }),
             });
@@ -84,7 +92,7 @@ export const useSettingsEmailActions = ({
         } finally {
             setIsSendingAllMocks(false);
         }
-    }, [addToast, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, testRecipient]);
+    }, [addToast, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, inboundRepliesEnabled, inboundReplyDomain, testRecipient]);
 
     const handlePreviewEmails = useCallback(() => {
         window.open(portalUrl('/api/config/email-previews'), '_blank', 'noopener,noreferrer');

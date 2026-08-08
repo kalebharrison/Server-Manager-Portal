@@ -7,8 +7,11 @@ import test from 'node:test';
 import {
     buildInboundReplyTo,
     extractInboundReplyBody,
+    normalizeInboundReplyDomain,
     parseInboundRecipient,
+    suggestInboundReplyDomain,
 } from '../../lib/comms/email-inbound.js';
+import { buildInboundEmailWebhookUrl } from '../../lib/comms/email-inbound-paths.js';
 import { processMailjetInbound } from '../../lib/comms/email-inbound-process.js';
 
 const SECRET = 'inbound-test-secret-0123456789abcdef0123456789abcdef';
@@ -18,6 +21,25 @@ const baseConfig = {
     smtpFrom: 'Requests - LostWaldo <requests@lostwaldo.net>',
     mailjetInboundSecret: SECRET,
 };
+
+test('inbound domain helpers normalize hostnames and suggest reply.<from>', () => {
+    assert.equal(normalizeInboundReplyDomain('https://Reply.Example.com/path'), 'reply.example.com');
+    assert.equal(normalizeInboundReplyDomain('not a domain'), '');
+    assert.equal(suggestInboundReplyDomain('Portal <noreply@media.example.com>'), 'reply.media.example.com');
+    assert.equal(buildInboundEmailWebhookUrl('https://portal.example.com/'), 'https://portal.example.com/api/webhooks/inbound-email');
+});
+
+test('inbound reply-to stays off when the admin disables portal replies', () => {
+    assert.equal(buildInboundReplyTo({ ...baseConfig, inboundRepliesEnabled: false }, { kind: 'request', id: 9 }), '');
+});
+
+test('inbound reply-to uses an explicit inbound domain when set', () => {
+    const replyTo = buildInboundReplyTo({
+        ...baseConfig,
+        inboundReplyDomain: 'inbound.example.com',
+    }, { kind: 'request', id: 9 });
+    assert.match(replyTo, /^r\.9\.[a-f0-9]{16}@inbound\.example\.com$/);
+});
 
 test('inbound reply-to encodes a signed catch-all address on reply subdomain', () => {
     const replyTo = buildInboundReplyTo(baseConfig, { kind: 'request', id: 9 });

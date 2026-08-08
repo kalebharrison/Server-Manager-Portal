@@ -19,6 +19,8 @@ type SettingsSavePayloadInput = {
     smtpFrom: string;
     smtpSecure: boolean;
     emailDaysBefore: number;
+    inboundRepliesEnabled: boolean;
+    inboundReplyDomain: string;
     newsletterFrequency: string;
     newsletterDay: number;
     inactiveCleanupEnabled: boolean;

@@ -37,6 +37,8 @@ export const useSettingsFormState = () => {
         smtpFrom: values.smtpFrom,
         smtpSecure: values.smtpSecure,
         emailDaysBefore: values.emailDaysBefore,
+        inboundRepliesEnabled: values.inboundRepliesEnabled,
+        inboundReplyDomain: values.inboundReplyDomain,
         newsletterFrequency: values.newsletterFrequency,
         newsletterDay: values.newsletterDay,
         inactiveCleanupEnabled: values.inactiveCleanupEnabled,

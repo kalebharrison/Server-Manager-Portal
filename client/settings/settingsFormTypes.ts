@@ -24,6 +24,9 @@ export type SettingsFormValues = {
     smtpFrom: string;
     smtpSecure: boolean;
     emailDaysBefore: number;
+    inboundRepliesEnabled: boolean;
+    inboundReplyDomain: string;
+    inboundReplyReady: boolean;
     testRecipient: string;
     newsletterFrequency: string;
     newsletterDay: number;

@@ -96,6 +96,8 @@ export const SettingsDashboard: React.FC = () => {
         smtpPass: form.values.smtpPass,
         smtpFrom: form.values.smtpFrom,
         smtpSecure: form.values.smtpSecure,
+        inboundRepliesEnabled: form.values.inboundRepliesEnabled,
+        inboundReplyDomain: form.values.inboundReplyDomain,
         testRecipient: form.values.testRecipient,
     });
 

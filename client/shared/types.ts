@@ -75,6 +75,9 @@ export interface AppSettings {
     smtpFrom?: string;
     smtpSecure?: boolean;
     emailDaysBefore?: number;
+    inboundRepliesEnabled?: boolean;
+    inboundReplyDomain?: string;
+    inboundReplyReady?: boolean;
     newsletterFrequency?: string;
     newsletterDay?: number;
     publicDomain?: string;
