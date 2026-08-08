@@ -6,7 +6,6 @@ import {
     HUNT_PRESET_LABELS,
     type QcPresetId,
 } from './qcPresets';
-import { SettingHint } from './SettingHint';
 
 const PRESET_IDS: QcPresetId[] = ['relaxed', 'balanced', 'aggressive', 'custom'];
 
@@ -365,313 +364,305 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                 )}
 
                 {section === 'qc-downloads' && (
-                    <div className="space-y-4">
-                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
-                            <label className="flex items-center justify-between gap-4">
-                                <span className="font-semibold">Enable cleanup automation</span>
+                    <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                        <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
+                        <label className="flex items-center justify-between gap-4">
+                            <span className="font-semibold">Enable cleanup</span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-plex"
+                                disabled={!enabled}
+                                checked={qcCleanupAutomationEnabled && enabled}
+                                onChange={(event) => onQcCleanupAutomationEnabledChange(event.target.checked)}
+                            />
+                        </label>
+                        <label className="text-sm font-semibold block max-w-md">
+                            Aggression
+                            <select
+                                className={selectClassName}
+                                value={qcCleanupAggression || 'balanced'}
+                                disabled={!enabled}
+                                onChange={(event) => handleCleanupAggressionSelect(event.target.value)}
+                            >
+                                {PRESET_IDS.map((id) => (
+                                    <option key={id} value={id}>{CLEANUP_PRESET_LABELS[id]}</option>
+                                ))}
+                            </select>
+                        </label>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <label className="text-sm font-semibold">
+                                Strikes before kill
                                 <input
-                                    type="checkbox"
-                                    className="h-4 w-4 accent-plex"
+                                    type="number"
+                                    min="1"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={qcMaxStrikes}
                                     disabled={!enabled}
-                                    checked={qcCleanupAutomationEnabled && enabled}
-                                    onChange={(event) => onQcCleanupAutomationEnabledChange(event.target.checked)}
+                                    onChange={(event) => {
+                                        onQcMaxStrikesChange(Math.max(1, Number(event.target.value) || 1));
+                                        markCleanupCustom();
+                                    }}
                                 />
                             </label>
-                            <label className="text-sm font-semibold block max-w-md">
-                                Cleanup aggression
-                                <select
-                                    className={selectClassName}
-                                    value={qcCleanupAggression || 'balanced'}
+                            <label className="text-sm font-semibold">
+                                Metadata stuck (min / strike)
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={qcMetaDlMinutes}
                                     disabled={!enabled}
-                                    onChange={(event) => handleCleanupAggressionSelect(event.target.value)}
-                                >
-                                    {PRESET_IDS.map((id) => (
-                                        <option key={id} value={id}>{CLEANUP_PRESET_LABELS[id]}</option>
-                                    ))}
-                                </select>
+                                    onChange={(event) => {
+                                        onQcMetaDlMinutesChange(Math.max(1, Number(event.target.value) || 1));
+                                        markCleanupCustom();
+                                    }}
+                                />
                             </label>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <label className="text-sm font-semibold">
-                                    Max strikes
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={qcMaxStrikes}
-                                        disabled={!enabled}
-                                        onChange={(event) => {
-                                            onQcMaxStrikesChange(Math.max(1, Number(event.target.value) || 1));
-                                            markCleanupCustom();
-                                        }}
-                                    />
-                                </label>
-                                <label className="text-sm font-semibold">
-                                    MetaDL minutes / strike
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={qcMetaDlMinutes}
-                                        disabled={!enabled}
-                                        onChange={(event) => {
-                                            onQcMetaDlMinutesChange(Math.max(1, Number(event.target.value) || 1));
-                                            markCleanupCustom();
-                                        }}
-                                    />
-                                </label>
-                                <label className="text-sm font-semibold">
-                                    <span className="inline-flex items-center gap-0">
-                                        Stalled hours / strike
-                                        <SettingHint>Held while qBit/SAB network health looks down.</SettingHint>
-                                    </span>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={qcStalledHours}
-                                        disabled={!enabled}
-                                        onChange={(event) => {
-                                            onQcStalledHoursChange(Math.max(1, Number(event.target.value) || 1));
-                                            markCleanupCustom();
-                                        }}
-                                    />
-                                </label>
-                                <label className="text-sm font-semibold">
-                                    <span className="inline-flex items-center gap-0">
-                                        Slow download floor (KB/s)
-                                        <SettingHint>qBit only. Seeder counts do not hold — measured download speed only.</SettingHint>
-                                    </span>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={qcSlowDownloadFloorKbps}
-                                        disabled={!enabled}
-                                        onChange={(event) => {
-                                            onQcSlowDownloadFloorKbpsChange(Math.max(0, Number(event.target.value) || 0));
-                                            markCleanupCustom();
-                                        }}
-                                    />
-                                </label>
-                                <label className="text-sm font-semibold">
-                                    Slow download min age (hours)
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={qcSlowDownloadMinAgeHours}
-                                        disabled={!enabled}
-                                        onChange={(event) => {
-                                            onQcSlowDownloadMinAgeHoursChange(Math.max(0, Number(event.target.value) || 0));
-                                            markCleanupCustom();
-                                        }}
-                                    />
-                                </label>
-                                <label className="text-sm font-semibold">
-                                    <span className="inline-flex items-center gap-0">
-                                        Completed not importing (min / strike)
-                                        <SettingHint>Large remuxes get extra time; waits behind other imports are held.</SettingHint>
-                                    </span>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={qcCompletedNotImportingMinutes}
-                                        disabled={!enabled}
-                                        onChange={(event) => {
-                                            onQcCompletedNotImportingMinutesChange(Math.max(1, Number(event.target.value) || 1));
-                                            markCleanupCustom();
-                                        }}
-                                    />
-                                </label>
-                                <label className="text-sm font-semibold">
-                                    Orphan grace (min / strike)
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={qcOrphanGraceMinutes}
-                                        disabled={!enabled}
-                                        onChange={(event) => {
-                                            onQcOrphanGraceMinutesChange(Math.max(0, Number(event.target.value) || 0));
-                                            markCleanupCustom();
-                                        }}
-                                    />
-                                </label>
-                                <label className="text-sm font-semibold">
-                                    Research throttle (hours)
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={qcResearchThrottleHours}
-                                        disabled={!enabled}
-                                        onChange={(event) => {
-                                            onQcResearchThrottleHoursChange(Math.max(1, Number(event.target.value) || 1));
-                                            markCleanupCustom();
-                                        }}
-                                    />
-                                </label>
-                                <label className="text-sm font-semibold">
-                                    Snooze default (hours)
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={qcSnoozeDefaultHours}
-                                        disabled={!enabled}
-                                        onChange={(event) => {
-                                            onQcSnoozeDefaultHoursChange(Math.max(1, Number(event.target.value) || 1));
-                                            markCleanupCustom();
-                                        }}
-                                    />
-                                </label>
-                            </div>
+                            <label className="text-sm font-semibold">
+                                Stalled (hours / strike)
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={qcStalledHours}
+                                    disabled={!enabled}
+                                    onChange={(event) => {
+                                        onQcStalledHoursChange(Math.max(1, Number(event.target.value) || 1));
+                                        markCleanupCustom();
+                                    }}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">
+                                Min speed (KB/s)
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={qcSlowDownloadFloorKbps}
+                                    disabled={!enabled}
+                                    onChange={(event) => {
+                                        onQcSlowDownloadFloorKbpsChange(Math.max(0, Number(event.target.value) || 0));
+                                        markCleanupCustom();
+                                    }}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">
+                                Age before slow check (hours)
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={qcSlowDownloadMinAgeHours}
+                                    disabled={!enabled}
+                                    onChange={(event) => {
+                                        onQcSlowDownloadMinAgeHoursChange(Math.max(0, Number(event.target.value) || 0));
+                                        markCleanupCustom();
+                                    }}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">
+                                Waiting to import (min / strike)
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={qcCompletedNotImportingMinutes}
+                                    disabled={!enabled}
+                                    onChange={(event) => {
+                                        onQcCompletedNotImportingMinutesChange(Math.max(1, Number(event.target.value) || 1));
+                                        markCleanupCustom();
+                                    }}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">
+                                Orphan (min / strike)
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={qcOrphanGraceMinutes}
+                                    disabled={!enabled}
+                                    onChange={(event) => {
+                                        onQcOrphanGraceMinutesChange(Math.max(0, Number(event.target.value) || 0));
+                                        markCleanupCustom();
+                                    }}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">
+                                Re-search wait (hours)
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={qcResearchThrottleHours}
+                                    disabled={!enabled}
+                                    onChange={(event) => {
+                                        onQcResearchThrottleHoursChange(Math.max(1, Number(event.target.value) || 1));
+                                        markCleanupCustom();
+                                    }}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold">
+                                Snooze duration (hours)
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={qcSnoozeDefaultHours}
+                                    disabled={!enabled}
+                                    onChange={(event) => {
+                                        onQcSnoozeDefaultHoursChange(Math.max(1, Number(event.target.value) || 1));
+                                        markCleanupCustom();
+                                    }}
+                                />
+                            </label>
                         </div>
                     </div>
                 )}
 
                 {section === 'qc-integrity' && (
-                    <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                        <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <label className="text-sm font-semibold">
-                                <span className="inline-flex items-center gap-0">
-                                    Webhook username
-                                    <SettingHint>
-                                        Arr Connect webhook paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
-                                        <code className="text-[11px]">/triggers/radarr</code>,{' '}
-                                        <code className="text-[11px]">/triggers/lidarr</code>.
-                                    </SettingHint>
-                                </span>
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Integrity</h4>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="font-semibold">Enable integrity</span>
                                 <input
-                                    type="text"
-                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                    value={integrityWebhookUsername}
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
                                     disabled={!enabled}
-                                    autoComplete="off"
-                                    onChange={(event) => onIntegrityWebhookUsernameChange(event.target.value)}
+                                    checked={integrityEnabled && enabled}
+                                    onChange={(event) => onIntegrityEnabledChange(event.target.checked)}
                                 />
                             </label>
-                            <label className="text-sm font-semibold">
-                                <span className="inline-flex items-center gap-0">
-                                    Webhook password
-                                    <SettingHint>Leave blank when saving to keep the existing password.</SettingHint>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="min-w-0">
+                                    <span className="font-semibold">Enable automation</span>
+                                    <p className="text-xs text-muted font-normal mt-0.5">Can delete bad files and re-search. Prefer dry-run first.</p>
                                 </span>
                                 <input
-                                    type="password"
-                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                    value={integrityWebhookPassword}
-                                    disabled={!enabled}
-                                    autoComplete="new-password"
-                                    placeholder="••••••••"
-                                    onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled}
+                                    checked={integrityAutomationEnabled && integrityEnabled && enabled}
+                                    onChange={(event) => onIntegrityAutomationEnabledChange(event.target.checked)}
                                 />
                             </label>
                         </div>
-                        <label className="flex items-center justify-between gap-4">
-                            <span className="font-semibold">Enable integrity scans</span>
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 accent-plex"
-                                disabled={!enabled}
-                                checked={integrityEnabled && enabled}
-                                onChange={(event) => onIntegrityEnabledChange(event.target.checked)}
-                            />
-                        </label>
-                        <label className="flex items-center justify-between gap-4">
-                            <span className="min-w-0">
-                                <span className="font-semibold">Enable integrity automation</span>
-                                <div className="mt-1">
-                                    <SettingHint>Can delete bad files and trigger Arr re-search. Use dry-run first.</SettingHint>
-                                </div>
-                            </span>
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 accent-plex"
-                                disabled={!enabled || !integrityEnabled}
-                                checked={integrityAutomationEnabled && integrityEnabled && enabled}
-                                onChange={(event) => onIntegrityAutomationEnabledChange(event.target.checked)}
-                            />
-                        </label>
-                        <label className="flex items-center justify-between gap-4">
-                            <span className="text-sm font-semibold">Require audio stream</span>
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 accent-plex"
-                                disabled={!enabled || !integrityEnabled}
-                                checked={integrityRequireAudio && integrityEnabled && enabled}
-                                onChange={(event) => onIntegrityRequireAudioChange(event.target.checked)}
-                            />
-                        </label>
-                        <label className="text-sm font-semibold block">
-                            Path maps (Arr path → container path)
-                            <textarea
-                                className="mt-2 w-full min-h-[90px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
-                                disabled={!enabled || !integrityEnabled}
-                                value={(integrityPathMaps || []).map((entry) => `${entry.from}=${entry.to}`).join('\n')}
-                                placeholder={'/movies=/media/movies\n/tv=/media/tv'}
-                                onChange={(event) => {
-                                    const maps = event.target.value
-                                        .split('\n')
-                                        .map((line) => line.trim())
-                                        .filter(Boolean)
-                                        .map((line) => {
-                                            const splitAt = line.includes('=') ? line.indexOf('=') : line.indexOf('→');
-                                            if (splitAt < 0) return null;
-                                            const from = line.slice(0, splitAt).trim();
-                                            const to = line.slice(splitAt + 1).trim();
-                                            if (!from || !to) return null;
-                                            return { from, to };
-                                        })
-                                        .filter(Boolean) as Array<{ from: string; to: string }>;
-                                    onIntegrityPathMapsChange(maps);
-                                }}
-                            />
-                        </label>
 
-                        <div className="space-y-3 mb-4">
-                                <label className="flex items-center justify-between gap-4">
-                                    <span className="font-semibold">Include music</span>
+                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Arr webhooks</h4>
+                            <p className="text-xs text-muted">
+                                Connect paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
+                                <code className="text-[11px]">/triggers/radarr</code>,{' '}
+                                <code className="text-[11px]">/triggers/lidarr</code>
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <label className="text-sm font-semibold">
+                                    Username
                                     <input
-                                        type="checkbox"
-                                        className="h-4 w-4 accent-plex"
-                                        disabled={!enabled || !integrityEnabled}
-                                        checked={integrityIncludeMusic && integrityEnabled && enabled}
-                                        onChange={(event) => onIntegrityIncludeMusicChange(event.target.checked)}
+                                        type="text"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityWebhookUsername}
+                                        disabled={!enabled}
+                                        autoComplete="off"
+                                        onChange={(event) => onIntegrityWebhookUsernameChange(event.target.value)}
                                     />
                                 </label>
-                                <label className="flex items-center justify-between gap-4">
-                                    <span className="font-semibold">Enable full-file hash</span>
+                                <label className="text-sm font-semibold">
+                                    Password
                                     <input
-                                        type="checkbox"
-                                        className="h-4 w-4 accent-plex"
-                                        disabled={!enabled || !integrityEnabled}
-                                        checked={integrityXxhashEnabled && integrityEnabled && enabled}
-                                        onChange={(event) => onIntegrityXxhashEnabledChange(event.target.checked)}
+                                        type="password"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityWebhookPassword}
+                                        disabled={!enabled}
+                                        autoComplete="new-password"
+                                        placeholder="••••••••"
+                                        onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
                                     />
-                                </label>
-                                <label className="flex items-center justify-between gap-4">
-                                    <span className="min-w-0">
-                                        <span className="font-semibold">Soft decode timeouts</span>
-                                        <div className="mt-1">
-                                            <SettingHint>Timeouts on import are not blocklisted; queued for recheck.</SettingHint>
-                                        </div>
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        className="h-4 w-4 accent-plex"
-                                        disabled={!enabled || !integrityEnabled}
-                                        checked={integritySoftDecodeTimeouts && integrityEnabled && enabled}
-                                        onChange={(event) => onIntegritySoftDecodeTimeoutsChange(event.target.checked)}
-                                    />
+                                    <p className="text-xs text-muted font-normal mt-1">Leave blank to keep the current password.</p>
                                 </label>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        </div>
+
+                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Scan options</h4>
+                            <label className="text-sm font-semibold block">
+                                Path maps
+                                <p className="text-xs text-muted font-normal mt-0.5 mb-2">One per line: Arr path = container path</p>
+                                <textarea
+                                    className="w-full min-h-[90px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
+                                    disabled={!enabled || !integrityEnabled}
+                                    value={(integrityPathMaps || []).map((entry) => `${entry.from}=${entry.to}`).join('\n')}
+                                    placeholder={'/movies=/media/movies\n/tv=/media/tv'}
+                                    onChange={(event) => {
+                                        const maps = event.target.value
+                                            .split('\n')
+                                            .map((line) => line.trim())
+                                            .filter(Boolean)
+                                            .map((line) => {
+                                                const splitAt = line.includes('=') ? line.indexOf('=') : line.indexOf('→');
+                                                if (splitAt < 0) return null;
+                                                const from = line.slice(0, splitAt).trim();
+                                                const to = line.slice(splitAt + 1).trim();
+                                                if (!from || !to) return null;
+                                                return { from, to };
+                                            })
+                                            .filter(Boolean) as Array<{ from: string; to: string }>;
+                                        onIntegrityPathMapsChange(maps);
+                                    }}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="font-semibold">Require audio</span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled}
+                                    checked={integrityRequireAudio && integrityEnabled && enabled}
+                                    onChange={(event) => onIntegrityRequireAudioChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="font-semibold">Include music</span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled}
+                                    checked={integrityIncludeMusic && integrityEnabled && enabled}
+                                    onChange={(event) => onIntegrityIncludeMusicChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="font-semibold">Full-file hash</span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled}
+                                    checked={integrityXxhashEnabled && integrityEnabled && enabled}
+                                    onChange={(event) => onIntegrityXxhashEnabledChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="min-w-0">
+                                    <span className="font-semibold">Soft decode timeouts</span>
+                                    <p className="text-xs text-muted font-normal mt-0.5">Timeouts requeue instead of failing the file.</p>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled}
+                                    checked={integritySoftDecodeTimeouts && integrityEnabled && enabled}
+                                    onChange={(event) => onIntegritySoftDecodeTimeoutsChange(event.target.checked)}
+                                />
+                            </label>
+                        </div>
+
+                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Tuning</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <label className="text-sm font-semibold">
-                                    Fingerprint / full-hash concurrency
+                                    Fingerprint workers
                                     <input
                                         type="number"
                                         min="1"
@@ -682,7 +673,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Playback-check concurrency
+                                    Playback workers
                                     <input
                                         type="number"
                                         min="1"
@@ -692,7 +683,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityPlayabilityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Nightly hour (0–23)
+                                <label className="text-sm font-semibold">
+                                    Nightly scan hour (0–23)
                                     <input
                                         type="number"
                                         min="0"
@@ -703,7 +695,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityNightlyHourChange(Math.max(0, Math.min(23, Number(event.target.value) || 0)))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Decode window (sec)
+                                <label className="text-sm font-semibold">
+                                    Decode sample (seconds)
                                     <input
                                         type="number"
                                         min="1"
@@ -713,7 +706,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityDecodeWindowSecChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Decode timeout (ms)
+                                <label className="text-sm font-semibold">
+                                    Decode timeout (ms)
                                     <input
                                         type="number"
                                         min="1000"
@@ -724,7 +718,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityDecodeTimeoutMsChange(Math.max(1000, Number(event.target.value) || 1000))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Decode retries
+                                <label className="text-sm font-semibold">
+                                    Decode retries
                                     <input
                                         type="number"
                                         min="0"
@@ -735,10 +730,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    <span className="inline-flex items-center gap-0">
-                                        Pause when sessions ≥
-                                        <SettingHint>0 = never pause for Plex busy</SettingHint>
-                                    </span>
+                                    Pause when Plex streams ≥
+                                    <p className="text-xs text-muted font-normal mt-0.5">0 = never pause</p>
                                     <input
                                         type="number"
                                         min="0"
@@ -748,7 +741,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityPauseWhenSessionsChange(Math.max(0, Number(event.target.value) || 0))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Breaker max findings
+                                <label className="text-sm font-semibold">
+                                    Stop after findings
                                     <input
                                         type="number"
                                         min="1"
@@ -758,7 +752,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onChange={(event) => onIntegrityBreakerMaxFindingsChange(Math.max(1, Number(event.target.value) || 1))}
                                     />
                                 </label>
-                                <label className="text-sm font-semibold">Breaker max %
+                                <label className="text-sm font-semibold">
+                                    Stop after library %
                                     <input
                                         type="number"
                                         min="0.1"
@@ -770,6 +765,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                             </div>
+                        </div>
                     </div>
                 )}
             </section>
