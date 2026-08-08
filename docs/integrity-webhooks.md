@@ -60,7 +60,7 @@ Use Arr’s **Test** button on the connection. A successful test returns HTTP 20
 3. Runs Integrity **baseline** in order: **playback → quick fingerprint → optional full-file hash**
 4. On hard failure: stores a finding, blocklists the release, and (if integrity automation is on) deletes + re-searches
 5. On soft decode timeout (when enabled): stores a finding and queues a recheck — **no blocklist**
-6. On success: stores the result under the same cache key coverage uses (`sonarr:<instance>:<id>:file:<fileId>`)
+6. On success: stores the result under the same cache key coverage uses (`sonarr:<instance>:<id>:file:<fileId>`). When Discord **Post new media / upgrades after Integrity verifies** is enabled, the portal also queues a **member-channel** announce (TV seasons are debounced into one post). Soft timeouts do **not** announce until a later recheck passes.
 
 If auth is missing, Integrity is disabled, or Arr cannot reach the URL, imports still succeed in Arr — the portal simply never baselines them and coverage only moves when you run scans manually.
 
@@ -68,4 +68,5 @@ If auth is missing, Integrity is disabled, or Arr cannot reach the URL, imports 
 
 - Media must be mounted into the portal container (read-only is fine); see [Deployment](./deployment.md)
 - Arr→container path maps if Arr paths differ from portal paths
-- Discord **admin issues webhook** for integrity alerts (Settings → Discord); falls back to the member notifications webhook if blank
+- Discord **admin issues webhook** for integrity **failures** (Settings → Discord); falls back to the member notifications webhook if blank
+- Discord **member notifications webhook** for post-integrity media/upgrade announces (and email mirrors)

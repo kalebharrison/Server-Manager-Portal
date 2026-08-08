@@ -12,6 +12,7 @@ export type DiscordSettingsTabProps = {
     discordChatChannelLabel: string;
     discordMediaChannelLabel: string;
     discordGuildId: string;
+    discordMemberChannelId: string;
     discordBotToken: string;
     discordBotEnabled: boolean;
     discordWebhookUrl: string;
@@ -19,6 +20,11 @@ export type DiscordSettingsTabProps = {
     discordNotifyRequestUpdates: boolean;
     discordNotifyIssueReplies: boolean;
     discordNotifyWatchlistAvailable: boolean;
+    discordNotifyAnnouncements: boolean;
+    discordNotifyBroadcasts: boolean;
+    discordNotifyNewsletters: boolean;
+    discordNotifyMediaReady: boolean;
+    discordMediaAnnounceDebounceMinutes: number;
     discordLlmEnabled: boolean;
     discordLlmUrl: string;
     discordLlmApiKey: string;
@@ -35,6 +41,7 @@ export type DiscordSettingsTabProps = {
     onDiscordChatChannelLabelChange: (value: string) => void;
     onDiscordMediaChannelLabelChange: (value: string) => void;
     onDiscordGuildIdChange: (value: string) => void;
+    onDiscordMemberChannelIdChange: (value: string) => void;
     onDiscordBotTokenChange: (value: string) => void;
     onDiscordBotEnabledChange: (value: boolean) => void;
     onDiscordWebhookUrlChange: (value: string) => void;
@@ -42,6 +49,11 @@ export type DiscordSettingsTabProps = {
     onDiscordNotifyRequestUpdatesChange: (value: boolean) => void;
     onDiscordNotifyIssueRepliesChange: (value: boolean) => void;
     onDiscordNotifyWatchlistAvailableChange: (value: boolean) => void;
+    onDiscordNotifyAnnouncementsChange: (value: boolean) => void;
+    onDiscordNotifyBroadcastsChange: (value: boolean) => void;
+    onDiscordNotifyNewslettersChange: (value: boolean) => void;
+    onDiscordNotifyMediaReadyChange: (value: boolean) => void;
+    onDiscordMediaAnnounceDebounceMinutesChange: (value: number) => void;
     onDiscordLlmEnabledChange: (value: boolean) => void;
     onDiscordLlmUrlChange: (value: string) => void;
     onDiscordLlmApiKeyChange: (value: string) => void;
@@ -62,20 +74,32 @@ export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => 
             discordInviteUrl={props.discordInviteUrl}
             discordChatChannelLabel={props.discordChatChannelLabel}
             discordMediaChannelLabel={props.discordMediaChannelLabel}
+            discordMemberChannelId={props.discordMemberChannelId}
             discordWebhookUrl={props.discordWebhookUrl}
             discordAdminWebhookUrl={props.discordAdminWebhookUrl}
             discordNotifyRequestUpdates={props.discordNotifyRequestUpdates}
             discordNotifyIssueReplies={props.discordNotifyIssueReplies}
             discordNotifyWatchlistAvailable={props.discordNotifyWatchlistAvailable}
+            discordNotifyAnnouncements={props.discordNotifyAnnouncements}
+            discordNotifyBroadcasts={props.discordNotifyBroadcasts}
+            discordNotifyNewsletters={props.discordNotifyNewsletters}
+            discordNotifyMediaReady={props.discordNotifyMediaReady}
+            discordMediaAnnounceDebounceMinutes={props.discordMediaAnnounceDebounceMinutes}
             onDiscordEnabledChange={props.onDiscordEnabledChange}
             onDiscordInviteUrlChange={props.onDiscordInviteUrlChange}
             onDiscordChatChannelLabelChange={props.onDiscordChatChannelLabelChange}
             onDiscordMediaChannelLabelChange={props.onDiscordMediaChannelLabelChange}
+            onDiscordMemberChannelIdChange={props.onDiscordMemberChannelIdChange}
             onDiscordWebhookUrlChange={props.onDiscordWebhookUrlChange}
             onDiscordAdminWebhookUrlChange={props.onDiscordAdminWebhookUrlChange}
             onDiscordNotifyRequestUpdatesChange={props.onDiscordNotifyRequestUpdatesChange}
             onDiscordNotifyIssueRepliesChange={props.onDiscordNotifyIssueRepliesChange}
             onDiscordNotifyWatchlistAvailableChange={props.onDiscordNotifyWatchlistAvailableChange}
+            onDiscordNotifyAnnouncementsChange={props.onDiscordNotifyAnnouncementsChange}
+            onDiscordNotifyBroadcastsChange={props.onDiscordNotifyBroadcastsChange}
+            onDiscordNotifyNewslettersChange={props.onDiscordNotifyNewslettersChange}
+            onDiscordNotifyMediaReadyChange={props.onDiscordNotifyMediaReadyChange}
+            onDiscordMediaAnnounceDebounceMinutesChange={props.onDiscordMediaAnnounceDebounceMinutesChange}
         />
         <DiscordBotSection
             discordEnabled={props.discordEnabled}

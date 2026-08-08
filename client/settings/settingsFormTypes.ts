@@ -33,6 +33,7 @@ export type SettingsFormValues = {
     discordChatChannelLabel: string;
     discordMediaChannelLabel: string;
     discordGuildId: string;
+    discordMemberChannelId: string;
     discordBotToken: string;
     discordBotEnabled: boolean;
     discordWebhookUrl: string;
@@ -40,6 +41,11 @@ export type SettingsFormValues = {
     discordNotifyRequestUpdates: boolean;
     discordNotifyIssueReplies: boolean;
     discordNotifyWatchlistAvailable: boolean;
+    discordNotifyAnnouncements: boolean;
+    discordNotifyBroadcasts: boolean;
+    discordNotifyNewsletters: boolean;
+    discordNotifyMediaReady: boolean;
+    discordMediaAnnounceDebounceMinutes: number;
     discordLlmEnabled: boolean;
     discordLlmUrl: string;
     discordLlmApiKey: string;

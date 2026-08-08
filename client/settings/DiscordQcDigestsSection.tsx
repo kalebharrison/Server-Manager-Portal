@@ -48,7 +48,7 @@ export const DiscordQcDigestsSection: React.FC<DiscordQcDigestsSectionProps> = (
                     onChange={(event) => onIntegrityDiscordDigestEnabledChange(event.target.checked)}
                 />
             </label>
-            <SettingHint>Digests use the admin webhook (falls back to member webhook).</SettingHint>
+            <SettingHint>Failure digests use the admin webhook (falls back to member webhook). Successful media announces use the member webhook after Integrity verifies.</SettingHint>
         </div>
     </SettingsCollapseSection>
 );

@@ -39,6 +39,12 @@ type SettingsHydrationSetters = {
     setDiscordNotifyRequestUpdates: (value: boolean) => void;
     setDiscordNotifyIssueReplies: (value: boolean) => void;
     setDiscordNotifyWatchlistAvailable: (value: boolean) => void;
+    setDiscordMemberChannelId: (value: string) => void;
+    setDiscordNotifyAnnouncements: (value: boolean) => void;
+    setDiscordNotifyBroadcasts: (value: boolean) => void;
+    setDiscordNotifyNewsletters: (value: boolean) => void;
+    setDiscordNotifyMediaReady: (value: boolean) => void;
+    setDiscordMediaAnnounceDebounceMinutes: (value: number) => void;
     setDiscordLlmEnabled: (value: boolean) => void;
     setDiscordLlmUrl: (value: string) => void;
     setDiscordLlmApiKey: (value: string) => void;
@@ -167,6 +173,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setDiscordChatChannelLabel(initialSettings.discordChatChannelLabel || '');
     setters.setDiscordMediaChannelLabel(initialSettings.discordMediaChannelLabel || '');
     setters.setDiscordGuildId(initialSettings.discordGuildId || '');
+    setters.setDiscordMemberChannelId(initialSettings.discordMemberChannelId || '');
     setters.setDiscordBotToken(initialSettings.discordBotToken || '');
     setters.setDiscordBotEnabled(!!initialSettings.discordBotEnabled);
     setters.setDiscordWebhookUrl(initialSettings.discordWebhookUrl || '');
@@ -174,6 +181,13 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setDiscordNotifyRequestUpdates(initialSettings.discordNotifyRequestUpdates !== false);
     setters.setDiscordNotifyIssueReplies(initialSettings.discordNotifyIssueReplies !== false);
     setters.setDiscordNotifyWatchlistAvailable(initialSettings.discordNotifyWatchlistAvailable !== false);
+    setters.setDiscordNotifyAnnouncements(initialSettings.discordNotifyAnnouncements !== false);
+    setters.setDiscordNotifyBroadcasts(initialSettings.discordNotifyBroadcasts !== false);
+    setters.setDiscordNotifyNewsletters(initialSettings.discordNotifyNewsletters !== false);
+    setters.setDiscordNotifyMediaReady(initialSettings.discordNotifyMediaReady !== false);
+    setters.setDiscordMediaAnnounceDebounceMinutes(
+        Math.max(1, Math.min(120, Number(initialSettings.discordMediaAnnounceDebounceMinutes ?? 10) || 10)),
+    );
     setters.setDiscordLlmEnabled(!!initialSettings.discordLlmEnabled);
     setters.setDiscordLlmUrl(initialSettings.discordLlmUrl || '');
     setters.setDiscordLlmApiKey(initialSettings.discordLlmApiKey || '');
