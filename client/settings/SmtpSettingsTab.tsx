@@ -4,6 +4,7 @@ import { SettingHint } from './SettingHint';
 
 type SmtpSettingsTabProps = {
     smtpEnabled: boolean;
+    smtpAdminOnly: boolean;
     smtpHost: string;
     smtpPort: number;
     smtpUser: string;
@@ -14,6 +15,7 @@ type SmtpSettingsTabProps = {
     testRecipient: string;
     isTestingSmtp: boolean;
     onSmtpEnabledChange: (value: boolean) => void;
+    onSmtpAdminOnlyChange: (value: boolean) => void;
     onSmtpHostChange: (value: string) => void;
     onSmtpPortChange: (value: number) => void;
     onSmtpUserChange: (value: string) => void;
@@ -27,6 +29,7 @@ type SmtpSettingsTabProps = {
 
 export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
     smtpEnabled,
+    smtpAdminOnly,
     smtpHost,
     smtpPort,
     smtpUser,
@@ -37,6 +40,7 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
     testRecipient,
     isTestingSmtp,
     onSmtpEnabledChange,
+    onSmtpAdminOnlyChange,
     onSmtpHostChange,
     onSmtpPortChange,
     onSmtpUserChange,
@@ -52,9 +56,18 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
             <input type="checkbox" checked={smtpEnabled} onChange={(event) => onSmtpEnabledChange(event.target.checked)} />
             <span className="text-sm text-text">Enable email notifications</span>
         </label>
+        <label className={`flex items-center gap-3 cursor-pointer mb-4 ${!smtpEnabled ? 'opacity-50' : ''}`}>
+            <input
+                type="checkbox"
+                checked={smtpEnabled && smtpAdminOnly}
+                disabled={!smtpEnabled}
+                onChange={(event) => onSmtpAdminOnlyChange(event.target.checked)}
+            />
+            <span className="text-sm text-text">Admins only</span>
+        </label>
         <div className="mt-1 mb-4">
             <SettingHint>
-                Master switch for outbound mail. Request, available, and issue notices still have no member opt-out when this is on. Discord DMs keep working if email is off.
+                Master switch for outbound mail. Admins only skips every member address — use it while testing. SMTP tests still send to the address you type. Discord DMs keep working either way.
             </SettingHint>
         </div>
         <div className={!smtpEnabled ? 'opacity-50 pointer-events-none' : undefined}>

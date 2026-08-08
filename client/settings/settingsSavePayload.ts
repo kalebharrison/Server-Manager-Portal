@@ -11,6 +11,7 @@ type SettingsSavePayloadInput = {
     jellyfinApiKey: string;
     checkInterval: number;
     smtpEnabled: boolean;
+    smtpAdminOnly: boolean;
     smtpHost: string;
     smtpPort: number;
     smtpUser: string;

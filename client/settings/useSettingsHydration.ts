@@ -38,6 +38,7 @@ export const useSettingsHydration = ({
             setSelectedServer: set('selectedServer'),
             setCheckInterval: set('checkInterval'),
             setSmtpEnabled: set('smtpEnabled'),
+            setSmtpAdminOnly: set('smtpAdminOnly'),
             setSmtpHost: set('smtpHost'),
             setSmtpPort: set('smtpPort'),
             setSmtpUser: set('smtpUser'),

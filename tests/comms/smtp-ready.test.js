@@ -2,7 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { createEmailSendHelpers } from '../../lib/comms/email-send.js';
-import { isSmtpConfigured, isSmtpEnabled, isSmtpReady } from '../../lib/comms/smtp-ready.js';
+import {
+    allowSmtpRecipient,
+    isAdminEmailRecipient,
+    isSmtpConfigured,
+    isSmtpEnabled,
+    isSmtpReady,
+} from '../../lib/comms/smtp-ready.js';
 
 test('smtp helpers treat missing smtpEnabled as on', () => {
     const config = { smtpHost: 'smtp.example.com', smtpUser: 'u', smtpPass: 'p' };
@@ -44,4 +50,38 @@ test('sendEmail skips when SMTP is disabled', async () => {
 
     assert.equal(sent, false);
     assert.match(logs.join('\n'), /disabled/i);
+});
+
+test('admin-only SMTP allows portal admins and skips members', async () => {
+    const users = [
+        { id: 'a1', username: 'admin', email: 'admin@example.com', isPortalAdmin: true },
+        { id: 'u1', username: 'sam', email: 'sam@example.com' },
+    ];
+    const config = {
+        smtpEnabled: true,
+        smtpAdminOnly: true,
+        smtpHost: 'smtp.example.com',
+        smtpUser: 'u',
+        smtpPass: 'p',
+        smtpFrom: 'noreply@example.com',
+    };
+
+    assert.equal(isAdminEmailRecipient(config, users, 'admin@example.com'), true);
+    assert.equal(isAdminEmailRecipient(config, users, 'sam@example.com'), false);
+    assert.equal(allowSmtpRecipient(config, users, 'sam@example.com'), false);
+    assert.equal(allowSmtpRecipient(config, users, 'sam@example.com', { allowAnyRecipient: true }), true);
+
+    const logs = [];
+    const helpers = createEmailSendHelpers({
+        usersPath: 'users.json',
+        emailLogPath: 'email_log.json',
+        loadFile: async () => users,
+        saveFile: async () => {},
+        appendAuditLog: async () => {},
+        log: (message) => logs.push(String(message)),
+    });
+
+    const skipped = await helpers.sendEmail(config, 'sam@example.com', 'Hello', '<p>Hi</p>');
+    assert.equal(skipped, false);
+    assert.match(logs.join('\n'), /admin-only/i);
 });

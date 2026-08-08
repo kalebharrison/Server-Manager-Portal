@@ -14,6 +14,7 @@ type SettingsHydrationSetters = {
     setSelectedServer: (value: string) => void;
     setCheckInterval: (value: number) => void;
     setSmtpEnabled: (value: boolean) => void;
+    setSmtpAdminOnly: (value: boolean) => void;
     setSmtpHost: (value: string) => void;
     setSmtpPort: (value: number) => void;
     setSmtpUser: (value: string) => void;
@@ -156,6 +157,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setSelectedServer(initialSettings.serverIdentifier || '');
     setters.setCheckInterval(initialSettings.checkIntervalMinutes || 60);
     setters.setSmtpEnabled(initialSettings.smtpEnabled !== false);
+    setters.setSmtpAdminOnly(!!initialSettings.smtpAdminOnly);
     setters.setSmtpHost(initialSettings.smtpHost || '');
     setters.setSmtpPort(initialSettings.smtpPort || 587);
     setters.setSmtpUser(initialSettings.smtpUser || '');

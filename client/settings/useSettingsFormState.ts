@@ -29,6 +29,7 @@ export const useSettingsFormState = () => {
         jellyfinApiKey: values.jellyfinApiKey,
         checkInterval: values.checkInterval,
         smtpEnabled: values.smtpEnabled,
+        smtpAdminOnly: values.smtpAdminOnly,
         smtpHost: values.smtpHost,
         smtpPort: values.smtpPort,
         smtpUser: values.smtpUser,

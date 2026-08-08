@@ -15,6 +15,7 @@ export const buildSmtpTabPanelProps = ({
     emailActions,
 }: EmailTabPanelPropsInput): SettingsTabPanelProps['smtp'] => ({
     smtpEnabled: values.smtpEnabled,
+    smtpAdminOnly: values.smtpAdminOnly,
     smtpHost: values.smtpHost,
     smtpPort: values.smtpPort,
     smtpUser: values.smtpUser,
@@ -25,6 +26,7 @@ export const buildSmtpTabPanelProps = ({
     testRecipient: values.testRecipient,
     isTestingSmtp: emailActions.isTestingSmtp,
     onSmtpEnabledChange: onChange('smtpEnabled'),
+    onSmtpAdminOnlyChange: onChange('smtpAdminOnly'),
     onSmtpHostChange: onChange('smtpHost'),
     onSmtpPortChange: onChange('smtpPort'),
     onSmtpUserChange: onChange('smtpUser'),
