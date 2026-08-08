@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createEmailSendHelpers } from '../../lib/comms/email-send.js';
+import { createEmailSendHelpers, shouldAttachInlineLogo } from '../../lib/comms/email-send.js';
+import { buildSmtpTestHtml } from '../../lib/comms/email-templates.js';
 import {
     allowSmtpRecipient,
     isAdminEmailRecipient,
@@ -9,6 +10,11 @@ import {
     isSmtpEnabled,
     isSmtpReady,
 } from '../../lib/comms/smtp-ready.js';
+
+test('test mail html does not request an inline logo', () => {
+    assert.equal(shouldAttachInlineLogo(buildSmtpTestHtml()), false);
+    assert.equal(shouldAttachInlineLogo('<img src="cid:logo" alt="">'), true);
+});
 
 test('smtp helpers treat missing smtpEnabled as on', () => {
     const config = { smtpHost: 'smtp.example.com', smtpUser: 'u', smtpPass: 'p' };
