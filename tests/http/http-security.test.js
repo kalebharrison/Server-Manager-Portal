@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createSecurityHeadersMiddleware, secureTokenEquals } from '../../lib/http/http-security.js';
+import {
+    allowSameOriginFrame,
+    createSecurityHeadersMiddleware,
+    secureTokenEquals,
+} from '../../lib/http/http-security.js';
 
 test('secureTokenEquals rejects mismatched and missing secrets', () => {
     assert.equal(secureTokenEquals('abc', 'abc'), true);
@@ -25,5 +29,20 @@ test('security headers middleware sets baseline browser protections', () => {
     assert.equal(headers['X-Frame-Options'], 'DENY');
     assert.equal(headers['Cache-Control'], 'no-store, private');
     assert.equal(headers['Strict-Transport-Security'], 'max-age=31536000; includeSubDomains');
+    assert.match(headers['Content-Security-Policy'], /default-src 'self'/);
+});
+
+test('allowSameOriginFrame only relaxes clickjacking headers', () => {
+    const headers = {};
+    const middleware = createSecurityHeadersMiddleware();
+    const res = {
+        setHeader: (key, value) => { headers[key] = value; },
+        getHeader: (key) => headers[key],
+    };
+    middleware({ secure: false, path: '/api/config/email-previews' }, res, () => {});
+    allowSameOriginFrame(res);
+    assert.equal(headers['X-Frame-Options'], 'SAMEORIGIN');
+    assert.match(headers['Content-Security-Policy'], /frame-ancestors 'self'/);
+    assert.doesNotMatch(headers['Content-Security-Policy'], /frame-ancestors 'none'/);
     assert.match(headers['Content-Security-Policy'], /default-src 'self'/);
 });

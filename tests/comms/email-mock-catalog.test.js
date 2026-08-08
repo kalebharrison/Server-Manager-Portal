@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildMockEmailCatalog, sendMockEmailCatalog } from '../../lib/comms/email-mock-catalog.js';
+import {
+    buildEmailPreviewIndexHtml,
+    buildMockEmailCatalog,
+    previewEmailNavLabel,
+    sendMockEmailCatalog,
+} from '../../lib/comms/email-mock-catalog.js';
 
 const EXPECTED_IDS = [
     'smtp_test',
@@ -71,6 +76,18 @@ test('sendMockEmailCatalog delivers every template to the requested address', as
     assert.equal(sent.length, EXPECTED_IDS.length);
     assert.ok(sent.every((row) => row.to === 'kalebrharrison@gmail.com'));
     assert.ok(sent.every((row) => row.options?.allowAnyRecipient === true));
+});
+
+test('preview gallery uses title-case nav labels', () => {
+    assert.equal(previewEmailNavLabel('request_approved'), 'Request Approved');
+    assert.equal(previewEmailNavLabel('smtp_test'), 'SMTP Test');
+    const index = buildEmailPreviewIndexHtml(
+        [{ id: 'request_approved' }, { id: 'smtp_test' }],
+        { hrefForId: (id) => `?id=${id}` },
+    );
+    assert.match(index, />Request Approved</);
+    assert.match(index, />SMTP Test</);
+    assert.match(index, /\?id=request_approved/);
 });
 
 test('sendMockEmailCatalog requires a recipient', async () => {
