@@ -25,6 +25,8 @@ export type DiscordSettingsTabProps = {
     discordNotifyNewsletters: boolean;
     discordNotifyMediaReady: boolean;
     discordMediaAnnounceDebounceMinutes: number;
+    integrityWebhookUsername: string;
+    integrityWebhookPassword: string;
     discordLlmEnabled: boolean;
     discordLlmUrl: string;
     discordLlmApiKey: string;
@@ -54,6 +56,8 @@ export type DiscordSettingsTabProps = {
     onDiscordNotifyNewslettersChange: (value: boolean) => void;
     onDiscordNotifyMediaReadyChange: (value: boolean) => void;
     onDiscordMediaAnnounceDebounceMinutesChange: (value: number) => void;
+    onIntegrityWebhookUsernameChange: (value: string) => void;
+    onIntegrityWebhookPasswordChange: (value: string) => void;
     onDiscordLlmEnabledChange: (value: boolean) => void;
     onDiscordLlmUrlChange: (value: string) => void;
     onDiscordLlmApiKeyChange: (value: string) => void;
@@ -85,6 +89,8 @@ export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => 
             discordNotifyNewsletters={props.discordNotifyNewsletters}
             discordNotifyMediaReady={props.discordNotifyMediaReady}
             discordMediaAnnounceDebounceMinutes={props.discordMediaAnnounceDebounceMinutes}
+            integrityWebhookUsername={props.integrityWebhookUsername}
+            integrityWebhookPassword={props.integrityWebhookPassword}
             onDiscordEnabledChange={props.onDiscordEnabledChange}
             onDiscordInviteUrlChange={props.onDiscordInviteUrlChange}
             onDiscordChatChannelLabelChange={props.onDiscordChatChannelLabelChange}
@@ -100,6 +106,8 @@ export const DiscordSettingsTab: React.FC<DiscordSettingsTabProps> = (props) => 
             onDiscordNotifyNewslettersChange={props.onDiscordNotifyNewslettersChange}
             onDiscordNotifyMediaReadyChange={props.onDiscordNotifyMediaReadyChange}
             onDiscordMediaAnnounceDebounceMinutesChange={props.onDiscordMediaAnnounceDebounceMinutesChange}
+            onIntegrityWebhookUsernameChange={props.onIntegrityWebhookUsernameChange}
+            onIntegrityWebhookPasswordChange={props.onIntegrityWebhookPasswordChange}
         />
         <DiscordBotSection
             discordEnabled={props.discordEnabled}

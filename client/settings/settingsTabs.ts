@@ -157,7 +157,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             {
                 id: 'discord',
                 label: 'Discord',
-                blurb: 'Bot, webhooks, email mirrors, post-integrity media posts, and QC digests.',
+                blurb: 'Bot, Discord webhooks, Arr import hooks, email mirrors, media posts, and QC digests.',
                 keywords: [
                     'discord', 'bot', 'webhook', 'llm', 'ollama', 'ask', 'agent', 'searx', 'brave', 'tavily',
                     'requesty', 'digest', 'cleanup', 'integrity',

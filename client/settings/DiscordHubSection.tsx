@@ -18,6 +18,8 @@ export type DiscordHubSectionProps = {
     discordNotifyNewsletters: boolean;
     discordNotifyMediaReady: boolean;
     discordMediaAnnounceDebounceMinutes: number;
+    integrityWebhookUsername: string;
+    integrityWebhookPassword: string;
     onDiscordEnabledChange: (value: boolean) => void;
     onDiscordInviteUrlChange: (value: string) => void;
     onDiscordChatChannelLabelChange: (value: string) => void;
@@ -33,6 +35,8 @@ export type DiscordHubSectionProps = {
     onDiscordNotifyNewslettersChange: (value: boolean) => void;
     onDiscordNotifyMediaReadyChange: (value: boolean) => void;
     onDiscordMediaAnnounceDebounceMinutesChange: (value: number) => void;
+    onIntegrityWebhookUsernameChange: (value: string) => void;
+    onIntegrityWebhookPasswordChange: (value: string) => void;
 };
 
 export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
@@ -51,6 +55,8 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
     discordNotifyNewsletters,
     discordNotifyMediaReady,
     discordMediaAnnounceDebounceMinutes,
+    integrityWebhookUsername,
+    integrityWebhookPassword,
     onDiscordEnabledChange,
     onDiscordInviteUrlChange,
     onDiscordChatChannelLabelChange,
@@ -66,6 +72,8 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
     onDiscordNotifyNewslettersChange,
     onDiscordNotifyMediaReadyChange,
     onDiscordMediaAnnounceDebounceMinutesChange,
+    onIntegrityWebhookUsernameChange,
+    onIntegrityWebhookPasswordChange,
 }) => (
     <div className="mb-8">
         <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 inline-flex items-center flex-wrap gap-0">
@@ -129,6 +137,40 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
                 onChange={(event) => onDiscordMediaAnnounceDebounceMinutesChange(Math.max(1, Math.min(120, Number(event.target.value) || 10)))}
             />
             <div className="mt-2"><SettingHint>Groups TV season episodes into one post after the last episode arrives.</SettingHint></div>
+        </div>
+
+        <h4 className="text-sm font-bold uppercase tracking-wide text-muted mt-6 mb-3">Arr import hooks</h4>
+        <p className="text-xs text-muted mb-3">
+            Point Sonarr / Radarr / Lidarr Connect webhooks here so Integrity can verify files, then Discord can announce them.
+            Paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
+            <code className="text-[11px]">/triggers/radarr</code>,{' '}
+            <code className="text-[11px]">/triggers/lidarr</code>
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <div>
+                <label htmlFor="integrityWebhookUsername">Hook username</label>
+                <input
+                    className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
+                    id="integrityWebhookUsername"
+                    type="text"
+                    value={integrityWebhookUsername}
+                    autoComplete="off"
+                    onChange={(event) => onIntegrityWebhookUsernameChange(event.target.value)}
+                />
+            </div>
+            <div>
+                <label htmlFor="integrityWebhookPassword">Hook password</label>
+                <input
+                    className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
+                    id="integrityWebhookPassword"
+                    type="password"
+                    value={integrityWebhookPassword}
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
+                />
+                <p className="text-xs text-muted mt-1">Leave blank to keep the current password.</p>
+            </div>
         </div>
     </div>
 );

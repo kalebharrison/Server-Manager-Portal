@@ -7,8 +7,8 @@ That only works if Sonarr / Radarr / Lidarr notify the portal.
 ## What you need
 
 1. **Quality Control** enabled, with **Library integrity** enabled  
-   Settings → Quality Control (Admin Only)
-2. **Webhook username + password** set in that same Integrity section
+   Settings → Quality Control → Integrity
+2. **Arr import hook username + password** set in Settings → Discord
 3. An Arr **Webhook** notification per app pointing at the portal
 
 ## Portal endpoints
@@ -45,7 +45,7 @@ In each Arr app → Settings → Connect → Add → **Webhook**:
 | Notification triggers | **On Import** / **On Upgrade** (Sonarr/Radarr). Lidarr: **On Release Import** / **On Upgrade**. |
 | URL | `http://<portal-container>:2121/triggers/<sonarr\|radarr\|lidarr>` |
 | Method | `POST` |
-| Username / Password | Same values as Settings → Quality Control → Library integrity |
+| Username / Password | Same values as Settings → Discord → Arr import hooks |
 
 Leave other triggers off unless you intentionally want more traffic.
 

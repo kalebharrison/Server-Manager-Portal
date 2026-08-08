@@ -51,8 +51,6 @@ type Props = {
     integrityDecodeTimeoutMs: number;
     integrityDecodeRetries: number;
     integritySoftDecodeTimeouts: boolean;
-    integrityWebhookUsername: string;
-    integrityWebhookPassword: string;
     qcMetaDlMinutes: number;
     qcStalledHours: number;
     qcSlowDownloadFloorKbps: number;
@@ -91,8 +89,6 @@ type Props = {
     onIntegrityDecodeTimeoutMsChange: (value: number) => void;
     onIntegrityDecodeRetriesChange: (value: number) => void;
     onIntegritySoftDecodeTimeoutsChange: (value: boolean) => void;
-    onIntegrityWebhookUsernameChange: (value: string) => void;
-    onIntegrityWebhookPasswordChange: (value: string) => void;
     onQcMetaDlMinutesChange: (value: number) => void;
     onQcStalledHoursChange: (value: number) => void;
     onQcSlowDownloadFloorKbpsChange: (value: number) => void;
@@ -135,8 +131,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityDecodeTimeoutMs,
     integrityDecodeRetries,
     integritySoftDecodeTimeouts,
-    integrityWebhookUsername,
-    integrityWebhookPassword,
     qcMetaDlMinutes,
     qcStalledHours,
     qcSlowDownloadFloorKbps,
@@ -175,8 +169,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityDecodeTimeoutMsChange,
     onIntegrityDecodeRetriesChange,
     onIntegritySoftDecodeTimeoutsChange,
-    onIntegrityWebhookUsernameChange,
-    onIntegrityWebhookPasswordChange,
     onQcMetaDlMinutesChange,
     onQcStalledHoursChange,
     onQcSlowDownloadFloorKbpsChange,
@@ -548,41 +540,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     onChange={(event) => onIntegrityAutomationEnabledChange(event.target.checked)}
                                 />
                             </label>
-                        </div>
-
-                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Webhooks</h4>
-                            <p className="text-xs text-muted">
-                                Paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
-                                <code className="text-[11px]">/triggers/radarr</code>,{' '}
-                                <code className="text-[11px]">/triggers/lidarr</code>
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <label className="text-sm font-semibold">
-                                    Username
-                                    <input
-                                        type="text"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={integrityWebhookUsername}
-                                        disabled={!enabled}
-                                        autoComplete="off"
-                                        onChange={(event) => onIntegrityWebhookUsernameChange(event.target.value)}
-                                    />
-                                </label>
-                                <label className="text-sm font-semibold">
-                                    Password
-                                    <input
-                                        type="password"
-                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                        value={integrityWebhookPassword}
-                                        disabled={!enabled}
-                                        autoComplete="new-password"
-                                        placeholder="••••••••"
-                                        onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
-                                    />
-                                    <p className="text-xs text-muted font-normal mt-1">Leave blank to keep the current password.</p>
-                                </label>
-                            </div>
                         </div>
 
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
