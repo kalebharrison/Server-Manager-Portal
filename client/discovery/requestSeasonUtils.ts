@@ -82,9 +82,23 @@ export const hasActiveDownloads = (
     return activeQueues.length > 0;
 };
 
-/** True when the request or Sonarr reports this title is still downloading / importing. */
+const inferAvailabilityMediaType = (details?: any, mediaInfo?: any): 'movie' | 'tv' | null => {
+    const raw = details?.mediaType ?? details?.type ?? details?.media?.mediaType ?? mediaInfo?.mediaType;
+    if (raw === 'movie' || raw === 1 || raw === '1') return 'movie';
+    if (raw === 'tv' || raw === 2 || raw === '2') return 'tv';
+    if (details?.sonarrLibraryStatus) return 'tv';
+    if (details?.radarrLibraryStatus) return 'movie';
+    if (details?.firstAirDate && !details?.releaseDate) return 'tv';
+    if (details?.releaseDate && !details?.firstAirDate) return 'movie';
+    return null;
+};
+
+/** True when Sonarr / a TV request reports this series is still downloading / importing. */
 export const hasActiveShowDownloads = (details?: any, mediaInfo?: any): boolean => {
+    const mediaType = inferAvailabilityMediaType(details, mediaInfo);
+    if (mediaType === 'movie') return false;
     if (details?.sonarrLibraryStatus?.hasActiveDownloads) return true;
+    if (mediaType !== 'tv' && !details?.sonarrLibraryStatus) return false;
     return hasActiveDownloads(mediaInfo || details?.mediaInfo);
 };
 
@@ -94,9 +108,9 @@ export const isMediaActivelyProcessing = (
     details?: any,
 ): boolean => {
     if (hasActiveShowDownloads(details, mediaInfo)) return true;
-    const status = Number(mediaStatus ?? mediaInfo?.status);
-    if (status !== MEDIA_STATUS.PROCESSING) return false;
-    return hasActiveDownloads(mediaInfo);
+    if (hasActiveDownloads(mediaInfo)) return true;
+    return Number(mediaStatus ?? mediaInfo?.status) === MEDIA_STATUS.PROCESSING
+        && hasActiveDownloads(mediaInfo);
 };
 
 export const resolveInProgressDisplay = (
@@ -105,7 +119,16 @@ export const resolveInProgressDisplay = (
     details?: any,
     opts: { isOwnRequest?: boolean; requestedByName?: string | null } = {},
 ): { kind: 'processing' | 'requested'; label: string; detail: string } | null => {
-    if (hasActiveShowDownloads(details, mediaInfo)) {
+    const info = mediaInfo || details?.mediaInfo;
+    const isOwn = opts.isOwnRequest === true;
+    const byName = String(opts.requestedByName || info?.requestAttribution?.requestedByName || '').trim();
+    const movieDownloadDetail = isOwn
+        ? 'Your request is being downloaded or imported.'
+        : (byName
+            ? `Requested by ${byName} — downloading or importing.`
+            : 'This title was requested and is downloading or importing.');
+
+    if (hasActiveShowDownloads(details, info)) {
         return {
             kind: 'processing',
             label: 'Processing',
@@ -113,23 +136,16 @@ export const resolveInProgressDisplay = (
         };
     }
 
-    const status = Number(mediaStatus ?? mediaInfo?.status);
-    if (status !== MEDIA_STATUS.PROCESSING) return null;
-
-    const isOwn = opts.isOwnRequest === true;
-    const byName = String(opts.requestedByName || mediaInfo?.requestAttribution?.requestedByName || '').trim();
-
-    if (hasActiveDownloads(mediaInfo)) {
+    if (hasActiveDownloads(info)) {
         return {
             kind: 'processing',
             label: 'Processing',
-            detail: isOwn
-                ? 'Your request is being downloaded or imported.'
-                : (byName
-                    ? `Requested by ${byName} — downloading or importing.`
-                    : 'This title was requested and is downloading or importing.'),
+            detail: movieDownloadDetail,
         };
     }
+
+    const status = Number(mediaStatus ?? info?.status);
+    if (status !== MEDIA_STATUS.PROCESSING) return null;
 
     return {
         kind: 'requested',
