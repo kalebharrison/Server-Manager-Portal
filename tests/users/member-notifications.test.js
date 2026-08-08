@@ -44,7 +44,7 @@ test('request approved always emails even when the user opted out', async () => 
 
     assert.equal(notices.length, 1);
     assert.equal(notices[0].type, 'request_update');
-    assert.match(notices[0].replyTo, /^replies\+r\.9\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
+    assert.match(notices[0].replyTo, /^r\.9\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
     assert.match(notices[0].subject, /\[LostWaldo\] Request Approved: Dune/);
     assert.match(notices[0].html, /Request Approved/);
     assert.match(notices[0].html, /\/discovery\/movie\/438631/);
@@ -95,7 +95,7 @@ test('issue reply always emails even when the user opted out', async () => {
 
     assert.equal(notices.length, 1);
     assert.equal(notices[0].type, 'issue_reply');
-    assert.match(notices[0].replyTo, /^replies\+i\.p550e8400e29b41d4a716446655440000\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
+    assert.match(notices[0].replyTo, /^i\.p550e8400e29b41d4a716446655440000\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
     assert.equal(dms.length, 1);
     assert.equal(dms[0].discordId, '123456789012345678');
 });

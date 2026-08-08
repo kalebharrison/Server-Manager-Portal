@@ -8,6 +8,7 @@ import { loadPortalEnv } from '../lib/core/portal-env.js';
 import { createSessionCookies } from '../lib/auth/session-cookies.js';
 import { createSecurityHeadersMiddleware } from '../lib/http/http-security.js';
 import { createCsrfOriginMiddleware } from '../lib/http/csrf-origin.js';
+import { createSelectiveJsonParser } from '../lib/http/json-body.js';
 import { createPortalRuntime } from '../lib/core/create-portal-app.js';
 
 const appVersion = resolveAppVersion();
@@ -26,7 +27,7 @@ const { clearSessionCookie, setSessionCookie } = createSessionCookies({
     forceSecureCookies: env.FORCE_SECURE_COOKIES,
 });
 
-app.use(express.json({ limit: '50kb' }));
+app.use(createSelectiveJsonParser());
 app.use(cookieParser());
 app.use(createCsrfOriginMiddleware({ publicBaseUrl: env.PUBLIC_BASE_URL }));
 app.set('trust proxy', 1);

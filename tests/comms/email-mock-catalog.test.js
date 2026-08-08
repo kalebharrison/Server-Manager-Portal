@@ -50,9 +50,9 @@ test('mock catalog covers every outbound email type', () => {
         assert.doesNotMatch(entry.html, /PLEX SERVER/, `${entry.id} still uses the old dark header`);
     }
     const smtpTest = catalog.find((entry) => entry.id === 'smtp_test');
-    assert.match(smtpTest.replyTo, /^replies\+t\.smtp\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
+    assert.match(smtpTest.replyTo, /^t\.smtp\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
     const approved = catalog.find((entry) => entry.id === 'request_approved');
-    assert.match(approved.replyTo, /^replies\+r\.9\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
+    assert.match(approved.replyTo, /^r\.9\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
     assert.match(approved.subject, /Request Approved: Dune/);
     assert.match(approved.html, /Request Approved/);
     assert.match(approved.html, /image\.tmdb\.org\/t\/p\/w342\/d5NXSklXo0qyIYkgV94XAgMIckC\.jpg/);
@@ -85,7 +85,7 @@ test('sendMockEmailCatalog delivers every template to the requested address', as
     assert.ok(sent.every((row) => row.to === 'kalebrharrison@gmail.com'));
     assert.ok(sent.every((row) => row.options?.allowAnyRecipient === true));
     const smtpSent = sent.find((row) => /Test Email/.test(row.subject));
-    assert.match(smtpSent.options.replyTo, /^replies\+t\.smtp\./);
+    assert.match(smtpSent.options.replyTo, /^t\.smtp\./);
 });
 
 test('preview gallery uses title-case nav labels', () => {

@@ -19,16 +19,17 @@ const baseConfig = {
     mailjetInboundSecret: SECRET,
 };
 
-test('inbound reply-to encodes a signed plus-address on reply subdomain', () => {
+test('inbound reply-to encodes a signed catch-all address on reply subdomain', () => {
     const replyTo = buildInboundReplyTo(baseConfig, { kind: 'request', id: 9 });
-    assert.match(replyTo, /^replies\+r\.9\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
+    assert.match(replyTo, /^r\.9\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
     assert.deepEqual(parseInboundRecipient(replyTo, SECRET), { kind: 'request', id: '9' });
+    assert.deepEqual(parseInboundRecipient(`replies+${replyTo}`, SECRET), { kind: 'request', id: '9' });
     assert.equal(parseInboundRecipient(replyTo, 'wrong-secret'), null);
 });
 
 test('smtp test reply-to is accepted without a portal thread', async () => {
     const replyTo = buildInboundReplyTo(baseConfig, { kind: 'test', id: 'smtp' });
-    assert.match(replyTo, /^replies\+t\.smtp\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
+    assert.match(replyTo, /^t\.smtp\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
     const result = await processMailjetInbound({
         config: baseConfig,
         payload: {
