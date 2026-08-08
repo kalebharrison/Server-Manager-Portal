@@ -57,7 +57,7 @@ test('mock catalog covers every outbound email type', () => {
     assert.match(available.html, /Open in Portal/);
     assert.match(available.html, /Watch on Plex/);
     assert.match(available.html, /\/discovery\/tv\/95396/);
-    assert.match(available.html, /image\.tmdb\.org\/t\/p\/w342\/lFf6LLrQjYqM7WI4BNhut3vhvZR\.jpg/);
+    assert.match(available.html, /image\.tmdb\.org\/t\/p\/w342\/pPHpeI2X1qEd1CS1SeyrdhZ4qnT\.jpg/);
 });
 
 test('sendMockEmailCatalog delivers every template to the requested address', async () => {
