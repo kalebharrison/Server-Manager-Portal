@@ -78,11 +78,6 @@ export const buildUpgraderTabPanelProps = ({
     qcMaxStrikes: values.qcMaxStrikes,
     qcResearchThrottleHours: values.qcResearchThrottleHours,
     qcSnoozeDefaultHours: values.qcSnoozeDefaultHours,
-    qcQbitUrl: values.qcQbitUrl,
-    qcQbitUsername: values.qcQbitUsername,
-    qcQbitPassword: values.qcQbitPassword,
-    qcSabUrl: values.qcSabUrl,
-    qcSabApiKey: values.qcSabApiKey,
     onEnabledChange: onChange('upgraderEnabled'),
     onAutomationEnabledChange: onChange('upgraderAutomationEnabled'),
     onHuntMissingEpisodesChange: onChange('upgraderHuntMissingEpisodes'),
@@ -123,11 +118,6 @@ export const buildUpgraderTabPanelProps = ({
     onQcMaxStrikesChange: onChange('qcMaxStrikes'),
     onQcResearchThrottleHoursChange: onChange('qcResearchThrottleHours'),
     onQcSnoozeDefaultHoursChange: onChange('qcSnoozeDefaultHours'),
-    onQcQbitUrlChange: onChange('qcQbitUrl'),
-    onQcQbitUsernameChange: onChange('qcQbitUsername'),
-    onQcQbitPasswordChange: onChange('qcQbitPassword'),
-    onQcSabUrlChange: onChange('qcSabUrl'),
-    onQcSabApiKeyChange: onChange('qcSabApiKey'),
 });
 
 export const buildBroadcastTabPanelProps = ({

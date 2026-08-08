@@ -100,7 +100,9 @@ export const SettingsTabPanel: React.FC<SettingsTabPanelProps> = ({
         {activeTab === 'public-access' && <PublicAccessSettingsTab {...publicAccess} />}
         {activeTab === 'cleanup' && <CleanupSettingsTab {...cleanup} />}
         {activeTab === 'mediastack' && <MediaStackSettingsTab {...mediaStack} />}
-        {activeTab === 'upgrader' && <UpgraderSettingsPanel {...upgrader} />}
+        {(activeTab === 'qc-hunt' || activeTab === 'qc-downloads' || activeTab === 'qc-integrity') && (
+            <UpgraderSettingsPanel {...upgrader} section={activeTab} />
+        )}
         {activeTab === 'metadata' && <MetadataSettingsTab {...metadata} />}
         {activeTab === 'home-layout' && <HomeLayoutSettings {...homeLayout} />}
         {activeTab === 'navigation' && <NavigationOrderTab {...navigation} />}

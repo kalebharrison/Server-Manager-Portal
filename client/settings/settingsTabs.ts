@@ -1,4 +1,4 @@
-export const SETTINGS_TABS = ['plex', 'public-access', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'upgrader', 'metadata', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'discord', 'broadcast', 'stream-rules', 'logs'] as const;
+export const SETTINGS_TABS = ['plex', 'public-access', 'smtp', 'newsletter', 'cleanup', 'mediastack', 'qc-hunt', 'qc-downloads', 'qc-integrity', 'metadata', 'branding', 'navigation', 'home-layout', 'status', 'invites', 'tasks', 'system', 'contact', 'discord', 'broadcast', 'stream-rules', 'logs'] as const;
 
 export type SettingsTabId = typeof SETTINGS_TABS[number];
 
@@ -21,14 +21,19 @@ export const isSettingsTabId = (value: string): value is SettingsTabId => (
     (SETTINGS_TABS as readonly string[]).includes(value)
 );
 
-/** Resolve tab id from location hash (`#upgrader`, `#upgrader/hunt`, `#qbittorrent` → upgrader). */
+/** Resolve tab id from location hash (`#qc-hunt`, `#upgrader/downloads`, `#qbittorrent`). */
 export const settingsTabIdFromHash = (rawHash: string): SettingsTabId | null => {
     const raw = String(rawHash || '').replace(/^#/, '').trim();
     if (!raw) return null;
     const primary = raw.split(/[/?]/)[0] || '';
     if (isSettingsTabId(primary)) return primary;
-    // Legacy element anchors that live under Quality Control → Downloads
-    if (primary === 'qbittorrent' || primary === 'sabnzbd') return 'upgrader';
+    if (primary === 'upgrader') {
+        const sub = raw.startsWith('upgrader/') ? raw.slice('upgrader/'.length).split(/[/?]/)[0] : '';
+        if (sub === 'downloads') return 'qc-downloads';
+        if (sub === 'integrity') return 'qc-integrity';
+        return 'qc-hunt';
+    }
+    if (primary === 'qbittorrent' || primary === 'sabnzbd') return 'mediastack';
     return null;
 };
 
@@ -80,8 +85,8 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             {
                 id: 'mediastack',
                 label: 'Arr & Analytics',
-                blurb: 'Sonarr, Radarr, Lidarr instances and watch-stats apps.',
-                keywords: ['sonarr', 'radarr', 'lidarr', 'tautulli', 'jellystat', 'requests', 'integrations', 'arr', 'discover'],
+                blurb: 'Sonarr, Radarr, Lidarr, download clients, and watch-stats apps.',
+                keywords: ['sonarr', 'radarr', 'lidarr', 'tautulli', 'jellystat', 'requests', 'integrations', 'arr', 'discover', 'qbittorrent', 'qbit', 'sabnzbd', 'sab', 'download client'],
             },
             {
                 id: 'metadata',
@@ -101,15 +106,25 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
         title: 'Quality Control',
         tabs: [
             {
-                id: 'upgrader',
-                label: 'Quality Control',
-                blurb: 'Hunt upgrades, download clients/cleanup, and library integrity.',
+                id: 'qc-hunt',
+                label: 'Hunt',
+                blurb: 'Hunt upgrades and missing aired or digitally available titles.',
                 adminOnly: true,
-                keywords: [
-                    'upgrade', 'qc', 'quality control', 'download', 'quality', 'score', 'remux', 'sonarr', 'radarr',
-                    'custom format', 'admin', 'integrity', 'webhook', 'qbittorrent', 'qbit', 'sabnzbd', 'sab',
-                    'cleanup', 'hunt', 'download client',
-                ],
+                keywords: ['upgrade', 'qc', 'quality control', 'hunt', 'score', 'remux', 'custom format', 'admin'],
+            },
+            {
+                id: 'qc-downloads',
+                label: 'Downloads',
+                blurb: 'Download cleanup timers, strikes, and orphan grace.',
+                adminOnly: true,
+                keywords: ['qc', 'cleanup', 'download', 'strike', 'stalled', 'orphan', 'metadl', 'admin'],
+            },
+            {
+                id: 'qc-integrity',
+                label: 'Integrity',
+                blurb: 'Library playback checks, fingerprints, and Arr path maps.',
+                adminOnly: true,
+                keywords: ['qc', 'integrity', 'webhook', 'fingerprint', 'hash', 'playback', 'path map', 'admin'],
             },
         ],
     },

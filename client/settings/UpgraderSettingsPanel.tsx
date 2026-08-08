@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import { portalUrl } from '../shared/basePath';
-import { QcDownloadClientsSection } from './QcDownloadClientsSection';
 import {
     applyCleanupPreset,
     applyHuntPreset,
@@ -22,34 +21,10 @@ type Prefs = {
     preferSeasonPacks: boolean;
 };
 
-type UpgraderSubTab = 'overview' | 'hunt' | 'downloads' | 'integrity';
-
-const SUB_TABS: Array<{ id: UpgraderSubTab; label: string }> = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'hunt', label: 'Hunt' },
-    { id: 'downloads', label: 'Downloads' },
-    { id: 'integrity', label: 'Integrity' },
-];
-
-const isUpgraderSubTab = (value: string): value is UpgraderSubTab => (
-    SUB_TABS.some((tab) => tab.id === value)
-);
-
-const parseUpgraderSubTabFromHash = (rawHash: string): { subTab: UpgraderSubTab; scrollTarget?: string } => {
-    const raw = String(rawHash || '').replace(/^#/, '').trim();
-    if (raw === 'qbittorrent') return { subTab: 'downloads', scrollTarget: 'qbittorrent' };
-    if (raw === 'sabnzbd') return { subTab: 'downloads', scrollTarget: 'sabnzbd' };
-    if (raw === 'upgrader' || raw === 'upgrader/overview') return { subTab: 'overview' };
-    const sub = raw.startsWith('upgrader/') ? raw.slice('upgrader/'.length).split(/[/?]/)[0] : '';
-    if (sub && isUpgraderSubTab(sub)) return { subTab: sub };
-    return { subTab: 'overview' };
-};
-
-const upgraderSubTabHash = (subTab: UpgraderSubTab) => (
-    subTab === 'overview' ? '#upgrader' : `#upgrader/${subTab}`
-);
+type QcSettingsSection = 'qc-hunt' | 'qc-downloads' | 'qc-integrity';
 
 type Props = {
+    section: QcSettingsSection;
     enabled: boolean;
     automationEnabled: boolean;
     huntMissingEpisodes: boolean;
@@ -90,11 +65,6 @@ type Props = {
     qcMaxStrikes: number;
     qcResearchThrottleHours: number;
     qcSnoozeDefaultHours: number;
-    qcQbitUrl: string;
-    qcQbitUsername: string;
-    qcQbitPassword: string;
-    qcSabUrl: string;
-    qcSabApiKey: string;
     onEnabledChange: (value: boolean) => void;
     onAutomationEnabledChange: (value: boolean) => void;
     onHuntMissingEpisodesChange: (value: boolean) => void;
@@ -135,14 +105,10 @@ type Props = {
     onQcMaxStrikesChange: (value: number) => void;
     onQcResearchThrottleHoursChange: (value: number) => void;
     onQcSnoozeDefaultHoursChange: (value: number) => void;
-    onQcQbitUrlChange: (value: string) => void;
-    onQcQbitUsernameChange: (value: string) => void;
-    onQcQbitPasswordChange: (value: string) => void;
-    onQcSabUrlChange: (value: string) => void;
-    onQcSabApiKeyChange: (value: string) => void;
 };
 
 export const UpgraderSettingsPanel: React.FC<Props> = ({
+    section,
     enabled,
     automationEnabled,
     huntMissingEpisodes,
@@ -183,11 +149,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcMaxStrikes,
     qcResearchThrottleHours,
     qcSnoozeDefaultHours,
-    qcQbitUrl,
-    qcQbitUsername,
-    qcQbitPassword,
-    qcSabUrl,
-    qcSabApiKey,
     onEnabledChange,
     onAutomationEnabledChange,
     onHuntMissingEpisodesChange,
@@ -228,48 +189,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onQcMaxStrikesChange,
     onQcResearchThrottleHoursChange,
     onQcSnoozeDefaultHoursChange,
-    onQcQbitUrlChange,
-    onQcQbitUsernameChange,
-    onQcQbitPasswordChange,
-    onQcSabUrlChange,
-    onQcSabApiKeyChange,
 }) => {
-    const [activeSubTab, setActiveSubTab] = useState<UpgraderSubTab>(() => (
-        parseUpgraderSubTabFromHash(window.location.hash).subTab
-    ));
-    const [scrollTarget, setScrollTarget] = useState<string | undefined>(() => (
-        parseUpgraderSubTabFromHash(window.location.hash).scrollTarget
-    ));
-
-    const syncFromHash = useCallback(() => {
-        const parsed = parseUpgraderSubTabFromHash(window.location.hash);
-        setActiveSubTab(parsed.subTab);
-        setScrollTarget(parsed.scrollTarget);
-    }, []);
-
-    useEffect(() => {
-        syncFromHash();
-        window.addEventListener('hashchange', syncFromHash);
-        return () => window.removeEventListener('hashchange', syncFromHash);
-    }, [syncFromHash]);
-
-    useEffect(() => {
-        if (!scrollTarget) return;
-        const frame = requestAnimationFrame(() => {
-            document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-        return () => cancelAnimationFrame(frame);
-    }, [scrollTarget, activeSubTab]);
-
-    const handleSubTabChange = (subTab: UpgraderSubTab) => {
-        setActiveSubTab(subTab);
-        setScrollTarget(undefined);
-        const hash = upgraderSubTabHash(subTab);
-        if (window.location.hash !== hash) {
-            window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}${hash}`);
-        }
-    };
-
     const handleHuntIntensitySelect = (value: string) => {
         if (value === 'custom') {
             onUpgraderHuntIntensityChange('custom');
@@ -305,31 +225,10 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     const markHuntCustom = () => onUpgraderHuntIntensityChange('custom');
     const markCleanupCustom = () => onQcCleanupAggressionChange('custom');
 
-    const subTabButtonClass = (subTab: UpgraderSubTab) => (
-        `inline-flex items-center px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
-            activeSubTab === subTab
-                ? 'bg-plex text-background shadow-sm'
-                : 'text-muted hover:text-text hover:bg-white/5'
-        }`
-    );
-
     return (
         <div className="mb-8 animate-fade-in space-y-6">
-            <section id="upgrader" className="space-y-5 scroll-mt-24">
-                <div className="inline-flex flex-wrap gap-0.5 p-1 rounded-xl border border-border/60 bg-card/40 w-fit max-w-full">
-                    {SUB_TABS.map((tab) => (
-                        <button
-                            key={tab.id}
-                            type="button"
-                            className={subTabButtonClass(tab.id)}
-                            onClick={() => handleSubTabChange(tab.id)}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-
-                {activeSubTab === 'overview' && (
+            <section className="space-y-5">
+                {section === 'qc-hunt' && (
                     <div className="space-y-4">
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                             <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Enable Quality Control</h4>
@@ -358,10 +257,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                         </div>
-                    </div>
-                )}
-
-                {activeSubTab === 'hunt' && (
                     <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                         <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Hunt preferences</h4>
                         <div className="space-y-3">
@@ -508,23 +403,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             </div>
                         </SettingsCollapseSection>
                     </div>
+                    </div>
                 )}
 
-                {activeSubTab === 'downloads' && (
+                {section === 'qc-downloads' && (
                     <div className="space-y-4">
-                        <QcDownloadClientsSection
-                            qcQbitUrl={qcQbitUrl}
-                            qcQbitUsername={qcQbitUsername}
-                            qcQbitPassword={qcQbitPassword}
-                            qcSabUrl={qcSabUrl}
-                            qcSabApiKey={qcSabApiKey}
-                            onQcQbitUrlChange={onQcQbitUrlChange}
-                            onQcQbitUsernameChange={onQcQbitUsernameChange}
-                            onQcQbitPasswordChange={onQcQbitPasswordChange}
-                            onQcSabUrlChange={onQcSabUrlChange}
-                            onQcSabApiKeyChange={onQcSabApiKeyChange}
-                        />
-
                         <div className="rounded-xl border border-plex/30 bg-plex/5 px-4 py-3 text-sm">
                             Blocked extensions are managed on the{' '}
                             <a href={portalUrl('/upgrader?tab=clients')} className="text-plex font-semibold hover:underline">
@@ -759,7 +642,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                     </div>
                 )}
 
-                {activeSubTab === 'integrity' && (
+                {section === 'qc-integrity' && (
                     <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                         <div className="flex items-center gap-1 flex-wrap mb-2">
                             <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Library integrity</h4>

@@ -225,10 +225,10 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
             {!clientsConfigured && (
                 <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <p className="text-sm text-amber-100">
-                        No download clients configured. Add qBittorrent and/or SABnzbd under Settings → Quality Control → Downloads.
+                        No download clients configured. Add qBittorrent and/or SABnzbd under Settings → Arr & Analytics.
                     </p>
                     <a
-                        href={portalUrl('/settings#upgrader/downloads')}
+                        href={portalUrl('/settings#mediastack')}
                         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-plex text-background text-xs font-bold no-underline hover:bg-plex-hover shrink-0"
                     >
                         Open Settings
@@ -262,7 +262,7 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
                             Refresh
                         </button>
                         <a
-                            href={portalUrl('/settings#upgrader/downloads')}
+                            href={portalUrl('/settings#mediastack')}
                             className="inline-flex items-center gap-1.5 text-xs font-bold text-plex no-underline hover:underline"
                         >
                             Edit credentials

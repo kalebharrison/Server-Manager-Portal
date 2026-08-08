@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
-import { portalUrl } from '../shared/basePath';
 import type { ArrInstance } from '../shared/types';
 import { ArrInstancesPanel } from './ArrInstancesPanel';
 import { MediaStackAnalyticsSection } from './MediaStackAnalyticsSection';
 import { MediaStackRequestSection } from './MediaStackRequestSection';
+import { QcDownloadClientsSection } from './QcDownloadClientsSection';
 import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 type MediaStackSettingsTabProps = {
@@ -15,11 +15,21 @@ type MediaStackSettingsTabProps = {
     tautulliApiKey: string;
     jellystatUrl: string;
     jellystatApiKey: string;
+    qcQbitUrl: string;
+    qcQbitUsername: string;
+    qcQbitPassword: string;
+    qcSabUrl: string;
+    qcSabApiKey: string;
     onArrInstancesChange: (value: ArrInstance[]) => void;
     onTautulliUrlChange: (value: string) => void;
     onTautulliApiKeyChange: (value: string) => void;
     onJellystatUrlChange: (value: string) => void;
     onJellystatApiKeyChange: (value: string) => void;
+    onQcQbitUrlChange: (value: string) => void;
+    onQcQbitUsernameChange: (value: string) => void;
+    onQcQbitPasswordChange: (value: string) => void;
+    onQcSabUrlChange: (value: string) => void;
+    onQcSabApiKeyChange: (value: string) => void;
     addToast: (message: string, type?: 'success' | 'error') => void;
 };
 
@@ -31,13 +41,33 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
     tautulliApiKey,
     jellystatUrl,
     jellystatApiKey,
+    qcQbitUrl,
+    qcQbitUsername,
+    qcQbitPassword,
+    qcSabUrl,
+    qcSabApiKey,
     onArrInstancesChange,
     onTautulliUrlChange,
     onTautulliApiKeyChange,
     onJellystatUrlChange,
     onJellystatApiKeyChange,
+    onQcQbitUrlChange,
+    onQcQbitUsernameChange,
+    onQcQbitPasswordChange,
+    onQcSabUrlChange,
+    onQcSabApiKeyChange,
     addToast,
-}) => (
+}) => {
+    useEffect(() => {
+        const anchor = window.location.hash.replace(/^#/, '');
+        if (anchor !== 'qbittorrent' && anchor !== 'sabnzbd') return;
+        const frame = requestAnimationFrame(() => {
+            document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, []);
+
+    return (
     <div className="mb-8 animate-fade-in space-y-4">
         {(['sonarr', 'radarr', 'lidarr'] as const).map((type) => (
             <ArrInstancesPanel
@@ -52,13 +82,18 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             />
         ))}
 
-        <p className="text-sm text-muted">
-            qBittorrent and SABnzbd credentials live under{' '}
-            <a href={portalUrl('/settings#upgrader/downloads')} className="text-plex font-semibold hover:underline">
-                Quality Control → Downloads
-            </a>
-            .
-        </p>
+        <QcDownloadClientsSection
+            qcQbitUrl={qcQbitUrl}
+            qcQbitUsername={qcQbitUsername}
+            qcQbitPassword={qcQbitPassword}
+            qcSabUrl={qcSabUrl}
+            qcSabApiKey={qcSabApiKey}
+            onQcQbitUrlChange={onQcQbitUrlChange}
+            onQcQbitUsernameChange={onQcQbitUsernameChange}
+            onQcQbitPasswordChange={onQcQbitPasswordChange}
+            onQcSabUrlChange={onQcSabUrlChange}
+            onQcSabApiKeyChange={onQcSabApiKeyChange}
+        />
 
         <MediaStackAnalyticsSection
             mediaServerType={mediaServerType}
@@ -82,4 +117,5 @@ export const MediaStackSettingsTab: React.FC<MediaStackSettingsTabProps> = ({
             <MediaStackRequestSection addToast={addToast} />
         </SettingsCollapseSection>
     </div>
-);
+    );
+};

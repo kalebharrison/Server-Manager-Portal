@@ -311,9 +311,9 @@ export const UpgraderDashboard: React.FC = () => {
                 <div className={`${QC_SECTION} text-center border-yellow-500/30 bg-yellow-500/10`}>
                     <h3 className="text-xl font-bold text-plex mb-2">Quality Control is off</h3>
                     <p className="text-sm text-muted mb-3">Turn it on to index Arr libraries, hunt upgrades, and monitor download health.</p>
-                    <p className="text-xs text-muted mb-4">Settings → Quality Control → enable, then save.</p>
+                    <p className="text-xs text-muted mb-4">Settings → Hunt → enable, then save.</p>
                     <a
-                        href={portalUrl('/settings#upgrader')}
+                        href={portalUrl('/settings#qc-hunt')}
                         className="btn-primary inline-flex no-underline"
                     >
                         <SettingsIcon className="w-4 h-4" />
@@ -353,7 +353,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                         Auto-hunt is off. Nothing will be grabbed until you enable it in Settings.
                                                     </p>
                                                     <a
-                                                        href={portalUrl('/settings#upgrader')}
+                                                        href={portalUrl('/settings#qc-hunt')}
                                                         className="inline-flex items-center gap-2 text-xs font-bold text-plex hover:underline shrink-0"
                                                     >
                                                         Open Settings
@@ -366,7 +366,7 @@ export const UpgraderDashboard: React.FC = () => {
                                                         Cleanup automation is off. Manual cleanup still works on the Hunt tab.
                                                     </p>
                                                     <a
-                                                        href={portalUrl('/settings#upgrader')}
+                                                        href={portalUrl('/settings#qc-downloads')}
                                                         className="inline-flex items-center gap-2 text-xs font-bold text-plex hover:underline shrink-0"
                                                     >
                                                         Open Settings

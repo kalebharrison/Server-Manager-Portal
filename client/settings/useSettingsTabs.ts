@@ -25,15 +25,8 @@ export const useSettingsTabs = () => {
 
     useEffect(() => {
         const current = window.location.hash.replace(/^#/, '');
-        const currentTab = settingsTabIdFromHash(current);
-        // Preserve QC subpaths like #upgrader/hunt when already on that tab.
-        if (currentTab === activeTab && (current === activeTab || current.startsWith(`${activeTab}/`))) {
-            return;
-        }
-        // Preserve legacy #qbittorrent / #sabnzbd while on upgrader.
-        if (activeTab === 'upgrader' && (current === 'qbittorrent' || current === 'sabnzbd')) {
-            return;
-        }
+        if (current === activeTab) return;
+        if (activeTab === 'mediastack' && (current === 'qbittorrent' || current === 'sabnzbd')) return;
         const hash = `#${activeTab}`;
         if (window.location.hash !== hash) {
             window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}${hash}`);

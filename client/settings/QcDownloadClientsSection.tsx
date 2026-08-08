@@ -36,7 +36,7 @@ export const QcDownloadClientsSection: React.FC<Props> = ({
     return (
         <>
             <SettingsCollapseSection
-                title={<IntegrationTitle app="qbittorrent" title="qBittorrent" subtitle="Torrent client for Quality Control health and cleanup" />}
+                title={<IntegrationTitle app="qbittorrent" title="qBittorrent" subtitle="Torrent download client" />}
                 subtitle={qbitConfigured ? 'Configured' : 'Not configured'}
             >
                 <div id="qbittorrent" className="space-y-4 scroll-mt-24">
@@ -80,7 +80,7 @@ export const QcDownloadClientsSection: React.FC<Props> = ({
             </SettingsCollapseSection>
 
             <SettingsCollapseSection
-                title={<IntegrationTitle app="sabnzbd" title="SABnzbd" subtitle="Usenet client for Quality Control health and cleanup" />}
+                title={<IntegrationTitle app="sabnzbd" title="SABnzbd" subtitle="Usenet download client" />}
                 subtitle={sabConfigured ? 'Configured' : 'Not configured'}
             >
                 <div id="sabnzbd" className="space-y-4 scroll-mt-24">

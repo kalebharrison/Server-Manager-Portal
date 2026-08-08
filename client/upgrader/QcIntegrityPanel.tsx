@@ -499,7 +499,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                             Enable it in Settings, mount media read-only into the portal container, and add Arr→container path maps if needed.
                         </p>
                         <a
-                            href={portalUrl('/settings#upgrader')}
+                            href={portalUrl('/settings#qc-integrity')}
                             className="inline-flex mt-3 text-xs font-bold text-plex hover:underline"
                         >
                             Open Settings

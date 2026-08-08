@@ -144,7 +144,7 @@ export const QcPolicySummary: React.FC<Props> = ({ status }) => {
                     )}
                 </div>
                 <a
-                    href={portalUrl('/settings#upgrader')}
+                    href={portalUrl('/settings#qc-downloads')}
                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-text no-underline hover:border-plex/40"
                 >
                     <SettingsIcon className="w-3.5 h-3.5" />
