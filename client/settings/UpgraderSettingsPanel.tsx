@@ -730,8 +730,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    Pause when Plex streams ≥
-                                    <p className="text-xs text-muted font-normal mt-0.5">0 = never pause</p>
+                                    Pause while this many are watching
+                                    <p className="text-xs text-muted font-normal mt-0.5">Plex streams. 0 = ignore Plex activity.</p>
                                     <input
                                         type="number"
                                         min="0"
