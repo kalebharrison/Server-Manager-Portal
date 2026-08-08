@@ -73,7 +73,7 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
         </label>
         <div className="mt-1 mb-4">
             <SettingHint>
-                Master switch for outbound mail. Admins only skips every member address — use it while testing. SMTP tests still send to the address you type. Discord DMs keep working either way.
+                Master switch for outbound mail. Admins only skips every member address — use it while testing. SMTP tests still send to the address you type. Member mail goes to each user's contact email, then their account email. Owner mail uses Contact Email. Discord DMs keep working either way.
             </SettingHint>
         </div>
         <div className={!smtpEnabled ? 'opacity-50 pointer-events-none' : undefined}>

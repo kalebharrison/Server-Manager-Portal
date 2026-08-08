@@ -75,6 +75,10 @@ test('admin-only SMTP allows portal admins and skips members', async () => {
     };
 
     assert.equal(isAdminEmailRecipient(config, users, 'admin@example.com'), true);
+    assert.equal(isAdminEmailRecipient({
+        ...config,
+        smtpFrom: 'LostWaldo <requests@lostwaldo.net>',
+    }, users, 'requests@lostwaldo.net'), true);
     assert.equal(isAdminEmailRecipient(config, users, 'sam@example.com'), false);
     assert.equal(allowSmtpRecipient(config, users, 'sam@example.com'), false);
     assert.equal(allowSmtpRecipient(config, users, 'sam@example.com', { allowAnyRecipient: true }), true);

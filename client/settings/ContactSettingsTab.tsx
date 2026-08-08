@@ -33,7 +33,7 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
                 <label htmlFor="contactEmail">Email Address (Optional)</label>
                 <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactEmail" type="email" value={contactEmail} onChange={(e) => onContactEmailChange(e.target.value)} placeholder="e.g. admin@example.com" />
                 <div className="mt-2">
-                    <SettingHint>If left blank, the Email button is hidden.</SettingHint>
+                    <SettingHint>Owner inbox. Playback reports, expiry replies, and Reply-To use this — not the SMTP username.</SettingHint>
                 </div>
             </div>
             <div>

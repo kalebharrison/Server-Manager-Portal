@@ -17,7 +17,7 @@ const user = { username: 'kaleb', displayName: 'Kaleb', expiryDate: '2026-08-15T
 test('expiry and invite mail share the light portal chrome', () => {
     const warning = buildExpiryWarningHtml({
         user,
-        config: { serverIdentifier: 'LostWaldo', smtpUser: 'owner@example.com' },
+        config: { smtpFrom: 'LostWaldo <owner@example.com>', contactEmail: 'owner@example.com' },
         days: 7,
         escapeHtmlAttr,
     });
