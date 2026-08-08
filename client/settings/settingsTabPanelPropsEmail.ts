@@ -38,6 +38,7 @@ export const buildSmtpTabPanelProps = ({
     onTestRecipientChange: onChange('testRecipient'),
     onTestEmail: emailActions.handleTestEmail,
     onSendAllMockEmails: emailActions.handleSendAllMockEmails,
+    onPreviewEmails: emailActions.handlePreviewEmails,
 });
 
 export const buildNewsletterTabPanelProps = ({

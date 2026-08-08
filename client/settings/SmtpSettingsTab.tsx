@@ -27,6 +27,7 @@ type SmtpSettingsTabProps = {
     onTestRecipientChange: (value: string) => void;
     onTestEmail: () => void;
     onSendAllMockEmails: () => void;
+    onPreviewEmails: () => void;
 };
 
 export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
@@ -54,6 +55,7 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
     onTestRecipientChange,
     onTestEmail,
     onSendAllMockEmails,
+    onPreviewEmails,
 }) => (
     <div className="mb-8">
         <label className="flex items-center gap-3 cursor-pointer mb-4">
@@ -129,11 +131,14 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
                     <button className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center gap-2" onClick={onTestEmail} disabled={!smtpEnabled || isTestingSmtp || isSendingAllMocks || !testRecipient}>
                         {isTestingSmtp ? 'Sending...' : 'Send Test'}
                     </button>
-                    <button className="px-4 py-2 bg-plex text-white rounded-md font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 whitespace-nowrap" onClick={onSendAllMockEmails} disabled={!smtpEnabled || isTestingSmtp || isSendingAllMocks || !testRecipient}>
+                    <button className="px-4 py-2 bg-plex text-white rounded-md font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 whitespace-nowrap" onClick={onPreviewEmails}>
+                        Preview HTML
+                    </button>
+                    <button className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center gap-2 whitespace-nowrap" onClick={onSendAllMockEmails} disabled={!smtpEnabled || isTestingSmtp || isSendingAllMocks || !testRecipient}>
                         {isSendingAllMocks ? 'Sending mocks...' : 'Send all mock emails'}
                     </button>
                 </div>
-                <SettingHint>Send all mock emails sends every outbound template (request, issue, expiry, invite, newsletter, broadcast, announcement, and playback report) to the test recipient. Subjects are prefixed with [MOCK].</SettingHint>
+                <SettingHint>Preview HTML opens every template in the browser with your branding logo. Use send only when you want a real inbox check.</SettingHint>
             </div>
         </div>
     </div>

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { apiFetch } from '../shared/api';
+import { portalUrl } from '../shared/basePath';
 import { appConfirm } from '../shared/confirm';
 
 type AddToast = (message: string, type?: 'success' | 'error') => void;
@@ -85,6 +86,10 @@ export const useSettingsEmailActions = ({
         }
     }, [addToast, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom, smtpSecure, testRecipient]);
 
+    const handlePreviewEmails = useCallback(() => {
+        window.open(portalUrl('/api/config/email-previews'), '_blank', 'noopener,noreferrer');
+    }, []);
+
     const handleTestNewsletter = useCallback(async () => {
         setIsTestingNewsletter(true);
         try {
@@ -118,6 +123,7 @@ export const useSettingsEmailActions = ({
         isSendingNewsletter,
         handleTestEmail,
         handleSendAllMockEmails,
+        handlePreviewEmails,
         handleTestNewsletter,
         handleSendNewsletterNow,
     };
