@@ -225,7 +225,7 @@ export const QcClientsPanel: React.FC<Props> = ({ onToast }) => {
             {!clientsConfigured && (
                 <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <p className="text-sm text-amber-100">
-                        No download clients configured. Add qBittorrent and/or SABnzbd under Settings → Arr & Analytics.
+                        No download clients configured. Add qBittorrent and/or SABnzbd under Settings → Arr & Clients.
                     </p>
                     <a
                         href={portalUrl('/settings#mediastack')}

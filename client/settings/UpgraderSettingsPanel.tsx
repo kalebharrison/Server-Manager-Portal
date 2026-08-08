@@ -1,5 +1,4 @@
 import React from 'react';
-import { portalUrl } from '../shared/basePath';
 import {
     applyCleanupPreset,
     applyHuntPreset,
@@ -8,7 +7,6 @@ import {
     type QcPresetId,
 } from './qcPresets';
 import { SettingHint } from './SettingHint';
-import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 const PRESET_IDS: QcPresetId[] = ['relaxed', 'balanced', 'aggressive', 'custom'];
 
@@ -295,39 +293,17 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <label className="text-sm font-semibold">
-                                <span className="inline-flex items-center gap-0">
-                                    Minimum file size (GB)
-                                </span>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
-                                    value={minSizeGB}
-                                    disabled={!enabled}
-                                    onChange={(event) => onMinSizeGBChange(Number(event.target.value) || 0)}
-                                />
-                            </label>
-                            <label className="text-sm font-semibold">
-                                <span className="inline-flex items-center gap-0">
-                                    Hunt intensity
-                                    <SettingHint>
-                                        Relaxed, Balanced, and Aggressive presets set rate limits below. Custom keeps your manual values.
-                                    </SettingHint>
-                                </span>
-                                <select
-                                    className={selectClassName}
-                                    value={upgraderHuntIntensity || 'balanced'}
-                                    disabled={!enabled}
-                                    onChange={(event) => handleHuntIntensitySelect(event.target.value)}
-                                >
-                                    {PRESET_IDS.map((id) => (
-                                        <option key={id} value={id}>{HUNT_PRESET_LABELS[id]}</option>
-                                    ))}
-                                </select>
-                            </label>
-                        </div>
+                        <label className="text-sm font-semibold block max-w-md">
+                            Minimum file size (GB)
+                            <input
+                                type="number"
+                                min="0"
+                                className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                value={minSizeGB}
+                                disabled={!enabled}
+                                onChange={(event) => onMinSizeGBChange(Number(event.target.value) || 0)}
+                            />
+                        </label>
                         <div className="pt-2 border-t border-border/40 space-y-3">
                             <p className="text-xs font-bold uppercase tracking-wide text-muted">Portal preference boosts</p>
                             {([
@@ -349,12 +325,28 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             ))}
                         </div>
 
-                        <SettingsCollapseSection title="Advanced" defaultOpen={false}>
+                        <div className="pt-2 border-t border-border/40 space-y-4">
+                            <label className="text-sm font-semibold block max-w-md">
+                                <span className="inline-flex items-center gap-0">
+                                    Hunt intensity
+                                    <SettingHint>
+                                        Relaxed, Balanced, and Aggressive presets set the rate limits below. Custom keeps your manual values.
+                                    </SettingHint>
+                                </span>
+                                <select
+                                    className={selectClassName}
+                                    value={upgraderHuntIntensity || 'balanced'}
+                                    disabled={!enabled}
+                                    onChange={(event) => handleHuntIntensitySelect(event.target.value)}
+                                >
+                                    {PRESET_IDS.map((id) => (
+                                        <option key={id} value={id}>{HUNT_PRESET_LABELS[id]}</option>
+                                    ))}
+                                </select>
+                            </label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <label className="text-sm font-semibold">
-                                    <span className="inline-flex items-center gap-0">
-                                        Maximum actions per hour
-                                    </span>
+                                    Maximum actions per hour
                                     <input
                                         type="number"
                                         min="1"
@@ -385,9 +377,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">
-                                    <span className="inline-flex items-center gap-0">
-                                        Minimum score delta
-                                    </span>
+                                    Minimum score delta
                                     <input
                                         type="number"
                                         min="0"
@@ -401,21 +391,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                             </div>
-                        </SettingsCollapseSection>
+                        </div>
                     </div>
                     </div>
                 )}
 
                 {section === 'qc-downloads' && (
                     <div className="space-y-4">
-                        <div className="rounded-xl border border-plex/30 bg-plex/5 px-4 py-3 text-sm">
-                            Blocked extensions are managed on the{' '}
-                            <a href={portalUrl('/upgrader?tab=clients')} className="text-plex font-semibold hover:underline">
-                                Quality Control → Clients
-                            </a>{' '}
-                            tab (push live to qBit/SAB from there).
-                        </div>
-
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                             <div className="flex items-center gap-1 flex-wrap mb-2">
                                 <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
@@ -445,7 +427,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 <span className="inline-flex items-center gap-0">
                                     Cleanup aggression
                                     <SettingHint>
-                                        Relaxed, Balanced, and Aggressive presets set strike timers below. Custom keeps your manual values.
+                                        Relaxed, Balanced, and Aggressive presets set the strike timers below. Custom keeps your manual values.
                                     </SettingHint>
                                 </span>
                                 <select
@@ -460,7 +442,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 </select>
                             </label>
 
-                            <SettingsCollapseSection title="Advanced" defaultOpen={false}>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <label className="text-sm font-semibold">
                                     <span className="inline-flex items-center gap-0">
@@ -637,7 +618,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                             </div>
-                            </SettingsCollapseSection>
                         </div>
                     </div>
                 )}
@@ -764,8 +744,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             />
                         </label>
 
-                        <SettingsCollapseSection title="Advanced" defaultOpen={false}>
-                            <div className="space-y-3 mb-4">
+                        <div className="space-y-3 mb-4">
                                 <label className="flex items-center justify-between gap-4">
                                     <span className="min-w-0">
                                         <span className="font-semibold">Include music</span>
@@ -919,7 +898,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                             </div>
-                        </SettingsCollapseSection>
                     </div>
                 )}
             </section>

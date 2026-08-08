@@ -84,8 +84,8 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             },
             {
                 id: 'mediastack',
-                label: 'Arr & Analytics',
-                blurb: 'Sonarr, Radarr, Lidarr, download clients, and watch-stats apps.',
+                label: 'Arr & Clients',
+                blurb: 'Sonarr, Radarr, Lidarr, qBit/SAB, and watch-stats apps.',
                 keywords: ['sonarr', 'radarr', 'lidarr', 'tautulli', 'jellystat', 'requests', 'integrations', 'arr', 'discover', 'qbittorrent', 'qbit', 'sabnzbd', 'sab', 'download client'],
             },
             {
