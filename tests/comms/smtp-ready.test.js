@@ -97,3 +97,48 @@ test('admin-only SMTP allows portal admins and skips members', async () => {
     assert.equal(skipped, false);
     assert.match(logs.join('\n'), /admin-only/i);
 });
+
+test('sendEmail uses explicit Reply-To and never defaults to contactEmail', async () => {
+    const sent = [];
+    const helpers = createEmailSendHelpers({
+        usersPath: 'users.json',
+        emailLogPath: 'email_log.json',
+        loadFile: async () => [{ id: 'u1', username: 'sam', email: 'sam@example.com' }],
+        saveFile: async () => {},
+        appendAuditLog: async () => {},
+        log: () => {},
+    });
+
+    await helpers.sendEmail({
+        smtpEnabled: true,
+        smtpHost: 'smtp.example.com',
+        smtpUser: 'u',
+        smtpPass: 'p',
+        smtpFrom: 'LostWaldo <requests@lostwaldo.net>',
+        contactEmail: 'owner@lostwaldo.net',
+    }, 'sam@example.com', 'Hello', '<p>Hi</p>', {
+        sendMail: async (options) => {
+            sent.push(options);
+            return { messageId: '<test>' };
+        },
+    });
+
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].replyTo, undefined);
+
+    await helpers.sendEmail({
+        smtpEnabled: true,
+        smtpHost: 'smtp.example.com',
+        smtpUser: 'u',
+        smtpPass: 'p',
+        smtpFrom: 'LostWaldo <requests@lostwaldo.net>',
+        contactEmail: 'owner@lostwaldo.net',
+    }, 'sam@example.com', 'Hello', '<p>Hi</p>', {
+        sendMail: async (options) => {
+            sent.push(options);
+            return { messageId: '<test-2>' };
+        },
+    }, { replyTo: 'replies+r.9.aaaaaaaaaaaaaaaa@reply.lostwaldo.net' });
+
+    assert.equal(sent[1].replyTo, 'replies+r.9.aaaaaaaaaaaaaaaa@reply.lostwaldo.net');
+});

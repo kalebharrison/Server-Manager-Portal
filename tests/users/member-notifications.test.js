@@ -31,6 +31,7 @@ test('request approved always emails even when the user opted out', async () => 
     await notify.notifyRequestUpdate({
         publicDomain: 'https://plex-beta.lostwaldo.net',
         smtpFrom: 'Requests - LostWaldo <requests@lostwaldo.net>',
+        mailjetInboundSecret: 'inbound-test-secret-0123456789abcdef0123456789abcdef',
     }, {
         requestedBy: { id: 'u1' },
         title: 'Dune',
@@ -43,6 +44,7 @@ test('request approved always emails even when the user opted out', async () => 
 
     assert.equal(notices.length, 1);
     assert.equal(notices[0].type, 'request_update');
+    assert.match(notices[0].replyTo, /^replies\+r\.9\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
     assert.match(notices[0].subject, /\[LostWaldo\] Request Approved: Dune/);
     assert.match(notices[0].html, /Request Approved/);
     assert.match(notices[0].html, /\/discovery\/movie\/438631/);
@@ -77,9 +79,12 @@ test('issue reply always emails even when the user opted out', async () => {
         },
     });
 
-    await notify.notifyIssueReply({}, {
+    await notify.notifyIssueReply({
+        smtpFrom: 'Requests - LostWaldo <requests@lostwaldo.net>',
+        mailjetInboundSecret: 'inbound-test-secret-0123456789abcdef0123456789abcdef',
+    }, {
         issue: {
-            id: 'iss-1',
+            id: 'portal:550e8400-e29b-41d4-a716-446655440000',
             title: 'Bad audio',
             reporterId: 'u1',
             updatedAt: '2026-01-01',
@@ -90,6 +95,7 @@ test('issue reply always emails even when the user opted out', async () => {
 
     assert.equal(notices.length, 1);
     assert.equal(notices[0].type, 'issue_reply');
+    assert.match(notices[0].replyTo, /^replies\+i\.p550e8400e29b41d4a716446655440000\.[a-f0-9]{16}@reply\.lostwaldo\.net$/);
     assert.equal(dms.length, 1);
     assert.equal(dms[0].discordId, '123456789012345678');
 });

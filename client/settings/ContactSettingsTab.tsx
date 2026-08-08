@@ -33,7 +33,7 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
                 <label htmlFor="contactEmail">Email Address (Optional)</label>
                 <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactEmail" type="email" value={contactEmail} onChange={(e) => onContactEmailChange(e.target.value)} placeholder="e.g. admin@example.com" />
                 <div className="mt-2">
-                    <SettingHint>Owner inbox. Playback reports, expiry replies, and Reply-To use this — not the SMTP username.</SettingHint>
+                    <SettingHint>Owner inbox for playback reports and expiry contact links — not the SMTP username. Request and issue replies go back into the portal, not this address.</SettingHint>
                 </div>
             </div>
             <div>
