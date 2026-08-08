@@ -16,6 +16,10 @@ import {
     isSnoozed,
     isStallActionable,
     itemKey,
+    clientDownloadIds,
+    downloadIdsOverlap,
+    mediaTitleInRelease,
+    releaseNamesMatch,
     nextStrikeState,
     strikeGapMsForReason,
     thresholdsFromConfig,
@@ -674,6 +678,54 @@ test('findDuplicates groups sonarr episodes', () => {
     ]);
     assert.equal(dupes.length, 1);
     assert.equal(dupes[0].id, 1);
+});
+
+test('hybrid qBit v2 torrent ids still match Arr v1 downloadIds', () => {
+    const v1 = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const v2 = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const torrentId = v2.slice(0, 40);
+    const client = {
+        id: torrentId,
+        hash: torrentId,
+        infohashV1: v1,
+        infohashV2: v2,
+        name: 'Saw.2004.2160p.UHD.BluRay.REMUX',
+        client: 'qbit',
+    };
+    assert.equal(downloadIdsOverlap(clientDownloadIds({ downloadId: v1 }), clientDownloadIds(client)), true);
+    assert.equal(downloadIdsOverlap(clientDownloadIds({ downloadId: v2 }), clientDownloadIds(client)), true);
+    assert.equal(releaseNamesMatch('Saw.2004.2160p.UHD.BluRay.REMUX-GROUP', client), true);
+    assert.equal(mediaTitleInRelease('Saw', 2004, client.name), true);
+    const orphans = findOrphans({
+        arrDownloadIds: [v1],
+        arrItems: [{
+            downloadId: v1,
+            title: 'Saw.2004.2160p.UHD.BluRay.REMUX-GROUP',
+            movie: { title: 'Saw', year: 2004 },
+        }],
+        clientItems: [{ ...client, state: 'downloading', progress: 0.4 }],
+    });
+    assert.equal(orphans.length, 0);
+});
+
+test('short movie titles still match qBit names via year', () => {
+    const orphans = findOrphans({
+        arrDownloadIds: ['not-the-qbit-hash'],
+        arrItems: [{
+            downloadId: 'not-the-qbit-hash',
+            title: 'Saw',
+            movie: { title: 'Saw', year: 2004 },
+        }],
+        clientItems: [{
+            id: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
+            hash: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
+            name: 'Saw.2004.2160p.UHD.BluRay.REMUX-GROUP',
+            client: 'qbit',
+            state: 'downloading',
+            progress: 0.3,
+        }],
+    });
+    assert.equal(orphans.length, 0);
 });
 
 test('findOrphans skips known downloadIds but allows seeding leftovers', () => {
