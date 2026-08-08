@@ -7,7 +7,7 @@ export const ToggleRow: React.FC<{
     title: string;
     checked: boolean;
     onChange: (value: boolean) => void;
-    children: React.ReactNode;
+    children?: React.ReactNode;
 }> = ({ title, checked, onChange, children }) => (
     <div className="mb-4 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/40">
         <div>

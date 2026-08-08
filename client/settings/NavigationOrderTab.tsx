@@ -44,9 +44,8 @@ export const NavigationOrderTab: React.FC<NavigationOrderTabProps> = ({
 
     return (
         <div className="mb-8 animate-fade-in">
-            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Navigation Order</h3>
-            <p className="text-muted text-sm mb-4">
-                Reorder sidebar items with the arrows. Use the eye to hide items server-wide (Home, Settings, and Logout stay visible).
+            <p className="text-sm text-muted mb-4">
+                Home, Settings, Preferences, and Logout stay visible.
             </p>
             <div className="flex flex-col gap-2 max-w-md">
                 {navOrder.map((key, index) => {

@@ -6,7 +6,6 @@ import {
     DEFAULT_DASHBOARD_LAYOUT,
     DASHBOARD_SECTION_LABELS,
     lockWidgetLayout,
-    SECTION_PREVIEW_META,
     type DashboardLayoutConfig,
     type DashboardSectionId,
 } from '../shared/dashboardLayout';
@@ -44,13 +43,9 @@ export const HomeLayoutSettings: React.FC<Props> = ({ layout, onChange }) => {
     return (
         <div className="mb-8 animate-fade-in space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div>
-                    <h3 className="text-xl font-bold text-plex mb-2 border-b border-border pb-2">Home Page Layout</h3>
-                    <p className="text-muted text-sm max-w-2xl">
-                        Drag sections to reorder the home page for everyone. Show or hide whole sections.
-                        The main dashboard grid keeps its fixed left/right layout so card heights stay balanced.
-                    </p>
-                </div>
+                <p className="text-sm text-muted max-w-2xl">
+                    Drag to reorder. Hide whole sections. Main-grid widgets stay fixed.
+                </p>
                 <button
                     type="button"
                     onClick={() => applyChange({ ...DEFAULT_DASHBOARD_LAYOUT })}
@@ -64,7 +59,6 @@ export const HomeLayoutSettings: React.FC<Props> = ({ layout, onChange }) => {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-5xl">
                 <div>
                     <h4 className="text-sm font-bold uppercase tracking-wider text-muted mb-3">Page sections</h4>
-                    <p className="text-xs text-muted mb-3">Drag the handle to reorder. Use Shown/Hidden to toggle each section — all are visible by default.</p>
                     <div className="flex flex-col gap-2">
                         {layout.sections.map((id, index) => {
                             const hidden = layout.hiddenSections.includes(id);
@@ -99,7 +93,6 @@ export const HomeLayoutSettings: React.FC<Props> = ({ layout, onChange }) => {
                                         <div className={`text-text font-medium ${hidden ? 'opacity-50 line-through' : ''}`}>
                                             {DASHBOARD_SECTION_LABELS[id]}
                                         </div>
-                                        <div className="text-xs text-muted mt-0.5">{SECTION_PREVIEW_META[id].description}</div>
                                     </div>
                                     <SectionVisibilityToggle visible={!hidden} onToggle={() => toggleSectionHidden(id)} />
                                 </div>
@@ -111,25 +104,11 @@ export const HomeLayoutSettings: React.FC<Props> = ({ layout, onChange }) => {
                 <SectionPreview layout={layout} />
             </div>
 
-            <div className="max-w-5xl rounded-xl border border-plex/30 bg-plex/5 px-4 py-3">
-                <p className="text-xs text-plex font-semibold">
-                    Click <span className="text-text">Save Settings</span> at the bottom of this page to apply layout changes for everyone.
-                </p>
-            </div>
-
-            <div className="max-w-5xl rounded-xl border border-border/30 bg-background/20 px-4 py-3">
-                <p className="text-xs text-muted">
-                    <span className="font-semibold text-text">Locked:</span> Individual widgets inside the main grid (Quick Actions, Library Size, etc.)
-                    cannot be reordered or hidden — that prevents uneven columns and wasted space on desktop.
-                </p>
-            </div>
-
             <div className="max-w-5xl">
                 <h4 className="text-sm font-bold uppercase tracking-wider text-muted mb-3">Watch History Configuration</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="bg-background/30 p-4 rounded-xl border border-border/40">
                         <label className="block text-text font-semibold mb-1">Recently Watched Rows</label>
-                        <p className="text-xs text-muted mb-3">Number of rows to display per page.</p>
                         <CustomSelect
                             value={String(layout.recentHistoryRows ?? 7)}
                             onChange={(val) => applyChange({ ...layout, recentHistoryRows: parseInt(val, 10) })}
@@ -138,7 +117,6 @@ export const HomeLayoutSettings: React.FC<Props> = ({ layout, onChange }) => {
                     </div>
                     <div className="bg-background/30 p-4 rounded-xl border border-border/40">
                         <label className="block text-text font-semibold mb-1">Most Watched Rows</label>
-                        <p className="text-xs text-muted mb-3">Number of rows to display per page.</p>
                         <CustomSelect
                             value={String(layout.topWatchedRows ?? 2)}
                             onChange={(val) => applyChange({ ...layout, topWatchedRows: parseInt(val, 10) })}

@@ -1,6 +1,5 @@
 import React from 'react';
 import { BackupRestorePanel } from './BackupRestorePanel';
-import { SettingHint } from './SettingHint';
 import { SystemDiagnosticsPanel } from './SystemDiagnosticsPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
 
@@ -52,12 +51,11 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     onRefreshDiagnostics,
 }) => (
     <div className="mb-8 animate-fade-in space-y-6">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">System</h3>
         <SystemHealthPanel systemHealth={systemHealth} />
 
         <section className="rounded-xl border border-border/60 bg-surface/20 p-4 space-y-2">
             <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Scheduler</h4>
-            <label htmlFor="checkInterval" className="font-semibold block">Access check interval (minutes)</label>
+            <label htmlFor="checkInterval" className="font-semibold block">Scheduled task interval (minutes)</label>
             <input
                 className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex"
                 id="checkInterval"
@@ -66,7 +64,7 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
                 value={checkInterval}
                 onChange={(event) => onCheckIntervalChange(Math.max(1, Number(event.target.value) || 1))}
             />
-            <SettingHint>How often the portal checks account expiration and user-cleanup conditions.</SettingHint>
+            <p className="text-xs text-muted">Drives user sync, expiry mail, newsletter poll, and inactive member cleanup.</p>
         </section>
 
         <BackupRestorePanel

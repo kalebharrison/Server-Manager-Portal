@@ -7,7 +7,9 @@ type BackgroundTasksTabProps = {
 
 export const BackgroundTasksTab: React.FC<BackgroundTasksTabProps> = ({ tasks, onRunTask }) => (
     <div className="mb-8 animate-fade-in">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Background Tasks</h3>
+        <p className="text-sm text-muted mb-4">
+            Most of these run on the scheduled task interval under System &amp; Backups.
+        </p>
         <div className="flex flex-col gap-4">
             {tasks.map(task => (
                 <div key={task.id} className="py-4 border-b border-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">

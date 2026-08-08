@@ -58,7 +58,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
                 id: 'public-access',
                 label: 'Access & Privacy',
                 blurb: 'Pre-login experience, referrals, stream privacy, and default libraries.',
-                keywords: ['public', 'login', 'stats', 'registration', 'temporary', 'referral', 'privacy', 'libraries', 'trending'],
+                keywords: ['public', 'login', 'stats', 'temporary', 'referral', 'privacy', 'libraries', 'trending'],
             },
             {
                 id: 'contact',
@@ -75,7 +75,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
                 id: 'plex',
                 label: 'Media Server',
                 blurb: 'Connect Plex or Jellyfin as the library source of truth.',
-                keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct', 'privacy', 'usernames'],
+                keywords: ['plex', 'jellyfin', 'media', 'player', 'token', 'server', 'libraries', 'docker', 'local', 'url', 'direct'],
             },
             {
                 id: 'mediastack',
@@ -124,7 +124,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             },
             {
                 id: 'cleanup',
-                label: 'User Cleanup',
+                label: 'Inactive Cleanup',
                 blurb: 'Automatically revoke inactive member access.',
                 keywords: ['inactive', 'revoke', 'expiry', 'users', 'cleanup'],
             },
@@ -180,7 +180,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             {
                 id: 'system',
                 label: 'System & Backups',
-                blurb: 'Health, backups, diagnostics, and access-check interval.',
+                blurb: 'Health, backups, diagnostics, and scheduled task interval.',
                 keywords: ['backup', 'restore', 'diagnostics', 'health', 'check interval', 'scheduler', 'access check'],
             },
             {

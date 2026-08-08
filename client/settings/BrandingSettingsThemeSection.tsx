@@ -1,9 +1,7 @@
 import React from 'react';
 
 import { CustomSelect } from '../shared/ui';
-import { portalUrl } from '../shared/basePath';
-import { SettingHint } from './SettingHint';
-import { ToggleRow } from './BrandingSettingsTabShared';
+import { InlineSwitch, ToggleRow } from './BrandingSettingsTabShared';
 
 export const BrandingSettingsThemeSection: React.FC<{
     brandingTheme: string;
@@ -12,12 +10,16 @@ export const BrandingSettingsThemeSection: React.FC<{
     useBrandedSkeleton: boolean;
     useTrendingSlideshow: boolean;
     trendingSlideshowInterval: number;
+    use24HourClock: boolean;
+    showPosterQualityBadges: boolean;
     onBrandingThemeChange: (value: string) => void;
     onUseScrollRevealAnimationsChange: (value: boolean) => void;
     onUseCinematicLoadingChange: (value: boolean) => void;
     onUseBrandedSkeletonChange: (value: boolean) => void;
     onUseTrendingSlideshowChange: (value: boolean) => void;
     onTrendingSlideshowIntervalChange: (value: number) => void;
+    onUse24HourClockChange: (value: boolean) => void;
+    onShowPosterQualityBadgesChange: (value: boolean) => void;
 }> = ({
     brandingTheme,
     useScrollRevealAnimations,
@@ -31,6 +33,10 @@ export const BrandingSettingsThemeSection: React.FC<{
     onUseBrandedSkeletonChange,
     onUseTrendingSlideshowChange,
     onTrendingSlideshowIntervalChange,
+    use24HourClock,
+    showPosterQualityBadges,
+    onUse24HourClockChange,
+    onShowPosterQualityBadgesChange,
 }) => (
     <>
         <div className="mb-8 relative z-[50]">
@@ -50,33 +56,27 @@ export const BrandingSettingsThemeSection: React.FC<{
                     { label: 'Sunset', value: 'sunset' },
                 ]}
             />
-            <div className="mt-2">
-                <SettingHint>The default theme applied to new visitors and users. Users can still customize their local theme preference in the navigation menu.</SettingHint>
-            </div>
         </div>
 
-        <ToggleRow title="Enable Scroll Reveal Animations" checked={useScrollRevealAnimations} onChange={onUseScrollRevealAnimationsChange}>
-            <SettingHint>Smoothly slide elements into place as you scroll down the dashboard.</SettingHint>
-        </ToggleRow>
+        <ToggleRow title="Enable Scroll Reveal Animations" checked={useScrollRevealAnimations} onChange={onUseScrollRevealAnimationsChange} />
+        <ToggleRow title="Enable Cinematic Loading Sequences" checked={useCinematicLoading} onChange={onUseCinematicLoadingChange} />
+        <ToggleRow title="Enable Branded Skeleton Loading" checked={useBrandedSkeleton} onChange={onUseBrandedSkeletonChange} />
 
-        <ToggleRow title="Enable Cinematic Loading Sequences" checked={useCinematicLoading} onChange={onUseCinematicLoadingChange}>
-            <SettingHint>Replaces the standard loading spinner with a beautiful SVG line-drawing animation.</SettingHint>
-        </ToggleRow>
+        <div className="mb-4">
+            <label>Time Format</label>
+            <InlineSwitch label="Use 24-Hour Clock across the Portal" checked={use24HourClock} onChange={onUse24HourClockChange} />
+        </div>
 
-        <ToggleRow title="Enable Branded Skeleton Loading" checked={useBrandedSkeleton} onChange={onUseBrandedSkeletonChange}>
-            <SettingHint>Use a branded, animated shimmer effect for skeleton loaders instead of the default pulse.</SettingHint>
-        </ToggleRow>
+        <div className="mb-4">
+            <label>Poster Quality Badges</label>
+            <InlineSwitch label="Show quality chips on TMDB posters (4K, HDR, codec, Atmos)" checked={showPosterQualityBadges} onChange={onShowPosterQualityBadgesChange} />
+        </div>
 
         <div className="py-4 border-b border-border/40 mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
                     <h4 className="font-bold text-text">Enable TMDB Trending Slideshow</h4>
-                    <SettingHint>
-                        Replaces the static splash background with a fading slideshow of currently trending movies and shows from TMDB (logged-in portal).
-                        Login-screen trending is under{' '}
-                        <a href={portalUrl('/settings#public-access')} className="text-plex font-semibold hover:underline">Access &amp; Privacy</a>.
-                        Requires a TMDB API key in Metadata.
-                    </SettingHint>
+                    <p className="text-xs text-muted mt-1">Logged-in portal background. Requires a TMDB API key.</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
                     <input

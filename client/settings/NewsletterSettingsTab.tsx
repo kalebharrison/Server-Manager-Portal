@@ -29,7 +29,6 @@ export const NewsletterSettingsTab: React.FC<NewsletterSettingsTabProps> = ({
     onSendNewsletterNow,
 }) => (
     <div className="mb-8">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Automated Newsletter</h3>
         <div className="mb-4">
             <label htmlFor="newsletterFrequency">Frequency</label>
             <CustomSelect

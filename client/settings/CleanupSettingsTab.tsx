@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { SettingHint } from './SettingHint';
-
 type CleanupSettingsTabProps = {
     inactiveCleanupEnabled: boolean;
     inactiveCleanupDays: number;
@@ -16,16 +14,14 @@ export const CleanupSettingsTab: React.FC<CleanupSettingsTabProps> = ({
     onInactiveCleanupDaysChange,
 }) => (
     <div className="mb-8 animate-fade-in">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Automated User Cleanup</h3>
         <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-lg">
             <p className="text-sm text-yellow-500 font-bold mb-1">Warning</p>
-            <p className="text-xs text-muted">When enabled, the server will automatically revoke portal access for users who have not watched anything for the specified number of days. You can exempt specific users from this rule by editing them in the Users table.</p>
+            <p className="text-xs text-muted">Revokes portal access for members who have not watched anything for the specified number of days. Exempt users from the Users table.</p>
         </div>
 
         <div className="mb-6 flex items-center justify-between py-4 border-b border-border/40">
             <div>
-                <label className="font-bold block mb-1">Enable Automated Cleanup</label>
-                <SettingHint>Run cleanup job automatically in the background</SettingHint>
+                <label className="font-bold block mb-1">Enable inactive member cleanup</label>
             </div>
             <button
                 onClick={() => onInactiveCleanupEnabledChange(!inactiveCleanupEnabled)}
@@ -46,18 +42,12 @@ export const CleanupSettingsTab: React.FC<CleanupSettingsTabProps> = ({
                     value={inactiveCleanupDays}
                     onChange={e => onInactiveCleanupDaysChange(Number(e.target.value))}
                 />
-                <div className="mt-2">
-                    <SettingHint>Revoke access if a user has not watched anything in this many days.</SettingHint>
-                </div>
             </div>
         </div>
 
-        <div className="mt-4">
-            <SettingHint>
-                How often the portal checks expiration and cleanup conditions is under{' '}
-                <a href="#system" className="text-plex font-semibold hover:underline">System &amp; Backups</a>
-                {' '}→ Access check interval.
-            </SettingHint>
-        </div>
+        <p className="mt-4 text-xs text-muted">
+            Runs on the scheduled task interval under{' '}
+            <a href="#system" className="text-plex font-semibold hover:underline">System &amp; Backups</a>.
+        </p>
     </div>
 );

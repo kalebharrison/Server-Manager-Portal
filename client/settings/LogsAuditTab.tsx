@@ -33,8 +33,6 @@ export const LogsAuditTab: React.FC<LogsAuditTabProps> = ({
     onAuditLogPageChange,
 }) => (
     <div className="mb-8 animate-fade-in space-y-8">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Logs & Audit</h3>
-
         <SystemAuditLogViewer
             pagedAuditEntries={pagedAuditEntries}
             auditLogPage={auditLogPage}

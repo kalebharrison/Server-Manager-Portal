@@ -20,21 +20,14 @@ export const DiscordQcDigestsSection: React.FC<DiscordQcDigestsSectionProps> = (
 }) => (
     <SettingsCollapseSection
         title="Quality Control digests"
-        subtitle="Cleanup and integrity summaries posted via the Discord webhook"
+        subtitle="Download cleanup and library integrity summaries via Discord"
         defaultOpen={false}
     >
-        <div className="mb-4">
-            <SettingHint>
-                Requires Discord integration enabled and a webhook URL above. Tune QC itself under Settings → Quality Control.
-            </SettingHint>
-        </div>
         <div className={`space-y-4 ${!discordEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <label className="flex items-center justify-between gap-4">
                 <span className="min-w-0">
-                    <span className="font-semibold">Cleanup digest</span>
-                    <div className="mt-1">
-                        <SettingHint>Post a digest after automated download cleanup runs.</SettingHint>
-                    </div>
+                    <span className="font-semibold">Download cleanup digest</span>
+                    <p className="text-xs text-muted mt-1">Posted after automated download cleanup runs.</p>
                 </span>
                 <input
                     type="checkbox"
@@ -45,10 +38,8 @@ export const DiscordQcDigestsSection: React.FC<DiscordQcDigestsSectionProps> = (
             </label>
             <label className="flex items-center justify-between gap-4">
                 <span className="min-w-0">
-                    <span className="font-semibold">Integrity digest</span>
-                    <div className="mt-1">
-                        <SettingHint>Post a summary of integrity findings.</SettingHint>
-                    </div>
+                    <span className="font-semibold">Library integrity digest</span>
+                    <p className="text-xs text-muted mt-1">Posted after integrity findings.</p>
                 </span>
                 <input
                     type="checkbox"

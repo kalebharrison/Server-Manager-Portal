@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { portalUrl } from '../shared/basePath';
-import { MediaStackDownloadClientsSection } from './MediaStackDownloadClientsSection';
+import { QcDownloadClientsSection } from './QcDownloadClientsSection';
 import {
     applyCleanupPreset,
     applyHuntPreset,
@@ -75,7 +75,6 @@ type Props = {
     integrityBreakerMaxPercent: number;
     integrityPauseWhenSessions: number;
     integrityNightlyHour: number;
-    integrityDiscordDigestEnabled: boolean;
     integrityDecodeWindowSec: number;
     integrityDecodeTimeoutMs: number;
     integrityDecodeRetries: number;
@@ -91,7 +90,6 @@ type Props = {
     qcMaxStrikes: number;
     qcResearchThrottleHours: number;
     qcSnoozeDefaultHours: number;
-    qcDiscordDigestEnabled: boolean;
     qcQbitUrl: string;
     qcQbitUsername: string;
     qcQbitPassword: string;
@@ -122,7 +120,6 @@ type Props = {
     onIntegrityBreakerMaxPercentChange: (value: number) => void;
     onIntegrityPauseWhenSessionsChange: (value: number) => void;
     onIntegrityNightlyHourChange: (value: number) => void;
-    onIntegrityDiscordDigestEnabledChange: (value: boolean) => void;
     onIntegrityDecodeWindowSecChange: (value: number) => void;
     onIntegrityDecodeTimeoutMsChange: (value: number) => void;
     onIntegrityDecodeRetriesChange: (value: number) => void;
@@ -138,7 +135,6 @@ type Props = {
     onQcMaxStrikesChange: (value: number) => void;
     onQcResearchThrottleHoursChange: (value: number) => void;
     onQcSnoozeDefaultHoursChange: (value: number) => void;
-    onQcDiscordDigestEnabledChange: (value: boolean) => void;
     onQcQbitUrlChange: (value: string) => void;
     onQcQbitUsernameChange: (value: string) => void;
     onQcQbitPasswordChange: (value: string) => void;
@@ -319,16 +315,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
 
     return (
         <div className="mb-8 animate-fade-in space-y-6">
-            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2 flex items-center gap-3 flex-wrap">
-                <span>Quality Control</span>
-                <span className="rounded border border-plex/20 bg-plex/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-plex">
-                    Admin only
-                </span>
-                <SettingHint>
-                    Hunts Sonarr/Radarr/Lidarr for higher custom-format scores and monitors download clients for doomed queues
-                    (metaDL, stalled, slow download, failed import, orphans).
-                </SettingHint>
-            </h3>
             <section id="upgrader" className="space-y-5 scroll-mt-24">
                 <div className="inline-flex flex-wrap gap-0.5 p-1 rounded-xl border border-border/60 bg-card/40 w-fit max-w-full">
                     {SUB_TABS.map((tab) => (
@@ -371,41 +357,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     onChange={(event) => onAutomationEnabledChange(event.target.checked)}
                                 />
                             </label>
-                            <SettingHint>
-                                Download cleanup automation is configured under the{' '}
-                                <button
-                                    type="button"
-                                    className="text-plex font-semibold hover:underline"
-                                    onClick={() => handleSubTabChange('downloads')}
-                                >
-                                    Downloads
-                                </button>{' '}
-                                tab.
-                            </SettingHint>
-                        </div>
-
-                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-3">
-                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Quick links</h4>
-                            <ul className="text-sm space-y-2">
-                                <li className="flex items-center gap-1 flex-wrap">
-                                    <a href={portalUrl('/upgrader')} className="text-plex font-semibold hover:underline">
-                                        Quality Control dashboard
-                                    </a>
-                                    <SettingHint>Hunt preview, download health, integrity scans</SettingHint>
-                                </li>
-                                <li className="flex items-center gap-1 flex-wrap">
-                                    <a href={portalUrl('/settings#mediastack')} className="text-plex font-semibold hover:underline">
-                                        Arr &amp; Analytics settings
-                                    </a>
-                                    <SettingHint>Sonarr, Radarr, Lidarr instances</SettingHint>
-                                </li>
-                                <li className="flex items-center gap-1 flex-wrap">
-                                    <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
-                                        Discord digests
-                                    </a>
-                                    <SettingHint>Cleanup and integrity notification toggles</SettingHint>
-                                </li>
-                            </ul>
                         </div>
                     </div>
                 )}
@@ -561,7 +512,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
 
                 {activeSubTab === 'downloads' && (
                     <div className="space-y-4">
-                        <MediaStackDownloadClientsSection
+                        <QcDownloadClientsSection
                             qcQbitUrl={qcQbitUrl}
                             qcQbitUsername={qcQbitUsername}
                             qcQbitPassword={qcQbitPassword}
@@ -586,14 +537,8 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             <div className="flex items-center gap-1 flex-wrap mb-2">
                                 <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Download cleanup</h4>
                                 <SettingHint>
-                                    Removes doomed queue items from Sonarr/Radarr/Lidarr (blocklist + skip Arr auto-redownload),
-                                    deletes them from qBit/SAB, then triggers <span className="text-text">one</span> re-search per title.
-                                    Stalls are held when the downloader reports network down. Import failures only auto-clean for
-                                    clear junk (sample, blocked extension, invalid media, encrypted archive, etc.) and for
-                                    resolution downgrades (e.g. existing 2160p vs new 1080p “not an upgrade”).
-                                    Blocked-extension payloads (e.g. single-file <span className="font-mono">.exe</span> torrents) are
-                                    probed mid-download via qBit/SAB file lists and killed on the next cleanup cycle.
-                                    Manual cleanup on the Downloads tab still works when automation is off.
+                                    Blocklists doomed Arr queue items, deletes them from qBit/SAB, then runs one re-search.
+                                    Holds stalls when the downloader network is down. Manual cleanup still works with automation off.
                                 </SettingHint>
                             </div>
                             <label className="flex items-center justify-between gap-4">
@@ -809,14 +754,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     />
                                 </label>
                             </div>
-                            <div className="flex items-center gap-1 flex-wrap pt-1">
-                                <SettingHint>
-                                    Cleanup digests are configured in{' '}
-                                    <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
-                                        Settings → Discord
-                                    </a>.
-                                </SettingHint>
-                            </div>
                             </SettingsCollapseSection>
                         </div>
                     </div>
@@ -913,14 +850,6 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 onChange={(event) => onIntegrityRequireAudioChange(event.target.checked)}
                             />
                         </label>
-                        <div className="flex items-center gap-1 flex-wrap">
-                            <SettingHint>
-                                Integrity digests are configured in{' '}
-                                <a href={portalUrl('/settings#discord')} className="text-plex font-semibold hover:underline">
-                                    Settings → Discord
-                                </a>.
-                            </SettingHint>
-                        </div>
                         <label className="text-sm font-semibold block">
                             <span className="inline-flex items-center gap-0">
                                 Path maps (Arr path → container path)

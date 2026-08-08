@@ -27,12 +27,9 @@ export const StatusMonitorSettings: React.FC<{
     return (
         <div className="flex flex-col gap-4 w-full">
             <SettingsCollapseSection
-                title="Public Access"
+                title="Public status page"
                 subtitle={publicStatusEnabled ? 'Visitors can view the status page' : 'Signed-in members only'}
             >
-                <div className="mb-4">
-                    <SettingHint>Allow visitors who are not signed in to view the status monitor page and status data.</SettingHint>
-                </div>
                 <button
                     type="button"
                     onClick={() => onPublicStatusEnabledChange(!publicStatusEnabled)}

@@ -21,7 +21,6 @@ export const StatusSettingsTab: React.FC<StatusSettingsTabProps> = ({
     onStatusDraftChange,
 }) => (
     <div className="mb-8 animate-fade-in">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Status Monitor</h3>
         <StatusMonitorSettings
             config={statusConfig}
             publicStatusEnabled={publicStatusEnabled}

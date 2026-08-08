@@ -34,8 +34,6 @@ type BrandingSettingsTabContentProps = Pick<
 
 export const BrandingSettingsTabContent: React.FC<BrandingSettingsTabContentProps> = (props) => (
     <div className="mb-8 animate-fade-in">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Branding & UI</h3>
-
         <BrandingSettingsLogoSection
             mediaServerType={props.mediaServerType}
             customLogoUrl={props.customLogoUrl}
@@ -58,17 +56,17 @@ export const BrandingSettingsTabContent: React.FC<BrandingSettingsTabContentProp
             onUseBrandedSkeletonChange={props.onUseBrandedSkeletonChange}
             onUseTrendingSlideshowChange={props.onUseTrendingSlideshowChange}
             onTrendingSlideshowIntervalChange={props.onTrendingSlideshowIntervalChange}
+            use24HourClock={props.use24HourClock}
+            showPosterQualityBadges={props.showPosterQualityBadges}
+            onUse24HourClockChange={props.onUse24HourClockChange}
+            onShowPosterQualityBadgesChange={props.onShowPosterQualityBadgesChange}
         />
 
         <BrandingSettingsPreviewSection
             customLogoUrl={props.customLogoUrl}
             backgroundImageUrl={props.backgroundImageUrl}
             useTrendingSlideshow={props.useTrendingSlideshow}
-            use24HourClock={props.use24HourClock}
-            showPosterQualityBadges={props.showPosterQualityBadges}
             onBackgroundImageUrlChange={props.onBackgroundImageUrlChange}
-            onUse24HourClockChange={props.onUse24HourClockChange}
-            onShowPosterQualityBadgesChange={props.onShowPosterQualityBadgesChange}
         />
     </div>
 );

@@ -44,7 +44,6 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
     onTestEmail,
 }) => (
     <div className="mb-8">
-        <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">SMTP Email Notifications</h3>
         <div className="flex flex-col md:flex-row gap-4 mb-4">
             <div className="flex-2">
                 <label htmlFor="smtpHost">SMTP Host</label>

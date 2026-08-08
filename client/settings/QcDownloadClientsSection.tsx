@@ -18,7 +18,7 @@ type Props = {
 
 const fieldClass = 'w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all';
 
-export const MediaStackDownloadClientsSection: React.FC<Props> = ({
+export const QcDownloadClientsSection: React.FC<Props> = ({
     qcQbitUrl,
     qcQbitUsername,
     qcQbitPassword,

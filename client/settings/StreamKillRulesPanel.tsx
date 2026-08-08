@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 
 import { apiFetch } from '../shared/api';
 import { krMkCond, krMkRule } from './streamKillRulesConstants';
-import { SettingHint } from './SettingHint';
 import { StreamKillConditionRow } from './StreamKillConditionRow';
 
 export const StreamKillRulesPanel: React.FC<{ addToast: (m: string, t?: 'success' | 'error') => void; registerSaveHandler?: (handler: (() => Promise<boolean>) | null) => void }> = ({ addToast, registerSaveHandler }) => {
     const [rules, setRules] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const [expanded, setExpanded] = useState<string | null>(null);
 
     useEffect(() => {
@@ -18,7 +16,6 @@ export const StreamKillRulesPanel: React.FC<{ addToast: (m: string, t?: 'success
     }, []);
 
     const saveRules = async (r: any[]) => {
-        setSaving(true);
         try {
             await apiFetch('/api/kill-rules', { method: 'POST', body: JSON.stringify(r) });
             addToast('Stream rules saved!');
@@ -26,7 +23,7 @@ export const StreamKillRulesPanel: React.FC<{ addToast: (m: string, t?: 'success
         } catch {
             addToast('Failed to save rules', 'error');
             return false;
-        } finally { setSaving(false); }
+        }
     };
     const addRule = () => { const r = krMkRule(); const u = [...rules, r]; setRules(u); setExpanded(r.id); };
     const upd = (id: string, p: any) => setRules(prev => prev.map(r => r.id === id ? { ...r, ...p } : r));
@@ -45,16 +42,9 @@ export const StreamKillRulesPanel: React.FC<{ addToast: (m: string, t?: 'success
 
     return (
         <div className="mb-8 animate-fade-in">
-            <h3 className="text-xl font-bold text-plex mb-6 border-b border-border pb-2 flex items-center flex-wrap gap-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                Stream Kill Rules
-                <SettingHint>
-                    Define rules that automatically terminate Plex streams. Rules are evaluated every{' '}
-                    <strong className="text-text">15 seconds</strong>. Combine conditions using{' '}
-                    <strong className="text-plex">AND</strong> (all must match) or{' '}
-                    <strong className="text-plex">OR</strong> (any must match). The kill message appears on the user&apos;s Plex client screen.
-                </SettingHint>
-            </h3>
+            <p className="text-sm text-muted mb-6">
+                Plex only. Rules are evaluated every 15 seconds. AND requires every condition; OR matches any.
+            </p>
             {rules.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-border rounded-xl text-center gap-3 mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted opacity-40"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
@@ -123,10 +113,6 @@ export const StreamKillRulesPanel: React.FC<{ addToast: (m: string, t?: 'success
                 <button onClick={addRule} className="flex items-center gap-2 px-3 py-2 bg-border text-text rounded-lg font-bold text-xs hover:bg-opacity-80 transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
                     Add New Rule
-                </button>
-                <button onClick={() => saveRules(rules)} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-plex text-background rounded-lg font-bold text-xs hover:opacity-90 transition-all disabled:opacity-50">
-                    {saving ? <span className="w-4 h-4 border-2 border-background/50 border-t-transparent rounded-full animate-spin" /> : <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>}
-                    Save Rules
                 </button>
             </div>
         </div>

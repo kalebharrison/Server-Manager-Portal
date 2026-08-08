@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { SettingHint } from './SettingHint';
 import {
     JELLYFIN_BRAND_BACKGROUND_URL,
     JELLYFIN_BRAND_LOGO_URL,
@@ -38,10 +37,7 @@ export const BrandingSettingsLogoSection: React.FC<{
                                 <img src={JELLYFIN_BRAND_LOGO_URL} alt="" className="w-8 h-8 object-contain" />
                             </span>
                             <div className="min-w-0">
-                                <h4 className="font-bold text-text inline-flex items-center flex-wrap gap-0">
-                                    Jellyfin branding
-                                    <SettingHint>Use the Jellyfin server icon and splash background across the portal.</SettingHint>
-                                </h4>
+                                <h4 className="font-bold text-text">Jellyfin branding</h4>
                             </div>
                         </div>
                         <button
@@ -62,9 +58,7 @@ export const BrandingSettingsLogoSection: React.FC<{
                     <span className="text-center text-muted font-bold text-sm">OR</span>
                     <input type="file" accept="image/*" className="w-full p-2 rounded-lg border border-border bg-background text-muted text-sm outline-none focus:border-plex transition-all file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-white/10 file:text-text hover:file:bg-white/20 file:cursor-pointer cursor-pointer" onChange={e => onLogoFileChange(e.target.files?.[0] || null)} />
                 </div>
-                <div className="mt-2">
-                    <SettingHint>Provide a URL or upload a file. (Max 5MB)</SettingHint>
-                </div>
+                <p className="mt-2 text-xs text-muted">URL or upload, max 5MB.</p>
             </div>
         </>
     );

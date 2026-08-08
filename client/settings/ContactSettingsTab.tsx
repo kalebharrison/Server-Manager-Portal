@@ -30,11 +30,6 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
             subtitle="Shown in the Need Help box on the user dashboard"
         >
             <div className="mb-4">
-                <SettingHint>
-                    Users can use these to contact you for access extensions, issues, or support.
-                </SettingHint>
-            </div>
-            <div className="mb-4">
                 <label htmlFor="contactEmail">Email Address (Optional)</label>
                 <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactEmail" type="email" value={contactEmail} onChange={(e) => onContactEmailChange(e.target.value)} placeholder="e.g. admin@example.com" />
                 <div className="mt-2">
@@ -58,8 +53,7 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
             <textarea id="portalAnnouncement" className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex transition-all" value={announcement} onChange={(event) => onAnnouncementChange(event.target.value)} placeholder="Server maintenance scheduled for Friday..." rows={3} />
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mt-2">
                 <SettingHint>
-                    Saving settings publishes the banner on the portal. “Publish &amp; Email” also emails eligible members.
-                    For full email campaigns, use Notifications → Broadcast Email.
+                    Save publishes the banner. Publish &amp; email also sends to eligible members.
                 </SettingHint>
                 <button type="button" onClick={onPushAnnouncement} disabled={isPushingAnnouncement || !announcement.trim()} className="bg-plex hover:bg-plex-hover disabled:opacity-50 text-background font-bold py-2 px-4 rounded-lg transition-colors text-sm whitespace-nowrap">
                     {isPushingAnnouncement ? 'Sending...' : 'Publish banner & email members'}

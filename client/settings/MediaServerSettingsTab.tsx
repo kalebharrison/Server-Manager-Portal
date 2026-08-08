@@ -48,7 +48,6 @@ export const MediaServerSettingsTab: React.FC<MediaServerSettingsTabProps> = ({
 
     return (
         <div className="mb-8">
-            <h3 className="text-xl font-bold text-plex mb-4 border-b border-border pb-2">Media Server Integration</h3>
             <div className="mb-4">
                 <label htmlFor="mediaServerType">Media Server Type</label>
                 <CustomSelect
@@ -60,11 +59,6 @@ export const MediaServerSettingsTab: React.FC<MediaServerSettingsTabProps> = ({
                         { label: 'Jellyfin', value: 'jellyfin' }
                     ]}
                 />
-                <div className="mt-2">
-                    <SettingHint>
-                        Choose the media server used for portal authentication and server-specific integrations.
-                    </SettingHint>
-                </div>
             </div>
 
             {mediaServerType === 'jellyfin' && (
@@ -113,11 +107,7 @@ export const MediaServerSettingsTab: React.FC<MediaServerSettingsTabProps> = ({
                         />
                     </div>
                     {savedServerId && servers.length === 0 && (
-                        <div className="mt-3">
-                            <SettingHint>
-                                Saved server: <strong>{savedServerId}</strong>
-                            </SettingHint>
-                        </div>
+                        <p className="mt-3 text-xs text-muted">Saved server: <strong className="text-text">{savedServerId}</strong></p>
                     )}
                     {servers.length > 0 && (
                         <div className="mb-4" style={{ marginTop: '1rem' }}>
@@ -129,11 +119,9 @@ export const MediaServerSettingsTab: React.FC<MediaServerSettingsTabProps> = ({
                                 options={servers.map(s => ({ label: `${s.name} (${s.identifier})`, value: s.identifier }))}
                             />
                             {initialSettings.serverIdentifier && (
-                                <div className="mt-2">
-                                    <SettingHint>
-                                        Currently saved server ID: <strong>{initialSettings.serverIdentifier}</strong>
-                                    </SettingHint>
-                                </div>
+                                <p className="mt-2 text-xs text-muted">
+                                    Currently saved server ID: <strong className="text-text">{initialSettings.serverIdentifier}</strong>
+                                </p>
                             )}
                         </div>
                     )}

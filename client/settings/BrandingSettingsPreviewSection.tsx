@@ -1,27 +1,17 @@
 import React from 'react';
 
 import { resolvePortalAssetUrl } from '../shared/basePath';
-import { SettingHint } from './SettingHint';
-import { InlineSwitch } from './BrandingSettingsTabShared';
 
 export const BrandingSettingsPreviewSection: React.FC<{
     customLogoUrl: string;
     backgroundImageUrl: string;
     useTrendingSlideshow: boolean;
-    use24HourClock: boolean;
-    showPosterQualityBadges: boolean;
     onBackgroundImageUrlChange: (value: string) => void;
-    onUse24HourClockChange: (value: boolean) => void;
-    onShowPosterQualityBadgesChange: (value: boolean) => void;
 }> = ({
     customLogoUrl,
     backgroundImageUrl,
     useTrendingSlideshow,
-    use24HourClock,
-    showPosterQualityBadges,
     onBackgroundImageUrlChange,
-    onUse24HourClockChange,
-    onShowPosterQualityBadgesChange,
 }) => (
     <>
         <div className={`mb-4 transition-opacity ${useTrendingSlideshow ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
@@ -33,9 +23,7 @@ export const BrandingSettingsPreviewSection: React.FC<{
                 onChange={e => onBackgroundImageUrlChange(e.target.value)}
                 placeholder="https://example.com/background.png"
             />
-            <div className="mt-2">
-                <SettingHint>Shown as a subtle splash image on the login screen and portal background.</SettingHint>
-            </div>
+            <p className="mt-2 text-xs text-muted">Portal background when the trending slideshow is off.</p>
         </div>
 
         <div className="mb-6 rounded-lg border border-border overflow-hidden bg-background/70">
@@ -62,22 +50,8 @@ export const BrandingSettingsPreviewSection: React.FC<{
                         </div>
                     )}
                     <p className="text-sm font-bold text-text">Portal splash preview</p>
-                    <div className="mt-1 flex justify-center">
-                        <SettingHint>This is the server icon and background users will see.</SettingHint>
-                    </div>
                 </div>
             </div>
-        </div>
-
-        <div className="mb-4">
-            <label>Time Format</label>
-            <InlineSwitch label="Use 24-Hour Clock across the Portal" checked={use24HourClock} onChange={onUse24HourClockChange} />
-        </div>
-
-        <div className="mb-4">
-            <label>Poster Quality Badges</label>
-            <InlineSwitch label="Show quality chips on TMDB posters (4K, HDR, codec, Atmos)" checked={showPosterQualityBadges} onChange={onShowPosterQualityBadgesChange} />
-            <SettingHint>Applies to Home and Discover poster cards for all users.</SettingHint>
         </div>
     </>
 );
