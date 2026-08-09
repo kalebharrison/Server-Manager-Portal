@@ -99,6 +99,15 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
             killKeys: ['blockedExtension'],
             immediate: true,
         },
+        {
+            id: 'fakeRemux',
+            label: 'Fake remux (mp4)',
+            perStrike: 'immediate',
+            effective: 'next cycle',
+            note: 'Remux-tagged .mp4 (DHT encodes Radarr still scores as Remux-2160p)',
+            killKeys: ['fakeRemux'],
+            immediate: true,
+        },
     ];
 };
 

@@ -140,6 +140,7 @@ const humanReason = (reason?: string | null) => {
         case 'metaDL': return 'stuck fetching metadata';
         case 'failedImport': return 'import failed';
         case 'qualityDowngrade': return 'not an upgrade';
+        case 'fakeRemux': return 'fake remux (mp4)';
         case 'blockedExtension': return 'blocked extension';
         case 'duplicate': return 'duplicate';
         case 'orphan': return 'orphan';

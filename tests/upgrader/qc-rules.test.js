@@ -293,6 +293,23 @@ test('only doomed import failures are actionable', () => {
     }), true);
 });
 
+test('remux-tagged mp4 is an immediate fakeRemux kill', () => {
+    const arrItem = {
+        title: 'Plane.2023.2160p.UHDRemux.HDR.DoVi-TheEqualizer.mp4',
+        quality: { quality: { name: 'Remux-2160p' } },
+        status: 'downloading',
+        trackedDownloadState: 'downloading',
+    };
+    assert.equal(classifyQueueItem({
+        now: Date.now(),
+        thresholds: thresholdsFromConfig(),
+        arrItem,
+        clientItem: { client: 'qbit', state: 'downloading', progress: 0.2, name: arrItem.title },
+    }), QC_REASONS.fakeRemux);
+    assert.equal(isReasonActionable({ reason: QC_REASONS.fakeRemux, arrItem }), true);
+    assert.equal(strikeGapMsForReason(QC_REASONS.fakeRemux, thresholdsFromConfig()), 60 * 1000);
+});
+
 test('resolution downgrade not-an-upgrade is doomed even while importPending', () => {
     const arrItem = {
         status: 'completed',

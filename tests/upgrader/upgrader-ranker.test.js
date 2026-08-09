@@ -3,11 +3,53 @@ import assert from 'node:assert/strict';
 
 import {
     compareQualityTier,
+    isFakeRemuxContainer,
     isQualityTierDowngrade,
     parseResolutionTier,
     parseSourceTier,
 } from '../../lib/upgrader/upgrader-quality.js';
 import { rankUpgradeReleases } from '../../lib/upgrader/upgrader-ranker.js';
+
+test('fake remux helper flags mp4 UHDRemux titles', () => {
+    assert.equal(isFakeRemuxContainer({
+        title: 'Plane.2023.2160p.UHDRemux.HDR.DoVi-TheEqualizer.mp4',
+        qualityName: 'Remux-2160p',
+    }), true);
+    assert.equal(isFakeRemuxContainer({
+        title: 'Amsterdam.2022.BDREMUX.2160p.HDR.seleZen.mkv',
+        qualityName: 'Remux-2160p',
+    }), false);
+    assert.equal(isFakeRemuxContainer({
+        title: 'Some.Movie.2160p.WEB-DL.mp4',
+        qualityName: 'WEBDL-2160p',
+    }), false);
+});
+
+test('hunt ranker rejects remux-tagged mp4 encodes', () => {
+    const ranked = rankUpgradeReleases(
+        {
+            title: 'Plane',
+            videoResolution: '4k',
+            sourceTier: 'remux',
+            customFormatScore: -10000,
+            hasAtmos: true,
+            hasTrueHd: true,
+            isRemux: true,
+        },
+        [
+            {
+                title: 'Plane.2023.2160p.UHDRemux.HDR.DoVi-TheEqualizer.mp4',
+                customFormatScore: 0,
+                rejected: false,
+                downloadAllowed: true,
+                quality: { quality: { name: 'Remux-2160p', resolution: 2160 } },
+            },
+        ],
+        { upgraderMinScoreDelta: 10 },
+    );
+    assert.equal(ranked.winner, null);
+    assert.match(ranked.results[0].reason, /fake remux/i);
+});
 
 test('parseResolutionTier and source tiers', () => {
     assert.equal(parseResolutionTier('2160p BluRay REMUX'), '4k');

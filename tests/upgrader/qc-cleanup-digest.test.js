@@ -31,6 +31,7 @@ test('qc cleanup digest skips empty runs and labels known reasons', () => {
     assert.equal(buildQcCleanupDigest({ killed: 0, failed: 0, results: [] }), null);
     assert.equal(humanQcReason('metaDL'), 'stuck fetching metadata');
     assert.equal(humanQcReason('qualityDowngrade'), 'not an upgrade');
+    assert.equal(humanQcReason('fakeRemux'), 'fake remux (mp4)');
 });
 
 test('qc cleanup digest lumps season-pack queue rows into one download', () => {
