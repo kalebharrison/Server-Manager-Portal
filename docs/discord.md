@@ -17,7 +17,7 @@ Agent / natural-language details: [Discord integration plan](./discord-integrati
 
 Slash commands are registered **per guild** (what the server picker shows) plus a **DM-only** global copy so `/help` works in bot DMs. You should not see each `/command` twice in Server Settings → Integrations.
 
-Members paste their Discord user ID under **Preferences**. DMs are allowed only if that user can view the configured member channel.
+Members paste their Discord user ID under **Preferences**. Admins can also view, set, or clear it on **Users** → Edit (filter **Not linked** for cutover). DMs are allowed only if that user can view the configured member channel. IDs must be unique.
 
 ## Developer Portal
 
@@ -104,5 +104,6 @@ Arr **Portal Integrity** Connect hooks are unrelated to Discord posting. They hi
 - [ ] Linked member: `/help`, `/request`, `/myrequests`
 - [ ] Test media announce posts as the **bot**, not a webhook name
 - [ ] Next QC cleanup / integrity failure in the admin channel is the bot (after Requesty is in that channel)
+- [ ] Users page shows Discord IDs; **Not linked** filter lists members who still need one
 - [ ] Unlinked Discord ID is denied with a Preferences hint
 - [ ] Approve/decline DMs a linked member; nothing extra lands in the member channel for that event

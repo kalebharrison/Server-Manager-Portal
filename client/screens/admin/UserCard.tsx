@@ -107,6 +107,14 @@ export const UserCard: React.FC<{
                     <span className="text-muted text-[10px] uppercase tracking-wider font-bold">Newsletter</span>
                     <span className={`font-medium ${wantsNewsletter(user) ? 'text-green-300' : 'text-muted'}`}>{wantsNewsletter(user) ? 'Opted in' : 'Off'}</span>
                 </div>
+                <div className="flex justify-between items-start text-xs pb-1.5 border-b border-white/5 last:border-0 last:pb-0 gap-2">
+                    <span className="text-muted text-[10px] uppercase tracking-wider font-bold flex-shrink-0 pt-0.5">Discord</span>
+                    {/^\d{5,32}$/.test(String(user.discordId || '').trim()) ? (
+                        <span className="text-green-300 font-medium text-right break-all" title={user.discordId}>{user.discordId}</span>
+                    ) : (
+                        <span className="text-orange-300 font-medium">Not linked</span>
+                    )}
+                </div>
             </div>
             <div className="flex flex-wrap gap-2 mt-auto pt-4" onClick={e => e.stopPropagation()}>
                 <button className="px-3 py-1.5 bg-plex/15 text-plex border border-plex/30 rounded-md text-xs font-semibold hover:bg-plex/25 transition-colors flex items-center justify-center gap-1.5" onClick={onViewAs} title="View portal as this user">

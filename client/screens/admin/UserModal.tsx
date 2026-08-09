@@ -14,6 +14,7 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
     const [expiryDate, setExpiryDate] = useState<string | null>(formatDate(addMonths(new Date(), 1).toISOString()));
     const [exemptFromCleanup, setExemptFromCleanup] = useState(false);
     const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+    const [discordId, setDiscordId] = useState('');
     const [autoApprove, setAutoApprove] = useState<AutoApproveState>({
         autoApproveMovies: false,
         autoApproveTv: false,
@@ -26,6 +27,7 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
             setExpiryDate(user.expiryDate ? formatDate(user.expiryDate) : null);
             setExemptFromCleanup(!!user.exemptFromCleanup);
             setNewsletterOptIn(user.newsletterOptIn === true);
+            setDiscordId(String(user.discordId || ''));
             setAutoApprove({
                 autoApproveMovies: user.requestOverrides?.autoApproveMovies === true,
                 autoApproveTv: user.requestOverrides?.autoApproveTv === true,
@@ -36,6 +38,7 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
             setExpiryDate(formatDate(addMonths(new Date(), 1).toISOString()));
             setExemptFromCleanup(false);
             setNewsletterOptIn(false);
+            setDiscordId('');
             setAutoApprove({ autoApproveMovies: false, autoApproveTv: false });
         }
     }, [user, isOpen]);
@@ -49,6 +52,7 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
             expiryDate,
             exemptFromCleanup,
             newsletterOptIn,
+            discordId: String(discordId || '').trim(),
             requestOverrides: {
                 ...(user.requestOverrides || {}),
                 autoApproveMovies: autoApprove.autoApproveMovies,
@@ -104,6 +108,20 @@ export const UserModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
                     >
                         <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${exemptFromCleanup ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
+                </div>
+                <div className="mb-4">
+                    <label htmlFor="discordId">Discord user ID</label>
+                    <input
+                        className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
+                        id="discordId"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder="Developer Mode → Copy User ID"
+                        value={discordId}
+                        onChange={(event) => setDiscordId(event.target.value)}
+                    />
+                    <p className="text-xs text-muted mt-1">Needed for slash commands and bot DMs. Clear to unlink. Must be unique across members.</p>
                 </div>
                 <h3 className="text-xs uppercase tracking-wider font-bold text-muted mt-6 mb-2">User Preferences</h3>
                 <div className="mb-4 flex items-center justify-between bg-black/10 p-4 rounded-lg border border-border">

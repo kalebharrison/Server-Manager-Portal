@@ -81,6 +81,7 @@ export const useAdminDashboardUserActions = ({
                     expiryDate: userToSave.expiryDate,
                     exemptFromCleanup: userToSave.exemptFromCleanup,
                     newsletterOptIn: userToSave.newsletterOptIn === true,
+                    discordId: userToSave.discordId || '',
                     requestOverrides: userToSave.requestOverrides || {},
                 }),
             });

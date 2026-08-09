@@ -21,6 +21,8 @@ export const AdminDashboardView: React.FC<AdminDashboardState> = ({
     setSearchQuery,
     statusFilter,
     setStatusFilter,
+    discordFilter,
+    setDiscordFilter,
     sortBy,
     setSortBy,
     mediaServerLabel,
@@ -44,7 +46,7 @@ export const AdminDashboardView: React.FC<AdminDashboardState> = ({
 
         <header className="border-b border-white/10 pb-5">
             <h1 className="text-2xl md:text-3xl font-black text-text tracking-tight">Users</h1>
-            <p className="text-sm text-muted mt-1">Manage access, expiry, and sync from {mediaServerLabel}.</p>
+            <p className="text-sm text-muted mt-1">Manage access, expiry, Discord links, and sync from {mediaServerLabel}.</p>
         </header>
         <main className="flex flex-col gap-6">
             {isConfigured && (
@@ -63,7 +65,7 @@ export const AdminDashboardView: React.FC<AdminDashboardState> = ({
                     <div className="relative w-full xl:w-auto xl:flex-1 min-w-[250px]">
                         <input
                             type="text"
-                            placeholder="Search by name, username, or email..."
+                            placeholder="Search by name, username, email, or Discord ID..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full py-3 pr-10 pl-4 rounded-lg border border-border bg-background text-text text-sm outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
@@ -73,16 +75,33 @@ export const AdminDashboardView: React.FC<AdminDashboardState> = ({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-3 sm:flex sm:flex-row bg-black/40 p-1 rounded-lg border border-white/5 overflow-x-auto custom-scrollbar w-full xl:w-auto">
-                        {(['all', 'active', 'trial', 'expiring', 'expired', 'revoked'] as const).map((status) => (
-                            <button
-                                key={status}
-                                className={`col-span-1 px-2 sm:px-4 py-2 rounded-md font-medium transition-all text-xs sm:text-sm text-center ${statusFilter === status ? 'bg-plex text-white shadow-lg font-bold' : 'text-muted hover:bg-white/5 hover:text-text'}`}
-                                onClick={() => setStatusFilter(status)}
-                            >
-                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                            </button>
-                        ))}
+                    <div className="flex flex-col gap-2 w-full xl:w-auto">
+                        <div className="grid grid-cols-3 sm:flex sm:flex-row bg-black/40 p-1 rounded-lg border border-white/5 overflow-x-auto custom-scrollbar w-full xl:w-auto">
+                            {(['all', 'active', 'trial', 'expiring', 'expired', 'revoked'] as const).map((status) => (
+                                <button
+                                    key={status}
+                                    className={`col-span-1 px-2 sm:px-4 py-2 rounded-md font-medium transition-all text-xs sm:text-sm text-center ${statusFilter === status ? 'bg-plex text-white shadow-lg font-bold' : 'text-muted hover:bg-white/5 hover:text-text'}`}
+                                    onClick={() => setStatusFilter(status)}
+                                >
+                                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-3 sm:flex sm:flex-row bg-black/40 p-1 rounded-lg border border-white/5 w-full xl:w-auto">
+                            {([
+                                { id: 'all', label: 'Discord: all' },
+                                { id: 'linked', label: 'Linked' },
+                                { id: 'missing', label: 'Not linked' },
+                            ] as const).map((option) => (
+                                <button
+                                    key={option.id}
+                                    className={`col-span-1 px-2 sm:px-4 py-2 rounded-md font-medium transition-all text-xs sm:text-sm text-center ${discordFilter === option.id ? 'bg-plex text-white shadow-lg font-bold' : 'text-muted hover:bg-white/5 hover:text-text'}`}
+                                    onClick={() => setDiscordFilter(option.id)}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 whitespace-nowrap w-full xl:w-auto xl:ml-auto">

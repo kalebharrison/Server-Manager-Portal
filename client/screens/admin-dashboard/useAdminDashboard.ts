@@ -5,10 +5,10 @@ import { pushToast } from '../../shared/toast';
 import type { AppSettings, ToastMessage, User } from '../../shared/types';
 
 import { filterAndSortUsers } from './adminDashboardUserFilters';
-import type { AdminSortBy, AdminStatusFilter } from './adminDashboardTypes';
+import type { AdminDiscordFilter, AdminSortBy, AdminStatusFilter } from './adminDashboardTypes';
 import { useAdminDashboardUserActions } from './useAdminDashboardUserActions';
 
-export type { AdminSortBy, AdminStatusFilter } from './adminDashboardTypes';
+export type { AdminDiscordFilter, AdminSortBy, AdminStatusFilter } from './adminDashboardTypes';
 
 export const useAdminDashboard = ({ onViewAsUser }: { onViewAsUser: (userId: string) => Promise<void> }) => {
     const [users, setUsers] = useState<User[]>([]);
@@ -22,6 +22,7 @@ export const useAdminDashboard = ({ onViewAsUser }: { onViewAsUser: (userId: str
     const [bulkCustomDate, setBulkCustomDate] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<AdminStatusFilter>('all');
+    const [discordFilter, setDiscordFilter] = useState<AdminDiscordFilter>('all');
     const [sortBy, setSortBy] = useState<AdminSortBy>('username-asc');
     const mediaServerType = String(configSettings.mediaServerType || 'plex').toLowerCase();
     const mediaServerLabel = mediaServerType === 'jellyfin' ? 'Jellyfin' : 'Plex';
@@ -94,8 +95,8 @@ export const useAdminDashboard = ({ onViewAsUser }: { onViewAsUser: (userId: str
     };
 
     const filteredAndSortedUsers = useMemo(
-        () => filterAndSortUsers(users, searchQuery, statusFilter, sortBy),
-        [users, searchQuery, statusFilter, sortBy],
+        () => filterAndSortUsers(users, searchQuery, statusFilter, sortBy, discordFilter),
+        [users, searchQuery, statusFilter, sortBy, discordFilter],
     );
 
     const filteredUserIds = useMemo(() => filteredAndSortedUsers.map(u => u.id), [filteredAndSortedUsers]);
@@ -117,6 +118,8 @@ export const useAdminDashboard = ({ onViewAsUser }: { onViewAsUser: (userId: str
         setSearchQuery,
         statusFilter,
         setStatusFilter,
+        discordFilter,
+        setDiscordFilter,
         sortBy,
         setSortBy,
         mediaServerLabel,

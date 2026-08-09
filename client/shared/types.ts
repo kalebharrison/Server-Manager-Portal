@@ -14,6 +14,8 @@ export interface User {
     displayName?: string;
     /** Optional delivery email override for portal notices. */
     contactEmail?: string;
+    /** Discord user snowflake for slash commands and bot DMs. */
+    discordId?: string;
     notifyAccessExpiry?: boolean;
     notifyRequestUpdates?: boolean;
     notifyIssueReplies?: boolean;

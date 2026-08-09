@@ -1,13 +1,16 @@
 import { getDaysUntilExpiry } from '../../shared/format';
 import type { User } from '../../shared/types';
 
-import type { AdminSortBy, AdminStatusFilter } from './adminDashboardTypes';
+import type { AdminDiscordFilter, AdminSortBy, AdminStatusFilter } from './adminDashboardTypes';
+
+const hasDiscordId = (user: User) => /^\d{5,32}$/.test(String(user.discordId || '').trim());
 
 export const filterAndSortUsers = (
     users: User[],
     searchQuery: string,
     statusFilter: AdminStatusFilter,
     sortBy: AdminSortBy,
+    discordFilter: AdminDiscordFilter = 'all',
 ): User[] => {
     return users
         .filter(user => {
@@ -16,8 +19,12 @@ export const filterAndSortUsers = (
                 const matchesName = user.username.toLowerCase().includes(query);
                 const matchesDisplay = user.displayName?.toLowerCase().includes(query) || false;
                 const matchesEmail = user.email?.toLowerCase().includes(query) || false;
-                if (!matchesName && !matchesDisplay && !matchesEmail) return false;
+                const matchesDiscord = String(user.discordId || '').includes(query);
+                if (!matchesName && !matchesDisplay && !matchesEmail && !matchesDiscord) return false;
             }
+
+            if (discordFilter === 'linked' && !hasDiscordId(user)) return false;
+            if (discordFilter === 'missing' && hasDiscordId(user)) return false;
 
             if (statusFilter === 'all') return true;
 
