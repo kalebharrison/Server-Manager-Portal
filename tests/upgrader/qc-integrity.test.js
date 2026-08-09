@@ -1289,3 +1289,179 @@ test('scanIntegrity libraryKey only probes that library and keeps other cache', 
     assert.equal(cache.entries['radarr:r1:2:file:2']?.imohash, 'imo:new');
     assert.equal(result.coverage.byLibrary.length, 2);
 });
+
+test('lookupIntegrityFiles matches title and episode tags', async () => {
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            items: [
+                {
+                    ratingKey: 'radarr:r1:1',
+                    title: 'Dune',
+                    monitored: true,
+                    hasFile: true,
+                    mediaType: 'movie',
+                    arrType: 'radarr',
+                    arrInstanceId: 'r1',
+                    entityId: 1,
+                    movieFileId: 7,
+                    filePath: '/movies/Dune.mkv',
+                    libraryName: 'Movies',
+                },
+                {
+                    ratingKey: 'sonarr:s1:2',
+                    title: 'Severance',
+                    monitored: true,
+                    mediaType: 'show',
+                    arrType: 'sonarr',
+                    arrInstanceId: 's1',
+                    entityId: 2,
+                    episodes: [{
+                        episodeId: 9,
+                        episodeFileId: 90,
+                        filePath: '/tv/Severance/S01E02.mkv',
+                        seasonNumber: 1,
+                        episodeNumber: 2,
+                        title: 'Half Loop',
+                    }],
+                },
+            ],
+        }),
+        loadPrefs: async () => ({}),
+        savePrefs: async () => {},
+        appendAudit: async () => {},
+        loadCache: async () => ({
+            entries: {
+                'radarr:r1:1:file:7': { ok: true, imohash: 'imo:dune', playabilityAt: '2026-01-01T00:00:00.000Z' },
+            },
+        }),
+        saveCache: async () => {},
+    });
+
+    const dune = await integrity.lookupIntegrityFiles({ qcIntegrityEnabled: true }, { query: 'dune' });
+    assert.equal(dune.matches.length, 1);
+    assert.equal(dune.matches[0].cache.imohash, 'imo:dune');
+
+    const ep = await integrity.lookupIntegrityFiles({ qcIntegrityEnabled: true }, { query: 's01e02' });
+    assert.equal(ep.matches.length, 1);
+    assert.equal(ep.matches[0].title, 'Severance');
+});
+
+test('runFileCheck updates cache for one file', async () => {
+    let cache = { entries: {} };
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            items: [{
+                ratingKey: 'radarr:r1:1',
+                title: 'Dune',
+                monitored: true,
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 1,
+                movieFileId: 7,
+                filePath: '/movies/Dune.mkv',
+            }],
+        }),
+        loadPrefs: async () => ({}),
+        savePrefs: async () => {},
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:manual' }),
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.runFileCheck({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+    }, { key: 'radarr:r1:1:file:7', mode: 'imohash' });
+
+    assert.equal(result.ok, true);
+    assert.equal(cache.entries['radarr:r1:1:file:7'].imohash, 'imo:manual');
+});
+
+test('escalateMismatch retrims after playback passes', async () => {
+    const bins = [];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => ({}),
+        savePrefs: async () => {},
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:fresh' }),
+        execImpl: async (bin, args = []) => {
+            bins.push(bin);
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            if (bin === 'mkvmerge' && args.includes('-J')) {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        container: { properties: { title: '' } },
+                        tracks: [
+                            { id: 0, type: 'video', properties: {} },
+                            { id: 1, type: 'audio', properties: { language: 'eng', audio_channels: 6 } },
+                        ],
+                    }),
+                    stderr: '',
+                };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.escalateMismatch({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+    }, {
+        key: 'radarr:r1:1:file:7',
+        title: 'Dune',
+        filePath: '/movies/Dune.mkv',
+        mediaKind: 'video',
+        mediaType: 'movie',
+        arrType: 'radarr',
+        arrInstanceId: 'r1',
+        entityId: 1,
+        movieFileId: 7,
+    }, {
+        imohash: 'imo:old',
+        size: 100,
+        mtimeMs: 1,
+        playabilityAt: '2026-01-01T00:00:00.000Z',
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(bins.includes('mkvmerge'));
+    assert.equal(result.cacheEntry?.imohash, 'imo:fresh');
+});

@@ -73,7 +73,9 @@ Playback check → optional **media trim** (MKV remux: keep configured languages
 If the portal was down for the webhook (restart, deploy), a **recent-import catch-up** runs ~3 minutes after boot and hourly: Arr history for the last 24 hours, then whatever import checks are still missing (playback, trim when rewrite is on, fingerprint, optional full hash). Already-complete stamps are left alone. It does **not** backfill the rest of the library. Member announce still fires if playback was never verified (deduped if it already posted).
 
 **Nightly**  
-If media trim is on, remux dirty MKVs first (skip Plex-playing / already-clean). Then full-library quick fingerprint vs cache. Matches move on. Mismatches escalate to playback then hash. Failures alert on the admin Discord webhook and, when automation is on, replace/search **without** blocklisting (same release may come back).
+If media trim is on, remux dirty MKVs first (skip Plex-playing / already-clean). Then full-library quick fingerprint vs cache. Matches move on. Mismatches escalate to playback → trim (safe remux if the file still plays) → hash. Failures alert on the admin Discord webhook and, when automation is on, replace/search **without** blocklisting (same release may come back).
+
+The Integrity tab **Inspect a file** search shows the saved cache JSON for one title and runs playback / trim / fingerprint / hash on that file only.
 
 ### Check modes
 

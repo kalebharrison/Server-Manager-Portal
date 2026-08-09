@@ -4,6 +4,7 @@ import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { SettingHint } from '../settings/SettingHint';
 import { QC_KPI, QC_SECTION } from './qcUi';
+import { QcIntegrityLookup } from './QcIntegrityLookup';
 
 type IntegrityFinding = {
     key: string;
@@ -548,7 +549,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         Library integrity
                         <SettingHint>
                             Import/upgrade webhooks validate new files (playback → optional trim → playback → fingerprint → optional full hash).
-                            Nightly automation trims dirty MKVs then fingerprints the library; mismatches escalate to playback/hash.
+                            Nightly automation trims dirty MKVs then fingerprints the library; fingerprint mismatches escalate to playback → trim → hash.
                             Trim coverage is stored like playback/fingerprint (size + mtime + keep-rule profile) so already-clean files are skipped.
                             Buttons below are manual tools. Dry-run only — nothing is deleted until you Replace a finding.
                             Files playing on Plex are skipped.
@@ -711,6 +712,12 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     ))}
                 </div>
             )}
+
+            <QcIntegrityLookup
+                onToast={onToast}
+                xxhashEnabled={xxhashEnabled}
+                disabled={scanning}
+            />
 
             <section className={`${QC_SECTION} space-y-3`}>
                 <div className="flex items-center justify-between gap-2">
