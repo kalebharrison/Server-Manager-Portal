@@ -21,6 +21,27 @@ import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { useDiscoverNotify } from './useDiscoverNotify';
 import { DiscoverDownloadsSection } from '../screens/DiscoverDownloadsSection';
 
+const REQUESTS_CACHE_KEY = 'discover-my-requests-v1';
+
+const readCachedRequestItems = (): any[] | null => {
+    try {
+        const raw = sessionStorage.getItem(REQUESTS_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : null;
+    } catch {
+        return null;
+    }
+};
+
+const writeCachedRequestItems = (items: any[]) => {
+    try {
+        sessionStorage.setItem(REQUESTS_CACHE_KEY, JSON.stringify(items));
+    } catch {
+        /* ignore quota */
+    }
+};
+
 const EmptyRail: React.FC<{
     title: string;
     body: string;
@@ -187,28 +208,29 @@ export const DiscoverHome: React.FC<{
     mediaServerType?: string;
 }> = ({ onSelect, formatItem, navigate, pushToast, providerLabel = 'Plex', showPosterQualityBadges = false, mediaServerType = 'plex' }) => {
     const { t, locale } = useDiscoverI18n();
-    const { preferences, loaded } = useDiscoveryPreferences();
+    const { preferences } = useDiscoveryPreferences();
     const { showLibraryQueue, toggleLibraryQueue } = useLibraryQueueToggle();
     const quickRequest = useDiscoverQuickRequest(pushToast);
     const notify = useDiscoverNotify(pushToast);
     const [gridSize, setGridSize] = useDiscoverGridSize();
     const posterCardClass = discoverRowCardWidthClass(gridSize);
+    const seededRequests = readCachedRequestItems();
     const [rows, setRows] = useState({
         recentlyAdded: [] as any[],
-        recentRequests: [] as any[],
+        recentRequests: seededRequests || [] as any[],
         plexWatchlist: [] as any[],
         trending: [] as any[],
         upcomingMovies: [] as any[],
         popularSeries: [] as any[],
         upcomingSeries: [] as any[],
     });
+    const [requestsReady, setRequestsReady] = useState(() => seededRequests != null);
     const [loading, setLoading] = useState(true);
     const loadGenRef = useRef(0);
     const hasPaintedRef = useRef(false);
     const [enterAnim, setEnterAnim] = useState(true);
 
     const loadData = useCallback(async () => {
-        if (!loaded) return;
         const gen = ++loadGenRef.current;
         // Avoid skeleton ↔ content flicker on preference/locale refreshes after first paint.
         if (!hasPaintedRef.current) setLoading(true);
@@ -242,7 +264,10 @@ export const DiscoverHome: React.FC<{
                         (hideAvailable || preferences.showRecentlyAdded === false)
                             ? Promise.resolve(null)
                             : apiFetch('/api/discovery/proxy/media?filter=allavailable&take=40&sort=mediaAdded').catch(() => null),
-                        apiFetch('/api/discovery/my-requests?filter=all&take=40').catch(() => null),
+                        apiFetch('/api/discovery/my-requests?filter=all&take=40', {
+                            cacheTtlMs: 15_000,
+                            staleIfErrorMs: 120_000,
+                        }).catch(() => null),
                         preferences.showWatchlist === false
                             ? Promise.resolve(null)
                             : apiFetch('/api/discovery/watchlist').catch(() => null),
@@ -254,6 +279,12 @@ export const DiscoverHome: React.FC<{
                         ? reqRes.results.map(portalRequestToDiscoveryRowItem)
                         : [];
 
+                    if (reqRes) {
+                        writeCachedRequestItems(myRequestItems);
+                        setRows((prev) => ({ ...prev, recentRequests: myRequestItems }));
+                        setRequestsReady(true);
+                    }
+
                     const recentlyAdded = (addedRes?.results || []).map(normalizeRawDiscoveryItem);
                     const recentRequests = await enrichDiscoveryItems(myRequestItems);
                     const watchlistPosters = await enrichDiscoveryItems(watchlistRes?.results || []);
@@ -263,9 +294,10 @@ export const DiscoverHome: React.FC<{
                     setRows((prev) => ({
                         ...prev,
                         recentlyAdded,
-                        recentRequests: filterHiddenAvailableItems(recentRequests, hideAvailable),
+                        recentRequests,
                         plexWatchlist,
                     }));
+                    if (!reqRes) setRequestsReady(true);
                 } catch {
                     // Side rails are best-effort.
                 }
@@ -295,7 +327,7 @@ export const DiscoverHome: React.FC<{
         } finally {
             if (gen === loadGenRef.current) setLoading(false);
         }
-    }, [loaded, preferences.hideAvailableMedia, preferences.discoverRegion, preferences.discoverLanguage, preferences.showRecentlyAdded, preferences.showWatchlist, locale]);
+    }, [preferences.hideAvailableMedia, preferences.discoverRegion, preferences.discoverLanguage, preferences.showRecentlyAdded, preferences.showWatchlist, locale]);
 
     useEffect(() => {
         loadData();
@@ -320,6 +352,31 @@ export const DiscoverHome: React.FC<{
                 <DiscoverDownloadsSection layout="rail" />
             )}
 
+            <DiscoverHomeRow
+                title={t('home.yourRequests')}
+                items={rows.recentRequests}
+                posterCardClass={posterCardClass}
+                viewAllLabel={t('common.viewAll')}
+                formatItem={formatItem}
+                onSelect={onSelect}
+                animateEnter={enterAnim}
+                onViewAll={() => navigate('/discovery/requests')}
+                showPosterQualityBadges={showPosterQualityBadges}
+                empty={requestsReady ? (
+                    <EmptyRail
+                        title={t('home.noRequestsTitle')}
+                        body={t('home.noRequestsBody')}
+                        actionLabel={t('home.browseMovies')}
+                        onAction={() => navigate('/discovery/movies')}
+                        icon={<ClipboardList className="w-5 h-5" />}
+                    />
+                ) : (
+                    <div className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted mx-2">
+                        Loading your requests…
+                    </div>
+                )}
+            />
+
             {showLibraryQueue ? (
                 <section className={discoveryTheme.personalPanel}>
                     <div className="px-1 flex items-start justify-between gap-3">
@@ -342,27 +399,6 @@ export const DiscoverHome: React.FC<{
                     </div>
 
                     <div id="discover-library-queue" className="flex flex-col gap-5">
-                        <DiscoverHomeRow
-                            title={t('home.yourRequests')}
-                            items={rows.recentRequests}
-                            posterCardClass={posterCardClass}
-                            viewAllLabel={t('common.viewAll')}
-                            formatItem={formatItem}
-                            onSelect={onSelect}
-                            animateEnter={enterAnim}
-                            onViewAll={() => navigate('/discovery/requests')}
-                            showPosterQualityBadges={showPosterQualityBadges}
-                            empty={(
-                                <EmptyRail
-                                    title={t('home.noRequestsTitle')}
-                                    body={t('home.noRequestsBody')}
-                                    actionLabel={t('home.browseMovies')}
-                                    onAction={() => navigate('/discovery/movies')}
-                                    icon={<ClipboardList className="w-5 h-5" />}
-                                />
-                            )}
-                        />
-
                         {preferences.showWatchlist !== false && rows.plexWatchlist.length > 0 ? (
                             <WatchlistPanel
                                 items={rows.plexWatchlist}

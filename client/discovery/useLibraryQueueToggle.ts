@@ -6,8 +6,8 @@ export function useLibraryQueueToggle() {
     const [showLibraryQueue, setShowLibraryQueueState] = useState(() => {
         if (typeof window === 'undefined') return false;
         const stored = localStorage.getItem(STORAGE_KEY);
-        // Default collapsed so Discover opens on content, not the queue panel.
-        if (stored === null) return false;
+        // Default open so Your Requests are visible after origin/hostname changes.
+        if (stored === null) return true;
         return stored === 'true';
     });
 
