@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { createDiscordNotifier } from '../../lib/discord/discord-notify.js';
-import { postDiscordWebhook } from '../../lib/discord/discord-webhook.js';
+import { postDiscordWebhook, resolveDiscordWebhookChannelId } from '../../lib/discord/discord-webhook.js';
 
 test('postDiscordWebhook posts JSON payloads', async () => {
     const calls = [];
@@ -114,10 +114,33 @@ test('postEvent can post with only a member channel id', async () => {
     assert.deepEqual(channelCalls, ['1161060290364985475']);
 });
 
+test('postAdminEvent prefers the bot when it can post to the admin channel', async () => {
+    const webhookCalls = [];
+    const channelCalls = [];
+    const notifier = createDiscordNotifier({
+        fetchImpl: async (url) => {
+            webhookCalls.push(url);
+            return { ok: true, json: async () => ({ channel_id: '1535685210568658954' }) };
+        },
+        sendChannelMessage: async (_config, channelId, payload) => {
+            channelCalls.push({ channelId, payload });
+            return true;
+        },
+    });
+    const ok = await notifier.postAdminEvent({
+        discordEnabled: true,
+        discordAdminWebhookUrl: 'https://discord.com/api/webhooks/2/admin',
+    }, { title: 'Integrity', description: 'fail' });
+    assert.equal(ok, true);
+    assert.deepEqual(channelCalls.map((call) => call.channelId), ['1535685210568658954']);
+    assert.match(channelCalls[0].payload.embeds[0].title, /Integrity/);
+    assert.equal(webhookCalls.length, 1);
+});
+
 test('postAdminEvent prefers admin webhook over member webhook', async () => {
     const calls = [];
-    const fetchImpl = async (url) => {
-        calls.push(url);
+    const fetchImpl = async (url, options = {}) => {
+        calls.push({ url, method: options.method || 'GET' });
         return { ok: true };
     };
     const notifier = createDiscordNotifier({ fetchImpl });
@@ -126,6 +149,13 @@ test('postAdminEvent prefers admin webhook over member webhook', async () => {
         discordWebhookUrl: 'https://discord.com/api/webhooks/1/member',
         discordAdminWebhookUrl: 'https://discord.com/api/webhooks/2/admin',
     }, { title: 'Integrity', description: 'fail' });
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0], 'https://discord.com/api/webhooks/2/admin');
+    assert.ok(calls.some((call) => call.url === 'https://discord.com/api/webhooks/2/admin' && call.method === 'POST'));
+    assert.equal(calls.some((call) => call.url.includes('/1/member')), false);
+});
+
+test('resolveDiscordWebhookChannelId reads channel_id', async () => {
+    const channelId = await resolveDiscordWebhookChannelId('https://discord.com/api/webhooks/2/admin', {
+        fetchImpl: async () => ({ ok: true, json: async () => ({ channel_id: '1535685210568658954' }) }),
+    });
+    assert.equal(channelId, '1535685210568658954');
 });

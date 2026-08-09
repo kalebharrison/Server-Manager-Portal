@@ -134,7 +134,7 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
         <div className="mb-4">
             <label htmlFor="discordAdminWebhookUrl">Admin issues webhook URL</label>
             <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordAdminWebhookUrl" type="password" value={discordAdminWebhookUrl} onChange={(event) => onDiscordAdminWebhookUrlChange(event.target.value)} placeholder="https://discord.com/api/webhooks/..." disabled={!discordEnabled} autoComplete="off" />
-            <div className="mt-2"><SettingHint>Only QC cleanup removals and integrity failures. Falls back to the member webhook if blank — set this so ops noise stays out of the member channel.</SettingHint></div>
+            <div className="mt-2"><SettingHint>QC cleanup and integrity failures. Invite Requesty to that channel with Send Messages to post as the bot; webhook is the fallback. Leave blank only if you want ops noise in the member channel.</SettingHint></div>
         </div>
         <div className="flex flex-col gap-2 mb-4">
             <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={discordNotifyRequestUpdates} onChange={(event) => onDiscordNotifyRequestUpdatesChange(event.target.checked)} disabled={!discordEnabled} /><span className="text-sm">DM members about request approve / decline</span></label>
