@@ -4,6 +4,7 @@ import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { SettingHint } from '../settings/SettingHint';
 import { QC_KPI, QC_SECTION } from './qcUi';
+import { QcOptimizeArrsButton } from './QcOptimizeArrsButton';
 
 type IntegrityFinding = {
     key: string;
@@ -518,6 +519,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     return (
         <div className="space-y-4">
             <div className={`${QC_SECTION} space-y-4`}>
+                <QcOptimizeArrsButton onToast={onToast} variant="full" />
                 <div>
                     <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
                         Library integrity

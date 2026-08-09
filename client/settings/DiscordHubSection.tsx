@@ -96,9 +96,9 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
     const handleSyncArrHooks = async () => {
         setIsSyncingHooks(true);
         try {
-            const result = await apiFetch('/api/upgrader/qc/integrity/sync-arr-hooks', {
+            const result = await apiFetch('/api/upgrader/qc/arr-alignment', {
                 method: 'POST',
-                body: JSON.stringify({ test: true }),
+                body: '{}',
             });
             addToast?.(result.message || 'Arr hooks synced.', 'success');
         } catch (error) {
@@ -193,8 +193,8 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
 
         <h4 className="text-sm font-bold uppercase tracking-wide text-muted mt-6 mb-3">Arr import hooks</h4>
         <p className="text-xs text-muted mb-3">
-            Writes a <code className="text-[11px]">Portal Integrity</code> Connect webhook into each ready Sonarr / Radarr / Lidarr
-            (import + upgrade + Basic auth). Keeps an existing Arr-reachable URL (docker hostname) and only refreshes credentials.
+            Same job as Quality Control → Integrity → Optimize Arrs: write the Connect webhook so imports reach Integrity.
+            Prefer that button when you are already in QC.
         </p>
         <div className="mb-4">
             <button

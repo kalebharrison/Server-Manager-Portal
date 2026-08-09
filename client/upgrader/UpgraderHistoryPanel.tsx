@@ -49,6 +49,7 @@ const actionLabel = (entry: UpgraderAuditEntry) => {
         case 'qc_snooze': return 'Snoozed download';
         case 'qc_clear_snooze': return 'Cleared download snooze';
         case 'qc_extension_policy': return 'Updated blocked extensions';
+        case 'qc_arr_alignment': return 'Optimized Arr Connect hooks';
         default:
             if (entry.targetProfileId) return 'Profile change';
             if (entry.triggerSearch) return 'Search';
