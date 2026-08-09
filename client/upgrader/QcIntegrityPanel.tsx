@@ -42,6 +42,7 @@ type CoverageBucket = {
     playability?: number;
     imohash?: number;
     xxhash?: number;
+    trim?: number;
     /** @deprecated legacy */
     baselined?: number;
 };
@@ -68,10 +69,11 @@ type IntegrityBreaker = {
 
 type IntegritySettings = {
     xxhashEnabled?: boolean;
+    trimEnabled?: boolean;
     includeMusic?: boolean;
 };
 
-type IntegrityScanMode = 'baseline' | 'imohash' | 'playability' | 'xxhash';
+type IntegrityScanMode = 'baseline' | 'imohash' | 'playability' | 'xxhash' | 'trim';
 
 type IntegrityScanResponse = {
     ran?: boolean;
@@ -90,7 +92,7 @@ type IntegrityScanResponse = {
     breaker?: IntegrityBreaker | null;
     setup?: {
         ready?: boolean;
-        tools?: { ffprobe?: boolean; ffmpeg?: boolean };
+        tools?: { ffprobe?: boolean; ffmpeg?: boolean; mkvmerge?: boolean };
         pathMapCount?: number;
     };
 };
@@ -124,6 +126,7 @@ type Props = {
 /** API mode → plain-language label shown in the UI. */
 const MODE_LABELS: Record<IntegrityScanMode, string> = {
     playability: 'Playback check',
+    trim: 'Media trim',
     imohash: 'Quick fingerprint',
     xxhash: 'Full-file hash',
     baseline: 'Run all checks',
@@ -135,12 +138,20 @@ const SCAN_ACTIONS: Array<{
     shortLabel: string;
     blurb: string;
     xxhashOnly?: boolean;
+    trimOnly?: boolean;
 }> = [
     {
         mode: 'playability',
         label: MODE_LABELS.playability,
         shortLabel: 'Playback',
         blurb: 'Decode samples at the start, middle, and end. Catches unplayable or truncated files.',
+    },
+    {
+        mode: 'trim',
+        label: MODE_LABELS.trim,
+        shortLabel: 'Trim',
+        blurb: 'Checks MKV tracks against keep-rules and records the result. Remuxes only when auto-fix is on and dry-run is off.',
+        trimOnly: true,
     },
     {
         mode: 'imohash',
@@ -164,15 +175,22 @@ const SCAN_ACTIONS: Array<{
 ];
 
 const CHECK_STATUS: Array<{
-    key: 'playability' | 'imohash' | 'xxhash';
+    key: 'playability' | 'imohash' | 'xxhash' | 'trim';
     label: string;
     blurb: string;
     xxhashOnly?: boolean;
+    trimOnly?: boolean;
 }> = [
     {
         key: 'playability',
         label: MODE_LABELS.playability,
         blurb: 'Has a decode pass on record',
+    },
+    {
+        key: 'trim',
+        label: MODE_LABELS.trim,
+        blurb: 'Checked against keep-rules (or not an MKV)',
+        trimOnly: true,
     },
     {
         key: 'imohash',
@@ -230,6 +248,7 @@ const librariesFromCoverage = (coverage: IntegrityCoverage | null): LibraryCover
             playability: bucket.playability,
             imohash: bucket.imohash,
             xxhash: bucket.xxhash,
+            trim: bucket.trim,
         });
     }
     return out;
@@ -246,6 +265,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const [coverage, setCoverage] = useState<IntegrityCoverage | null>(null);
     const [breaker, setBreaker] = useState<IntegrityBreaker | null>(null);
     const [xxhashEnabled, setXxhashEnabled] = useState(false);
+    const [trimEnabled, setTrimEnabled] = useState(false);
     const [findings, setFindings] = useState<IntegrityFinding[]>([]);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const wasScanningRef = useRef(false);
@@ -286,6 +306,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         setCoverage(status.coverage || null);
         setBreaker(status.breaker || null);
         setXxhashEnabled(!!status.settings?.xxhashEnabled);
+        setTrimEnabled(!!status.settings?.trimEnabled);
         if (Array.isArray(status.findings)) {
             setFindings(status.findings);
         }
@@ -511,8 +532,18 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     }
 
     const displayFindings = findings.length ? findings : (result?.findings || []);
-    const visibleActions = SCAN_ACTIONS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
-    const visibleStatus = CHECK_STATUS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
+    const visibleActions = SCAN_ACTIONS.filter((entry) => (
+        (!entry.xxhashOnly || xxhashEnabled) && (!entry.trimOnly || trimEnabled)
+    ));
+    const visibleStatus = CHECK_STATUS.filter((entry) => (
+        (!entry.xxhashOnly || xxhashEnabled) && (!entry.trimOnly || trimEnabled)
+    ));
+    const actionsForLibrary = (lib: LibraryCoverage) => (
+        lib.mediaType === 'album' ? visibleActions.filter((entry) => !entry.trimOnly) : visibleActions
+    );
+    const statusForLibrary = (lib: LibraryCoverage) => (
+        lib.mediaType === 'album' ? visibleStatus.filter((entry) => !entry.trimOnly) : visibleStatus
+    );
     const libraries = librariesFromCoverage(coverage);
 
     return (
@@ -524,6 +555,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         <SettingHint>
                             Import/upgrade webhooks validate new files (playback → optional trim → playback → fingerprint → optional full hash).
                             Nightly automation trims dirty MKVs then fingerprints the library; mismatches escalate to playback/hash.
+                            Trim coverage is stored like playback/fingerprint (size + mtime + keep-rule profile) so already-clean files are skipped.
                             Buttons below are manual tools. Dry-run only — nothing is deleted until you Replace a finding.
                             Files playing on Plex are skipped.
                         </SettingHint>
@@ -570,7 +602,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                         </span>
                                     </div>
                                     <div className="mt-2 space-y-2">
-                                        {visibleStatus.map((check) => {
+                                        {statusForLibrary(lib).map((check) => {
                                             const done = Number(lib[check.key] || 0);
                                             const total = Number(lib.total || 0);
                                             const pct = coveragePct(done, total);
@@ -594,7 +626,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                         })}
                                     </div>
                                     <div className="mt-3 flex flex-wrap gap-1.5">
-                                        {visibleActions.map((entry) => {
+                                        {actionsForLibrary(lib).map((entry) => {
                                             const active = activeHere && progress?.mode === entry.mode;
                                             return (
                                                 <button

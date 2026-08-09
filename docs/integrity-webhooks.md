@@ -62,6 +62,8 @@ Use Arr’s **Test** button on the connection. A successful test returns HTTP 20
 5. On soft decode timeout (when enabled): stores a finding and queues a recheck — **no blocklist**
 6. On success: stores the result under the same cache key coverage uses (`sonarr:<instance>:<id>:file:<fileId>`). When Discord **Post new media / upgrades after Integrity verifies** is enabled, the portal also queues a **member-channel** announce (TV seasons are debounced into one post). Soft timeouts do **not** announce until a later recheck passes.
 
+Missed hooks (container restart mid-import) are retried from Arr **history** for the last 24 hours — not by scanning every unchecked library file.
+
 If auth is missing, Integrity is disabled, or Arr cannot reach the URL, imports still succeed in Arr — the portal simply never baselines them and coverage only moves when you run scans manually.
 
 ## Related settings

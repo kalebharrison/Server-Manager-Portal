@@ -70,6 +70,8 @@ See [Deployment — integrity mounts](./deployment.md#optional-quality-control-i
 **Import / upgrade (Arr webhooks)**  
 Playback check → optional **media trim** (MKV remux: keep configured languages + native, drop commentary / extra tracks) → playback again → quick fingerprint → optional full-file hash. Hard playback failures blocklist the release and (when automation is on) delete + re-search. Trim failures stay on the Integrity panel (no Discord) and skip the member announce. Soft decode timeouts (toggle, default on) do **not** blocklist — they queue a recheck instead.
 
+If the portal was down for the webhook (restart, deploy), a **recent-import catch-up** runs ~3 minutes after boot and hourly: Arr history for the last 24 hours, then the same import baseline only for files that still lack playback + fingerprint. It does **not** backfill the rest of the library. Member announce still fires if the original hook was missed (deduped if it already posted).
+
 **Nightly**  
 If media trim is on, remux dirty MKVs first (skip Plex-playing / already-clean). Then full-library quick fingerprint vs cache. Matches move on. Mismatches escalate to playback then hash. Failures alert on the admin Discord webhook and, when automation is on, replace/search **without** blocklisting (same release may come back).
 
@@ -78,6 +80,7 @@ If media trim is on, remux dirty MKVs first (skip Plex-playing / already-clean).
 | Mode | Label in UI | What it does |
 |---|---|---|
 | `playability` | Playback check | Decodes short samples at start, middle, and end via ffmpeg (retries + longer timeout) |
+| `trim` | Media trim | Probes MKV tracks vs keep-rules; remuxes when auto-fix is on and dry-run is off. Records `trimAt` + profile so already-clean files skip next pass |
 | `imohash` | Quick fingerprint | Fast spot-check (file size + small slices); catches silent swaps |
 | `xxhash` | Full-file hash | Hashes the entire file; slowest — enable **Full-file hash (xxhash)** in Settings first |
 | `baseline` | Run all checks | Playback + quick fingerprint together; adds full-file hash when xxhash is enabled |
@@ -88,7 +91,7 @@ Integrity skips files currently playing on Plex. A **circuit breaker** pauses sc
 
 ### Coverage
 
-The Integrity tab shows per-type coverage (movies, shows, albums) for each check tier. Webhook baselines and manual/nightly scans all write to the same cache.
+The Integrity tab shows per-library coverage for each check tier (playback, trim, fingerprint, optional hash). Trim uses the same Integrity cache as the other checks: size + mtime + keep-rule profile (Trimarr-style skip). Changing keep-rules or replacing the file invalidates the stamp. Webhook baselines and manual/nightly scans all write to the same cache.
 
 ## Arr import webhooks
 

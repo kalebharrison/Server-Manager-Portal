@@ -9,6 +9,7 @@ import {
     parseTrimLanguages,
     resolveNativeLanguage,
     resolveTrimConfig,
+    trimProfileKey,
     MIN_OUTPUT_RATIO,
 } from '../../lib/upgrader/qc-media-trim.js';
 
@@ -109,6 +110,17 @@ test('buildMkvmergeArgs skips already-clean files', () => {
 test('resolveNativeLanguage reads Arr originalLanguage objects', () => {
     assert.equal(resolveNativeLanguage({ originalLanguage: { id: 'ja' } }), 'jpn');
     assert.equal(resolveNativeLanguage({ originalLanguage: 'ar' }), 'ara');
+});
+
+test('trimProfileKey is stable for keep-rules and native language', () => {
+    assert.equal(
+        trimProfileKey({ languages: ['ara', 'eng'], nativeLanguage: 'ja' }),
+        trimProfileKey({ languages: ['eng', 'ara'], nativeLanguage: 'jpn' }),
+    );
+    assert.notEqual(
+        trimProfileKey({ languages: ['eng', 'ara'] }),
+        trimProfileKey({ languages: ['eng'] }),
+    );
 });
 
 test('resolveTrimConfig only rewrites with auto-fix and dry-run off', () => {
