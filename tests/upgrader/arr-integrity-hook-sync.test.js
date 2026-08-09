@@ -107,9 +107,11 @@ test('syncIntegrityHooksToArr creates missing webhooks and updates existing ones
     assert.ok(calls.some((call) => call.type === 'radarr' && call.method === 'PUT' && call.endpoint === '/api/v3/notification/9'));
     const created = calls.find((call) => call.method === 'POST' && call.body);
     assert.equal(created.body.fields.find((field) => field.name === 'url').value, 'https://portal.example/triggers/sonarr');
+    const updated = calls.find((call) => call.method === 'PUT' && call.body);
+    assert.equal(updated.body.fields.find((field) => field.name === 'url').value, 'https://old.example/triggers/radarr');
 });
 
-test('syncIntegrityHooksToArr refuses placeholder public domain', async () => {
+test('syncIntegrityHooksToArr refuses placeholder public domain when nothing else is reachable', async () => {
     const result = await syncIntegrityHooksToArr({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
@@ -121,5 +123,5 @@ test('syncIntegrityHooksToArr refuses placeholder public domain', async () => {
         ],
     }, { fetchArr: async () => ({ ok: true, data: [] }) });
     assert.equal(result.ok, false);
-    assert.match(result.error, /public portal URL/i);
+    assert.match(result.results[0].error || result.error, /Arr-reachable portal URL|Enable Quality Control/i);
 });

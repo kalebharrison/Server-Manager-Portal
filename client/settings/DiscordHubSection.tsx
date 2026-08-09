@@ -193,8 +193,8 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
 
         <h4 className="text-sm font-bold uppercase tracking-wide text-muted mt-6 mb-3">Arr import hooks</h4>
         <p className="text-xs text-muted mb-3">
-            The portal writes a <code className="text-[11px]">Portal Integrity</code> Connect webhook into each ready Sonarr / Radarr / Lidarr
-            (import + upgrade, Basic auth, public portal URL). Save settings, then sync — or wait for the next boot.
+            Writes a <code className="text-[11px]">Portal Integrity</code> Connect webhook into each ready Sonarr / Radarr / Lidarr
+            (import + upgrade + Basic auth). Keeps an existing Arr-reachable URL (docker hostname) and only refreshes credentials.
         </p>
         <div className="mb-4">
             <button
