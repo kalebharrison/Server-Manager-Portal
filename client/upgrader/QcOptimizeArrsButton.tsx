@@ -140,7 +140,7 @@ export const QcOptimizeArrsButton: React.FC<Props> = ({
                     : <><AlertTriangle className="w-3.5 h-3.5" /> Needs optimize</>}
             </div>
 
-            {alignmentRows.length > 0 && (
+            {!aligned && alignmentRows.length > 0 && (
                 <div className="overflow-x-auto rounded-xl border border-border/50">
                     <table className="w-full text-xs text-left">
                         <thead className="bg-background/50 text-muted uppercase tracking-wide">

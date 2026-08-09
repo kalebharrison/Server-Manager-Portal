@@ -28,6 +28,8 @@ test('summarizeIntegrityHook flags missing import hook and stale password', () =
         syncedFingerprint: fp,
     });
     assert.equal(ready.aligned, true);
+    const urlRow = ready.rows.find((row) => row.key === 'sonarr-url');
+    assert.equal(urlRow.current, urlRow.recommended);
 });
 
 test('getArrAlignment reports drift until a matching sync fingerprint exists', async () => {
