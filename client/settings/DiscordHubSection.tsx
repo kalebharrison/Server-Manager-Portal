@@ -124,12 +124,12 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
         <div className="mb-4">
             <label htmlFor="discordMemberChannelId">Member channel ID</label>
             <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordMemberChannelId" type="text" value={discordMemberChannelId} onChange={(event) => onDiscordMemberChannelIdChange(event.target.value)} placeholder="Discord channel snowflake" disabled={!discordEnabled} />
-            <div className="mt-2"><SettingHint>Bot DMs are only allowed for people who can view this channel.</SettingHint></div>
+            <div className="mt-2"><SettingHint>Bot DMs are only allowed for people who can view this channel. Media cards and announcements post here as the bot when it is online.</SettingHint></div>
         </div>
         <div className="mb-4">
             <label htmlFor="discordWebhookUrl">Member notifications webhook URL</label>
             <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="discordWebhookUrl" type="password" value={discordWebhookUrl} onChange={(event) => onDiscordWebhookUrlChange(event.target.value)} placeholder="https://discord.com/api/webhooks/..." disabled={!discordEnabled} autoComplete="off" />
-            <div className="mt-2"><SettingHint>Channel posts for media cards and server-wide announcements only. Request updates go out as bot DMs.</SettingHint></div>
+            <div className="mt-2"><SettingHint>Fallback if the bot cannot post in the member channel. Request updates still go out as bot DMs.</SettingHint></div>
         </div>
         <div className="mb-4">
             <label htmlFor="discordAdminWebhookUrl">Admin issues webhook URL</label>
