@@ -27,7 +27,7 @@ export const DiscordQcDigestsSection: React.FC<DiscordQcDigestsSectionProps> = (
             <label className="flex items-center justify-between gap-4">
                 <span className="min-w-0">
                     <span className="font-semibold">Download cleanup digest</span>
-                    <p className="text-xs text-muted mt-1">Posted when cleanup actually removes stalled/failed downloads.</p>
+                    <p className="text-xs text-muted mt-1">Posted when cleanup removes a download — includes title, reason, and client.</p>
                 </span>
                 <input
                     type="checkbox"
