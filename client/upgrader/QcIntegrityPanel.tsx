@@ -522,8 +522,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
                         Library integrity
                         <SettingHint>
-                            Import/upgrade webhooks validate new files (playback → fingerprint → optional full hash).
-                            Nightly automation fingerprints the whole library and only escalates mismatches to playback/hash.
+                            Import/upgrade webhooks validate new files (playback → optional trim → playback → fingerprint → optional full hash).
+                            Nightly automation trims dirty MKVs then fingerprints the library; mismatches escalate to playback/hash.
                             Buttons below are manual tools. Dry-run only — nothing is deleted until you Replace a finding.
                             Files playing on Plex are skipped.
                         </SettingHint>

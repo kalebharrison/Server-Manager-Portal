@@ -68,10 +68,10 @@ See [Deployment — integrity mounts](./deployment.md#optional-quality-control-i
 ### Two pipelines
 
 **Import / upgrade (Arr webhooks)**  
-Playback check → quick fingerprint → optional full-file hash. Hard failures blocklist the release and (when automation is on) delete + re-search. Soft decode timeouts (toggle, default on) do **not** blocklist — they queue a recheck instead.
+Playback check → optional **media trim** (MKV remux: keep configured languages + native, drop commentary / extra tracks) → playback again → quick fingerprint → optional full-file hash. Hard playback failures blocklist the release and (when automation is on) delete + re-search. Trim failures stay on the Integrity panel (no Discord) and skip the member announce. Soft decode timeouts (toggle, default on) do **not** blocklist — they queue a recheck instead.
 
 **Nightly**  
-Full-library quick fingerprint vs cache. Matches move on. Mismatches escalate to playback then hash. Failures alert on the admin Discord webhook and, when automation is on, replace/search **without** blocklisting (same release may come back).
+If media trim is on, remux dirty MKVs first (skip Plex-playing / already-clean). Then full-library quick fingerprint vs cache. Matches move on. Mismatches escalate to playback then hash. Failures alert on the admin Discord webhook and, when automation is on, replace/search **without** blocklisting (same release may come back).
 
 ### Check modes
 
@@ -105,7 +105,7 @@ All QC settings are under **Settings → Quality Control (Admin Only)** (subtabs
 | Overview | Master switch + auto-hunt |
 | Hunt | Missing episodes/movies, min size, **Hunt intensity** (Relaxed / Balanced / Aggressive), preference boosts; rate caps under Advanced |
 | Downloads | qBit/SAB credentials, cleanup automation, **Cleanup aggression** presets; raw strike timers under Advanced. Blocked extensions live on **Quality Control → Clients** (not Settings) |
-| Integrity | Webhooks, scans, automation, path maps, require audio; concurrency / xxhash / nightly under Advanced |
+| Integrity | Webhooks, scans, automation, path maps, require audio, **media trim**; concurrency / xxhash / nightly under Advanced |
 
 Presets expand to the same timer and rate-limit keys as before (`qcMaxStrikes`, `qcMetaDlMinutes`, `upgraderMaxActionsPerHour`, etc.). The engine still reads those raw values — presets are a Settings UI projection. Choosing Advanced values that diverge from a preset stores **Custom**.
 

@@ -116,6 +116,13 @@ type SettingsHydrationSetters = {
     setQcIntegrityRequireAudio: (value: boolean) => void;
     setQcIntegrityIncludeMusic: (value: boolean) => void;
     setQcIntegrityXxhashEnabled: (value: boolean) => void;
+    setQcTrimEnabled: (value: boolean) => void;
+    setQcTrimDryRun: (value: boolean) => void;
+    setQcTrimLanguages: (value: string) => void;
+    setQcTrimKeepNativeAudio: (value: boolean) => void;
+    setQcTrimStripCommentary: (value: boolean) => void;
+    setQcTrimStripLowerChannels: (value: boolean) => void;
+    setQcTrimDeleteMetadataTitle: (value: boolean) => void;
     setQcIntegrityPathMaps: (value: Array<{ from: string; to: string }>) => void;
     setQcIntegrityMaxPerCycle: (value: number) => void;
     setQcIntegrityConcurrency: (value: number) => void;
@@ -268,6 +275,13 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityRequireAudio(initialSettings.qcIntegrityRequireAudio !== false);
     setters.setQcIntegrityIncludeMusic(initialSettings.qcIntegrityIncludeMusic !== false);
     setters.setQcIntegrityXxhashEnabled(!!initialSettings.qcIntegrityXxhashEnabled);
+    setters.setQcTrimEnabled(!!initialSettings.qcTrimEnabled);
+    setters.setQcTrimDryRun(initialSettings.qcTrimDryRun !== false);
+    setters.setQcTrimLanguages(String(initialSettings.qcTrimLanguages || 'eng,ara'));
+    setters.setQcTrimKeepNativeAudio(initialSettings.qcTrimKeepNativeAudio !== false);
+    setters.setQcTrimStripCommentary(initialSettings.qcTrimStripCommentary !== false);
+    setters.setQcTrimStripLowerChannels(initialSettings.qcTrimStripLowerChannels !== false);
+    setters.setQcTrimDeleteMetadataTitle(initialSettings.qcTrimDeleteMetadataTitle !== false);
     setters.setQcIntegrityPathMaps(
         Array.isArray(initialSettings.qcIntegrityPathMaps)
             ? initialSettings.qcIntegrityPathMaps

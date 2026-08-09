@@ -40,6 +40,13 @@ type Props = {
     integrityRequireAudio: boolean;
     integrityIncludeMusic: boolean;
     integrityXxhashEnabled: boolean;
+    qcTrimEnabled: boolean;
+    qcTrimDryRun: boolean;
+    qcTrimLanguages: string;
+    qcTrimKeepNativeAudio: boolean;
+    qcTrimStripCommentary: boolean;
+    qcTrimStripLowerChannels: boolean;
+    qcTrimDeleteMetadataTitle: boolean;
     integrityPathMaps: Array<{ from: string; to: string }>;
     integrityMaxPerCycle: number;
     integrityConcurrency: number;
@@ -79,6 +86,13 @@ type Props = {
     onIntegrityRequireAudioChange: (value: boolean) => void;
     onIntegrityIncludeMusicChange: (value: boolean) => void;
     onIntegrityXxhashEnabledChange: (value: boolean) => void;
+    onQcTrimEnabledChange: (value: boolean) => void;
+    onQcTrimDryRunChange: (value: boolean) => void;
+    onQcTrimLanguagesChange: (value: string) => void;
+    onQcTrimKeepNativeAudioChange: (value: boolean) => void;
+    onQcTrimStripCommentaryChange: (value: boolean) => void;
+    onQcTrimStripLowerChannelsChange: (value: boolean) => void;
+    onQcTrimDeleteMetadataTitleChange: (value: boolean) => void;
     onIntegrityPathMapsChange: (value: Array<{ from: string; to: string }>) => void;
     onIntegrityMaxPerCycleChange: (value: number) => void;
     onIntegrityConcurrencyChange: (value: number) => void;
@@ -122,6 +136,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityRequireAudio,
     integrityIncludeMusic,
     integrityXxhashEnabled,
+    qcTrimEnabled,
+    qcTrimDryRun,
+    qcTrimLanguages,
+    qcTrimKeepNativeAudio,
+    qcTrimStripCommentary,
+    qcTrimStripLowerChannels,
+    qcTrimDeleteMetadataTitle,
     integrityPathMaps,
     integrityMaxPerCycle: _integrityMaxPerCycle,
     integrityConcurrency,
@@ -161,6 +182,13 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityRequireAudioChange,
     onIntegrityIncludeMusicChange,
     onIntegrityXxhashEnabledChange,
+    onQcTrimEnabledChange,
+    onQcTrimDryRunChange,
+    onQcTrimLanguagesChange,
+    onQcTrimKeepNativeAudioChange,
+    onQcTrimStripCommentaryChange,
+    onQcTrimStripLowerChannelsChange,
+    onQcTrimDeleteMetadataTitleChange,
     onIntegrityPathMapsChange,
     onIntegrityMaxPerCycleChange: _onIntegrityMaxPerCycleChange,
     onIntegrityConcurrencyChange,
@@ -625,6 +653,88 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     disabled={!enabled || !integrityEnabled}
                                     checked={integritySoftDecodeTimeouts && integrityEnabled && enabled}
                                     onChange={(event) => onIntegritySoftDecodeTimeoutsChange(event.target.checked)}
+                                />
+                            </label>
+                        </div>
+
+                        <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Media trim</h4>
+                            <p className="text-xs text-muted">
+                                After import playback passes, remux MKV video (keep eng+ara+native, drop commentary / extra langs),
+                                then playback again, then fingerprint. Failures stay on the Integrity panel. Needs RW media mounts + mkvmerge.
+                            </p>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="font-semibold">Enable trim</span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled}
+                                    checked={qcTrimEnabled && integrityEnabled && enabled}
+                                    onChange={(event) => onQcTrimEnabledChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="min-w-0">
+                                    <span className="font-semibold">Dry-run only</span>
+                                    <p className="text-xs text-muted font-normal mt-0.5">Uncheck and turn on Integrity auto-fix to rewrite files.</p>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled || !qcTrimEnabled}
+                                    checked={qcTrimDryRun}
+                                    onChange={(event) => onQcTrimDryRunChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="text-sm font-semibold block">
+                                Keep languages
+                                <input
+                                    type="text"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text font-mono text-sm"
+                                    disabled={!enabled || !integrityEnabled || !qcTrimEnabled}
+                                    value={qcTrimLanguages}
+                                    onChange={(event) => onQcTrimLanguagesChange(event.target.value)}
+                                    placeholder="eng,ara"
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="font-semibold">Keep native audio</span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled || !qcTrimEnabled}
+                                    checked={qcTrimKeepNativeAudio}
+                                    onChange={(event) => onQcTrimKeepNativeAudioChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="font-semibold">Strip commentary</span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled || !qcTrimEnabled}
+                                    checked={qcTrimStripCommentary}
+                                    onChange={(event) => onQcTrimStripCommentaryChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="font-semibold">Strip lower-channel dupes</span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled || !qcTrimEnabled}
+                                    checked={qcTrimStripLowerChannels}
+                                    onChange={(event) => onQcTrimStripLowerChannelsChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="font-semibold">Clear MKV title</span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled || !qcTrimEnabled}
+                                    checked={qcTrimDeleteMetadataTitle}
+                                    onChange={(event) => onQcTrimDeleteMetadataTitleChange(event.target.checked)}
                                 />
                             </label>
                         </div>

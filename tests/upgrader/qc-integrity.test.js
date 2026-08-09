@@ -634,7 +634,7 @@ test('import baseline playability fail requests blocklist', async () => {
     assert.equal(result.ran, true);
     assert.equal(result.ok, false);
     assert.equal(result.blocklisted, true);
-    assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, 'imo:bad');
+    assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, undefined);
     assert.ok(requests.some((entry) => String(entry.path).includes('failed') || String(entry.path).includes('blocklist')));
 });
 
@@ -1132,7 +1132,7 @@ test('baselineImport soft timeout does not blocklist and queues recheck', async 
     assert.equal(result.blocklisted, false);
     assert.equal(blocklistCalls.length, 0);
     assert.ok((prefs.integritySoftRecheckQueue || []).includes(result.result.key));
-    assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, 'imo:soft');
+    assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, undefined);
 });
 
 test('baselineImport hard decode fail blocklists on import', async () => {
@@ -1196,7 +1196,7 @@ test('baselineImport hard decode fail blocklists on import', async () => {
 
     assert.equal(result.ok, false);
     assert.equal(result.result.shouldBlocklist, true);
-    assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, 'imo:hard');
+    assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, undefined);
     assert.ok(requests.some((entry) => String(entry.path).includes('blocklist') || String(entry.path).includes('history')));
 });
 

@@ -9,7 +9,7 @@ Snapshot after Wave 1–4 upstream ports on fork `beta` (lab stack; see `.local/
 | **kometa** | ColleXions was **not** ported in this plan. | **Keep** for now. |
 | **checkrr** | Quality Control covers library hunt/index, download health, and integrity (playback + fingerprint + optional full hash). CF/TRaSH profile tooling is in-portal; confirm episode/profile/search workflows match your checkrr habits before dropping. | **Keep** until QC hunt + integrity match your checkrr use cases. |
 | **speedtest-tracker** | Portal Status speed test added for signed-in members. | **Keep** dedicated tracker for WAN/history; portal test is convenience only. |
-| **trimarr-*** | Unrelated to Quality Control (anime/TV trim pipelines). | **Keep**. |
+| **trimarr-*** | QC Integrity media trim ports the live keep-rules (eng+ara+native, commentary, lower-channels, size guard) on import + nightly. | **Keep until** portal trim is enabled with RW mounts and a dry-run smoke; then drop. |
 | **notifiarr** | Still owns Arr/Plex Discord media posts. | **Keep** (do not double-wire portal webhooks). |
 
 ## Scanner removal

@@ -25,7 +25,7 @@ ENV BIND_HOST=0.0.0.0
 ENV PORT=2121
 ENV FORCE_SECURE_COOKIES=false
 
-RUN apk add --no-cache su-exec ffmpeg
+RUN apk add --no-cache su-exec ffmpeg mkvtoolnix
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force

@@ -124,7 +124,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
                 label: 'Integrity',
                 blurb: 'Check library files play, map Arr paths, and auto-fix bad media.',
                 adminOnly: true,
-                keywords: ['qc', 'integrity', 'webhook', 'fingerprint', 'hash', 'playback', 'path map', 'admin'],
+                keywords: ['qc', 'integrity', 'webhook', 'fingerprint', 'hash', 'playback', 'path map', 'trim', 'trimarr', 'mkv', 'admin'],
             },
         ],
     },

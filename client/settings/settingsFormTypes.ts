@@ -111,6 +111,13 @@ export type SettingsFormValues = {
     qcIntegrityRequireAudio: boolean;
     qcIntegrityIncludeMusic: boolean;
     qcIntegrityXxhashEnabled: boolean;
+    qcTrimEnabled: boolean;
+    qcTrimDryRun: boolean;
+    qcTrimLanguages: string;
+    qcTrimKeepNativeAudio: boolean;
+    qcTrimStripCommentary: boolean;
+    qcTrimStripLowerChannels: boolean;
+    qcTrimDeleteMetadataTitle: boolean;
     qcIntegrityPathMaps: Array<{ from: string; to: string }>;
     qcIntegrityMaxPerCycle: number;
     qcIntegrityConcurrency: number;

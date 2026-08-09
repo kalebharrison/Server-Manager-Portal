@@ -57,7 +57,7 @@ Use Arr’s **Test** button on the connection. A successful test returns HTTP 20
 
 1. Receives the Arr webhook
 2. Builds a candidate from the imported file path / ids
-3. Runs Integrity **baseline** in order: **playback → quick fingerprint → optional full-file hash**
+3. Runs Integrity **baseline** in order: **playback → media trim (if enabled) → playback → quick fingerprint → optional full-file hash**
 4. On hard failure: stores a finding, blocklists the release, and (if integrity automation is on) deletes + re-searches
 5. On soft decode timeout (when enabled): stores a finding and queues a recheck — **no blocklist**
 6. On success: stores the result under the same cache key coverage uses (`sonarr:<instance>:<id>:file:<fileId>`). When Discord **Post new media / upgrades after Integrity verifies** is enabled, the portal also queues a **member-channel** announce (TV seasons are debounced into one post). Soft timeouts do **not** announce until a later recheck passes.

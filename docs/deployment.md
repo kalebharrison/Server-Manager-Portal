@@ -22,11 +22,11 @@ Open `http://localhost:2121` and complete the setup wizard.
 
 ### Image tools
 
-The Docker image includes `ffmpeg` (and `ffprobe`) for library integrity playback checks and fingerprints.
+The Docker image includes `ffmpeg` / `ffprobe` for library integrity and `mkvmerge` (mkvtoolnix) for optional media trim.
 
 ### Optional: Quality Control integrity (media mounts)
 
-Library integrity validates Arr-known files with `ffprobe` / `ffmpeg` inside the portal container. Mount media **read-only** and configure Arr→container path maps in Settings → Quality Control → Library integrity.
+Library integrity validates Arr-known files with `ffprobe` / `ffmpeg` inside the portal container. Mount media **read-only** unless you enable **media trim** (then TV / anime trees need write). Configure Arr→container path maps in Settings → Quality Control → Library integrity.
 
 ```yaml
 # example compose additions
@@ -34,7 +34,8 @@ volumes:
   - ../config:/app/config
   - ../backup:/app/backup
   - /data/movies:/media/movies:ro
-  - /data/tv:/media/tv:ro
+  - /data/tv:/media/tv:rw          # rw when media trim is on
+  - /data/anime:/media/anime:rw    # rw when media trim is on
 ```
 
 Example path maps (Settings textarea):
