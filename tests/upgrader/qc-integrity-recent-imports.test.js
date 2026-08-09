@@ -5,6 +5,7 @@ import {
     collectRecentImportPayloads,
     historyRecordToIntegrityStub,
     importBaselineSatisfied,
+    missingImportChecks,
     isSuccessfulImportHistoryEvent,
 } from '../../lib/upgrader/qc-integrity-recent-imports.js';
 import { createQcIntegrity } from '../../lib/upgrader/qc-integrity.js';
@@ -58,15 +59,32 @@ test('historyRecordToIntegrityStub maps Sonarr episode import', () => {
     assert.equal(stub.filePath, '/tv/Severance/S01E02.mkv');
 });
 
-test('importBaselineSatisfied requires playback + fingerprint', () => {
-    assert.equal(importBaselineSatisfied(null), false);
-    assert.equal(importBaselineSatisfied({ ok: true, imohash: 'x' }), false);
-    assert.equal(importBaselineSatisfied({ ok: true, playabilityAt: '2026-01-01T00:00:00.000Z' }), false);
-    assert.equal(importBaselineSatisfied({
+test('missingImportChecks lists every incomplete import step', () => {
+    assert.deepEqual(missingImportChecks(null), ['playability', 'imohash']);
+    assert.deepEqual(missingImportChecks({ ok: true, imohash: 'x' }), ['playability']);
+    assert.deepEqual(missingImportChecks({
+        ok: true,
+        playabilityAt: '2026-01-01T00:00:00.000Z',
+    }), ['imohash']);
+    assert.deepEqual(missingImportChecks({
         ok: true,
         playabilityAt: '2026-01-01T00:00:00.000Z',
         imohash: 'imo:1',
-    }), true);
+    }), []);
+    assert.deepEqual(missingImportChecks({
+        ok: true,
+        playabilityAt: '2026-01-01T00:00:00.000Z',
+        imohash: 'imo:1',
+    }, { qcIntegrityXxhashEnabled: true }), ['xxhash']);
+    assert.deepEqual(missingImportChecks({
+        ok: true,
+        playabilityAt: '2026-01-01T00:00:00.000Z',
+        imohash: 'imo:1',
+    }, {
+        qcTrimEnabled: true,
+        qcIntegrityAutomationEnabled: true,
+        qcTrimDryRun: false,
+    }, { filePath: '/movies/A.mkv', mediaKind: 'video' }), ['trim']);
     assert.equal(importBaselineSatisfied({
         ok: false,
         playabilityAt: '2026-01-01T00:00:00.000Z',
@@ -196,4 +214,71 @@ test('catchUpRecentImports runs import baseline only for incomplete cache rows',
     assert.equal(cache.entries['radarr:r1:1:file:10'].imohash, 'imo:done');
     assert.ok(cache.entries['radarr:r1:2:file:20']?.playabilityAt);
     assert.equal(cache.entries['radarr:r1:2:file:20']?.imohash, 'imo:new');
+});
+
+test('catchUpRecentImports fills only missing checks on a recent import', async () => {
+    let cache = {
+        entries: {
+            'radarr:r1:2:file:20': {
+                ok: true,
+                playabilityAt: '2026-08-09T13:05:00.000Z',
+                playabilityOk: true,
+                imohash: 'imo:keep',
+                size: 100,
+                mtimeMs: 1,
+            },
+        },
+    };
+    let prefs = {};
+    const now = Date.parse('2026-08-09T18:00:00.000Z');
+    let hashed = 0;
+    const integrity = createQcIntegrity({
+        request: async (_instance, reqPath) => {
+            if (String(reqPath).includes('/history')) {
+                return {
+                    records: [{
+                        eventType: 'downloadFolderImported',
+                        date: '2026-08-09T13:00:00Z',
+                        movieId: 2,
+                        movie: { id: 2, title: 'Needs hash' },
+                        movieFile: { id: 20, path: '/movies/NeedsHash.mkv' },
+                    }],
+                };
+            }
+            return {};
+        },
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        xxhashImpl: async () => {
+            hashed += 1;
+            return { ok: true, xxhash: 'xx:1' };
+        },
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            throw new Error(`unexpected exec ${bin}`);
+        },
+    });
+
+    const result = await integrity.catchUpRecentImports({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityXxhashEnabled: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+        arrInstances: [radarr],
+    }, { now });
+
+    assert.equal(result.ran, true);
+    assert.equal(result.ranImport, 1);
+    assert.equal(hashed, 1);
+    assert.equal(cache.entries['radarr:r1:2:file:20'].imohash, 'imo:keep');
+    assert.equal(cache.entries['radarr:r1:2:file:20'].xxhash, 'xx:1');
+    assert.equal(cache.entries['radarr:r1:2:file:20'].playabilityAt, '2026-08-09T13:05:00.000Z');
 });

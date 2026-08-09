@@ -70,7 +70,7 @@ See [Deployment — integrity mounts](./deployment.md#optional-quality-control-i
 **Import / upgrade (Arr webhooks)**  
 Playback check → optional **media trim** (MKV remux: keep configured languages + native, drop commentary / extra tracks) → playback again → quick fingerprint → optional full-file hash. Hard playback failures blocklist the release and (when automation is on) delete + re-search. Trim failures stay on the Integrity panel (no Discord) and skip the member announce. Soft decode timeouts (toggle, default on) do **not** blocklist — they queue a recheck instead.
 
-If the portal was down for the webhook (restart, deploy), a **recent-import catch-up** runs ~3 minutes after boot and hourly: Arr history for the last 24 hours, then the same import baseline only for files that still lack playback + fingerprint. It does **not** backfill the rest of the library. Member announce still fires if the original hook was missed (deduped if it already posted).
+If the portal was down for the webhook (restart, deploy), a **recent-import catch-up** runs ~3 minutes after boot and hourly: Arr history for the last 24 hours, then whatever import checks are still missing (playback, trim when rewrite is on, fingerprint, optional full hash). Already-complete stamps are left alone. It does **not** backfill the rest of the library. Member announce still fires if playback was never verified (deduped if it already posted).
 
 **Nightly**  
 If media trim is on, remux dirty MKVs first (skip Plex-playing / already-clean). Then full-library quick fingerprint vs cache. Matches move on. Mismatches escalate to playback then hash. Failures alert on the admin Discord webhook and, when automation is on, replace/search **without** blocklisting (same release may come back).
