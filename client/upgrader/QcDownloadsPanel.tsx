@@ -139,7 +139,7 @@ const humanReason = (reason?: string | null) => {
         case 'stalled': return 'stalled';
         case 'metaDL': return 'stuck fetching metadata';
         case 'failedImport': return 'import failed';
-        case 'qualityDowngrade': return 'resolution downgrade';
+        case 'qualityDowngrade': return 'not an upgrade';
         case 'blockedExtension': return 'blocked extension';
         case 'duplicate': return 'duplicate';
         case 'orphan': return 'orphan';

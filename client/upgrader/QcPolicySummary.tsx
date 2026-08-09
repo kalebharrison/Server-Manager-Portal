@@ -83,10 +83,10 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
         },
         {
             id: 'qualityDowngrade',
-            label: 'Resolution downgrade',
+            label: 'Not an upgrade',
             perStrike: 'immediate',
             effective: 'next cycle',
-            note: 'e.g. existing 2160p vs new 1080p',
+            note: 'Worse resolution or custom-format score than the file on disk',
             killKeys: ['qualityDowngrade'],
             immediate: true,
         },
