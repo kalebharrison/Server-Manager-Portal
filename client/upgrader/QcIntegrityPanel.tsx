@@ -32,6 +32,7 @@ type IntegrityProgress = {
     skippedPlaying?: number;
     passed?: number;
     findingCount?: number;
+    wouldRemux?: number;
     currentTitle?: string | null;
     mode?: string | null;
     libraryKey?: string | null;
@@ -76,6 +77,40 @@ type IntegritySettings = {
 
 type IntegrityScanMode = 'baseline' | 'imohash' | 'playability' | 'xxhash' | 'trim';
 
+type TrimPreviewItem = {
+    key?: string | null;
+    title?: string | null;
+    seasonNumber?: number | null;
+    episodeNumber?: number | null;
+    filePath?: string | null;
+    libraryName?: string | null;
+    detail?: string | null;
+    audioKeep?: string[];
+    audioDrop?: string[];
+    subKeep?: string[];
+    subDrop?: string[];
+    remuxed?: boolean;
+};
+
+type TrimPreview = {
+    at?: string;
+    libraryKey?: string | null;
+    dryRun?: boolean;
+    summary?: {
+        scanned?: number;
+        skipped?: number;
+        skippedPlaying?: number;
+        alreadyClean?: number;
+        wouldRemux?: number;
+        remuxed?: number;
+        failed?: number;
+        notMkv?: number;
+        itemCount?: number;
+        truncated?: boolean;
+    };
+    items?: TrimPreviewItem[];
+};
+
 type IntegrityScanResponse = {
     ran?: boolean;
     reason?: string;
@@ -87,7 +122,9 @@ type IntegrityScanResponse = {
     skippedPlaying?: number;
     passed?: number;
     findingCount?: number;
+    wouldRemux?: number;
     findings?: IntegrityFinding[];
+    trimPreview?: TrimPreview | null;
     progress?: IntegrityProgress | null;
     coverage?: IntegrityCoverage | null;
     breaker?: IntegrityBreaker | null;
@@ -104,6 +141,7 @@ type IntegrityStatus = {
     coverage?: IntegrityCoverage | null;
     breaker?: IntegrityBreaker | null;
     findings?: IntegrityFinding[];
+    trimPreview?: TrimPreview | null;
     settings?: IntegritySettings | null;
     lastScan?: {
         at?: string;
@@ -113,6 +151,7 @@ type IntegrityStatus = {
         skippedPlaying?: number;
         passed?: number;
         findingCount?: number;
+        wouldRemux?: number;
         libraryKey?: string | null;
         findings?: IntegrityFinding[];
     } | null;
@@ -151,7 +190,7 @@ const SCAN_ACTIONS: Array<{
         mode: 'trim',
         label: MODE_LABELS.trim,
         shortLabel: 'Trim',
-        blurb: 'Checks MKV tracks against keep-rules and records the result. Remuxes only when Media trim + auto-fix are on and dry-run is off.',
+        blurb: 'Dry-run writes a keep/drop preview. Remuxes only when Media trim + auto-fix are on and dry-run is off.',
         videoOnly: true,
     },
     {
@@ -267,6 +306,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const [breaker, setBreaker] = useState<IntegrityBreaker | null>(null);
     const [xxhashEnabled, setXxhashEnabled] = useState(false);
     const [findings, setFindings] = useState<IntegrityFinding[]>([]);
+    const [trimPreview, setTrimPreview] = useState<TrimPreview | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const wasScanningRef = useRef(false);
 
@@ -282,8 +322,11 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         const nowScanning = !!status.scanning;
         if (wasScanningRef.current && !nowScanning && status.lastScan) {
             const last = status.lastScan;
+            const wouldRemux = last.wouldRemux ?? status.trimPreview?.summary?.wouldRemux ?? 0;
             onToast?.(
-                `${labelForMode(last.mode)} done: ${last.findingCount || 0} findings · ${last.scanned || 0} probed · ${last.skippedPlaying || 0} playing skip.`,
+                last.mode === 'trim'
+                    ? `Trim preview: ${wouldRemux} would remux · ${last.scanned || 0} probed · ${last.skipped || 0} skipped.`
+                    : `${labelForMode(last.mode)} done: ${last.findingCount || 0} findings · ${last.scanned || 0} probed · ${last.skippedPlaying || 0} playing skip.`,
                 'success',
             );
             setResult({
@@ -309,6 +352,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         if (Array.isArray(status.findings)) {
             setFindings(status.findings);
         }
+        if (status.trimPreview) setTrimPreview(status.trimPreview);
         if (!nowScanning && status.lastScan) {
             setResult((current) => current?.ran ? current : {
                 ran: true,
@@ -551,12 +595,12 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                             Import/upgrade webhooks validate new files (playback → optional trim → playback → fingerprint → optional full hash).
                             Nightly automation trims dirty MKVs then fingerprints the library; fingerprint mismatches escalate to playback → trim → hash.
                             Trim coverage is stored like playback/fingerprint (size + mtime + keep-rule profile) so already-clean files are skipped.
-                            Buttons below are manual tools. Dry-run only — nothing is deleted until you Replace a finding.
-                            Files playing on Plex are skipped.
+                            Trim dry-run writes a keep/drop preview (not findings). Remux only after you uncheck Dry-run only and turn on Auto-fix.
+                            Other buttons are dry-run until you Replace a finding. Files playing on Plex are skipped.
                         </SettingHint>
                     </h2>
                     <p className="text-xs text-muted mt-1 max-w-2xl">
-                        Manual checks — dry-run only until you Replace a finding.
+                        Trim → preview of what remux would drop. Playback/fingerprint stay dry-run until you Replace a finding.
                     </p>
                     {result?.setup && !result.setup.ready && (
                         <p className="text-xs text-amber-200 mt-2">
@@ -718,6 +762,73 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 xxhashEnabled={xxhashEnabled}
                 disabled={scanning}
             />
+
+            {trimPreview && (
+                <section className={`${QC_SECTION} space-y-3`}>
+                    <div>
+                        <h3 className="text-sm font-bold text-text">Trim preview</h3>
+                        <p className="text-[11px] text-muted mt-1">
+                            {trimPreview.dryRun === false
+                                ? 'Last remux pass (Auto-fix + dry-run off).'
+                                : 'Dry-run report — nothing was rewritten. Last Trim scan only.'}
+                            {trimPreview.at ? ` · ${new Date(trimPreview.at).toLocaleString()}` : ''}
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {[
+                            ['Would remux', trimPreview.summary?.wouldRemux || 0],
+                            ['Already clean', trimPreview.summary?.alreadyClean || 0],
+                            ['Remuxed', trimPreview.summary?.remuxed || 0],
+                            ['Failed', trimPreview.summary?.failed || 0],
+                        ].map(([label, value]) => (
+                            <div key={String(label)} className={QC_KPI}>
+                                <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
+                                <div className="mt-1 text-lg font-bold text-text">{value}</div>
+                            </div>
+                        ))}
+                    </div>
+                    {trimPreview.summary?.truncated && (
+                        <p className="text-[11px] text-amber-200">
+                            Showing first {trimPreview.summary.itemCount} of {trimPreview.summary.wouldRemux} would-remux titles.
+                        </p>
+                    )}
+                    {(trimPreview.items || []).length === 0 && (
+                        <p className="text-xs text-emerald-300">Nothing to remux in that pass.</p>
+                    )}
+                    <div className="space-y-2 max-h-[32rem] overflow-y-auto">
+                        {(trimPreview.items || []).map((row, idx) => (
+                            <div key={row.key || row.filePath || `${row.title || 'row'}-${idx}`} className="rounded-lg border border-border/50 bg-white/[0.02] px-3 py-2">
+                                <div className="text-xs font-semibold text-text truncate">
+                                    {row.title}
+                                    {row.seasonNumber != null && row.episodeNumber != null
+                                        ? ` · S${String(row.seasonNumber).padStart(2, '0')}E${String(row.episodeNumber).padStart(2, '0')}`
+                                        : ''}
+                                    {row.remuxed ? ' · remuxed' : ''}
+                                </div>
+                                <div className="text-[10px] text-muted mt-1 font-mono break-all">{row.filePath}</div>
+                                {(row.audioDrop?.length || row.subDrop?.length) ? (
+                                    <div className="mt-1.5 space-y-0.5 text-[11px] text-text/90">
+                                        {row.audioKeep?.length ? (
+                                            <div><span className="text-muted">Keep audio</span> · {row.audioKeep.join(' · ')}</div>
+                                        ) : null}
+                                        {row.audioDrop?.length ? (
+                                            <div><span className="text-muted">Drop audio</span> · {row.audioDrop.join(' · ')}</div>
+                                        ) : null}
+                                        {row.subKeep?.length ? (
+                                            <div><span className="text-muted">Keep subs</span> · {row.subKeep.join(' · ')}</div>
+                                        ) : null}
+                                        {row.subDrop?.length ? (
+                                            <div><span className="text-muted">Drop subs</span> · {row.subDrop.join(' · ')}</div>
+                                        ) : null}
+                                    </div>
+                                ) : (
+                                    row.detail ? <div className="text-[11px] text-muted mt-1">{row.detail}</div> : null
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             <section className={`${QC_SECTION} space-y-3`}>
                 <div className="flex items-center justify-between gap-2">

@@ -28,6 +28,11 @@ type FileCheckResponse = {
     reason?: string | null;
     detail?: string | null;
     mode?: string | null;
+    wouldRemux?: boolean;
+    audioKeep?: string[];
+    audioDrop?: string[];
+    subKeep?: string[];
+    subDrop?: string[];
     cache?: Record<string, unknown> | null;
 };
 
@@ -104,10 +109,12 @@ export const QcIntegrityLookup: React.FC<Props> = ({
                 )));
             }
             onToast?.(
-                payload.ok
-                    ? `${selected.title || 'File'}: ${mode} saved.`
-                    : `${selected.title || 'File'}: ${payload.reason || 'check failed'}`,
-                payload.ok ? 'success' : 'error',
+                payload.wouldRemux
+                    ? `${selected.title || 'File'}: would remux (dry-run).`
+                    : payload.ok
+                        ? `${selected.title || 'File'}: ${mode} saved.`
+                        : `${selected.title || 'File'}: ${payload.reason || 'check failed'}`,
+                payload.wouldRemux ? 'info' : payload.ok ? 'success' : 'error',
             );
         } catch (error: any) {
             onToast?.(error?.message || 'File check failed', 'error');
@@ -124,7 +131,7 @@ export const QcIntegrityLookup: React.FC<Props> = ({
                 <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Inspect a file</h3>
                 <p className="text-[11px] text-muted mt-1">
                     Search the library, view the saved integrity JSON, and run one check at a time.
-                    Trim remuxes only when Media trim + auto-fix are on and dry-run is off.
+                    Trim dry-run shows keep/drop; remux only when Media trim + auto-fix are on and dry-run is off.
                 </p>
             </div>
             <form className="flex flex-wrap gap-2" onSubmit={(event) => void search(event)}>
@@ -199,10 +206,24 @@ export const QcIntegrityLookup: React.FC<Props> = ({
                                 ))}
                             </div>
                             {lastCheck && (
-                                <p className="text-[11px] text-muted">
-                                    Last check: {lastCheck.mode || '—'} · {lastCheck.ok ? 'saved' : (lastCheck.reason || 'failed')}
-                                    {lastCheck.detail ? ` · ${lastCheck.detail}` : ''}
-                                </p>
+                                <div className="space-y-1 text-[11px] text-muted">
+                                    <p>
+                                        Last check: {lastCheck.mode || '—'} · {
+                                            lastCheck.wouldRemux
+                                                ? 'would remux (dry-run)'
+                                                : lastCheck.ok ? 'saved' : (lastCheck.reason || 'failed')
+                                        }
+                                    </p>
+                                    {lastCheck.wouldRemux && (
+                                        <div className="text-text/90 space-y-0.5">
+                                            {lastCheck.audioKeep?.length ? <div>Keep audio · {lastCheck.audioKeep.join(' · ')}</div> : null}
+                                            {lastCheck.audioDrop?.length ? <div>Drop audio · {lastCheck.audioDrop.join(' · ')}</div> : null}
+                                            {lastCheck.subKeep?.length ? <div>Keep subs · {lastCheck.subKeep.join(' · ')}</div> : null}
+                                            {lastCheck.subDrop?.length ? <div>Drop subs · {lastCheck.subDrop.join(' · ')}</div> : null}
+                                        </div>
+                                    )}
+                                    {!lastCheck.wouldRemux && lastCheck.detail ? <p>{lastCheck.detail}</p> : null}
+                                </div>
                             )}
                             <pre className="text-[10px] leading-relaxed text-text/90 bg-black/30 border border-border/40 rounded-lg p-3 overflow-auto max-h-96">
                                 {JSON.stringify(selected.cache || { note: 'No integrity cache row yet' }, null, 2)}

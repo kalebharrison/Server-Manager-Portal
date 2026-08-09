@@ -1465,3 +1465,91 @@ test('escalateMismatch retrims after playback passes', async () => {
     assert.ok(bins.includes('mkvmerge'));
     assert.equal(result.cacheEntry?.imohash, 'imo:fresh');
 });
+
+test('trim dry-run scan writes a keep/drop preview, not findings', async () => {
+    let cache = { entries: {} };
+    let prefs = {};
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            generatedAt: '2026-08-09T00:00:00.000Z',
+            items: [{
+                ratingKey: 'radarr:r1:1',
+                title: 'Eternal Sunshine',
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 1,
+                movieFileId: 7,
+                filePath: '/movies/Eternal.mkv',
+                libraryKey: 'radarr:r1:movies',
+                libraryName: 'Movies',
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.some((arg) => String(arg).includes('version'))) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            if (bin === 'mkvmerge' && args.includes('-J')) {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        container: { properties: { title: '' } },
+                        tracks: [
+                            { id: 0, type: 'video', properties: {} },
+                            { id: 1, type: 'audio', properties: { language: 'eng', audio_channels: 6 } },
+                            {
+                                id: 2,
+                                type: 'audio',
+                                properties: {
+                                    language: 'eng',
+                                    audio_channels: 2,
+                                    track_name: 'Director Commentary',
+                                },
+                            },
+                            { id: 3, type: 'subtitles', properties: { language: 'eng' } },
+                            { id: 4, type: 'subtitles', properties: { language: 'ger', track_name: 'German' } },
+                        ],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.scanIntegrity({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcTrimEnabled: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, { dryRun: true, force: true, full: true, mode: 'trim' });
+
+    assert.equal(result.ran, true);
+    assert.equal(result.findingCount, 0);
+    assert.equal(result.wouldRemux, 1);
+    assert.equal(result.trimPreview.summary.wouldRemux, 1);
+    assert.equal(result.trimPreview.items[0].title, 'Eternal Sunshine');
+    assert.ok(result.trimPreview.items[0].audioDrop.some((label) => /Commentary/i.test(label)));
+    assert.ok(result.trimPreview.items[0].subDrop.some((label) => /ger/i.test(label)));
+    assert.equal((prefs.integrityFindings || []).length, 0);
+
+    const status = await integrity.getStatus({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+    });
+    assert.equal(status.trimPreview.summary.wouldRemux, 1);
+});

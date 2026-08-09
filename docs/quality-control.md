@@ -82,12 +82,12 @@ The Integrity tab **Inspect a file** search shows the saved cache JSON for one t
 | Mode | Label in UI | What it does |
 |---|---|---|
 | `playability` | Playback check | Decodes short samples at start, middle, and end via ffmpeg (retries + longer timeout) |
-| `trim` | Media trim | Probes MKV tracks vs keep-rules; remuxes when auto-fix is on and dry-run is off. Records `trimAt` + profile so already-clean files skip next pass |
+| `trim` | Media trim | Probes MKV tracks vs keep-rules. **Dry-run** (default) writes a keep/drop preview on the Integrity tab — nothing is rewritten. Remuxes only when auto-fix is on and dry-run is off. Records `trimAt` + profile so already-clean files skip next pass |
 | `imohash` | Quick fingerprint | Fast spot-check (file size + small slices); catches silent swaps |
 | `xxhash` | Full-file hash | Hashes the entire file; slowest — enable **Full-file hash (xxhash)** in Settings first |
 | `baseline` | Run all checks | Playback + quick fingerprint together; adds full-file hash when xxhash is enabled |
 
-Manual scans on the Integrity tab are admin tools (dry-run by default). **Enable integrity automation** allows nightly escalate replace and import hard-fail replace — leave off until you trust dry-run results.
+Manual scans on the Integrity tab are admin tools (dry-run by default). Click **Trim** on a library for a would-remux report (track names, not just IDs). **Enable integrity automation** allows nightly escalate replace and import hard-fail replace — leave off until you trust dry-run results.
 
 Integrity skips files currently playing on Plex. A **circuit breaker** pauses scans when too many findings appear in one cycle.
 

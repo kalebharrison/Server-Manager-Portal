@@ -5,6 +5,7 @@ import {
     planMkvTrim,
     buildMkvmergeArgs,
     checkTrimOutputSize,
+    describeTrimPlan,
     normalizeLanguageCode,
     parseTrimLanguages,
     resolveNativeLanguage,
@@ -96,6 +97,21 @@ test('size guard rejects half-or-less remuxes', () => {
     assert.equal(checkTrimOutputSize(1000, 499).ok, false);
     assert.equal(checkTrimOutputSize(1000, 500).ok, true);
     assert.equal(MIN_OUTPUT_RATIO, 0.5);
+});
+
+test('describeTrimPlan labels keep and drop tracks', () => {
+    const plan = planMkvTrim(infoFrom([
+        track(0, 'video'),
+        track(1, 'audio', { language: 'eng', name: 'English', channels: 6 }),
+        track(2, 'audio', { language: 'eng', name: 'Director Commentary', channels: 2 }),
+        track(3, 'subtitles', { language: 'eng', name: 'English' }),
+        track(4, 'subtitles', { language: 'ger', name: 'German' }),
+    ]), { languages: ['eng', 'ara'] });
+    const described = describeTrimPlan(plan);
+    assert.match(described.detail, /keep audio \[1 eng English 6ch\]/);
+    assert.match(described.detail, /drop audio \[2 eng Director Commentary 2ch\]/);
+    assert.deepEqual(described.subKeep, ['3 eng English']);
+    assert.deepEqual(described.subDrop, ['4 ger German']);
 });
 
 test('buildMkvmergeArgs skips already-clean files', () => {
