@@ -127,17 +127,17 @@ test('resolveNativeLanguage reads Arr originalLanguage objects', () => {
     assert.equal(resolveNativeLanguage({ originalLanguage: { id: 'ja' } }), 'jpn');
     assert.equal(resolveNativeLanguage({ originalLanguage: { id: 8, name: 'Japanese' } }), 'jpn');
     assert.equal(resolveNativeLanguage({ originalLanguage: 'ar' }), 'ara');
-    assert.equal(resolveNativeLanguage({ libraryBucket: 'anime' }), 'jpn');
+    assert.equal(resolveNativeLanguage({ libraryBucket: 'anime' }), null);
     assert.equal(resolveNativeLanguage({
         originalLanguage: { id: 1, name: 'English' },
         libraryBucket: 'anime',
     }), 'eng');
 });
 
-test('resolveTrimConfig keeps jpn native for anime library', () => {
+test('resolveTrimConfig keeps jpn native from metadata code', () => {
     const cfg = resolveTrimConfig(
         { qcTrimEnabled: true },
-        { libraryBucket: 'anime' },
+        { originalLanguage: 'jpn' },
     );
     assert.equal(cfg.nativeLanguage, 'jpn');
     const plan = planMkvTrim(infoFrom([

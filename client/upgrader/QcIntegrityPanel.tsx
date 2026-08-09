@@ -84,6 +84,8 @@ type TrimPreviewItem = {
     episodeNumber?: number | null;
     filePath?: string | null;
     libraryName?: string | null;
+    nativeLanguage?: string | null;
+    nativeSource?: string | null;
     detail?: string | null;
     audioKeep?: string[];
     audioDrop?: string[];
@@ -803,6 +805,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                     {row.seasonNumber != null && row.episodeNumber != null
                                         ? ` · S${String(row.seasonNumber).padStart(2, '0')}E${String(row.episodeNumber).padStart(2, '0')}`
                                         : ''}
+                                    {row.nativeLanguage ? ` · native ${row.nativeLanguage}` : ''}
+                                    {row.nativeSource ? ` (${row.nativeSource})` : ''}
                                     {row.remuxed ? ' · remuxed' : ''}
                                 </div>
                                 <div className="text-[10px] text-muted mt-1 font-mono break-all">{row.filePath}</div>
