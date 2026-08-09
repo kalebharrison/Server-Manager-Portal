@@ -11,6 +11,7 @@ import {
     isMetaDlActionable,
     isReasonActionable,
     isResearchThrottled,
+    isCustomFormatDowngradeImportFailure,
     isResolutionDowngradeImportFailure,
     isSeedingProtected,
     isSnoozed,
@@ -328,7 +329,7 @@ test('same-resolution not-an-upgrade is not a resolution downgrade', () => {
     assert.equal(isResolutionDowngradeImportFailure(arrItem), false);
 });
 
-test('custom format upgrade rejects are not treated as resolution downgrades', () => {
+test('custom format upgrade rejects are doomed even while importPending', () => {
     const now = Date.now();
     const arrItem = {
         trackedDownloadState: 'importPending',
@@ -336,22 +337,25 @@ test('custom format upgrade rejects are not treated as resolution downgrades', (
         added: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
         statusMessages: [{
             messages: [
-                'Not a Custom Format upgrade for existing movie file(s). New: [DV HDR10, LQ (Release Title)] (-5000) do not improve on Existing: [DD] (750)',
+                'Not a Custom Format upgrade for existing episode file(s). New: [HDR, Repack/Proper] (5) do not improve on Existing: [ATVP, DV HDR10, WEB Tier 01] (1700)',
             ],
         }],
     };
     assert.equal(isResolutionDowngradeImportFailure(arrItem), false);
-    assert.notEqual(classifyQueueItem({
+    assert.equal(isCustomFormatDowngradeImportFailure(arrItem), true);
+    assert.equal(isDoomedImportFailure(arrItem), true);
+    assert.equal(classifyQueueItem({
         now,
         thresholds: thresholdsFromConfig({ qcCompletedNotImportingMinutes: 60 }),
         arrItem,
         clientItem: {
-            client: 'qbit',
-            state: 'uploading',
+            client: 'sab',
+            state: 'Completed',
             progress: 1,
-            completion_on: Math.floor((now - 2 * 60 * 60 * 1000) / 1000),
+            completedAt: now - 2 * 60 * 60 * 1000,
         },
     }), QC_REASONS.qualityDowngrade);
+    assert.equal(isReasonActionable({ reason: QC_REASONS.qualityDowngrade, arrItem }), true);
 });
 
 test('stall kills are held when download client is configured but unreachable', () => {

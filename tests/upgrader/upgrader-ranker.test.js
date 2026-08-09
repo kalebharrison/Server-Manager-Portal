@@ -118,3 +118,68 @@ test('season pack preferred over episodic when both pass floors', () => {
     assert.ok(ranked.winner);
     assert.equal(ranked.winner.fullSeason, true);
 });
+
+test('portal boosts cannot invent an Arr custom-format upgrade', () => {
+    const ranked = rankUpgradeReleases(
+        {
+            title: 'Ted Lasso',
+            videoResolution: '4k',
+            sourceTier: 'webdl',
+            customFormatScore: 1700,
+            hasHdr: true,
+            hasDolbyVision: true,
+        },
+        [
+            {
+                title: 'Ted.Lasso.S04E01.PROPER.HDR.2160p.WEB.h265-ETHEL',
+                customFormatScore: 5,
+                rejected: false,
+                downloadAllowed: true,
+                quality: { quality: { name: 'WEBDL-2160p', resolution: 2160 } },
+            },
+        ],
+        {
+            upgraderMinScoreDelta: 10,
+            upgraderPreferences: {
+                preferDolbyVisionHdr: true,
+                preferAtmos: true,
+                preferRemux: true,
+                preferSeasonPacks: true,
+            },
+        },
+    );
+    assert.equal(ranked.winner, null);
+    assert.match(ranked.results[0].reason, /Arr CF delta/i);
+});
+
+test('negative Arr CF score cannot beat a positive library file via DV boosts', () => {
+    const ranked = rankUpgradeReleases(
+        {
+            title: 'Mindhunter',
+            videoResolution: '4k',
+            sourceTier: 'webdl',
+            customFormatScore: 85,
+            hasHdr: true,
+        },
+        [
+            {
+                title: 'Mindhunter.S02.2160p.NF.WEB-DL.DV.DDP5.1.Atmos.H.265',
+                fullSeason: true,
+                customFormatScore: -8215,
+                rejected: false,
+                downloadAllowed: true,
+                quality: { quality: { name: 'WEBDL-2160p', resolution: 2160 } },
+            },
+        ],
+        {
+            upgraderMinScoreDelta: 10,
+            upgraderPreferences: {
+                preferDolbyVisionHdr: true,
+                preferAtmos: true,
+                preferSeasonPacks: true,
+            },
+        },
+    );
+    assert.equal(ranked.winner, null);
+    assert.match(ranked.results[0].reason, /Arr CF delta/i);
+});

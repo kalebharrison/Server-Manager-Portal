@@ -149,6 +149,7 @@ test('sonarr episode-files-only path scores without episode list', () => {
     assert.equal(item.avgCustomFormatScore, 1600);
     assert.equal(item.libraryName, 'Tv Shows');
     assert.equal(item.seasons[0].avgCustomFormatScore, 1600);
+    assert.equal(item.seasons[0].maxCustomFormatScore, 1700);
 });
 
 test('sonarr statistics-only fallback marks scoreUnknown instead of fake zero', () => {
