@@ -7,6 +7,8 @@ import {
     buildMediaAnnounceEmbed,
     buildMediaAnnounceGroupKey,
     createDiscordMediaAnnounce,
+    enrichAnnounceGroupFromIndex,
+    isDiscordSafeImageUrl,
     isUsableEpisodeTitle,
     pickTestMediaAnnounceGroups,
 } from '../../lib/discord/discord-media-announce.js';
@@ -25,6 +27,47 @@ test('group keys lump TV by series+season', () => {
         arrType: 'lidarr',
         entityId: 7,
     }), 'lidarr:7');
+});
+
+test('index enrich does not steal a longer ratingKey prefix', () => {
+    const preacher = {
+        title: 'Preacher',
+        arrType: 'sonarr',
+        arrInstanceId: 's1',
+        entityId: 32,
+        ratingKey: 'sonarr:s1:32',
+        thumbUrl: 'https://image.tmdb.org/t/p/w500/preacher.jpg',
+        tmdbId: 1,
+        tvdbId: 11,
+        imdbId: 'tt111',
+        year: 2016,
+        overview: 'Wrong show.',
+    };
+    const russianDoll = {
+        title: 'Russian Doll',
+        arrType: 'sonarr',
+        arrInstanceId: 's1',
+        entityId: 328,
+        ratingKey: 'sonarr:s1:328',
+        thumbUrl: 'https://image.tmdb.org/t/p/w500/russian-doll.jpg',
+        tmdbId: 2,
+        tvdbId: 22,
+        imdbId: 'tt222',
+        year: 2019,
+        overview: 'Nadia.',
+    };
+    const hydrated = enrichAnnounceGroupFromIndex({
+        title: 'Russian Doll',
+        arrType: 'sonarr',
+        arrInstanceId: 's1',
+        entityId: 328,
+        items: [{ key: 'sonarr:s1:328:file:9', episodeNumber: 1 }],
+        thumbUrl: 'https://sonarr.example/MediaCover/328/poster.jpg',
+    }, { items: [preacher, russianDoll] });
+    assert.match(hydrated.thumbUrl, /russian-doll/);
+    assert.equal(hydrated.tvdbId, 22);
+    assert.equal(isDiscordSafeImageUrl('https://sonarr.example/MediaCover/328/poster.jpg'), false);
+    assert.equal(isDiscordSafeImageUrl('https://image.tmdb.org/t/p/w500/x.jpg'), true);
 });
 
 test('usable episode titles reject release filenames', () => {

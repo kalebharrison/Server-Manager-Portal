@@ -44,6 +44,62 @@ test('two roots on one Radarr split by path basename labels', () => {
     assert.equal(anime.libraryName, 'Anime Movies');
 });
 
+test('Radarr queue row classifies from nested movie path not outputPath', () => {
+    const instance = {
+        id: 'radarr-1',
+        type: 'radarr',
+        name: 'Movies',
+        activeDirectory: '/media/current/movies',
+        activeAnimeDirectory: '/media/current/anime.movies',
+        animeTags: [9],
+    };
+    const queueRow = {
+        title: 'Akira',
+        outputPath: '/data/downloads/complete/Akira.1988.mkv',
+        movie: {
+            id: 12,
+            path: '/media/current/anime.movies/Akira (1988)',
+            rootFolderPath: '/media/current/anime.movies',
+            tags: [9],
+        },
+    };
+    const result = classifyUpgraderLibrary(instance, queueRow);
+    assert.equal(result.libraryKey, 'radarr:radarr-1:anime-movies');
+    assert.equal(result.libraryName, 'Anime Movies');
+    assert.equal(
+        classifyUpgraderLibrary(instance, queueRow.movie).libraryKey,
+        'radarr:radarr-1:anime-movies',
+    );
+});
+
+test('Sonarr queue row classifies from nested series path not outputPath', () => {
+    const instance = {
+        id: 'sonarr-1',
+        type: 'sonarr',
+        name: 'TV Shows',
+        activeDirectory: '/media/current/tv.shows',
+        activeAnimeDirectory: '/media/current/anime.shows',
+        animeTags: [36],
+    };
+    const queueRow = {
+        title: 'Frieren S01E01',
+        outputPath: '/data/downloads/complete/Frieren.S01E01.mkv',
+        series: {
+            id: 44,
+            path: '/media/current/anime.shows/Frieren',
+            rootFolderPath: '/media/current/anime.shows',
+            tags: [36],
+        },
+    };
+    const result = classifyUpgraderLibrary(instance, queueRow);
+    assert.equal(result.libraryKey, 'sonarr:sonarr-1:anime-shows');
+    assert.equal(result.libraryName, 'Anime Shows');
+    assert.equal(
+        classifyUpgraderLibrary(instance, queueRow.series).libraryKey,
+        'sonarr:sonarr-1:anime-shows',
+    );
+});
+
 test('anime tag fallback when path missing', () => {
     const instance = {
         id: 'sonarr-1',

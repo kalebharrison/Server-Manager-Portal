@@ -1624,3 +1624,123 @@ test('trim scan alerts and skips remux when original language is unknown', async
     assert.equal(result.findings[0].reason, 'trim_native_unknown');
     assert.equal((prefs.integrityFindings || [])[0]?.reason, 'trim_native_unknown');
 });
+
+test('trim skips music imports without native-language alerts', async () => {
+    let prefs = {};
+    let cache = { entries: {} };
+    const posts = [];
+    const tmdbCalls = [];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        getDiscordNotifier: () => ({
+            postAdminEvent: async (_config, payload) => { posts.push(payload); },
+        }),
+        fetchImpl: async (url) => {
+            tmdbCalls.push(String(url));
+            return { ok: false, json: async () => ({}) };
+        },
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:track' }),
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (String(bin) === 'ffprobe' || args.includes('-show_streams')) {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '210' },
+                        streams: [{ codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: `${bin} ok`, stderr: '' };
+        },
+    });
+
+    const result = await integrity.baselineImport({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcTrimEnabled: true,
+        qcIntegrityDiscordDigestEnabled: true,
+        tmdbApiKey: 'test-key',
+        qcIntegrityPathMaps: [{ from: '/media', to: '/media' }],
+        arrInstances: [{
+            id: 'l1', type: 'lidarr', name: 'Lidarr', url: 'http://lidarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, {
+        arrType: 'lidarr',
+        arrInstanceId: 'l1',
+        entityId: 9,
+        trackFileId: 44,
+        mediaType: 'album',
+        mediaKind: 'audio',
+        title: 'TANZNEID',
+        filePath: '/media/current/music/artists/Electric Callboy/2026-TANZNEID/01-10-Electric Callboy-TANZNEID-Revery.mp3',
+        ratingKey: 'lidarr:l1:9',
+        key: 'lidarr:l1:9:file:44',
+    });
+
+    assert.equal(result.ran, true);
+    assert.equal(result.ok, true);
+    assert.equal((prefs.integrityFindings || []).some((row) => row.reason === 'trim_native_unknown'), false);
+    assert.equal(posts.some((row) => /original language/i.test(row?.title || '')), false);
+    assert.equal(tmdbCalls.length, 0);
+    assert.ok(cache.entries['lidarr:l1:9:file:44']?.imohash);
+});
+
+test('trim scan ignores audio tracks', async () => {
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            generatedAt: '2026-08-09T00:00:00.000Z',
+            items: [{
+                ratingKey: 'lidarr:l1:9',
+                title: 'TANZNEID',
+                hasFile: true,
+                mediaType: 'album',
+                arrType: 'lidarr',
+                arrInstanceId: 'l1',
+                entityId: 9,
+                trackFiles: [{
+                    trackFileId: 44,
+                    filePath: '/music/Electric Callboy/TANZNEID.mp3',
+                }],
+            }],
+        }),
+        loadPrefs: async () => ({}),
+        savePrefs: async () => {},
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        fetchImpl: async () => {
+            throw new Error('native lookup should not run for music');
+        },
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin) => ({ ok: true, code: 0, timedOut: false, stdout: `${bin} ok`, stderr: '' }),
+    });
+
+    const result = await integrity.scanIntegrity({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcTrimEnabled: true,
+        qcIntegrityIncludeMusic: true,
+        tmdbApiKey: 'test-key',
+        qcIntegrityPathMaps: [{ from: '/music', to: '/music' }],
+        arrInstances: [{
+            id: 'l1', type: 'lidarr', name: 'Lidarr', url: 'http://lidarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, { dryRun: true, force: true, full: true, mode: 'trim' });
+
+    assert.equal(result.ran, true);
+    assert.equal(result.findingCount, 0);
+    assert.equal(result.wouldRemux || 0, 0);
+});
