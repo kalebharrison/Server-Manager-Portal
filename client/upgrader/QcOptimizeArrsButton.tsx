@@ -133,11 +133,14 @@ export const QcOptimizeArrsButton: React.FC<Props> = ({
     }
 
     return (
-        <div className={`space-y-4 ${className}`}>
-            <div className={`inline-flex items-center gap-1.5 text-xs font-bold ${aligned ? 'text-emerald-300' : 'text-amber-200'}`}>
-                {aligned
-                    ? <><CheckCircle2 className="w-3.5 h-3.5" /> Aligned</>
-                    : <><AlertTriangle className="w-3.5 h-3.5" /> Needs optimize</>}
+        <div className={`space-y-3 ${className}`}>
+            <div className="flex flex-wrap items-center gap-3">
+                <div className={`inline-flex shrink-0 items-center gap-1.5 text-xs font-bold ${aligned ? 'text-emerald-300' : 'text-amber-200'}`}>
+                    {aligned
+                        ? <><CheckCircle2 className="w-3.5 h-3.5" /> Arrs aligned</>
+                        : <><AlertTriangle className="w-3.5 h-3.5" /> Arrs need optimize</>}
+                </div>
+                {button}
             </div>
 
             {!aligned && alignmentRows.length > 0 && (
@@ -174,8 +177,6 @@ export const QcOptimizeArrsButton: React.FC<Props> = ({
                     ))}
                 </div>
             )}
-
-            {button}
         </div>
     );
 };
