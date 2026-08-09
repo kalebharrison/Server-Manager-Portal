@@ -92,6 +92,7 @@ type SettingsSavePayloadInput = {
     upgraderAutomationEnabled: boolean;
     upgraderHuntMissingEpisodes: boolean;
     upgraderHuntAvailableMovies: boolean;
+    upgraderHuntIndexerDeny: string;
     upgraderMinSizeGB: number;
     upgraderMaxActionsPerHour: number;
     upgraderMaxDownloadsPerLibrary: number;

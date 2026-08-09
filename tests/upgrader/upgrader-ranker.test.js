@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
     compareQualityTier,
-    isFakeRemuxContainer,
+    isFakeRemuxRelease,
     isQualityTierDowngrade,
     parseResolutionTier,
     parseSourceTier,
@@ -11,15 +11,20 @@ import {
 import { rankUpgradeReleases } from '../../lib/upgrader/upgrader-ranker.js';
 
 test('fake remux helper flags mp4 UHDRemux titles', () => {
-    assert.equal(isFakeRemuxContainer({
+    assert.equal(isFakeRemuxRelease({
         title: 'Plane.2023.2160p.UHDRemux.HDR.DoVi-TheEqualizer.mp4',
         qualityName: 'Remux-2160p',
     }), true);
-    assert.equal(isFakeRemuxContainer({
+    assert.equal(isFakeRemuxRelease({
         title: 'Amsterdam.2022.BDREMUX.2160p.HDR.seleZen.mkv',
         qualityName: 'Remux-2160p',
     }), false);
-    assert.equal(isFakeRemuxContainer({
+    assert.equal(isFakeRemuxRelease({
+        title: 'Amsterdam.2022.BDREMUX.2160p.HDR.seleZen.mkv',
+        qualityName: 'Remux-2160p',
+        files: ['Amsterdam.2022.BDREMUX.2160p.HDR.AC3.mkv'],
+    }), true);
+    assert.equal(isFakeRemuxRelease({
         title: 'Some.Movie.2160p.WEB-DL.mp4',
         qualityName: 'WEBDL-2160p',
     }), false);
@@ -49,6 +54,75 @@ test('hunt ranker rejects remux-tagged mp4 encodes', () => {
     );
     assert.equal(ranked.winner, null);
     assert.match(ranked.results[0].reason, /fake remux/i);
+});
+
+test('hunt ranker rejects remux-tagged AC3 encodes', () => {
+    const ranked = rankUpgradeReleases(
+        {
+            title: 'Amsterdam',
+            videoResolution: '4k',
+            sourceTier: 'remux',
+            customFormatScore: 0,
+            isRemux: true,
+        },
+        [
+            {
+                title: 'Amsterdam.2022.BDREMUX.2160p.HDR.AC3.seleZen',
+                customFormatScore: 0,
+                rejected: false,
+                downloadAllowed: true,
+                quality: { quality: { name: 'Remux-2160p', resolution: 2160 } },
+            },
+        ],
+        { upgraderMinScoreDelta: 10 },
+    );
+    assert.equal(ranked.winner, null);
+    assert.match(ranked.results[0].reason, /fake remux/i);
+});
+
+test('remux-to-remux requires CF 2000 or lossless audio', () => {
+    const lowCf = rankUpgradeReleases(
+        {
+            title: 'Movie',
+            videoResolution: '4k',
+            sourceTier: 'remux',
+            customFormatScore: 0,
+            isRemux: true,
+        },
+        [
+            {
+                title: 'Movie.2022.2160p.BluRay.REMUX.HDR-GROUP',
+                customFormatScore: 500,
+                rejected: false,
+                downloadAllowed: true,
+                quality: { quality: { name: 'Remux-2160p', resolution: 2160 } },
+            },
+        ],
+        { upgraderMinScoreDelta: 10 },
+    );
+    assert.equal(lowCf.winner, null);
+    assert.match(lowCf.results[0].reason, /below CF 2000/i);
+
+    const atmos = rankUpgradeReleases(
+        {
+            title: 'Movie',
+            videoResolution: '4k',
+            sourceTier: 'remux',
+            customFormatScore: 0,
+            isRemux: true,
+        },
+        [
+            {
+                title: 'Movie.2022.2160p.BluRay.REMUX.HDR.TrueHD.Atmos-GROUP',
+                customFormatScore: 5000,
+                rejected: false,
+                downloadAllowed: true,
+                quality: { quality: { name: 'Remux-2160p', resolution: 2160 } },
+            },
+        ],
+        { upgraderMinScoreDelta: 10 },
+    );
+    assert.ok(atmos.winner);
 });
 
 test('parseResolutionTier and source tiers', () => {

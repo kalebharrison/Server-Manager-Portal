@@ -120,6 +120,7 @@ export const useSettingsHydration = ({
             setUpgraderAutomationEnabled: set('upgraderAutomationEnabled'),
             setUpgraderHuntMissingEpisodes: set('upgraderHuntMissingEpisodes'),
             setUpgraderHuntAvailableMovies: set('upgraderHuntAvailableMovies'),
+            setUpgraderHuntIndexerDeny: set('upgraderHuntIndexerDeny'),
             setUpgraderMinSizeGB: set('upgraderMinSizeGB'),
             setUpgraderMaxActionsPerHour: set('upgraderMaxActionsPerHour'),
             setUpgraderMaxDownloadsPerLibrary: set('upgraderMaxDownloadsPerLibrary'),

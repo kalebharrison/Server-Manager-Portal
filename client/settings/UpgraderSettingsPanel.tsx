@@ -26,6 +26,7 @@ type Props = {
     automationEnabled: boolean;
     huntMissingEpisodes: boolean;
     huntAvailableMovies: boolean;
+    huntIndexerDeny: string;
     minSizeGB: number;
     maxActionsPerHour: number;
     maxDownloadsPerLibrary: number;
@@ -64,6 +65,7 @@ type Props = {
     onAutomationEnabledChange: (value: boolean) => void;
     onHuntMissingEpisodesChange: (value: boolean) => void;
     onHuntAvailableMoviesChange: (value: boolean) => void;
+    onHuntIndexerDenyChange: (value: string) => void;
     onMinSizeGBChange: (value: number) => void;
     onMaxActionsPerHourChange: (value: number) => void;
     onMaxDownloadsPerLibraryChange: (value: number) => void;
@@ -106,6 +108,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     automationEnabled,
     huntMissingEpisodes,
     huntAvailableMovies,
+    huntIndexerDeny,
     minSizeGB,
     maxActionsPerHour,
     maxDownloadsPerLibrary,
@@ -144,6 +147,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onAutomationEnabledChange,
     onHuntMissingEpisodesChange,
     onHuntAvailableMoviesChange,
+    onHuntIndexerDenyChange,
     onMinSizeGBChange,
     onMaxActionsPerHourChange,
     onMaxDownloadsPerLibraryChange,
@@ -258,6 +262,20 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     checked={huntAvailableMovies && enabled}
                                     onChange={(event) => onHuntAvailableMoviesChange(event.target.checked)}
                                 />
+                            </label>
+                            <label className="text-sm font-semibold block">
+                                Hunt indexer deny list
+                                <input
+                                    type="text"
+                                    className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                    value={huntIndexerDeny}
+                                    disabled={!enabled}
+                                    placeholder="bitmagnet"
+                                    onChange={(event) => onHuntIndexerDenyChange(event.target.value)}
+                                />
+                                <span className="mt-1 block text-xs font-normal text-muted">
+                                    Comma-separated. Hunt never grabs these (manual Arr search still can). Empty defaults to bitmagnet.
+                                </span>
                             </label>
                         </div>
                         <label className="text-sm font-semibold block max-w-md">

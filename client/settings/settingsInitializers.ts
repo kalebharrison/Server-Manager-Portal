@@ -97,6 +97,7 @@ type SettingsHydrationSetters = {
     setUpgraderAutomationEnabled: (value: boolean) => void;
     setUpgraderHuntMissingEpisodes: (value: boolean) => void;
     setUpgraderHuntAvailableMovies: (value: boolean) => void;
+    setUpgraderHuntIndexerDeny: (value: string) => void;
     setUpgraderMinSizeGB: (value: number) => void;
     setUpgraderMaxActionsPerHour: (value: number) => void;
     setUpgraderMaxDownloadsPerLibrary: (value: number) => void;
@@ -244,6 +245,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setUpgraderAutomationEnabled(!!initialSettings.upgraderAutomationEnabled);
     setters.setUpgraderHuntMissingEpisodes(initialSettings.upgraderHuntMissingEpisodes !== false);
     setters.setUpgraderHuntAvailableMovies(initialSettings.upgraderHuntAvailableMovies !== false);
+    setters.setUpgraderHuntIndexerDeny(String(initialSettings.upgraderHuntIndexerDeny || 'bitmagnet'));
     setters.setUpgraderMinSizeGB(Math.max(0, Number(initialSettings.upgraderMinSizeGB) || 5));
     setters.setUpgraderMaxActionsPerHour(Math.max(1, Number(initialSettings.upgraderMaxActionsPerHour) || 25));
     setters.setUpgraderMaxDownloadsPerLibrary(Math.max(1, Number(initialSettings.upgraderMaxDownloadsPerLibrary) || 5));

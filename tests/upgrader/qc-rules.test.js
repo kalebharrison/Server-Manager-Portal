@@ -293,6 +293,21 @@ test('only doomed import failures are actionable', () => {
     }), true);
 });
 
+test('remux-tagged AC3 is an immediate fakeRemux kill', () => {
+    const arrItem = {
+        title: 'Amsterdam.2022.BDREMUX.2160p.HDR.seleZen',
+        quality: { quality: { name: 'Remux-2160p' } },
+        status: 'downloading',
+        trackedDownloadState: 'downloading',
+    };
+    assert.equal(classifyQueueItem({
+        now: Date.now(),
+        thresholds: thresholdsFromConfig(),
+        arrItem,
+        clientItem: { client: 'qbit', state: 'downloading', progress: 0.2, name: 'Amsterdam.2022.BDREMUX.2160p.HDR.AC3.mkv' },
+    }), QC_REASONS.fakeRemux);
+});
+
 test('remux-tagged mp4 is an immediate fakeRemux kill', () => {
     const arrItem = {
         title: 'Plane.2023.2160p.UHDRemux.HDR.DoVi-TheEqualizer.mp4',

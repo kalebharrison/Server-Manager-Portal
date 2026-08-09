@@ -100,6 +100,68 @@ test('upgradeItem missing movie grabs interactive release without CF delta', asy
     assert.equal(posts[0].title, 'Movie.2024.Remux-2160p');
 });
 
+test('missing movie hunt ignores BitMagnet even when CF is higher', async () => {
+    const posts = [];
+    const hunt = createUpgraderHunt({
+        request: async (instance, path, options = {}) => {
+            if (path.startsWith('/api/v3/release') && options.method === 'POST') {
+                posts.push(options.body);
+                return { id: 1 };
+            }
+            if (path.startsWith('/api/v3/release?movieId=')) {
+                return [
+                    {
+                        title: 'Movie.2024.2160p.UHDRemux-TheEqualizer.mp4',
+                        indexer: 'BitMagnet (Local DHT) (Prowlarr)',
+                        rejected: false,
+                        customFormatScore: 9000,
+                        quality: { quality: { name: 'Remux-2160p' } },
+                    },
+                    {
+                        title: 'Movie.2024.2160p.BluRay.REMUX.TrueHD.Atmos-FraMeSToR',
+                        indexer: 'NZBgeek (Prowlarr)',
+                        rejected: false,
+                        customFormatScore: 5000,
+                        quality: { quality: { name: 'Remux-2160p' } },
+                    },
+                ];
+            }
+            return {};
+        },
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => ({}),
+        appendAudit: async () => {},
+    });
+
+    const config = {
+        upgraderEnabled: true,
+        arrInstances: [{
+            id: 'radarr-1',
+            type: 'radarr',
+            name: 'Radarr',
+            url: 'http://radarr.local',
+            apiKey: 'x',
+            enabled: true,
+        }],
+    };
+    const item = {
+        ratingKey: 'radarr:radarr-1:3',
+        title: 'Streaming Movie',
+        mediaType: 'movie',
+        arrType: 'radarr',
+        arrInstanceId: 'radarr-1',
+        arrInstanceName: 'Radarr',
+        entityId: 3,
+        hasFile: false,
+        huntPath: 'missing',
+        huntMissingEligible: true,
+    };
+
+    const result = await hunt.upgradeItem(config, item, { dryRun: false });
+    assert.equal(result.grabbed, true);
+    assert.equal(posts[0].title, 'Movie.2024.2160p.BluRay.REMUX.TrueHD.Atmos-FraMeSToR');
+});
+
 test('upgradeItem missing show posts MissingEpisodeSearch', async () => {
     const commands = [];
     const hunt = createUpgraderHunt({

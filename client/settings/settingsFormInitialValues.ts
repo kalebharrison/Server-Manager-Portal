@@ -93,6 +93,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     upgraderAutomationEnabled: false,
     upgraderHuntMissingEpisodes: true,
     upgraderHuntAvailableMovies: true,
+    upgraderHuntIndexerDeny: 'bitmagnet',
     upgraderMinSizeGB: 5,
     upgraderMaxActionsPerHour: 25,
     upgraderMaxDownloadsPerLibrary: 5,

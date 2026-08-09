@@ -101,10 +101,10 @@ export const buildTimingRows = (status: UpgraderStatus | null): TimingRow[] => {
         },
         {
             id: 'fakeRemux',
-            label: 'Fake remux (mp4)',
+            label: 'Fake remux (mp4/lossy)',
             perStrike: 'immediate',
             effective: 'next cycle',
-            note: 'Remux-tagged .mp4 (DHT encodes Radarr still scores as Remux-2160p)',
+            note: 'Remux-tagged .mp4 or AC3/EAC3 (DHT encodes Radarr still scores as Remux-2160p)',
             killKeys: ['fakeRemux'],
             immediate: true,
         },

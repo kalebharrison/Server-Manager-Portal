@@ -110,6 +110,7 @@ export const useSettingsFormState = () => {
         upgraderAutomationEnabled: values.upgraderAutomationEnabled,
         upgraderHuntMissingEpisodes: values.upgraderHuntMissingEpisodes,
         upgraderHuntAvailableMovies: values.upgraderHuntAvailableMovies,
+        upgraderHuntIndexerDeny: values.upgraderHuntIndexerDeny,
         upgraderMinSizeGB: values.upgraderMinSizeGB,
         upgraderMaxActionsPerHour: values.upgraderMaxActionsPerHour,
         upgraderMaxDownloadsPerLibrary: values.upgraderMaxDownloadsPerLibrary,
