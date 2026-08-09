@@ -82,7 +82,7 @@ The Integrity tab **Inspect a file** search shows the saved cache JSON for one t
 | Mode | Label in UI | What it does |
 |---|---|---|
 | `playability` | Playback check | Decodes short samples at start, middle, and end via ffmpeg (retries + longer timeout) |
-| `trim` | Media trim | Probes MKV tracks vs keep-rules (eng+ara+**native**). Native language follows Trimarr: TMDb/TVDB `originalLanguage` from Arr/NFO IDs (movies TMDb first, TV TVDB first), then Arr field, then anime-library last resort. **Dry-run** writes a keep/drop preview. Remuxes only when auto-fix is on and dry-run is off. |
+| `trim` | Media trim | Probes MKV tracks vs keep-rules (eng+ara+**one** native). Native is TMDb/TVDB `originalLanguage` from Arr/NFO IDs — movies TMDb→IMDb id, shows TVDB→TMDb→IMDb id. IMDb spoken-language lists are not used. If no original language is found, remux is skipped and the file is alerted. **Dry-run** writes a keep/drop preview. Remuxes only when auto-fix is on and dry-run is off. |
 | `imohash` | Quick fingerprint | Fast spot-check (file size + small slices); catches silent swaps |
 | `xxhash` | Full-file hash | Hashes the entire file; slowest — enable **Full-file hash (xxhash)** in Settings first |
 | `baseline` | Run all checks | Playback + quick fingerprint together; adds full-file hash when xxhash is enabled |

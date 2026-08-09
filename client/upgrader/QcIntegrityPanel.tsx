@@ -598,6 +598,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                             Nightly automation trims dirty MKVs then fingerprints the library; fingerprint mismatches escalate to playback → trim → hash.
                             Trim coverage is stored like playback/fingerprint (size + mtime + keep-rule profile) so already-clean files are skipped.
                             Trim dry-run writes a keep/drop preview (not findings). Remux only after you uncheck Dry-run only and turn on Auto-fix.
+                            Native audio is one production language from TMDb/TVDB/IMDb ids — missing native skips remux and alerts.
                             Other buttons are dry-run until you Replace a finding. Files playing on Plex are skipped.
                         </SettingHint>
                     </h2>

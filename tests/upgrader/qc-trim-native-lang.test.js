@@ -18,7 +18,7 @@ test('parseNfoMetadataIds reads Radarr uniqueid tags', () => {
     assert.equal(ids.imdbId, 'tt5311514');
 });
 
-test('lookupTrimNativeLanguage uses TMDb original_language for movies', async () => {
+test('movies use TMDb original_language then IMDb find, never spoken list', async () => {
     const calls = [];
     const result = await lookupTrimNativeLanguage({
         tmdbApiKey: 'test-key',
@@ -27,21 +27,47 @@ test('lookupTrimNativeLanguage uses TMDb original_language for movies', async ()
         title: 'Your Name.',
         mediaType: 'movie',
         tmdbId: 372058,
+        imdbId: 'tt5311514',
     }, {
         fetchImpl: async (url) => {
             calls.push(String(url));
-            return {
-                ok: true,
-                json: async () => ({ original_language: 'ja' }),
-            };
+            if (String(url).includes('/movie/372058')) {
+                return { ok: true, json: async () => ({ original_language: 'ja' }) };
+            }
+            throw new Error(`unexpected ${url}`);
         },
     });
     assert.equal(result.code, 'jpn');
     assert.equal(result.source, 'tmdb');
-    assert.ok(calls.some((url) => url.includes('/movie/372058')));
+    assert.equal(calls.length, 1);
 });
 
-test('lookupTrimNativeLanguage prefers TVDB for shows then TMDb', async () => {
+test('movies fall back to IMDb id via TMDb find original_language', async () => {
+    const result = await lookupTrimNativeLanguage({
+        tmdbApiKey: 'test-key',
+        qcTrimKeepNativeAudio: true,
+    }, {
+        title: 'Your Name.',
+        mediaType: 'movie',
+        imdbId: 'tt5311514',
+    }, {
+        fetchImpl: async (url) => {
+            assert.match(String(url), /\/find\/tt5311514/);
+            assert.match(String(url), /external_source=imdb_id/);
+            return {
+                ok: true,
+                json: async () => ({
+                    movie_results: [{ id: 372058, original_language: 'ja' }],
+                    tv_results: [],
+                }),
+            };
+        },
+    });
+    assert.equal(result.code, 'jpn');
+    assert.equal(result.source, 'imdb');
+});
+
+test('shows use TVDB originalLanguage before TMDb and IMDb', async () => {
     const result = await lookupTrimNativeLanguage({
         tmdbApiKey: 'tmdb',
         tvdbApiKey: 'tvdb',
@@ -52,6 +78,7 @@ test('lookupTrimNativeLanguage prefers TVDB for shows then TMDb', async () => {
         arrType: 'sonarr',
         tmdbId: 1,
         tvdbId: 76885,
+        imdbId: 'tt0213338',
     }, {
         fetchImpl: async (url, opts = {}) => {
             if (String(url).includes('/login')) {
@@ -68,7 +95,7 @@ test('lookupTrimNativeLanguage prefers TVDB for shows then TMDb', async () => {
     assert.equal(result.source, 'tvdb');
 });
 
-test('lookupTrimNativeLanguage reads tmdb id from NFO when Arr id missing', async () => {
+test('lookup reads tmdb id from NFO when Arr id missing', async () => {
     const result = await lookupTrimNativeLanguage({
         tmdbApiKey: 'test-key',
         qcTrimKeepNativeAudio: true,
@@ -88,7 +115,7 @@ test('lookupTrimNativeLanguage reads tmdb id from NFO when Arr id missing', asyn
     assert.equal(result.source, 'tmdb');
 });
 
-test('lookupTrimNativeLanguage anime folder is last resort only', async () => {
+test('unresolved native language does not guess anime folder', async () => {
     const result = await lookupTrimNativeLanguage({
         qcTrimKeepNativeAudio: true,
     }, {
@@ -98,6 +125,6 @@ test('lookupTrimNativeLanguage anime folder is last resort only', async () => {
     }, {
         fetchImpl: async () => ({ ok: false }),
     });
-    assert.equal(result.code, 'jpn');
-    assert.equal(result.source, 'anime-library');
+    assert.equal(result.code, null);
+    assert.equal(result.source, 'unresolved');
 });

@@ -1404,6 +1404,12 @@ test('escalateMismatch retrims after playback passes', async () => {
         statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
         realpathImpl: async (target) => target,
         imohashImpl: async () => ({ ok: true, imohash: 'imo:fresh' }),
+        fetchImpl: async (url) => {
+            if (String(url).includes('/movie/')) {
+                return { ok: true, json: async () => ({ original_language: 'en' }) };
+            }
+            return { ok: false, json: async () => ({}) };
+        },
         execImpl: async (bin, args = []) => {
             bins.push(bin);
             if (args.includes('-version')) {
@@ -1443,10 +1449,13 @@ test('escalateMismatch retrims after playback passes', async () => {
     const result = await integrity.escalateMismatch({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
+        qcTrimEnabled: true,
+        tmdbApiKey: 'test-key',
         qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
     }, {
         key: 'radarr:r1:1:file:7',
         title: 'Dune',
+        tmdbId: 438631,
         filePath: '/movies/Dune.mkv',
         mediaKind: 'video',
         mediaType: 'movie',
@@ -1485,6 +1494,7 @@ test('trim dry-run scan writes a keep/drop preview, not findings', async () => {
                 filePath: '/movies/Eternal.mkv',
                 libraryKey: 'radarr:r1:movies',
                 libraryName: 'Movies',
+                tmdbId: 38,
             }],
         }),
         loadPrefs: async () => prefs,
@@ -1492,6 +1502,12 @@ test('trim dry-run scan writes a keep/drop preview, not findings', async () => {
         appendAudit: async () => {},
         loadCache: async () => cache,
         saveCache: async (next) => { cache = next; },
+        fetchImpl: async (url) => {
+            if (String(url).includes('/movie/38')) {
+                return { ok: true, json: async () => ({ original_language: 'en' }) };
+            }
+            return { ok: false, json: async () => ({}) };
+        },
         statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
         realpathImpl: async (target) => target,
         execImpl: async (bin, args = []) => {
@@ -1532,6 +1548,7 @@ test('trim dry-run scan writes a keep/drop preview, not findings', async () => {
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcTrimEnabled: true,
+        tmdbApiKey: 'test-key',
         qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
         arrInstances: [{
             id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
@@ -1552,4 +1569,58 @@ test('trim dry-run scan writes a keep/drop preview, not findings', async () => {
         qcIntegrityEnabled: true,
     });
     assert.equal(status.trimPreview.summary.wouldRemux, 1);
+});
+
+test('trim scan alerts and skips remux when original language is unknown', async () => {
+    let prefs = {};
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            generatedAt: '2026-08-09T00:00:00.000Z',
+            items: [{
+                ratingKey: 'radarr:r1:1',
+                title: 'Mystery Film',
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 1,
+                movieFileId: 7,
+                filePath: '/movies/Mystery.mkv',
+                libraryKey: 'radarr:r1:movies',
+                libraryName: 'Movies',
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        fetchImpl: async () => ({ ok: false, json: async () => ({}) }),
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.some((arg) => String(arg).includes('version'))) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.scanIntegrity({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcTrimEnabled: true,
+        tmdbApiKey: 'test-key',
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, { dryRun: true, force: true, full: true, mode: 'trim' });
+
+    assert.equal(result.ran, true);
+    assert.equal(result.wouldRemux, 0);
+    assert.equal(result.findingCount, 1);
+    assert.equal(result.findings[0].reason, 'trim_native_unknown');
+    assert.equal((prefs.integrityFindings || [])[0]?.reason, 'trim_native_unknown');
 });
