@@ -125,7 +125,31 @@ test('buildMkvmergeArgs skips already-clean files', () => {
 
 test('resolveNativeLanguage reads Arr originalLanguage objects', () => {
     assert.equal(resolveNativeLanguage({ originalLanguage: { id: 'ja' } }), 'jpn');
+    assert.equal(resolveNativeLanguage({ originalLanguage: { id: 8, name: 'Japanese' } }), 'jpn');
     assert.equal(resolveNativeLanguage({ originalLanguage: 'ar' }), 'ara');
+    assert.equal(resolveNativeLanguage({ libraryBucket: 'anime' }), 'jpn');
+    assert.equal(resolveNativeLanguage({
+        originalLanguage: { id: 1, name: 'English' },
+        libraryBucket: 'anime',
+    }), 'eng');
+});
+
+test('resolveTrimConfig keeps jpn native for anime library', () => {
+    const cfg = resolveTrimConfig(
+        { qcTrimEnabled: true },
+        { libraryBucket: 'anime' },
+    );
+    assert.equal(cfg.nativeLanguage, 'jpn');
+    const plan = planMkvTrim(infoFrom([
+        track(0, 'video'),
+        track(1, 'audio', { language: 'jpn', channels: 6 }),
+        track(2, 'audio', { language: 'eng', channels: 6 }),
+        track(3, 'subtitles', { language: 'eng' }),
+        track(4, 'subtitles', { language: 'jpn', name: 'Japanese (SDH)' }),
+    ]), cfg);
+    assert.deepEqual(plan.audioKeep.sort((a, b) => a - b), [1, 2]);
+    assert.deepEqual(plan.audioDrop, []);
+    assert.deepEqual(plan.subKeep.sort((a, b) => a - b), [3, 4]);
 });
 
 test('trimProfileKey is stable for keep-rules and native language', () => {

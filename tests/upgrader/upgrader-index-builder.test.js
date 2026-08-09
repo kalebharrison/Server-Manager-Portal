@@ -72,6 +72,30 @@ test('radarr index uses profile math when movie list score is zero', () => {
     assert.equal(item.filePath, '/media/movies/Example/Example.mkv');
 });
 
+test('radarr index stores native language from Arr Japanese name', () => {
+    const item = buildRadarrIndexItem({
+        ...instance,
+        activeDirectory: '/media/movies',
+        activeAnimeDirectory: '/media/anime.movies',
+    }, {
+        id: 9,
+        title: 'Your Name.',
+        year: 2016,
+        titleSlug: 'your-name',
+        hasFile: true,
+        path: '/media/anime.movies/Your Name',
+        originalLanguage: { id: 8, name: 'Japanese' },
+        movieFile: {
+            id: 1,
+            path: '/media/anime.movies/Your Name/Your.Name.mkv',
+            size: 1_000_000_000,
+            quality: { quality: { name: 'Bluray-1080p', resolution: 1080 } },
+        },
+    }, null, profile);
+    assert.equal(item.originalLanguage, 'jpn');
+    assert.equal(item.libraryBucket, 'anime');
+});
+
 test('sonarr prefers embedded episodeFile custom format score', () => {
     const record = {
         id: 7,
