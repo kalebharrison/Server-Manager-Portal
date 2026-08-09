@@ -1,8 +1,10 @@
 # Discord integration (Requestrr replacement + member bot)
 
-Goal: manage Discord invites and a member-facing Discord bot from this portal so Requestrr is no longer required, without replacing **Notifiarr** for media Discord posts.
+Goal: manage Discord invites and a member-facing Discord bot from this portal so Requestrr is no longer required. Notifiarr remains optional for Arr health / other Discord noise.
 
-**Status (beta):** Phases 1–3 plus member web-UI parity and optional natural language are implemented. Configure under Settings → Support & Announcements → Discord. Members link their Discord user ID under Preferences.
+**Status:** Phases 1–3 plus member web-UI parity and optional natural language are implemented. Configure under **Settings → Discord**. Members link their Discord user ID under Preferences.
+
+Operator setup (Developer Portal lockdown, channel permissions, smoke checks): **[Discord bot](./discord.md)**.
 
 ---
 
@@ -12,11 +14,11 @@ Goal: manage Discord invites and a member-facing Discord bot from this portal so
 |---|---|
 | Browse / request in the browser | Portal → TMDB Discover + Arr |
 | Discord member slash commands | Portal Discord bot (in-process) |
-| New / upgraded media channel posts | Portal **member webhook** after Integrity verifies |
+| New / upgraded media channel posts | Portal **bot** in the member channel after Integrity verifies (member webhook fallback) |
 | Request approved + available | Emailed when SMTP is enabled and not admins-only (no member opt-out). Linked Discord IDs also get bot DMs. Channel only gets the New media card. |
 | Issue reply / resolved | Emailed when SMTP is enabled and not admins-only (no member opt-out). Linked Discord IDs also get bot DMs. |
-| QC cleanup removals + integrity failures | Portal **admin webhook** (falls back to member webhook if blank) |
-| Announcement / broadcast / newsletter mirrors | Portal **member webhook** |
+| QC cleanup removals + integrity failures | Portal **bot** in the admin channel (admin webhook fallback; member webhook if admin URL is blank) |
+| Announcement / broadcast / newsletter mirrors | Same member channel as media cards |
 
 Members must paste their Discord user ID under Preferences. Bot DMs require View Channel on the configured member channel.
 
@@ -39,7 +41,7 @@ Members must paste their Discord user ID under Preferences. Bot DMs require View
 
 Personal replies are ephemeral. TV multi-season flows always require confirm buttons — natural language never bypasses that.
 
-Members must paste their Discord user ID under Preferences (Developer Mode → Copy User ID). Invite the bot with the `applications.commands` scope.
+Members must paste their Discord user ID under Preferences (Developer Mode → Copy User ID). Invite with `bot` + `applications.commands`. See [Discord bot](./discord.md).
 
 ---
 
@@ -86,9 +88,9 @@ Admin approve/decline stays in the web UI (and can auto-approve per global + per
 ```text
 Portal (web requests + membership)
     │
-    ├─► Arr ──► Integrity ──► member webhook  (new / upgraded media)
+    ├─► Arr ──► Integrity ──► bot → member channel  (new / upgraded media)
     │
-    ├─► admin webhook  (QC cleanup + integrity failures)
+    ├─► bot → admin channel  (QC cleanup + integrity failures)
     │
     └─► Discord bot ──► slash commands + DMs for that member's requests/issues
             ▲
@@ -109,10 +111,11 @@ Operator API map (Dockhand, Notifiarr keys, etc.): see [`.local/README.md`](../.
 - [ ] `/ask` multi-constraint discovery with agent + SearXNG (e.g. zombie movie in a casino) → researched titles + request buttons  
 - [ ] Revoked or unlinked Discord ID is denied with Preferences hint  
 - [ ] Linked member gets a bot DM on approve/decline (nothing posted to the member channel)
-- [ ] Portal member webhook posts media cards; admin webhook gets QC/integrity only
+- [ ] Member-channel media cards post as the bot; admin channel gets QC/integrity as the bot (webhook fallback if the bot cannot send)
 
 ---
 
 ## Related docs
+- [Discord bot — operator setup](./discord.md)
 - [Architecture — membership ↔ request app](./architecture.md)
 - [Configuration](./configuration.md)

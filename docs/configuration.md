@@ -36,7 +36,7 @@ See [`.env.example`](../.env.example) for the full template.
 | Apps & automation | Sonarr / Radarr / Lidarr, Tautulli / Jellystat |
 | Access & privacy | Referrals, public login stats, status page visibility, stream privacy |
 | Branding | Theme, logo, animations, poster badges |
-| Discord | Invite, bot token/guild, member webhook (media + announcements), admin webhook (QC cleanup + integrity failures), bot DMs for request/issue updates. See [Discord plan](./discord-integration-plan.md) |
+| Discord | Invite, bot token/guild, member/admin channels. Media + QC post as the bot (webhook fallback). Request/issue updates are email + bot DMs. See [Discord bot](./discord.md) |
 | Home layout | Section order/visibility for member home |
 | SMTP / newsletter | Master email toggle, admins-only testing mode, outbound SMTP, and newsletter schedule |
 | Status | Monitored services and public status page |

@@ -30,7 +30,7 @@ Frontend code lives under `client/` with feature folders (`settings`, `requests`
 
 Requests are portal-native. Discover browsing comes straight from TMDB, and approvals are pushed to Sonarr/Radarr/Lidarr with a requester tag so ownership survives outside the portal.
 
-Discord invite / request-bot work is planned separately; see [Discord integration plan](./discord-integration-plan.md).
+Discord: in-process Gateway bot for slash commands and DMs; channel cards prefer the bot with webhook fallback. Operator setup is in [Discord bot](./discord.md).
 
 ## Data
 
