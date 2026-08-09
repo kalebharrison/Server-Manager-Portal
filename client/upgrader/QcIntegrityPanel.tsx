@@ -138,7 +138,7 @@ const SCAN_ACTIONS: Array<{
     shortLabel: string;
     blurb: string;
     xxhashOnly?: boolean;
-    trimOnly?: boolean;
+    videoOnly?: boolean;
 }> = [
     {
         mode: 'playability',
@@ -150,8 +150,8 @@ const SCAN_ACTIONS: Array<{
         mode: 'trim',
         label: MODE_LABELS.trim,
         shortLabel: 'Trim',
-        blurb: 'Checks MKV tracks against keep-rules and records the result. Remuxes only when auto-fix is on and dry-run is off.',
-        trimOnly: true,
+        blurb: 'Checks MKV tracks against keep-rules and records the result. Remuxes only when Media trim + auto-fix are on and dry-run is off.',
+        videoOnly: true,
     },
     {
         mode: 'imohash',
@@ -179,7 +179,7 @@ const CHECK_STATUS: Array<{
     label: string;
     blurb: string;
     xxhashOnly?: boolean;
-    trimOnly?: boolean;
+    videoOnly?: boolean;
 }> = [
     {
         key: 'playability',
@@ -190,7 +190,7 @@ const CHECK_STATUS: Array<{
         key: 'trim',
         label: MODE_LABELS.trim,
         blurb: 'Checked against keep-rules (or not an MKV)',
-        trimOnly: true,
+        videoOnly: true,
     },
     {
         key: 'imohash',
@@ -265,7 +265,6 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const [coverage, setCoverage] = useState<IntegrityCoverage | null>(null);
     const [breaker, setBreaker] = useState<IntegrityBreaker | null>(null);
     const [xxhashEnabled, setXxhashEnabled] = useState(false);
-    const [trimEnabled, setTrimEnabled] = useState(false);
     const [findings, setFindings] = useState<IntegrityFinding[]>([]);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const wasScanningRef = useRef(false);
@@ -306,7 +305,6 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         setCoverage(status.coverage || null);
         setBreaker(status.breaker || null);
         setXxhashEnabled(!!status.settings?.xxhashEnabled);
-        setTrimEnabled(!!status.settings?.trimEnabled);
         if (Array.isArray(status.findings)) {
             setFindings(status.findings);
         }
@@ -532,17 +530,13 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     }
 
     const displayFindings = findings.length ? findings : (result?.findings || []);
-    const visibleActions = SCAN_ACTIONS.filter((entry) => (
-        (!entry.xxhashOnly || xxhashEnabled) && (!entry.trimOnly || trimEnabled)
-    ));
-    const visibleStatus = CHECK_STATUS.filter((entry) => (
-        (!entry.xxhashOnly || xxhashEnabled) && (!entry.trimOnly || trimEnabled)
-    ));
+    const visibleActions = SCAN_ACTIONS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
+    const visibleStatus = CHECK_STATUS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
     const actionsForLibrary = (lib: LibraryCoverage) => (
-        lib.mediaType === 'album' ? visibleActions.filter((entry) => !entry.trimOnly) : visibleActions
+        lib.mediaType === 'album' ? visibleActions.filter((entry) => !entry.videoOnly) : visibleActions
     );
     const statusForLibrary = (lib: LibraryCoverage) => (
-        lib.mediaType === 'album' ? visibleStatus.filter((entry) => !entry.trimOnly) : visibleStatus
+        lib.mediaType === 'album' ? visibleStatus.filter((entry) => !entry.videoOnly) : visibleStatus
     );
     const libraries = librariesFromCoverage(coverage);
 
