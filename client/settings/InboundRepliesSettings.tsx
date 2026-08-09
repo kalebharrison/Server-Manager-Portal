@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import { apiFetch } from '../shared/api';
+import { appConfirm } from '../shared/confirm';
 import { SettingsCollapseSection } from './SettingsCollapseSection';
 
 const suggestReplyDomain = (smtpFrom: string) => {
@@ -48,19 +50,78 @@ export const InboundRepliesSettings: React.FC<InboundRepliesSettingsProps> = ({
     onInboundReplyDomainChange,
 }) => {
     const [copiedWebhook, setCopiedWebhook] = useState(false);
+    const [copiedToken, setCopiedToken] = useState(false);
+    const [token, setToken] = useState('');
+    const [tokenVisible, setTokenVisible] = useState(false);
+    const [tokenBusy, setTokenBusy] = useState(false);
     const suggestedDomain = suggestReplyDomain(smtpFrom);
     const webhookUrl = inboundWebhookUrl(publicDomain);
     const effectiveDomain = inboundReplyDomain.trim() || suggestedDomain || 'reply.example.com';
     const disabled = !smtpEnabled;
 
+    const flashCopied = (setter: (value: boolean) => void) => {
+        setter(true);
+        window.setTimeout(() => setter(false), 2000);
+    };
+
     const copyWebhook = async () => {
         try {
             await navigator.clipboard.writeText(webhookUrl);
-            setCopiedWebhook(true);
-            window.setTimeout(() => setCopiedWebhook(false), 2000);
+            flashCopied(setCopiedWebhook);
         } catch {
             setCopiedWebhook(false);
         }
+    };
+
+    const loadToken = async () => {
+        const result = await apiFetch('/api/config/inbound-webhook-token', { forceRefresh: true });
+        const value = String(result?.token || '');
+        setToken(value);
+        return value;
+    };
+
+    const revealToken = async () => {
+        if (tokenVisible) {
+            setTokenVisible(false);
+            return;
+        }
+        setTokenBusy(true);
+        try {
+            await loadToken();
+            setTokenVisible(true);
+        } catch {
+            setTokenVisible(false);
+        } finally {
+            setTokenBusy(false);
+        }
+    };
+
+    const copyToken = async () => {
+        setTokenBusy(true);
+        try {
+            const value = token || await loadToken();
+            if (!value) return;
+            await navigator.clipboard.writeText(value);
+            flashCopied(setCopiedToken);
+        } catch {
+            setCopiedToken(false);
+        } finally {
+            setTokenBusy(false);
+        }
+    };
+
+    const rotateToken = () => {
+        appConfirm('Rotate the inbound webhook token? The Email Worker secret must be updated to match or replies will 401.', async () => {
+            setTokenBusy(true);
+            try {
+                const result = await apiFetch('/api/config/inbound-webhook-token/rotate', { method: 'POST', forceRefresh: true });
+                const value = String(result?.token || '');
+                setToken(value);
+                setTokenVisible(true);
+            } finally {
+                setTokenBusy(false);
+            }
+        });
     };
 
     return (
@@ -102,7 +163,7 @@ export const InboundRepliesSettings: React.FC<InboundRepliesSettingsProps> = ({
                             Subdomain only — leave apex MX for SMTP. Blank uses {suggestedDomain || 'reply.<From host>'}.
                         </p>
                     </SetupStep>
-                    <SetupStep n={2} title="Webhook URL">
+                    <SetupStep n={2} title="Webhook URL + token">
                         <div className="flex flex-col sm:flex-row gap-2">
                             <input
                                 id="inboundWebhookUrl"
@@ -117,24 +178,43 @@ export const InboundRepliesSettings: React.FC<InboundRepliesSettingsProps> = ({
                                 onClick={copyWebhook}
                                 disabled={disabled}
                             >
-                                {copiedWebhook ? 'Copied' : 'Copy'}
+                                {copiedWebhook ? 'Copied' : 'Copy URL'}
+                            </button>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <input
+                                id="inboundWebhookToken"
+                                className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none font-mono text-sm"
+                                type={tokenVisible ? 'text' : 'password'}
+                                value={tokenVisible ? token : '••••••••••••••••••••••••••••••••'}
+                                readOnly
+                            />
+                            <button type="button" className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors whitespace-nowrap" onClick={revealToken} disabled={disabled || tokenBusy}>
+                                {tokenVisible ? 'Hide' : 'Reveal'}
+                            </button>
+                            <button type="button" className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors whitespace-nowrap" onClick={copyToken} disabled={disabled || tokenBusy}>
+                                {copiedToken ? 'Copied' : 'Copy token'}
+                            </button>
+                            <button type="button" className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors whitespace-nowrap" onClick={rotateToken} disabled={disabled || tokenBusy}>
+                                Rotate
                             </button>
                         </div>
                         <p className="text-xs text-muted">
-                            From Access &amp; Privacy → Public domain. POST JSON: Sender, Recipient, Subject, Text-part.
+                            POST JSON with <code className="text-text">Authorization: Bearer &lt;token&gt;</code> (or
+                            {' '}<code className="text-text">X-Portal-Inbound-Token</code>). Public domain comes from Access &amp; Privacy.
                         </p>
                     </SetupStep>
                     <SetupStep n={3} title="Catch-all to that webhook">
                         <ul className="text-sm text-muted space-y-1.5 list-disc pl-5">
                             <li>MX on the inbound subdomain only.</li>
-                            <li>Catch-all → worker or parser that POSTs the JSON above.</li>
-                            <li>Worker env = webhook URL. Sample: <code className="text-text">workers/inbound-email</code>.</li>
+                            <li>Catch-all → worker or parser that POSTs Sender, Recipient, Subject, Text-part.</li>
+                            <li>Worker env: <code className="text-text">PORTAL_WEBHOOK_URL</code> + secret <code className="text-text">PORTAL_WEBHOOK_TOKEN</code>. Sample: <code className="text-text">workers/inbound-email</code>.</li>
                         </ul>
                     </SetupStep>
                     <SetupStep n={4} title="Confirm">
                         <p className="text-sm text-muted">
                             Save, then Send Test below and reply. Settings → Logs should show Inbound Email Received.
-                            Signing secret: {inboundReplyReady ? 'ready' : 'missing — restart the portal once after save'}.
+                            Reply-To signing secret: {inboundReplyReady ? 'ready' : 'missing — restart the portal once after save'}.
                         </p>
                     </SetupStep>
                 </div>

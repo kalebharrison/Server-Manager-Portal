@@ -13,6 +13,8 @@ const extractText = (raw) => {
 
 export default {
     async email(message, env) {
+        const token = String(env.PORTAL_WEBHOOK_TOKEN || '').trim();
+        if (!token) throw new Error('PORTAL_WEBHOOK_TOKEN is not set');
         const raw = await new Response(message.raw).text();
         const payload = {
             Sender: message.from,
@@ -28,7 +30,10 @@ export default {
         };
         const res = await fetch(env.PORTAL_WEBHOOK_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify(payload),
         });
         if (!res.ok) {
