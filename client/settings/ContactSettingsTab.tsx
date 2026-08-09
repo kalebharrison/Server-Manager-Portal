@@ -40,8 +40,8 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
                 <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="contactEmail" type="email" value={contactEmail} onChange={(e) => onContactEmailChange(e.target.value)} placeholder="e.g. admin@example.com" />
                 <div className="mt-2">
                     <SettingHint>
-                        Also the owner inbox for playback reports. Not the SMTP username, and not
-                        Reply-To on request or issue mail.
+                        Also the owner inbox for playback reports. Request and issue Reply-To is under
+                        Email Delivery → Portal replies, not this address.
                     </SettingHint>
                 </div>
             </div>
@@ -55,18 +55,6 @@ export const ContactSettingsTab: React.FC<ContactSettingsTabProps> = ({
                     </SettingHint>
                 </div>
             </div>
-        </SettingsCollapseSection>
-
-        <SettingsCollapseSection
-            title="Portal mail replies"
-            subtitle="Configured under Email Delivery — not this address"
-            defaultOpen
-        >
-            <p className="text-sm text-muted">
-                Request, available, and issue replies go back into the portal when inbound mail is set up
-                in Notifications → Email Delivery → Portal replies. That uses a dedicated inbound domain
-                and webhook, not the public support email above.
-            </p>
         </SettingsCollapseSection>
 
         <SettingsCollapseSection

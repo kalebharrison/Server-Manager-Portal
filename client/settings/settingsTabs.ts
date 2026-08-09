@@ -166,7 +166,7 @@ export const SETTINGS_TAB_GROUPS: SettingsTabGroup[] = [
             {
                 id: 'smtp',
                 label: 'Email Delivery',
-                blurb: 'Outbound SMTP plus optional inbound Reply-To webhook so request and issue replies land in the portal.',
+                blurb: 'Outbound SMTP, portal Reply-To webhook, and test mail.',
                 keywords: ['mail', 'smtp', 'test', 'reply', 'inbound', 'webhook', 'cloudflare'],
             },
             {

@@ -1,19 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 
+import { InboundRepliesSettings } from './InboundRepliesSettings';
 import { SettingHint } from './SettingHint';
 import { SettingsCollapseSection } from './SettingsCollapseSection';
-
-const suggestReplyDomain = (smtpFrom: string) => {
-    const match = String(smtpFrom || '').match(/@([^>\s]+)/);
-    const host = (match?.[1] || '').toLowerCase();
-    if (!host) return '';
-    return host.startsWith('reply.') ? host : `reply.${host}`;
-};
-
-const inboundWebhookUrl = (publicDomain: string) => {
-    const base = String(publicDomain || '').trim().replace(/\/+$/, '');
-    return `${base || 'https://your-portal.example'}/api/webhooks/inbound-email`;
-};
 
 type SmtpSettingsTabProps = {
     smtpEnabled: boolean;
@@ -81,28 +70,19 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
     onTestEmail,
     onSendAllMockEmails,
     onPreviewEmails,
-}) => {
-    const [copiedWebhook, setCopiedWebhook] = useState(false);
-    const suggestedDomain = suggestReplyDomain(smtpFrom);
-    const webhookUrl = inboundWebhookUrl(publicDomain);
-    const effectiveDomain = inboundReplyDomain.trim() || suggestedDomain || 'reply.example.com';
-
-    const copyWebhook = async () => {
-        try {
-            await navigator.clipboard.writeText(webhookUrl);
-            setCopiedWebhook(true);
-            window.setTimeout(() => setCopiedWebhook(false), 2000);
-        } catch {
-            setCopiedWebhook(false);
-        }
-    };
-
-    return (
-        <div className="mb-8 space-y-4">
-            <label className="flex items-center gap-3 cursor-pointer mb-4">
-                <input type="checkbox" checked={smtpEnabled} onChange={(event) => onSmtpEnabledChange(event.target.checked)} />
-                <span className="text-sm text-text">Enable email notifications</span>
-            </label>
+}) => (
+    <div className="mb-8 animate-fade-in space-y-4">
+        <SettingsCollapseSection
+            title="Outbound SMTP"
+            subtitle={smtpEnabled ? (smtpHost || 'Enabled') : 'Off'}
+            defaultOpen
+            headerRight={(
+                <label className="flex items-center gap-2 text-sm text-text cursor-pointer">
+                    <input type="checkbox" checked={smtpEnabled} onChange={(event) => onSmtpEnabledChange(event.target.checked)} />
+                    <span>On</span>
+                </label>
+            )}
+        >
             <label className={`flex items-center gap-3 cursor-pointer mb-4 ${!smtpEnabled ? 'opacity-50' : ''}`}>
                 <input
                     type="checkbox"
@@ -112,7 +92,7 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
                 />
                 <span className="text-sm text-text">Admins only</span>
             </label>
-            <div className="mt-1 mb-4">
+            <div className="mb-4">
                 <SettingHint>
                     Master switch for outbound mail. Admins only skips member addresses while you test. SMTP tests still send to the address you type. Member notices go to each user's contact email, then account email. Playback reports go to Support → public support email. Discord DMs keep working either way.
                 </SettingHint>
@@ -142,9 +122,7 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
                     <div className="flex-2">
                         <label htmlFor="smtpFrom">Sender Address (From)</label>
                         <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="smtpFrom" type="text" value={smtpFrom} onChange={e => onSmtpFromChange(e.target.value)} placeholder="Server Manager Portal <noreply@yourdomain.com>" disabled={!smtpEnabled} />
-                        <p className="text-xs text-muted mt-2">
-                            From is send-only. Portal replies are configured below and do not use Support → public support email.
-                        </p>
+                        <p className="text-xs text-muted mt-2">Send-only. Portal Reply-To is configured in Portal replies below.</p>
                     </div>
                     <div className="form-group flex-1 checkbox-group">
                         <label htmlFor="smtpSecure" className="flex items-center gap-2 cursor-pointer select-none text-muted hover:text-text transition-colors">
@@ -153,112 +131,58 @@ export const SmtpSettingsTab: React.FC<SmtpSettingsTabProps> = ({
                         </label>
                     </div>
                 </div>
-                <div className="mb-4">
+                <div>
                     <label htmlFor="emailDaysBefore">Warning Alert Threshold (Days Before Expiry)</label>
                     <input className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all" id="emailDaysBefore" type="number" value={emailDaysBefore} onChange={e => onEmailDaysBeforeChange(Number(e.target.value))} min="0" disabled={!smtpEnabled} />
                     <div className="mt-2">
                         <SettingHint>Automated notification email will be sent when user has this many days left.</SettingHint>
                     </div>
                 </div>
-
-                <SettingsCollapseSection
-                    title="Portal replies"
-                    subtitle={inboundRepliesEnabled ? `Reply-To @ ${effectiveDomain}` : 'Off — members cannot reply into the portal'}
-                    defaultOpen
-                >
-                    <label className="flex items-center gap-3 cursor-pointer mb-4">
-                        <input
-                            type="checkbox"
-                            checked={inboundRepliesEnabled}
-                            disabled={!smtpEnabled}
-                            onChange={(event) => onInboundRepliesEnabledChange(event.target.checked)}
-                        />
-                        <span className="text-sm text-text">Route request and issue replies into the portal</span>
-                    </label>
-                    <p className="text-sm text-muted mb-4">
-                        When on, request approved, available, issue, and Send Test mail use a signed Reply-To
-                        on a dedicated inbound domain. Newsletter, broadcast, and expiry stay send-only.
-                        Any catch-all that POSTs JSON to the webhook below will work — Cloudflare Email Routing
-                        plus the sample worker in <code className="text-text">workers/inbound-email</code> is one option.
-                    </p>
-                    <div className="mb-4">
-                        <label htmlFor="inboundReplyDomain">Inbound reply domain</label>
-                        <input
-                            className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
-                            id="inboundReplyDomain"
-                            type="text"
-                            value={inboundReplyDomain}
-                            onChange={(event) => onInboundReplyDomainChange(event.target.value)}
-                            placeholder={suggestedDomain || 'reply.example.com'}
-                            disabled={!smtpEnabled || !inboundRepliesEnabled}
-                        />
-                        <p className="text-xs text-muted mt-2">
-                            Use a subdomain so apex MX stays with outbound SMTP. Leave blank to use
-                            {' '}{suggestedDomain || 'reply.<your From host>'}.
-                        </p>
-                    </div>
-                    <div className="mb-4">
-                        <label htmlFor="inboundWebhookUrl">Inbound webhook URL</label>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            <input
-                                id="inboundWebhookUrl"
-                                className="w-full p-3 rounded-lg border border-border bg-background text-text outline-none"
-                                type="text"
-                                value={webhookUrl}
-                                readOnly
-                            />
-                            <button
-                                type="button"
-                                className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors whitespace-nowrap"
-                                onClick={copyWebhook}
-                                disabled={!smtpEnabled}
-                            >
-                                {copiedWebhook ? 'Copied' : 'Copy'}
-                            </button>
-                        </div>
-                        <p className="text-xs text-muted mt-2">
-                            Built from Access &amp; Privacy → Public domain. Point Email Routing / Parse / a
-                            worker at this URL. Payload fields: Sender, Recipient, Subject, Text-part.
-                        </p>
-                    </div>
-                    <ol className="text-sm text-muted space-y-2 list-decimal pl-5 mb-3">
-                        <li>Create DNS for the inbound domain (MX only on that subdomain).</li>
-                        <li>Catch-all forward every address to a worker or parser that POSTs the JSON above.</li>
-                        <li>Set the worker env to this webhook URL. Sample: <code className="text-text">workers/inbound-email</code>.</li>
-                        <li>Save, Send Test, reply, then check Settings → Logs for Inbound Email Received.</li>
-                    </ol>
-                    <p className="text-xs text-muted">
-                        Signing secret: {inboundReplyReady ? 'ready (generated on first boot)' : 'missing — restart the portal once after save'}.
-                    </p>
-                </SettingsCollapseSection>
-
-                <div className="mt-6 space-y-3">
-                    <h4 className="font-bold text-text">Test SMTP Settings</h4>
-                    <div className="flex flex-col md:flex-row gap-4 mb-4">
-                        <input
-                            type="email"
-                            value={testRecipient}
-                            onChange={e => onTestRecipientChange(e.target.value)}
-                            placeholder="test-recipient@gmail.com"
-                            className="flex-grow p-3 rounded-lg border border-border bg-background text-text text-sm outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
-                            disabled={!smtpEnabled}
-                        />
-                        <button className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center gap-2" onClick={onTestEmail} disabled={!smtpEnabled || isTestingSmtp || isSendingAllMocks || !testRecipient}>
-                            {isTestingSmtp ? 'Sending...' : 'Send Test'}
-                        </button>
-                        <button className="px-4 py-2 bg-plex text-white rounded-md font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 whitespace-nowrap" onClick={onPreviewEmails}>
-                            Preview HTML
-                        </button>
-                        <button className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center gap-2 whitespace-nowrap" onClick={onSendAllMockEmails} disabled={!smtpEnabled || isTestingSmtp || isSendingAllMocks || !testRecipient}>
-                            {isSendingAllMocks ? 'Sending mocks...' : 'Send all mock emails'}
-                        </button>
-                    </div>
-                    <SettingHint>
-                        Preview HTML opens every template in the browser. With portal replies on, Send Test
-                        includes a Reply-To — reply and look in Settings → Logs.
-                    </SettingHint>
-                </div>
             </div>
+        </SettingsCollapseSection>
+
+        <div className={!smtpEnabled ? 'opacity-50 pointer-events-none' : undefined}>
+            <InboundRepliesSettings
+                smtpEnabled={smtpEnabled}
+                smtpFrom={smtpFrom}
+                publicDomain={publicDomain}
+                inboundRepliesEnabled={inboundRepliesEnabled}
+                inboundReplyDomain={inboundReplyDomain}
+                inboundReplyReady={inboundReplyReady}
+                onInboundRepliesEnabledChange={onInboundRepliesEnabledChange}
+                onInboundReplyDomainChange={onInboundReplyDomainChange}
+            />
         </div>
-    );
-};
+
+        <SettingsCollapseSection
+            title="Test & preview"
+            subtitle={inboundRepliesEnabled && smtpEnabled ? 'Send Test includes inbound Reply-To' : 'Outbound only'}
+            defaultOpen
+        >
+            <div className={!smtpEnabled ? 'opacity-50 pointer-events-none' : undefined}>
+                <div className="flex flex-col md:flex-row gap-4 mb-3">
+                    <input
+                        type="email"
+                        value={testRecipient}
+                        onChange={e => onTestRecipientChange(e.target.value)}
+                        placeholder="test-recipient@gmail.com"
+                        className="flex-grow p-3 rounded-lg border border-border bg-background text-text text-sm outline-none focus:border-plex focus:ring-1 focus:ring-plex transition-all"
+                        disabled={!smtpEnabled}
+                    />
+                    <button className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center gap-2" onClick={onTestEmail} disabled={!smtpEnabled || isTestingSmtp || isSendingAllMocks || !testRecipient}>
+                        {isTestingSmtp ? 'Sending...' : 'Send Test'}
+                    </button>
+                    <button className="px-4 py-2 bg-plex text-white rounded-md font-medium hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 whitespace-nowrap" onClick={onPreviewEmails}>
+                        Preview HTML
+                    </button>
+                    <button className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors flex items-center justify-center gap-2 whitespace-nowrap" onClick={onSendAllMockEmails} disabled={!smtpEnabled || isTestingSmtp || isSendingAllMocks || !testRecipient}>
+                        {isSendingAllMocks ? 'Sending mocks...' : 'Send all mock emails'}
+                    </button>
+                </div>
+                <SettingHint>
+                    Preview HTML opens every template in the browser. With portal replies on, reply to Send Test and check Settings → Logs.
+                </SettingHint>
+            </div>
+        </SettingsCollapseSection>
+    </div>
+);
