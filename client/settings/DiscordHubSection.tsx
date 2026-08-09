@@ -79,6 +79,7 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
     addToast,
 }) => {
     const [isTestingMedia, setIsTestingMedia] = useState(false);
+    const [isSyncingHooks, setIsSyncingHooks] = useState(false);
 
     const handleTestMediaAnnounce = async () => {
         setIsTestingMedia(true);
@@ -89,6 +90,21 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
             addToast?.(error instanceof Error ? error.message : 'Test media posts failed.', 'error');
         } finally {
             setIsTestingMedia(false);
+        }
+    };
+
+    const handleSyncArrHooks = async () => {
+        setIsSyncingHooks(true);
+        try {
+            const result = await apiFetch('/api/upgrader/qc/integrity/sync-arr-hooks', {
+                method: 'POST',
+                body: JSON.stringify({ test: true }),
+            });
+            addToast?.(result.message || 'Arr hooks synced.', 'success');
+        } catch (error) {
+            addToast?.(error instanceof Error ? error.message : 'Arr hook sync failed.', 'error');
+        } finally {
+            setIsSyncingHooks(false);
         }
     };
 
@@ -177,11 +193,19 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
 
         <h4 className="text-sm font-bold uppercase tracking-wide text-muted mt-6 mb-3">Arr import hooks</h4>
         <p className="text-xs text-muted mb-3">
-            Point Sonarr / Radarr / Lidarr Connect webhooks here so Integrity can verify files, then Discord can announce them.
-            Paths: <code className="text-[11px]">/triggers/sonarr</code>,{' '}
-            <code className="text-[11px]">/triggers/radarr</code>,{' '}
-            <code className="text-[11px]">/triggers/lidarr</code>
+            The portal writes a <code className="text-[11px]">Portal Integrity</code> Connect webhook into each ready Sonarr / Radarr / Lidarr
+            (import + upgrade, Basic auth, public portal URL). Save settings, then sync — or wait for the next boot.
         </p>
+        <div className="mb-4">
+            <button
+                type="button"
+                className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors disabled:opacity-50"
+                onClick={handleSyncArrHooks}
+                disabled={isSyncingHooks}
+            >
+                {isSyncingHooks ? 'Syncing…' : 'Sync hooks to Arr'}
+            </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
             <div>
                 <label htmlFor="integrityWebhookUsername">Hook username</label>
@@ -205,7 +229,7 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
                     placeholder="••••••••"
                     onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
                 />
-                <p className="text-xs text-muted mt-1">Leave blank to keep the current password. Both username and password are required — Arr hooks return 503 without them, so Discord media cards never post.</p>
+                <p className="text-xs text-muted mt-1">Leave blank to keep the current password. Generated automatically if missing. Sync pushes these into Arr so you do not paste them by hand.</p>
             </div>
         </div>
     </div>
