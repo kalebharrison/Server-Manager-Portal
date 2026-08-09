@@ -198,6 +198,34 @@ test('enqueue requires playability and debounce flush posts once', async () => {
     assert.equal(posts.length, 1);
 });
 
+test('flushDue keeps groups when the member webhook declines', async () => {
+    let prefs = {
+        discordMediaAnnouncePending: [{
+            groupKey: 'radarr:1',
+            title: 'Dune',
+            arrType: 'radarr',
+            isUpgrade: true,
+            items: [{ key: 'm1', title: 'Dune' }],
+            flushAt: Date.now() - 1,
+        }],
+        discordMediaAnnounceRecent: [],
+    };
+    const announce = createDiscordMediaAnnounce({
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        getDiscordNotifier: () => ({
+            notifyMediaReady: async () => false,
+        }),
+    });
+    const result = await announce.flushDue({
+        discordEnabled: true,
+        discordWebhookUrl: 'https://discord.com/api/webhooks/1/x',
+        discordNotifyMediaReady: true,
+    });
+    assert.equal(result.flushed, 0);
+    assert.equal(prefs.discordMediaAnnouncePending.length, 1);
+});
+
 test('test announce groups prefer library titles then samples', () => {
     const fromIndex = pickTestMediaAnnounceGroups({
         items: [

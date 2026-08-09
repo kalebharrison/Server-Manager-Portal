@@ -293,7 +293,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityDecodeRetries(Math.max(0, Number(initialSettings.qcIntegrityDecodeRetries ?? 2) || 0));
     setters.setQcIntegritySoftDecodeTimeouts(initialSettings.qcIntegritySoftDecodeTimeouts !== false);
     setters.setQcIntegrityWebhookUsername(String(initialSettings.qcIntegrityWebhookUsername || ''));
-    setters.setQcIntegrityWebhookPassword('');
+    setters.setQcIntegrityWebhookPassword(initialSettings.qcIntegrityWebhookPassword || '');
     setters.setQcMetaDlMinutes(Math.max(1, Number(initialSettings.qcMetaDlMinutes) || 20));
     setters.setQcStalledHours(Math.max(1, Number(initialSettings.qcStalledHours) || 2));
     setters.setQcSlowDownloadFloorKbps(Math.max(0, Number(initialSettings.qcSlowDownloadFloorKbps ?? 100) || 0));

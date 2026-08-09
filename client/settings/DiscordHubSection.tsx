@@ -205,7 +205,7 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
                     placeholder="••••••••"
                     onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
                 />
-                <p className="text-xs text-muted mt-1">Leave blank to keep the current password.</p>
+                <p className="text-xs text-muted mt-1">Leave blank to keep the current password. Both username and password are required — Arr hooks return 503 without them, so Discord media cards never post.</p>
             </div>
         </div>
     </div>
