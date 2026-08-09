@@ -183,3 +183,68 @@ test('negative Arr CF score cannot beat a positive library file via DV boosts', 
     assert.equal(ranked.winner, null);
     assert.match(ranked.results[0].reason, /Arr CF delta/i);
 });
+
+test('mixed season hunts average but only grabs what Arr can import', () => {
+    const current = {
+        title: 'Mixed Show',
+        seasonFloorResolution: '4k',
+        sourceTier: 'webdl',
+        customFormatScore: 633,
+        avgCustomFormatScore: 633,
+        maxCustomFormatScore: 1700,
+        episodes: [
+            { seasonNumber: 1, episodeNumber: 1, customFormatScore: 1700 },
+            { seasonNumber: 1, episodeNumber: 2, customFormatScore: 100 },
+            { seasonNumber: 1, episodeNumber: 3, customFormatScore: 100 },
+        ],
+    };
+    const config = {
+        upgraderMinScoreDelta: 10,
+        upgraderPreferences: { preferSeasonPacks: true },
+    };
+
+    const packBlocked = rankUpgradeReleases(current, [{
+        title: 'Mixed.Show.S01.2160p.WEB-DL.COMPLETE',
+        fullSeason: true,
+        customFormatScore: 700,
+        rejected: false,
+        downloadAllowed: true,
+        quality: { quality: { name: 'WEBDL-2160p', resolution: 2160 } },
+    }], config);
+    assert.equal(packBlocked.winner, null);
+    assert.match(packBlocked.results[0].reason, /would not import/i);
+
+    const weakEpisode = rankUpgradeReleases(current, [
+        {
+            title: 'Mixed.Show.S01.2160p.WEB-DL.COMPLETE',
+            fullSeason: true,
+            customFormatScore: 700,
+            rejected: false,
+            downloadAllowed: true,
+            quality: { quality: { name: 'WEBDL-2160p', resolution: 2160 } },
+        },
+        {
+            title: 'Mixed.Show.S01E02.2160p.WEB-DL',
+            episodeNumbers: [2],
+            customFormatScore: 700,
+            rejected: false,
+            downloadAllowed: true,
+            quality: { quality: { name: 'WEBDL-2160p', resolution: 2160 } },
+        },
+    ], config);
+    assert.ok(weakEpisode.winner);
+    assert.equal(weakEpisode.winner.fullSeason, false);
+    assert.equal(weakEpisode.winner.delta, 67);
+
+    const packWins = rankUpgradeReleases(current, [{
+        title: 'Mixed.Show.S01.2160p.WEB-DL.COMPLETE',
+        fullSeason: true,
+        customFormatScore: 1710,
+        rejected: false,
+        downloadAllowed: true,
+        quality: { quality: { name: 'WEBDL-2160p', resolution: 2160 } },
+    }], config);
+    assert.ok(packWins.winner);
+    assert.equal(packWins.winner.fullSeason, true);
+    assert.equal(packWins.winner.delta, 1077);
+});
