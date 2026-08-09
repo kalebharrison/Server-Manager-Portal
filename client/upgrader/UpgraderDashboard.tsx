@@ -49,10 +49,10 @@ const TabPanelFallback: React.FC = () => (
 const CHROME_TABS: Array<{ id: UpgraderTab; label: string; icon: React.ReactNode; title: string }> = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-3.5 h-3.5" />, title: 'Live status: automation, queues, and capacity' },
     { id: 'hunt', label: 'Hunt', icon: <Crosshair className="w-3.5 h-3.5" />, title: 'Preview hunts, recent grabs, and download cleanup' },
-    { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-3.5 h-3.5" />, title: 'Optimize Arr import hooks and scan library files for corruption' },
+    { id: 'integrity', label: 'Integrity', icon: <ShieldCheck className="w-3.5 h-3.5" />, title: 'Scan library files for corruption (report-only unless you replace)' },
     { id: 'clients', label: 'Clients', icon: <HardDrive className="w-3.5 h-3.5" />, title: 'qBit/SAB health, optimize, and blocked extensions' },
     { id: 'rules', label: 'Rules', icon: <Ban className="w-3.5 h-3.5" />, title: 'Cleanup windows, skip list, and snoozes' },
-    { id: 'profiles', label: 'Arr scores', icon: <Settings2 className="w-3.5 h-3.5" />, title: 'Custom format repairs and Arr quality profile scores' },
+    { id: 'profiles', label: 'Arrs', icon: <Settings2 className="w-3.5 h-3.5" />, title: 'Import webhooks, custom formats, and quality profile scores' },
     { id: 'activity', label: 'Activity', icon: <History className="w-3.5 h-3.5" />, title: 'Hunt grabs and cleanup history' },
 ];
 
@@ -277,7 +277,7 @@ export const UpgraderDashboard: React.FC = () => {
                             Quality Control
                         </h1>
                         <p className="text-sm text-muted mt-1">
-                            Live status and queues. Dig into tabs for hunt, clients, rules, and Arr scores.
+                            Live status and queues. Dig into tabs for hunt, clients, rules, and Arrs.
                         </p>
                     </div>
                     {featureEnabled && (

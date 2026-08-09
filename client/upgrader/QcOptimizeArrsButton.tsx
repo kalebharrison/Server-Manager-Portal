@@ -96,7 +96,7 @@ export const QcOptimizeArrsButton: React.FC<Props> = ({
     if (!arrsConfigured) {
         return variant === 'full' ? (
             <p className={`text-xs text-muted ${className}`}>
-                Configure Sonarr / Radarr / Lidarr under Settings to enable Optimize Arrs.
+                Configure Sonarr / Radarr / Lidarr under Settings first.
             </p>
         ) : null;
     }
@@ -115,7 +115,7 @@ export const QcOptimizeArrsButton: React.FC<Props> = ({
             {applying
                 ? <Loader2 className="w-4 h-4 animate-spin" />
                 : <Sparkles className="w-4 h-4" />}
-            {applying ? 'Optimizing…' : 'Optimize Arrs'}
+            {applying ? 'Applying…' : 'Apply recommended'}
         </button>
     );
 

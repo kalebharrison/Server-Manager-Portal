@@ -4,7 +4,6 @@ import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { SettingHint } from '../settings/SettingHint';
 import { QC_KPI, QC_SECTION } from './qcUi';
-import { QcOptimizeArrsButton } from './QcOptimizeArrsButton';
 
 type IntegrityFinding = {
     key: string;
@@ -532,9 +531,6 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     <p className="text-xs text-muted mt-1 max-w-2xl">
                         Manual checks — dry-run only until you Replace a finding.
                     </p>
-                    <div className="mt-3">
-                        <QcOptimizeArrsButton onToast={onToast} variant="full" />
-                    </div>
                     {result?.setup && !result.setup.ready && (
                         <p className="text-xs text-amber-200 mt-2">
                             ffmpeg/ffprobe missing in this environment. Install them in the portal image before scanning.

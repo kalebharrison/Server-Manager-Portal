@@ -7,6 +7,7 @@ import type { UpgraderProfilesUrlState } from './upgraderUrlState';
 import { SettingHint } from '../settings/SettingHint';
 import { QC_SECTION } from './qcUi';
 import { QcCfRepairsPanel } from './QcCfRepairsPanel';
+import { QcOptimizeArrsButton } from './QcOptimizeArrsButton';
 
 interface ArrInstance {
     id: string;
@@ -243,6 +244,22 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
 
     return (
         <div className="flex flex-col gap-6">
+            <section className={`${QC_SECTION} space-y-3 p-6`}>
+                <div>
+                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
+                        Import webhooks
+                        <SettingHint>
+                            One Connect webhook per Arr so imports and upgrades hit Integrity, then Discord.
+                            Boot keeps these aligned; apply here if something drifted.
+                        </SettingHint>
+                    </h2>
+                    <p className="text-xs text-muted mt-1">
+                        Same idea as Clients → Optimize: portal-owned Arr settings, not TRaSH scores.
+                    </p>
+                </div>
+                <QcOptimizeArrsButton onToast={onToast} variant="full" />
+            </section>
+
             <QcCfRepairsPanel onToast={onToast} />
 
             <div className={`${QC_SECTION} p-6`}>
@@ -250,7 +267,7 @@ export const UpgraderProfilesTab: React.FC<UpgraderProfilesTabProps> = ({
                     <div>
                         <h3 className="text-lg font-bold text-text flex items-center gap-2 flex-wrap">
                             <Settings2 className="w-5 h-5 text-plex" />
-                            Arr scores setup
+                            Scores &amp; formats
                             <SettingHint>
                                 Tune Sonarr/Radarr custom formats and quality profiles so scores reward Remux, DV/HDR, and Atmos.
                                 Quality Control uses those scores when grabbing upgrades.

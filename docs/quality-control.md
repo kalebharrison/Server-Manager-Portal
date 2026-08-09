@@ -20,7 +20,7 @@ The hunt pipeline:
 
 1. **Index rebuild** — pulls movies, series, and albums (with files) from connected Arr instances, scores them against quality profiles, and caches the result (~every 4 hours, or on demand from the Overview tab).
 2. **Hunt** — ranks available releases and grabs upgrades that beat the current score by at least the configured minimum delta. Background hunt runs ~every 20 minutes when **Enable auto-hunt** is on; the **Hunt** tab also supports dry-run preview.
-3. **Profiles** — manage Sonarr/Radarr custom formats and quality profiles, browse the TRaSH catalog, and run CF repair helpers from the dashboard chrome.
+3. **Arrs** — import webhooks for Integrity, plus custom formats, quality profiles, TRaSH catalog, and CF repair helpers.
 
 Hunt targets (Settings → Quality Control → Hunt preferences):
 

@@ -79,7 +79,6 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
     addToast,
 }) => {
     const [isTestingMedia, setIsTestingMedia] = useState(false);
-    const [isSyncingHooks, setIsSyncingHooks] = useState(false);
 
     const handleTestMediaAnnounce = async () => {
         setIsTestingMedia(true);
@@ -90,21 +89,6 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
             addToast?.(error instanceof Error ? error.message : 'Test media posts failed.', 'error');
         } finally {
             setIsTestingMedia(false);
-        }
-    };
-
-    const handleSyncArrHooks = async () => {
-        setIsSyncingHooks(true);
-        try {
-            const result = await apiFetch('/api/upgrader/qc/arr-alignment', {
-                method: 'POST',
-                body: '{}',
-            });
-            addToast?.(result.message || 'Arr hooks synced.', 'success');
-        } catch (error) {
-            addToast?.(error instanceof Error ? error.message : 'Arr hook sync failed.', 'error');
-        } finally {
-            setIsSyncingHooks(false);
         }
     };
 
@@ -193,19 +177,8 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
 
         <h4 className="text-sm font-bold uppercase tracking-wide text-muted mt-6 mb-3">Arr import hooks</h4>
         <p className="text-xs text-muted mb-3">
-            Same job as Quality Control → Integrity → Optimize Arrs: write the Connect webhook so imports reach Integrity.
-            Prefer that button when you are already in QC.
+            Applied from Quality Control → Arrs. Username and password stay here if you need to inspect them.
         </p>
-        <div className="mb-4">
-            <button
-                type="button"
-                className="px-4 py-2 bg-border text-text rounded-md font-medium hover:bg-opacity-80 transition-colors disabled:opacity-50"
-                onClick={handleSyncArrHooks}
-                disabled={isSyncingHooks}
-            >
-                {isSyncingHooks ? 'Syncing…' : 'Sync hooks to Arr'}
-            </button>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
             <div>
                 <label htmlFor="integrityWebhookUsername">Hook username</label>
@@ -229,7 +202,7 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
                     placeholder="••••••••"
                     onChange={(event) => onIntegrityWebhookPasswordChange(event.target.value)}
                 />
-                <p className="text-xs text-muted mt-1">Leave blank to keep the current password. Generated automatically if missing. Sync pushes these into Arr so you do not paste them by hand.</p>
+                <p className="text-xs text-muted mt-1">Leave blank to keep the current password. Generated automatically if missing. Quality Control → Arrs writes these into Connect.</p>
             </div>
         </div>
     </div>
