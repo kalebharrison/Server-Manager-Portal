@@ -174,4 +174,8 @@ test('resolveTrimConfig only rewrites with auto-fix and dry-run off', () => {
         qcIntegrityAutomationEnabled: true,
         qcTrimDryRun: false,
     }).dryRun, false);
+    assert.equal(resolveTrimConfig({
+        qcTrimEnabled: true,
+        qcTrimDryRun: true,
+    }, {}, { forceRewrite: true }).dryRun, false);
 });

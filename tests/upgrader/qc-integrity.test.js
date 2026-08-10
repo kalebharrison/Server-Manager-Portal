@@ -1070,6 +1070,109 @@ test('recheckFinding keeps and refreshes finding when still failing', async () =
     assert.equal(result.finding.reason, 'decode_start');
 });
 
+test('recheckFinding remuxes trim_pending even when dry-run is on', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'qc-trim-recheck-'));
+    const filePath = path.join(dir, 'Movie.mkv');
+    await fs.writeFile(filePath, Buffer.alloc(1000));
+    let prefs = {
+        integrityFindings: [{
+            key: 'radarr:r1:1:file:7',
+            title: 'Eternal Sunshine',
+            arrType: 'radarr',
+            arrInstanceId: 'r1',
+            entityId: 1,
+            movieFileId: 7,
+            filePath,
+            mediaType: 'movie',
+            mediaKind: 'video',
+            reason: 'trim_pending',
+            mode: 'trim',
+            ok: true,
+        }],
+    };
+    let cache = { entries: {} };
+    const remuxArgs = [];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            items: [{
+                ratingKey: 'radarr:r1:1',
+                title: 'Eternal Sunshine',
+                monitored: true,
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 1,
+                movieFileId: 7,
+                filePath,
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        statImpl: async () => ({ ok: true, size: 1000, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version') || args.includes('--version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version test`, stderr: '' };
+            }
+            if (bin === 'mkvmerge' && args.includes('-J')) {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        container: { properties: { title: 'wipe me' } },
+                        tracks: [
+                            { id: 0, type: 'video', properties: {} },
+                            { id: 1, type: 'audio', properties: { language: 'eng', audio_channels: 6 } },
+                            { id: 2, type: 'audio', properties: { language: 'ger', audio_channels: 2 } },
+                        ],
+                    }),
+                    stderr: '',
+                };
+            }
+            if (bin === 'mkvmerge') {
+                remuxArgs.push(args);
+                const outIdx = args.indexOf('-o');
+                if (outIdx >= 0) await fs.writeFile(args[outIdx + 1], Buffer.alloc(800));
+                return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.recheckFinding({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcTrimEnabled: true,
+        qcTrimDryRun: true,
+        qcTrimKeepNativeAudio: false,
+        qcIntegrityPathMaps: [{ from: dir, to: dir }],
+    }, { key: 'radarr:r1:1:file:7' });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.cleared, true);
+    assert.equal(prefs.integrityFindings.length, 0);
+    assert.equal(remuxArgs.length, 1);
+    await fs.rm(dir, { recursive: true, force: true });
+});
+
 test('baselineImport soft timeout does not blocklist and queues recheck', async () => {
     let prefs = {};
     let cache = { entries: {} };

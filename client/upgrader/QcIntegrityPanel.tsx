@@ -475,6 +475,10 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     };
 
     const recheckOne = async (finding: IntegrityFinding) => {
+        if (scanning) {
+            onToast?.('A remux/scan pass is already running. Recheck when it finishes.', 'info');
+            return;
+        }
         setRecheckingKey(finding.key);
         try {
             const payload = await apiFetch('/api/upgrader/qc/integrity/recheck', {
@@ -603,7 +607,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         </SettingHint>
                     </h2>
                     <p className="text-xs text-muted mt-1 max-w-2xl">
-                        Trim → preview of what remux would drop. Playback/fingerprint stay dry-run until you Replace a finding.
+                        Trim Recheck remuxes that file. Playback/fingerprint Recheck only re-validates; Replace searches a new release.
                     </p>
                     {result?.setup && !result.setup.ready && (
                         <p className="text-xs text-amber-200 mt-2">
@@ -884,7 +888,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                 <button
                                     type="button"
                                     className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
-                                    disabled={recheckingKey === finding.key || scanning}
+                                    disabled={recheckingKey === finding.key}
+                                    title={scanning ? 'Waits until the current remux/scan pass finishes' : 'Re-run this check (trim findings remux for real)'}
                                     onClick={() => void recheckOne(finding)}
                                 >
                                     {recheckingKey === finding.key ? 'Rechecking…' : 'Recheck'}
