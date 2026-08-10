@@ -11,6 +11,7 @@ type IntegrityFinding = {
     title: string;
     reason?: string | null;
     detail?: string | null;
+    mode?: string | null;
     filePath?: string | null;
     localPath?: string | null;
     arrType?: string | null;
