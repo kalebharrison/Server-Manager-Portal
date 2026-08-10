@@ -51,6 +51,7 @@ type Props = {
     integrityMaxPerCycle: number;
     integrityConcurrency: number;
     integrityPlayabilityConcurrency: number;
+    integrityTrimConcurrency: number;
     integrityBreakerMaxFindings: number;
     integrityBreakerMaxPercent: number;
     integrityPauseWhenSessions: number;
@@ -97,6 +98,7 @@ type Props = {
     onIntegrityMaxPerCycleChange: (value: number) => void;
     onIntegrityConcurrencyChange: (value: number) => void;
     onIntegrityPlayabilityConcurrencyChange: (value: number) => void;
+    onIntegrityTrimConcurrencyChange: (value: number) => void;
     onIntegrityBreakerMaxFindingsChange: (value: number) => void;
     onIntegrityBreakerMaxPercentChange: (value: number) => void;
     onIntegrityPauseWhenSessionsChange: (value: number) => void;
@@ -147,6 +149,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityMaxPerCycle: _integrityMaxPerCycle,
     integrityConcurrency,
     integrityPlayabilityConcurrency,
+    integrityTrimConcurrency,
     integrityBreakerMaxFindings,
     integrityBreakerMaxPercent,
     integrityPauseWhenSessions,
@@ -193,6 +196,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityMaxPerCycleChange: _onIntegrityMaxPerCycleChange,
     onIntegrityConcurrencyChange,
     onIntegrityPlayabilityConcurrencyChange,
+    onIntegrityTrimConcurrencyChange,
     onIntegrityBreakerMaxFindingsChange,
     onIntegrityBreakerMaxPercentChange,
     onIntegrityPauseWhenSessionsChange,
@@ -762,6 +766,19 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         value={integrityPlayabilityConcurrency}
                                         disabled={!enabled || !integrityEnabled}
                                         onChange={(event) => onIntegrityPlayabilityConcurrencyChange(Math.max(1, Number(event.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="text-sm font-semibold">
+                                    Trim remux concurrency
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="2"
+                                        className="mt-2 w-full p-2.5 rounded-lg border border-border bg-background text-text"
+                                        value={integrityTrimConcurrency}
+                                        disabled={!enabled || !integrityEnabled}
+                                        title="Parallel mkvmerge remuxes (max 2). Keep at 1 on Unraid."
+                                        onChange={(event) => onIntegrityTrimConcurrencyChange(Math.max(1, Math.min(2, Number(event.target.value) || 1)))}
                                     />
                                 </label>
                                 <label className="text-sm font-semibold">

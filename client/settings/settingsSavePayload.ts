@@ -122,6 +122,7 @@ type SettingsSavePayloadInput = {
     qcIntegrityMaxPerCycle: number;
     qcIntegrityConcurrency: number;
     qcIntegrityPlayabilityConcurrency: number;
+    qcIntegrityTrimConcurrency: number;
     qcIntegrityBreakerMaxFindings: number;
     qcIntegrityBreakerMaxPercent: number;
     qcIntegrityPauseWhenSessions: number;

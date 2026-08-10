@@ -246,3 +246,61 @@ test('cleanupPortalTrimTmps removes only portal-trim tmp siblings', async () => 
     assert.equal((await fs.readFile(other, 'utf8')), 'other');
     await fs.rm(root, { recursive: true, force: true });
 });
+
+test('trim remux concurrency gate serializes overlapping remuxes', async () => {
+    const {
+        configureTrimRemuxConcurrency,
+        normalizeTrimRemuxConcurrency,
+        resetTrimRemuxGateForTests,
+        trimMkvFile,
+    } = await import('../../lib/upgrader/qc-media-trim.js');
+
+    assert.equal(normalizeTrimRemuxConcurrency(99), 2);
+    assert.equal(normalizeTrimRemuxConcurrency(0), 1);
+    resetTrimRemuxGateForTests();
+    configureTrimRemuxConcurrency(1);
+
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const mkvInfo = JSON.stringify({
+        container: { properties: {} },
+        tracks: [
+            { id: 0, type: 'video', properties: {} },
+            { id: 1, type: 'audio', properties: { language: 'eng', audio_channels: 6 } },
+            { id: 2, type: 'audio', properties: { language: 'ger', audio_channels: 2 } },
+        ],
+    });
+    const fs = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'portal-remux-gate-'));
+    const fileA = path.join(dir, 'A.mkv');
+    const fileB = path.join(dir, 'B.mkv');
+    await fs.writeFile(fileA, Buffer.alloc(1000));
+    await fs.writeFile(fileB, Buffer.alloc(1000));
+
+    const execImpl = async (bin, args = []) => {
+        if (bin === 'ffprobe') return { ok: true, stdout: '{}', stderr: '' };
+        if (bin === 'mkvmerge' && args.includes('-J')) {
+            return { ok: true, stdout: mkvInfo, stderr: '' };
+        }
+        if (bin === 'mkvmerge') {
+            inFlight += 1;
+            maxInFlight = Math.max(maxInFlight, inFlight);
+            await new Promise((r) => setTimeout(r, 40));
+            const outIdx = args.indexOf('-o');
+            if (outIdx >= 0) await fs.writeFile(args[outIdx + 1], Buffer.alloc(800));
+            inFlight -= 1;
+            return { ok: true, stdout: '', stderr: '' };
+        }
+        return { ok: true, stdout: '', stderr: '' };
+    };
+
+    await Promise.all([
+        trimMkvFile(fileA, { dryRun: false, remuxConcurrency: 1, execImpl }),
+        trimMkvFile(fileB, { dryRun: false, remuxConcurrency: 1, execImpl }),
+    ]);
+    assert.equal(maxInFlight, 1);
+    await fs.rm(dir, { recursive: true, force: true });
+    resetTrimRemuxGateForTests();
+});

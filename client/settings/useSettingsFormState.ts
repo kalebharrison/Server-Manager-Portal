@@ -135,6 +135,7 @@ export const useSettingsFormState = () => {
         qcIntegrityMaxPerCycle: values.qcIntegrityMaxPerCycle,
         qcIntegrityConcurrency: values.qcIntegrityConcurrency,
         qcIntegrityPlayabilityConcurrency: values.qcIntegrityPlayabilityConcurrency,
+        qcIntegrityTrimConcurrency: values.qcIntegrityTrimConcurrency,
         qcIntegrityBreakerMaxFindings: values.qcIntegrityBreakerMaxFindings,
         qcIntegrityBreakerMaxPercent: values.qcIntegrityBreakerMaxPercent,
         qcIntegrityPauseWhenSessions: values.qcIntegrityPauseWhenSessions,

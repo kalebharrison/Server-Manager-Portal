@@ -123,6 +123,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     qcIntegrityMaxPerCycle: 200,
     qcIntegrityConcurrency: 4,
     qcIntegrityPlayabilityConcurrency: 1,
+    qcIntegrityTrimConcurrency: 1,
     qcIntegrityBreakerMaxFindings: 50,
     qcIntegrityBreakerMaxPercent: 10,
     qcIntegrityPauseWhenSessions: 0,

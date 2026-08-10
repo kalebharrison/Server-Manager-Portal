@@ -127,6 +127,7 @@ type SettingsHydrationSetters = {
     setQcIntegrityMaxPerCycle: (value: number) => void;
     setQcIntegrityConcurrency: (value: number) => void;
     setQcIntegrityPlayabilityConcurrency: (value: number) => void;
+    setQcIntegrityTrimConcurrency: (value: number) => void;
     setQcIntegrityBreakerMaxFindings: (value: number) => void;
     setQcIntegrityBreakerMaxPercent: (value: number) => void;
     setQcIntegrityPauseWhenSessions: (value: number) => void;
@@ -299,6 +300,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     })());
     setters.setQcIntegrityConcurrency(Math.max(1, Number(initialSettings.qcIntegrityConcurrency) || 4));
     setters.setQcIntegrityPlayabilityConcurrency(Math.max(1, Number(initialSettings.qcIntegrityPlayabilityConcurrency) || 1));
+    setters.setQcIntegrityTrimConcurrency(Math.max(1, Math.min(2, Number(initialSettings.qcIntegrityTrimConcurrency) || 1)));
     setters.setQcIntegrityBreakerMaxFindings(Math.max(1, Number(initialSettings.qcIntegrityBreakerMaxFindings) || 50));
     setters.setQcIntegrityBreakerMaxPercent(Math.max(0.1, Number(initialSettings.qcIntegrityBreakerMaxPercent) || 10));
     setters.setQcIntegrityPauseWhenSessions(Math.max(0, Number(initialSettings.qcIntegrityPauseWhenSessions ?? 0) || 0));

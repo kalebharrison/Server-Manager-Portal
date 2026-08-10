@@ -68,7 +68,7 @@ See [Deployment — integrity mounts](./deployment.md#optional-quality-control-i
 ### Two pipelines
 
 **Import / upgrade (Arr webhooks)**  
-Playback check → optional **media trim** (MKV remux: keep configured languages + native, drop commentary / extra tracks) → playback again → quick fingerprint → optional full-file hash. Hard playback failures blocklist the release and (when automation is on) delete + re-search. Trim failures stay on the Integrity panel (no Discord) and skip the member announce. Soft decode timeouts (toggle, default on) do **not** blocklist — they queue a recheck instead. Expected runtime for duration mismatch comes from Arr **catalog** fields (TMDb/TVDB via episode/movie `runtime`), not file MediaInfo; probed `durationSec` still comes from ffprobe. Orphan `*.portal-trim.tmp.mkv` files from a mid-remux restart are removed on Integrity boot and before the next remux of that file.
+Playback check → optional **media trim** (MKV remux: keep configured languages + native, drop commentary / extra tracks) → playback again → quick fingerprint → optional full-file hash. Hard playback failures blocklist the release and (when automation is on) delete + re-search. Trim failures stay on the Integrity panel (no Discord) and skip the member announce. Soft decode timeouts (toggle, default on) do **not** blocklist — they queue a recheck instead. Expected runtime for duration mismatch comes from Arr **catalog** fields (TMDb/TVDB via episode/movie `runtime`), not file MediaInfo; probed `durationSec` still comes from ffprobe. Orphan `*.portal-trim.tmp.mkv` files from a mid-remux restart are removed on Integrity boot and before the next remux of that file. Remux concurrency defaults to **1** (hard max 2) and is gated process-wide so scans, rechecks, and imports cannot stampede the array.
 
 If the portal was down for the webhook (restart, deploy), a **recent-import catch-up** runs ~3 minutes after boot and hourly: Arr history for the last 24 hours, then whatever import checks are still missing (playback, trim when rewrite is on, fingerprint, optional full hash). Already-complete stamps are left alone. It does **not** backfill the rest of the library. Member announce still fires if playback was never verified (deduped if it already posted).
 
@@ -110,7 +110,7 @@ All QC settings are under **Settings → Quality Control (Admin Only)** (subtabs
 | Overview | Master switch + auto-hunt |
 | Hunt | Missing episodes/movies, min size, **Hunt intensity** (Relaxed / Balanced / Aggressive), preference boosts; rate caps under Advanced |
 | Downloads | qBit/SAB credentials, cleanup automation, **Cleanup aggression** presets; raw strike timers under Advanced. Blocked extensions live on **Quality Control → Clients** (not Settings) |
-| Integrity | Webhooks, scans, automation, path maps, require audio, **media trim**; concurrency / xxhash / nightly under Advanced |
+| Integrity | Webhooks, scans, automation, path maps, require audio, **media trim**; fingerprint / playback / **trim remux** concurrency, xxhash / nightly under Advanced |
 
 Presets expand to the same timer and rate-limit keys as before (`qcMaxStrikes`, `qcMetaDlMinutes`, `upgraderMaxActionsPerHour`, etc.). The engine still reads those raw values — presets are a Settings UI projection. Choosing Advanced values that diverge from a preset stores **Custom**.
 
