@@ -179,3 +179,39 @@ test('resolveTrimConfig only rewrites with auto-fix and dry-run off', () => {
         qcTrimDryRun: true,
     }, {}, { forceRewrite: true }).dryRun, false);
 });
+
+test('isCorruptMatroskaProbe catches EBML damage and repeated duplicates', async () => {
+    const { isCorruptMatroskaProbe, preflightMkvContainer, probeMkvInfo } = await import('../../lib/upgrader/qc-media-trim.js');
+    assert.equal(isCorruptMatroskaProbe(''), false);
+    assert.equal(isCorruptMatroskaProbe('[matroska] Duplicate element\n'), false);
+    assert.equal(isCorruptMatroskaProbe('[matroska] Duplicate element\nDuplicate element\n'), true);
+    assert.equal(
+        isCorruptMatroskaProbe('0x00 at pos 6661 (0x1a05) invalid as first byte of an EBML number'),
+        true,
+    );
+
+    const corrupt = await preflightMkvContainer('/x.mkv', {
+        execImpl: async () => ({
+            ok: true,
+            stdout: '{}',
+            stderr: 'invalid as first byte of an EBML number\nDuplicate element\nDuplicate element\n',
+        }),
+    });
+    assert.equal(corrupt.ok, false);
+    assert.equal(corrupt.reason, 'trim_container_corrupt');
+
+    const probed = await probeMkvInfo('/x.mkv', {
+        execImpl: async (bin) => {
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    stdout: '{}',
+                    stderr: 'Element at 0x45 ending at 0x34e05 exceeds containing master element ending at 0x13f1',
+                };
+            }
+            throw new Error('mkvmerge should not run');
+        },
+    });
+    assert.equal(probed.ok, false);
+    assert.equal(probed.reason, 'trim_container_corrupt');
+});
