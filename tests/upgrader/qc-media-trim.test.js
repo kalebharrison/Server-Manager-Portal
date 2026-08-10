@@ -215,3 +215,34 @@ test('isCorruptMatroskaProbe catches EBML damage and repeated duplicates', async
     assert.equal(probed.ok, false);
     assert.equal(probed.reason, 'trim_container_corrupt');
 });
+
+test('cleanupPortalTrimTmps removes only portal-trim tmp siblings', async () => {
+    const fs = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const { cleanupPortalTrimTmps, portalTrimTmpPathFor, isPortalTrimTmpName } = await import('../../lib/upgrader/qc-media-trim.js');
+
+    assert.equal(isPortalTrimTmpName('Movie.mkv.portal-trim.tmp.mkv'), true);
+    assert.equal(isPortalTrimTmpName('Movie.mkv'), false);
+    assert.equal(
+        portalTrimTmpPathFor('/media/movies/Movie.mkv'),
+        '/media/movies/Movie.mkv.portal-trim.tmp.mkv',
+    );
+
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'portal-trim-tmp-'));
+    const nested = path.join(root, 'nested');
+    await fs.mkdir(nested);
+    const keep = path.join(nested, 'Movie.mkv');
+    const orphan = portalTrimTmpPathFor(keep);
+    const other = path.join(nested, 'notes.tmp.mkv');
+    await fs.writeFile(keep, 'keep');
+    await fs.writeFile(orphan, 'orphan');
+    await fs.writeFile(other, 'other');
+
+    const result = await cleanupPortalTrimTmps({ roots: [root] });
+    assert.equal(result.removed, 1);
+    await assert.rejects(() => fs.stat(orphan));
+    assert.equal((await fs.readFile(keep, 'utf8')), 'keep');
+    assert.equal((await fs.readFile(other, 'utf8')), 'other');
+    await fs.rm(root, { recursive: true, force: true });
+});

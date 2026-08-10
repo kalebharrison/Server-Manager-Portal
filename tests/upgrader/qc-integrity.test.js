@@ -142,12 +142,22 @@ test('durationMatchesExpected flags large video deltas', () => {
     assert.equal(durationMatchesExpected(null, 3600).ok, true); // skipped
 });
 
-test('extractExpectedRuntimeSec prefers MediaInfo runTime', () => {
+test('extractExpectedRuntimeSec prefers catalog runtime over MediaInfo', () => {
     assert.equal(extractExpectedRuntimeSec({
         file: { mediaInfo: { runTime: '00:42:10' } },
         record: { runtime: 40 },
         mediaKind: 'video',
-    }), 2530);
+    }), 2400);
+    assert.equal(extractExpectedRuntimeSec({
+        file: { mediaInfo: { runTime: '00:42:10' } },
+        episode: { runtime: 45 },
+        record: { runtime: 40 },
+        mediaKind: 'video',
+    }), 2700);
+    assert.equal(extractExpectedRuntimeSec({
+        file: { mediaInfo: { runTime: '00:42:10' } },
+        mediaKind: 'video',
+    }), null);
 });
 
 test('collectIntegrityCandidates includes lidarr track files when enabled', () => {
