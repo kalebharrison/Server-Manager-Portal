@@ -137,12 +137,20 @@ type IntegrityScanResponse = {
     };
 };
 
+type ActiveRecheck = {
+    key: string;
+    title?: string | null;
+    mode?: string | null;
+    startedAt?: string | null;
+};
+
 type IntegrityStatus = {
     scanning?: boolean;
     progress?: IntegrityProgress | null;
     coverage?: IntegrityCoverage | null;
     breaker?: IntegrityBreaker | null;
     findings?: IntegrityFinding[];
+    activeRechecks?: ActiveRecheck[];
     trimPreview?: TrimPreview | null;
     settings?: IntegritySettings | null;
     lastScan?: {
@@ -308,6 +316,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const [breaker, setBreaker] = useState<IntegrityBreaker | null>(null);
     const [xxhashEnabled, setXxhashEnabled] = useState(false);
     const [findings, setFindings] = useState<IntegrityFinding[]>([]);
+    const [activeRechecks, setActiveRechecks] = useState<ActiveRecheck[]>([]);
     const [trimPreview, setTrimPreview] = useState<TrimPreview | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const wasScanningRef = useRef(false);
@@ -351,6 +360,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         setCoverage(status.coverage || null);
         setBreaker(status.breaker || null);
         setXxhashEnabled(!!status.settings?.xxhashEnabled);
+        setActiveRechecks(Array.isArray(status.activeRechecks) ? status.activeRechecks : []);
         if (Array.isArray(status.findings)) {
             setFindings(status.findings);
         }
@@ -377,7 +387,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         stopPolling();
         pollRef.current = setInterval(() => {
             void loadStatus().then((status) => {
-                if (!status.scanning) stopPolling();
+                const busy = !!status.scanning || (status.activeRechecks || []).length > 0;
+                if (!busy) stopPolling();
             }).catch(() => {});
         }, 2000);
     }, [loadStatus, stopPolling]);
@@ -385,7 +396,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     useEffect(() => {
         if (!integrityEnabled) return;
         void loadStatus().then((status) => {
-            if (status.scanning) startPolling();
+            if (status.scanning || (status.activeRechecks || []).length) startPolling();
         }).catch(() => {});
         return stopPolling;
     }, [integrityEnabled, loadStatus, startPolling, stopPolling]);
@@ -476,10 +487,20 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
 
     const recheckOne = async (finding: IntegrityFinding) => {
         if (scanning) {
-            onToast?.('A remux/scan pass is already running. Recheck when it finishes.', 'info');
+            onToast?.('A remux/scan pass is already running. Recheck when it finishes.', 'error');
             return;
         }
+        onToast?.(
+            `Remuxing ${finding.title}. Large files take a while — this row stays until mkvmerge finishes.`,
+            'success',
+        );
         setRecheckingKey(finding.key);
+        setActiveRechecks((current) => (
+            current.some((job) => job.key === finding.key)
+                ? current
+                : [...current, { key: finding.key, title: finding.title, mode: finding.mode || 'trim', startedAt: new Date().toISOString() }]
+        ));
+        startPolling();
         try {
             const payload = await apiFetch('/api/upgrader/qc/integrity/recheck', {
                 method: 'POST',
@@ -513,6 +534,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             onToast?.(error?.message || 'Recheck failed', 'error');
         } finally {
             setRecheckingKey(null);
+            setActiveRechecks((current) => current.filter((job) => job.key !== finding.key));
         }
     };
 
@@ -840,6 +862,18 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             )}
 
             <section className={`${QC_SECTION} space-y-3`}>
+                {activeRechecks.length > 0 && (
+                    <div className="rounded-lg border border-plex/40 bg-plex/10 px-3 py-2 text-xs text-text">
+                        <div className="font-bold text-plex">Remux in progress</div>
+                        {activeRechecks.map((job) => (
+                            <div key={job.key} className="mt-1 text-text/90">
+                                {job.title || job.key}
+                                {job.startedAt ? ` · started ${new Date(job.startedAt).toLocaleTimeString()}` : ''}
+                                {' — finding stays until this finishes.'}
+                            </div>
+                        ))}
+                    </div>
+                )}
                 <div className="flex items-center justify-between gap-2">
                     <h3 className="text-sm font-bold text-text">Findings</h3>
                     <button
@@ -863,11 +897,17 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 {result?.ran && !scanning && displayFindings.length === 0 && (
                     <p className="text-xs text-emerald-300">No integrity findings in this pass.</p>
                 )}
-                {displayFindings.map((finding) => (
+                {displayFindings.map((finding) => {
+                    const remuxing = activeRechecks.some((job) => job.key === finding.key)
+                        || recheckingKey === finding.key;
+                    return (
                     <div key={finding.key} className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2">
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                                 <div className="text-xs font-semibold text-text truncate">{finding.title}</div>
+                                {remuxing && (
+                                    <div className="text-[11px] font-semibold text-plex mt-0.5">Remuxing now — this can take a while</div>
+                                )}
                                 <div className="text-[11px] text-muted mt-0.5">
                                     {[
                                         finding.reason,
@@ -888,11 +928,11 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                 <button
                                     type="button"
                                     className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
-                                    disabled={recheckingKey === finding.key}
+                                    disabled={remuxing}
                                     title={scanning ? 'Waits until the current remux/scan pass finishes' : 'Re-run this check (trim findings remux for real)'}
                                     onClick={() => void recheckOne(finding)}
                                 >
-                                    {recheckingKey === finding.key ? 'Rechecking…' : 'Recheck'}
+                                    {remuxing ? 'Remuxing…' : 'Recheck'}
                                 </button>
                                 <button
                                     type="button"
@@ -913,7 +953,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                             </div>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </section>
         </div>
     );
