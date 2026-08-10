@@ -92,7 +92,7 @@ Test member cards: Settings → Discord → **Post test movie + TV announce**.
 | Member webhook URL | Fallback if the bot cannot send in that channel |
 | Admin webhook URL | QC + integrity destination; bot posts here when it can see the channel |
 | Notify toggles | DMs, announcement mirrors, media-ready cards |
-| Media announce wait | Groups TV season episodes before posting |
+| Media announce wait | Quiet window (default 60m, max 180) after last Integrity-verified item; TV also waits while Sonarr still has queue/newer season imports |
 
 Arr **Portal Integrity** Connect hooks are unrelated to Discord posting. They hit `/triggers/{sonarr,radarr,lidarr}` so Integrity can verify files before a media card goes out.
 

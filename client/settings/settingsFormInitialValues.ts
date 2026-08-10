@@ -51,7 +51,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     discordNotifyBroadcasts: true,
     discordNotifyNewsletters: true,
     discordNotifyMediaReady: true,
-    discordMediaAnnounceDebounceMinutes: 10,
+    discordMediaAnnounceDebounceMinutes: 60,
     discordLlmEnabled: false,
     discordLlmUrl: '',
     discordLlmApiKey: '',

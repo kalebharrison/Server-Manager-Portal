@@ -65,7 +65,7 @@ Use Arr’s **Test** button on the connection. A successful test returns HTTP 20
 
 ### Turn off Arr → Plex on import
 
-If the portal owns the post-Integrity Plex refresh, disable Sonarr/Radarr **Connect → Plex** triggers for **On Import** / **On Upgrade** (and Lidarr equivalents). Keep a scheduled Plex library scan as a safety net. Leaving both on causes Plex to analyze the file twice — once on Arr import (pre-remux) and again after portal remux changes size/mtime.
+If the portal owns the post-Integrity Plex refresh, disable Sonarr/Radarr **Connect → Plex** triggers for **On Import** / **On Upgrade** / **On Rename** (and Lidarr equivalents). Keep Plex **Scan my library periodically** (maintenance ~overnight) as a safety net; turn off **Scan my library automatically** (filesystem watch) so remux mtime changes do not re-analyze mid-pipeline. Leaving Arr Connect + FS watch on causes Plex to analyze the file twice — once on Arr import (pre-remux) and again after portal remux.
 
 Missed hooks (container restart mid-import) are retried from Arr **history** for the last 24 hours — not by scanning every unchecked library file.
 

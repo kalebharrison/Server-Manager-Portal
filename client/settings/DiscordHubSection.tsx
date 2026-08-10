@@ -152,12 +152,12 @@ export const DiscordHubSection: React.FC<DiscordHubSectionProps> = ({
                 id="discordMediaAnnounceDebounceMinutes"
                 type="number"
                 min={1}
-                max={120}
+                max={180}
                 value={discordMediaAnnounceDebounceMinutes}
                 disabled={!discordEnabled || !discordNotifyMediaReady}
-                onChange={(event) => onDiscordMediaAnnounceDebounceMinutesChange(Math.max(1, Math.min(120, Number(event.target.value) || 10)))}
+                onChange={(event) => onDiscordMediaAnnounceDebounceMinutesChange(Math.max(1, Math.min(180, Number(event.target.value) || 60)))}
             />
-            <div className="mt-2"><SettingHint>Groups TV season episodes into one post after the last episode arrives.</SettingHint></div>
+            <div className="mt-2"><SettingHint>Quiet window after the last Integrity-verified episode. TV also waits while Sonarr still has downloads or newer season imports. Use 45–90+ when remux is slow.</SettingHint></div>
         </div>
         <div className="mb-4">
             <button

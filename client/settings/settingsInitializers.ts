@@ -206,7 +206,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setDiscordNotifyNewsletters(initialSettings.discordNotifyNewsletters !== false);
     setters.setDiscordNotifyMediaReady(initialSettings.discordNotifyMediaReady !== false);
     setters.setDiscordMediaAnnounceDebounceMinutes(
-        Math.max(1, Math.min(120, Number(initialSettings.discordMediaAnnounceDebounceMinutes ?? 10) || 10)),
+        Math.max(1, Math.min(180, Number(initialSettings.discordMediaAnnounceDebounceMinutes ?? 60) || 60)),
     );
     setters.setDiscordLlmEnabled(!!initialSettings.discordLlmEnabled);
     setters.setDiscordLlmUrl(initialSettings.discordLlmUrl || '');
