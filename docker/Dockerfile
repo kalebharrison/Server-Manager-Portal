@@ -24,6 +24,10 @@ ENV NODE_ENV=production
 ENV BIND_HOST=0.0.0.0
 ENV PORT=2121
 ENV FORCE_SECURE_COOKIES=false
+# Must match Arr / downloaders for /media writes (entrypoint drops via su-exec).
+# Do not set Compose `user:` — that breaks the entrypoint privilege drop.
+ENV PUID=1000
+ENV PGID=1000
 
 RUN apk add --no-cache su-exec ffmpeg mkvtoolnix
 

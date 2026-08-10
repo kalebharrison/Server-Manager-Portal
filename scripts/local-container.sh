@@ -17,6 +17,8 @@ docker run -d \
   -e JWT_SECRET="$JWT_SECRET" \
   -e CONFIG_DIR=/app/config \
   -e FORCE_SECURE_COOKIES=false \
+  -e PUID="${PUID:-1000}" \
+  -e PGID="${PGID:-1000}" \
   -v "$HOST_STORAGE/config:/app/config" \
   -v "$HOST_STORAGE/backup:/app/backup" \
   "$IMAGE_NAME"

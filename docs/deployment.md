@@ -69,10 +69,14 @@ docker run -d \
   -p 2121:2121 \
   -e JWT_SECRET='replace-with-32+-char-secret' \
   -e PUBLIC_BASE_URL='https://portal.example.com' \
+  -e PUID=1000 \
+  -e PGID=1000 \
   -v "$(pwd)/config:/app/config" \
   -v "$(pwd)/backup:/app/backup" \
   ghcr.io/<owner>/server-manager-portal:beta
 ```
+
+Do not pass `--user 1000:1000`; use `PUID`/`PGID` so the entrypoint can chown config/backup then drop privileges.
 
 ## Docker networking tips
 
@@ -105,9 +109,18 @@ BASE_PATH=/portal
 PUBLIC_BASE_URL=https://media.example.com/portal
 ```
 
-## Permissions
+## Permissions (PUID / PGID)
 
-The entrypoint optionally runs as `PUID`/`PGID` (default `1000:1000`) and ensures `/app/config` + `/app/backup` are writable by that user.
+Homelab writers under `/media` (library + downloads) should share one UID/GID with Arr and downloaders (radarr/sonarr/lidarr/bazarr, qBit/SAB, etc.). On Unraid that is typically **`PUID=1000` / `PGID=1000`**.
+
+The image **starts as root**, chowns `/app/config` + `/app/backup` for that user, then **`su-exec` drops to `PUID:PGID`** before `node` (and any `ffmpeg` / `mkvmerge` children). New QC remux/trim files under `/media` are then owned by the same user as Arr imports.
+
+| Do | Don't |
+|---|---|
+| Set `PUID` / `PGID` in env (Compose `environment`, `stack.env`, or image defaults) | Set Compose / Docker `user: "1000:1000"` — breaks `su-exec` (`setgroups: Operation not permitted`) |
+| Match Arr / download client PUID/PGID for `/media` writes | Rely on ad-hoc root shells inside the container for remux work |
+
+Defaults are `1000:1000` in the Dockerfile, Compose, and `.env.example`. Override only if your Arr stack uses a different pair — keep them aligned.
 
 ## Production / lab (Dockhand Git stacks)
 

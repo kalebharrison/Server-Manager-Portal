@@ -33,6 +33,8 @@ Persist data with the Compose mounts:
 - `./config` → settings, users, caches
 - `./backup` → rolling backups
 
+For media QC remux/trim, set `PUID`/`PGID` to the same values as Arr/downloaders (default `1000:1000`). Do **not** set Compose `user:` — the entrypoint drops privileges via `su-exec`. See [Permissions](docs/deployment.md#permissions-puid--pgid).
+
 More detail: **[docs/deployment.md](docs/deployment.md)** · **[docs/configuration.md](docs/configuration.md)**
 
 ## Features (short)

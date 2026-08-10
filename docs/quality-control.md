@@ -63,7 +63,7 @@ Integrity validates files Arr already knows about. It requires:
 - Media mounted **read-only** into the container
 - **Arr → container path maps** when Arr paths differ from mount paths
 
-See [Deployment — integrity mounts](./deployment.md#optional-quality-control-integrity-media-mounts).
+See [Deployment — integrity mounts](./deployment.md#optional-quality-control-integrity-media-mounts). Remux/trim writes must run as the same `PUID`/`PGID` as Arr/downloaders — see [Permissions](./deployment.md#permissions-puid--pgid).
 
 ### Two pipelines
 

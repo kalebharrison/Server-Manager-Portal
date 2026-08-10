@@ -23,7 +23,7 @@ See [`.env.example`](../.env.example) for the full template.
 | `BASE_PATH` | URL prefix for subpath hosting (e.g. `/portal`) |
 | `ALLOW_PRIVATE_INTEGRATION_URLS` | Allow LAN/private integration URLs |
 | `PLEX_PREFER_REMOTE_CONNECTION` | Prefer non-localhost Plex connections in Docker |
-| `PUID` / `PGID` | Run-as user/group (default `1000` / `1000`) |
+| `PUID` / `PGID` | Run-as user/group after entrypoint drop (default `1000` / `1000`). **Must match Arr/downloaders** for `/media` QC remux/trim ownership. Do **not** set Docker `user:` — see [Deployment → Permissions](./deployment.md#permissions-puid--pgid) |
 | `IMAGE_CACHE_MAX_MB` | Per-proxy in-memory image cache cap (default `64`) |
 | `SETUP_TOKEN` | Optional one-time remote setup token |
 | `CLIENT_ID` | Optional fixed Plex OAuth client id |

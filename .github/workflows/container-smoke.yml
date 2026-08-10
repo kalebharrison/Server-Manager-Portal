@@ -46,6 +46,8 @@ jobs:
             -p 2121:2121 \
             -e JWT_SECRET=smoke-test-secret-smoke-test-secret-123456 \
             -e CONFIG_DIR=/app/config \
+            -e PUID=1000 \
+            -e PGID=1000 \
             -v /tmp/server-manager-portal-smoke/config:/app/config \
             -v /tmp/server-manager-portal-smoke/backup:/app/backup \
             server-manager-portal:smoke
@@ -63,6 +65,13 @@ jobs:
           curl -fsS http://127.0.0.1:2121/api/health
           curl -fsS http://127.0.0.1:2121/ >/tmp/index.html
           curl -fsS http://127.0.0.1:2121/static/tailwind.css >/tmp/tailwind.css
+
+          # Entrypoint must drop to PUID:PGID (do not use Docker user:)
+          test "$(docker exec server-manager-portal-smoke printenv PUID)" = "1000"
+          test "$(docker exec server-manager-portal-smoke printenv PGID)" = "1000"
+          test "$(docker exec server-manager-portal-smoke sh -lc 'awk "/^Uid:/{print \$2}" /proc/1/status')" = "1000"
+          docker exec server-manager-portal-smoke sh -lc 'su-exec 1000:1000 touch /app/config/.puid-write-test'
+          test "$(stat -c '%u:%g' /tmp/server-manager-portal-smoke/config/.puid-write-test)" = "1000:1000"
 
           chunk="$(docker exec server-manager-portal-smoke sh -lc 'ls /app/static/chunks/*.js | head -n 1 | xargs -n1 basename')"
           test -n "$chunk"
