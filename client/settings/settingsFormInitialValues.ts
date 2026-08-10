@@ -109,6 +109,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     qcCleanupAggression: 'balanced',
     qcIntegrityEnabled: false,
     qcIntegrityAutomationEnabled: false,
+    qcIntegrityPlexRefreshAfterImport: true,
     qcIntegrityRequireAudio: true,
     qcIntegrityIncludeMusic: true,
     qcIntegrityXxhashEnabled: false,

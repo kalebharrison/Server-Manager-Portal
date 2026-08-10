@@ -61,6 +61,11 @@ Use Arr’s **Test** button on the connection. A successful test returns HTTP 20
 4. On hard failure: stores a finding, blocklists the release, and (if integrity automation is on) deletes + re-searches
 5. On soft decode timeout (when enabled): stores a finding and queues a recheck — **no blocklist**
 6. On success: stores the result under the same cache key coverage uses (`sonarr:<instance>:<id>:file:<fileId>`). When Discord **Post new media / upgrades after Integrity verifies** is enabled, the portal also queues a **member-channel** announce (TV seasons are debounced into one post). Soft timeouts do **not** announce until a later recheck passes.
+7. When **Plex refresh after import** is enabled (default), the portal path-refreshes the matching Plex library folder for that file (final remuxed file when trim rewrite ran). Soft timeouts and post-playback fingerprint/hash failures still refresh so the title appears; hard playback fails that delete/replace do not.
+
+### Turn off Arr → Plex on import
+
+If the portal owns the post-Integrity Plex refresh, disable Sonarr/Radarr **Connect → Plex** triggers for **On Import** / **On Upgrade** (and Lidarr equivalents). Keep a scheduled Plex library scan as a safety net. Leaving both on causes Plex to analyze the file twice — once on Arr import (pre-remux) and again after portal remux changes size/mtime.
 
 Missed hooks (container restart mid-import) are retried from Arr **history** for the last 24 hours — not by scanning every unchecked library file.
 

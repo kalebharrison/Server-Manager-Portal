@@ -108,6 +108,7 @@ export type SettingsFormValues = {
     qcCleanupAggression: string;
     qcIntegrityEnabled: boolean;
     qcIntegrityAutomationEnabled: boolean;
+    qcIntegrityPlexRefreshAfterImport: boolean;
     qcIntegrityRequireAudio: boolean;
     qcIntegrityIncludeMusic: boolean;
     qcIntegrityXxhashEnabled: boolean;

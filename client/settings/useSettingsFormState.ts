@@ -121,6 +121,7 @@ export const useSettingsFormState = () => {
         qcCleanupAggression: values.qcCleanupAggression,
         qcIntegrityEnabled: values.qcIntegrityEnabled,
         qcIntegrityAutomationEnabled: values.qcIntegrityAutomationEnabled,
+        qcIntegrityPlexRefreshAfterImport: values.qcIntegrityPlexRefreshAfterImport,
         qcIntegrityRequireAudio: values.qcIntegrityRequireAudio,
         qcIntegrityIncludeMusic: values.qcIntegrityIncludeMusic,
         qcIntegrityXxhashEnabled: values.qcIntegrityXxhashEnabled,

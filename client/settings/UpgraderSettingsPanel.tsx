@@ -37,6 +37,7 @@ type Props = {
     qcCleanupAggression: string;
     integrityEnabled: boolean;
     integrityAutomationEnabled: boolean;
+    integrityPlexRefreshAfterImport: boolean;
     integrityRequireAudio: boolean;
     integrityIncludeMusic: boolean;
     integrityXxhashEnabled: boolean;
@@ -84,6 +85,7 @@ type Props = {
     onQcCleanupAggressionChange: (value: string) => void;
     onIntegrityEnabledChange: (value: boolean) => void;
     onIntegrityAutomationEnabledChange: (value: boolean) => void;
+    onIntegrityPlexRefreshAfterImportChange: (value: boolean) => void;
     onIntegrityRequireAudioChange: (value: boolean) => void;
     onIntegrityIncludeMusicChange: (value: boolean) => void;
     onIntegrityXxhashEnabledChange: (value: boolean) => void;
@@ -135,6 +137,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcCleanupAggression,
     integrityEnabled,
     integrityAutomationEnabled,
+    integrityPlexRefreshAfterImport,
     integrityRequireAudio,
     integrityIncludeMusic,
     integrityXxhashEnabled,
@@ -182,6 +185,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onQcCleanupAggressionChange,
     onIntegrityEnabledChange,
     onIntegrityAutomationEnabledChange,
+    onIntegrityPlexRefreshAfterImportChange,
     onIntegrityRequireAudioChange,
     onIntegrityIncludeMusicChange,
     onIntegrityXxhashEnabledChange,
@@ -588,6 +592,21 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     disabled={!enabled || !integrityEnabled}
                                     checked={integrityAutomationEnabled && integrityEnabled && enabled}
                                     onChange={(event) => onIntegrityAutomationEnabledChange(event.target.checked)}
+                                />
+                            </label>
+                            <label className="flex items-center justify-between gap-4">
+                                <span className="min-w-0">
+                                    <span className="font-semibold">Plex refresh after import</span>
+                                    <p className="text-xs text-muted font-normal mt-0.5">
+                                        Path-scan Plex once Integrity finishes. Turn off Arr → Plex On Import/Upgrade to avoid double analyze.
+                                    </p>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-plex"
+                                    disabled={!enabled || !integrityEnabled}
+                                    checked={integrityPlexRefreshAfterImport && integrityEnabled && enabled}
+                                    onChange={(event) => onIntegrityPlexRefreshAfterImportChange(event.target.checked)}
                                 />
                             </label>
                         </div>

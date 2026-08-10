@@ -273,6 +273,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcCleanupAutomationEnabled(!!initialSettings.qcCleanupAutomationEnabled);
     setters.setQcIntegrityEnabled(!!initialSettings.qcIntegrityEnabled);
     setters.setQcIntegrityAutomationEnabled(!!initialSettings.qcIntegrityAutomationEnabled);
+    setters.setQcIntegrityPlexRefreshAfterImport(initialSettings.qcIntegrityPlexRefreshAfterImport !== false);
     setters.setQcIntegrityRequireAudio(initialSettings.qcIntegrityRequireAudio !== false);
     setters.setQcIntegrityIncludeMusic(initialSettings.qcIntegrityIncludeMusic !== false);
     setters.setQcIntegrityXxhashEnabled(!!initialSettings.qcIntegrityXxhashEnabled);

@@ -1857,3 +1857,82 @@ test('trim scan ignores audio tracks', async () => {
     assert.equal(result.findingCount, 0);
     assert.equal(result.wouldRemux || 0, 0);
 });
+
+test('baselineImport refreshes Plex path after successful pipeline', async () => {
+    let prefs = {};
+    let cache = { entries: {} };
+    const plexCalls = [];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        resolvePlexUri: async () => 'http://plex.local:32400',
+        fetchImpl: async (url) => {
+            plexCalls.push(String(url));
+            if (String(url).includes('/library/sections?')) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        MediaContainer: {
+                            Directory: [{
+                                key: '3',
+                                type: 'movie',
+                                title: 'Movies',
+                                Location: [{ path: '/movies' }],
+                            }],
+                        },
+                    }),
+                };
+            }
+            return { ok: true, json: async () => ({}) };
+        },
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:plex' }),
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version test`, stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.baselineImport({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        plexToken: 'tok',
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, {
+        ratingKey: 'radarr:r1:1',
+        title: 'Plex Refresh',
+        arrType: 'radarr',
+        arrInstanceId: 'r1',
+        entityId: 1,
+        movieFileId: 9,
+        mediaType: 'movie',
+        filePath: '/movies/Plex Refresh (2024)/Plex.Refresh.mkv',
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(plexCalls.some((url) => url.includes('/library/sections/3/refresh?path=')));
+    assert.ok(plexCalls.some((url) => decodeURIComponent(url).includes('/movies/Plex Refresh (2024)')));
+});
