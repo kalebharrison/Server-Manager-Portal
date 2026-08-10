@@ -321,6 +321,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const [trimPreview, setTrimPreview] = useState<TrimPreview | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const wasScanningRef = useRef(false);
+    const pendingRecheckRef = useRef<ActiveRecheck | null>(null);
+    const progressBannerRef = useRef<HTMLDivElement | null>(null);
 
     const stopPolling = useCallback(() => {
         if (pollRef.current) {
@@ -329,8 +331,16 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         }
     }, []);
 
+    const revealProgress = useCallback(() => {
+        // Buttons sit mid/lower page; keep the live status in view.
+        requestAnimationFrame(() => {
+            progressBannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+    }, []);
+
     const loadStatus = useCallback(async () => {
-        const status = await apiFetch('/api/upgrader/qc/integrity') as IntegrityStatus;
+        // Never serve a cached idle snapshot while a remux/scan is running.
+        const status = await apiFetch('/api/upgrader/qc/integrity', { forceRefresh: true }) as IntegrityStatus;
         const nowScanning = !!status.scanning;
         if (wasScanningRef.current && !nowScanning && status.lastScan) {
             const last = status.lastScan;
@@ -361,7 +371,14 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         setCoverage(status.coverage || null);
         setBreaker(status.breaker || null);
         setXxhashEnabled(!!status.settings?.xxhashEnabled);
-        setActiveRechecks(Array.isArray(status.activeRechecks) ? status.activeRechecks : []);
+        const serverRechecks = Array.isArray(status.activeRechecks) ? status.activeRechecks : [];
+        const pending = pendingRecheckRef.current;
+        // Keep optimistic remux row until the server advertises it (or the HTTP finishes).
+        setActiveRechecks(
+            pending && !serverRechecks.some((job) => job.key === pending.key)
+                ? [pending, ...serverRechecks]
+                : serverRechecks,
+        );
         if (Array.isArray(status.findings)) {
             setFindings(status.findings);
         }
@@ -386,12 +403,16 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
 
     const startPolling = useCallback(() => {
         stopPolling();
-        pollRef.current = setInterval(() => {
+        const tick = () => {
             void loadStatus().then((status) => {
-                const busy = !!status.scanning || (status.activeRechecks || []).length > 0;
+                const busy = !!status.scanning
+                    || (status.activeRechecks || []).length > 0
+                    || !!pendingRecheckRef.current;
                 if (!busy) stopPolling();
             }).catch(() => {});
-        }, 2000);
+        };
+        tick();
+        pollRef.current = setInterval(tick, 2000);
     }, [loadStatus, stopPolling]);
 
     useEffect(() => {
@@ -416,6 +437,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             libraryLabel: scope?.libraryLabel || null,
         });
         startPolling();
+        revealProgress();
         const scopeLabel = scope?.libraryLabel ? ` · ${scope.libraryLabel}` : '';
         try {
             const payload = await apiFetch('/api/upgrader/qc/integrity/scan', {
@@ -433,7 +455,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             if (payload.scanning || payload.started || payload.reason === 'Scan already in progress') {
                 onToast?.(
                     payload.started
-                        ? `${labelForMode(mode)}${scopeLabel} started — this can take a while. Watching progress.`
+                        ? `${labelForMode(mode)}${scopeLabel} started — watch the progress bar below.`
                         : 'A scan is already running — watching progress.',
                     'info',
                 );
@@ -468,7 +490,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 stopPolling();
             }
         }
-    }, [loadStatus, onToast, startPolling, stopPolling]);
+    }, [loadStatus, onToast, revealProgress, startPolling, stopPolling]);
 
     const clearBreaker = async () => {
         setClearingBreaker(true);
@@ -491,17 +513,27 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             onToast?.('A remux/scan pass is already running. Recheck when it finishes.', 'error');
             return;
         }
+        if (pendingRecheckRef.current || activeRechecks.length) {
+            onToast?.('Another remux is already running. Wait for it to finish.', 'error');
+            return;
+        }
+        const job: ActiveRecheck = {
+            key: finding.key,
+            title: finding.title,
+            mode: finding.mode || (String(finding.reason || '').startsWith('trim_') ? 'trim' : 'playability'),
+            startedAt: new Date().toISOString(),
+        };
         onToast?.(
-            `Remuxing ${finding.title}. Large files take a while — this row stays until mkvmerge finishes.`,
+            job.mode === 'trim'
+                ? `Remuxing ${finding.title}. Progress stays pinned until mkvmerge finishes.`
+                : `Rechecking ${finding.title}…`,
             'success',
         );
+        pendingRecheckRef.current = job;
         setRecheckingKey(finding.key);
-        setActiveRechecks((current) => (
-            current.some((job) => job.key === finding.key)
-                ? current
-                : [...current, { key: finding.key, title: finding.title, mode: finding.mode || 'trim', startedAt: new Date().toISOString() }]
-        ));
+        setActiveRechecks([job]);
         startPolling();
+        revealProgress();
         try {
             const payload = await apiFetch('/api/upgrader/qc/integrity/recheck', {
                 method: 'POST',
@@ -515,6 +547,19 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     findings: (current.findings || []).filter((entry) => entry.key !== finding.key),
                     findingCount: Math.max(0, Number(current.findingCount || 1) - 1),
                 } : current);
+                setTrimPreview((current) => {
+                    if (!current?.items?.length) return current;
+                    const items = current.items.filter((row) => row.key !== finding.key);
+                    return {
+                        ...current,
+                        items,
+                        summary: {
+                            ...current.summary,
+                            wouldRemux: Math.max(0, Number(current.summary?.wouldRemux || 1) - 1),
+                            remuxed: Number(current.summary?.remuxed || 0) + 1,
+                        },
+                    };
+                });
             } else {
                 const nextFinding = payload.finding || finding;
                 onToast?.(
@@ -534,8 +579,10 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         } catch (error: any) {
             onToast?.(error?.message || 'Recheck failed', 'error');
         } finally {
+            pendingRecheckRef.current = null;
             setRecheckingKey(null);
-            setActiveRechecks((current) => current.filter((job) => job.key !== finding.key));
+            setActiveRechecks((current) => current.filter((jobRow) => jobRow.key !== finding.key));
+            void loadStatus().catch(() => {});
         }
     };
 
@@ -613,9 +660,56 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         lib.mediaType === 'album' ? visibleStatus.filter((entry) => !entry.videoOnly) : visibleStatus
     );
     const libraries = librariesFromCoverage(coverage);
+    const busy = scanning || activeRechecks.length > 0;
 
     return (
         <div className="space-y-4">
+            {busy && (
+                <div
+                    ref={progressBannerRef}
+                    className="sticky top-0 z-20 rounded-xl border border-plex/50 bg-plex/15 backdrop-blur-sm px-4 py-3 shadow-lg shadow-black/20"
+                >
+                    <div className="flex items-start gap-3">
+                        <Loader2 className="w-4 h-4 text-plex animate-spin shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1 space-y-1">
+                            {scanning && (
+                                <div className="text-sm font-bold text-text">
+                                    Running {labelForMode(progress?.mode)}
+                                    {progress?.libraryLabel ? ` · ${progress.libraryLabel}` : ''}
+                                </div>
+                            )}
+                            {scanning && (
+                                <p className="text-xs text-text/90 truncate">
+                                    {progress?.currentTitle || 'Working…'}
+                                    {progress?.target != null
+                                        ? ` · ${progress.scanned || 0}/${progress.target} probed`
+                                        : ''}
+                                    {progress?.findingCount
+                                        ? ` · ${progress.findingCount} findings so far`
+                                        : ''}
+                                    {progress?.wouldRemux
+                                        ? ` · ${progress.wouldRemux} would remux`
+                                        : ''}
+                                </p>
+                            )}
+                            {activeRechecks.map((job) => (
+                                <div key={job.key} className="text-sm text-text">
+                                    <span className="font-bold text-plex">
+                                        {job.mode === 'trim' ? 'Remuxing' : 'Rechecking'}
+                                    </span>
+                                    {' '}
+                                    {job.title || job.key}
+                                    {job.startedAt
+                                        ? ` · started ${new Date(job.startedAt).toLocaleTimeString()}`
+                                        : ''}
+                                    <span className="text-muted"> — stays until mkvmerge finishes</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className={`${QC_SECTION} space-y-4`}>
                 <div>
                     <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
@@ -631,19 +725,11 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     </h2>
                     <p className="text-xs text-muted mt-1 max-w-2xl">
                         Trim Recheck remuxes that file. Playback/fingerprint Recheck only re-validates; Replace searches a new release.
+                        Progress stays pinned at the top of this panel while a scan or remux runs.
                     </p>
                     {result?.setup && !result.setup.ready && (
                         <p className="text-xs text-amber-200 mt-2">
                             ffmpeg/ffprobe missing in this environment. Install them in the portal image before scanning.
-                        </p>
-                    )}
-                    {scanning && (
-                        <p className="text-xs text-amber-100 mt-2">
-                            Running {labelForMode(progress?.mode)}
-                            {progress?.libraryLabel ? ` · ${progress.libraryLabel}` : ''}
-                            {progress?.currentTitle ? `: ${progress.currentTitle}` : '…'}
-                            {progress?.target != null ? ` · ${progress.scanned || 0}/${progress.target} probed` : ''}
-                            {progress?.findingCount ? ` · ${progress.findingCount} findings so far` : ''}
                         </p>
                     )}
                 </div>
@@ -800,7 +886,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         <p className="text-[11px] text-muted mt-1">
                             {trimPreview.dryRun === false
                                 ? 'Last remux pass (Auto-fix + dry-run off).'
-                                : 'Dry-run report — nothing was rewritten. Last Trim scan only.'}
+                                : 'Dry-run report — nothing was rewritten until you hit Remux on a row.'}
                             {trimPreview.at ? ` · ${new Date(trimPreview.at).toLocaleString()}` : ''}
                         </p>
                     </div>
@@ -826,55 +912,78 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         <p className="text-xs text-emerald-300">Nothing to remux in that pass.</p>
                     )}
                     <div className="space-y-2 max-h-[32rem] overflow-y-auto">
-                        {(trimPreview.items || []).map((row, idx) => (
-                            <div key={row.key || row.filePath || `${row.title || 'row'}-${idx}`} className="rounded-lg border border-border/50 bg-white/[0.02] px-3 py-2">
-                                <div className="text-xs font-semibold text-text truncate">
-                                    {row.title}
-                                    {row.seasonNumber != null && row.episodeNumber != null
-                                        ? ` · S${String(row.seasonNumber).padStart(2, '0')}E${String(row.episodeNumber).padStart(2, '0')}`
-                                        : ''}
-                                    {row.nativeLanguage ? ` · native ${row.nativeLanguage}` : ''}
-                                    {row.nativeSource ? ` (${row.nativeSource})` : ''}
-                                    {row.remuxed ? ' · remuxed' : ''}
-                                </div>
-                                <div className="text-[10px] text-muted mt-1 font-mono break-all">{row.filePath}</div>
-                                {(row.audioDrop?.length || row.subDrop?.length) ? (
-                                    <div className="mt-1.5 space-y-0.5 text-[11px] text-text/90">
-                                        {row.audioKeep?.length ? (
-                                            <div><span className="text-muted">Keep audio</span> · {row.audioKeep.join(' · ')}</div>
-                                        ) : null}
-                                        {row.audioDrop?.length ? (
-                                            <div><span className="text-muted">Drop audio</span> · {row.audioDrop.join(' · ')}</div>
-                                        ) : null}
-                                        {row.subKeep?.length ? (
-                                            <div><span className="text-muted">Keep subs</span> · {row.subKeep.join(' · ')}</div>
-                                        ) : null}
-                                        {row.subDrop?.length ? (
-                                            <div><span className="text-muted">Drop subs</span> · {row.subDrop.join(' · ')}</div>
+                        {(trimPreview.items || []).map((row, idx) => {
+                            const remuxing = !!row.key && (
+                                activeRechecks.some((job) => job.key === row.key)
+                                || recheckingKey === row.key
+                            );
+                            return (
+                                <div key={row.key || row.filePath || `${row.title || 'row'}-${idx}`} className="rounded-lg border border-border/50 bg-white/[0.02] px-3 py-2">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="text-xs font-semibold text-text truncate">
+                                                {row.title}
+                                                {row.seasonNumber != null && row.episodeNumber != null
+                                                    ? ` · S${String(row.seasonNumber).padStart(2, '0')}E${String(row.episodeNumber).padStart(2, '0')}`
+                                                    : ''}
+                                                {row.nativeLanguage ? ` · native ${row.nativeLanguage}` : ''}
+                                                {row.nativeSource ? ` (${row.nativeSource})` : ''}
+                                                {row.remuxed ? ' · remuxed' : ''}
+                                            </div>
+                                            {remuxing && (
+                                                <div className="text-[11px] font-semibold text-plex mt-0.5">
+                                                    Remuxing now — watch the pinned progress bar
+                                                </div>
+                                            )}
+                                            <div className="text-[10px] text-muted mt-1 font-mono break-all">{row.filePath}</div>
+                                            {(row.audioDrop?.length || row.subDrop?.length) ? (
+                                                <div className="mt-1.5 space-y-0.5 text-[11px] text-text/90">
+                                                    {row.audioKeep?.length ? (
+                                                        <div><span className="text-muted">Keep audio</span> · {row.audioKeep.join(' · ')}</div>
+                                                    ) : null}
+                                                    {row.audioDrop?.length ? (
+                                                        <div><span className="text-muted">Drop audio</span> · {row.audioDrop.join(' · ')}</div>
+                                                    ) : null}
+                                                    {row.subKeep?.length ? (
+                                                        <div><span className="text-muted">Keep subs</span> · {row.subKeep.join(' · ')}</div>
+                                                    ) : null}
+                                                    {row.subDrop?.length ? (
+                                                        <div><span className="text-muted">Drop subs</span> · {row.subDrop.join(' · ')}</div>
+                                                    ) : null}
+                                                </div>
+                                            ) : (
+                                                row.detail ? <div className="text-[11px] text-muted mt-1">{row.detail}</div> : null
+                                            )}
+                                        </div>
+                                        {row.key && !row.remuxed ? (
+                                            <button
+                                                type="button"
+                                                className="shrink-0 px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50 inline-flex items-center gap-1"
+                                                disabled={busy || remuxing}
+                                                title="Remux this file for real (same as Recheck on a trim finding)"
+                                                onClick={() => void recheckOne({
+                                                    key: row.key!,
+                                                    title: row.title || 'Unknown',
+                                                    reason: 'trim_pending',
+                                                    mode: 'trim',
+                                                    filePath: row.filePath,
+                                                    seasonNumber: row.seasonNumber,
+                                                    episodeNumber: row.episodeNumber,
+                                                })}
+                                            >
+                                                {remuxing ? <Loader2 className="w-3 h-3 animate-spin text-plex" /> : null}
+                                                {remuxing ? 'Remuxing…' : 'Remux'}
+                                            </button>
                                         ) : null}
                                     </div>
-                                ) : (
-                                    row.detail ? <div className="text-[11px] text-muted mt-1">{row.detail}</div> : null
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            );
+                        })}
                     </div>
                 </section>
             )}
 
             <section className={`${QC_SECTION} space-y-3`}>
-                {activeRechecks.length > 0 && (
-                    <div className="rounded-lg border border-plex/40 bg-plex/10 px-3 py-2 text-xs text-text">
-                        <div className="font-bold text-plex">Remux in progress</div>
-                        {activeRechecks.map((job) => (
-                            <div key={job.key} className="mt-1 text-text/90">
-                                {job.title || job.key}
-                                {job.startedAt ? ` · started ${new Date(job.startedAt).toLocaleTimeString()}` : ''}
-                                {' — finding stays until this finishes.'}
-                            </div>
-                        ))}
-                    </div>
-                )}
                 <div className="flex items-center justify-between gap-2">
                     <h3 className="text-sm font-bold text-text">Findings</h3>
                     <button
@@ -907,7 +1016,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                             <div className="min-w-0">
                                 <div className="text-xs font-semibold text-text truncate">{finding.title}</div>
                                 {remuxing && (
-                                    <div className="text-[11px] font-semibold text-plex mt-0.5">Remuxing now — this can take a while</div>
+                                    <div className="text-[11px] font-semibold text-plex mt-0.5">Remuxing now — pinned progress bar at top</div>
                                 )}
                                 <div className="text-[11px] text-muted mt-0.5">
                                     {[
