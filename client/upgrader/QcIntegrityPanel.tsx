@@ -307,6 +307,7 @@ const librariesFromCoverage = (coverage: IntegrityCoverage | null): LibraryCover
 
 export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = false }) => {
     const [scanning, setScanning] = useState(false);
+    const [forceRecheck, setForceRecheck] = useState(false);
     const [progress, setProgress] = useState<IntegrityProgress | null>(null);
     const [replacingKey, setReplacingKey] = useState<string | null>(null);
     const [snoozingKey, setSnoozingKey] = useState<string | null>(null);
@@ -427,6 +428,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         mode: IntegrityScanMode = 'baseline',
         scope?: { libraryKey?: string; libraryLabel?: string },
     ) => {
+        const force = forceRecheck;
         setScanning(true);
         setProgress({
             scanned: 0,
@@ -439,13 +441,14 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         startPolling();
         revealProgress();
         const scopeLabel = scope?.libraryLabel ? ` · ${scope.libraryLabel}` : '';
+        const forceLabel = force ? ' (force)' : '';
         try {
             const payload = await apiFetch('/api/upgrader/qc/integrity/scan', {
                 method: 'POST',
                 body: JSON.stringify({
                     mode,
                     dryRun: true,
-                    force: false,
+                    force,
                     full: true,
                     libraryKey: scope?.libraryKey || undefined,
                     libraryLabel: scope?.libraryLabel || undefined,
@@ -455,7 +458,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             if (payload.scanning || payload.started || payload.reason === 'Scan already in progress') {
                 onToast?.(
                     payload.started
-                        ? `${labelForMode(mode)}${scopeLabel} started — watch the progress bar below.`
+                        ? `${labelForMode(mode)}${scopeLabel}${forceLabel} started — watch the progress bar below.`
                         : 'A scan is already running — watching progress.',
                     'info',
                 );
@@ -477,7 +480,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 onToast?.(payload.reason || 'Integrity scan did not run.', 'error');
             } else {
                 onToast?.(
-                    `${labelForMode(mode)}${scopeLabel}: ${payload.findingCount || 0} findings · ${payload.scanned || 0} probed · ${payload.skippedPlaying || 0} playing skip.`,
+                    `${labelForMode(mode)}${scopeLabel}${forceLabel}: ${payload.findingCount || 0} findings · ${payload.scanned || 0} probed · ${payload.skippedPlaying || 0} playing skip.`,
                     'success',
                 );
             }
@@ -490,7 +493,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 stopPolling();
             }
         }
-    }, [loadStatus, onToast, revealProgress, startPolling, stopPolling]);
+    }, [forceRecheck, loadStatus, onToast, revealProgress, startPolling, stopPolling]);
 
     const clearBreaker = async () => {
         setClearingBreaker(true);
@@ -718,6 +721,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                             Import/upgrade webhooks validate new files (playback → optional trim → playback → fingerprint → optional full hash).
                             Nightly automation trims dirty MKVs then fingerprints the library; fingerprint mismatches escalate to playback → trim → hash.
                             Trim coverage is stored like playback/fingerprint (size + mtime + keep-rule profile) so already-clean files are skipped.
+                            Enable Force recheck to ignore those stamps for the next library scan.
                             Trim dry-run writes a keep/drop preview (not findings). Remux only after you uncheck Dry-run only and turn on Auto-fix.
                             Native audio is one production language from TMDb/TVDB/IMDb ids — missing native skips remux and alerts.
                             Other buttons are dry-run until you Replace a finding. Files playing on Plex are skipped.
@@ -732,6 +736,28 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                             ffmpeg/ffprobe missing in this environment. Install them in the portal image before scanning.
                         </p>
                     )}
+                    <label className="mt-3 flex items-start gap-2 max-w-2xl cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            className="mt-0.5 rounded border-border/60 text-plex focus:ring-plex/40"
+                            checked={forceRecheck}
+                            disabled={scanning}
+                            onChange={(event) => setForceRecheck(event.target.checked)}
+                        />
+                        <span className="min-w-0">
+                            <span className="text-xs font-bold text-text inline-flex items-center gap-1">
+                                Force recheck
+                                <SettingHint>
+                                    Ignores cached playback / trim / baseline stamps so the next library or
+                                    all-libraries button probes every file again. Already-clean MKVs still
+                                    will not remux; they are re-evaluated. Fingerprint modes always rehash.
+                                </SettingHint>
+                            </span>
+                            <span className="block text-[11px] text-muted mt-0.5 leading-snug">
+                                Applies to the scan buttons below until you turn it off. Slow on large libraries.
+                            </span>
+                        </span>
+                    </label>
                 </div>
 
                 <div>
