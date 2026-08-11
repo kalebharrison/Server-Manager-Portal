@@ -96,6 +96,9 @@ export const IntegritySchedulePolicyCard: React.FC<Props> = ({
         [integrityXxhashEnabled],
     );
 
+    const checkColCount = visibleChecks.length;
+    const scheduleColCount = SCHEDULES.length * checkColCount;
+
     const setCell = (
         libraryKey: string,
         schedule: IntegritySchedule,
@@ -135,26 +138,41 @@ export const IntegritySchedulePolicyCard: React.FC<Props> = ({
             )}
             {libraries.length > 0 && (
                 <div className="overflow-x-auto">
-                    <table className="min-w-full text-[11px] border-collapse">
+                    <table className="w-full table-fixed text-[11px] border-collapse">
+                        <colgroup>
+                            <col className="w-[9.5rem]" />
+                            {Array.from({ length: scheduleColCount }, (_, index) => (
+                                <col key={`col-${index}`} className="w-[4.25rem]" />
+                            ))}
+                        </colgroup>
                         <thead>
-                            <tr className="text-left text-muted">
-                                <th className="py-1.5 pr-3 font-semibold">Library</th>
-                                {SCHEDULES.map((schedule) => (
+                            <tr className="text-muted">
+                                <th className="py-1.5 pr-2 text-left font-semibold">Library</th>
+                                {SCHEDULES.map((schedule, scheduleIndex) => (
                                     <th
                                         key={schedule.key}
-                                        className="py-1.5 px-2 font-semibold"
-                                        colSpan={visibleChecks.length}
+                                        className={[
+                                            'py-1.5 font-semibold text-center',
+                                            scheduleIndex > 0 ? 'border-l border-border/50' : '',
+                                        ].join(' ')}
+                                        colSpan={checkColCount}
                                     >
                                         {schedule.label}
                                     </th>
                                 ))}
                             </tr>
-                            <tr className="text-left text-muted/80">
-                                <th className="py-1 pr-3 font-medium" />
-                                {SCHEDULES.map((schedule) => (
+                            <tr className="text-muted/80">
+                                <th className="py-1 pr-2" />
+                                {SCHEDULES.map((schedule, scheduleIndex) => (
                                     <React.Fragment key={`${schedule.key}-hdr`}>
-                                        {visibleChecks.map((check) => (
-                                            <th key={`${schedule.key}-${check.key}`} className="py-1 px-1 font-medium whitespace-nowrap">
+                                        {visibleChecks.map((check, checkIndex) => (
+                                            <th
+                                                key={`${schedule.key}-${check.key}`}
+                                                className={[
+                                                    'py-1 px-0.5 font-medium text-center whitespace-nowrap',
+                                                    scheduleIndex > 0 && checkIndex === 0 ? 'border-l border-border/50' : '',
+                                                ].join(' ')}
+                                            >
                                                 {check.label}
                                             </th>
                                         ))}
@@ -165,19 +183,27 @@ export const IntegritySchedulePolicyCard: React.FC<Props> = ({
                         <tbody>
                             {libraries.map((lib) => (
                                 <tr key={lib.key} className="border-t border-border/40">
-                                    <td className="py-2 pr-3 font-semibold text-text whitespace-nowrap">{lib.label}</td>
-                                    {SCHEDULES.map((schedule) => (
+                                    <td className="py-2 pr-2 font-semibold text-text whitespace-nowrap truncate" title={lib.label}>
+                                        {lib.label}
+                                    </td>
+                                    {SCHEDULES.map((schedule, scheduleIndex) => (
                                         <React.Fragment key={`${lib.key}-${schedule.key}`}>
-                                            {visibleChecks.map((check) => {
+                                            {visibleChecks.map((check, checkIndex) => {
                                                 const notApplicable = check.videoOnly && lib.mediaType === 'album';
                                                 return (
-                                                    <td key={`${lib.key}-${schedule.key}-${check.key}`} className="py-2 px-1">
+                                                    <td
+                                                        key={`${lib.key}-${schedule.key}-${check.key}`}
+                                                        className={[
+                                                            'py-2 px-0.5 text-center align-middle',
+                                                            scheduleIndex > 0 && checkIndex === 0 ? 'border-l border-border/50' : '',
+                                                        ].join(' ')}
+                                                    >
                                                         {notApplicable ? (
                                                             <span className="text-muted">—</span>
                                                         ) : (
                                                             <input
                                                                 type="checkbox"
-                                                                className="h-3.5 w-3.5 accent-plex"
+                                                                className="h-3.5 w-3.5 accent-plex align-middle"
                                                                 disabled={!enabled || !integrityEnabled}
                                                                 checked={isAllowed(policy, lib.key, schedule.key, check.key)}
                                                                 onChange={(event) => setCell(
