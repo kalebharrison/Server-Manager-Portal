@@ -129,6 +129,7 @@ export const createInitialSettingsFormValues = (): SettingsFormValues => ({
     qcIntegrityBreakerMaxPercent: 10,
     qcIntegrityPauseWhenSessions: 0,
     qcIntegrityNightlyHour: 2,
+    qcIntegritySchedulePolicy: {},
     qcIntegrityDiscordDigestEnabled: false,
     qcIntegrityDecodeWindowSec: 10,
     qcIntegrityDecodeTimeoutMs: 90000,

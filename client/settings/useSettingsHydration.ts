@@ -151,6 +151,7 @@ export const useSettingsHydration = ({
             setQcIntegrityBreakerMaxPercent: set('qcIntegrityBreakerMaxPercent'),
             setQcIntegrityPauseWhenSessions: set('qcIntegrityPauseWhenSessions'),
             setQcIntegrityNightlyHour: set('qcIntegrityNightlyHour'),
+            setQcIntegritySchedulePolicy: set('qcIntegritySchedulePolicy'),
             setQcIntegrityDiscordDigestEnabled: set('qcIntegrityDiscordDigestEnabled'),
             setQcIntegrityDecodeWindowSec: set('qcIntegrityDecodeWindowSec'),
             setQcIntegrityDecodeTimeoutMs: set('qcIntegrityDecodeTimeoutMs'),

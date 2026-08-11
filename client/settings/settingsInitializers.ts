@@ -133,6 +133,10 @@ type SettingsHydrationSetters = {
     setQcIntegrityBreakerMaxPercent: (value: number) => void;
     setQcIntegrityPauseWhenSessions: (value: number) => void;
     setQcIntegrityNightlyHour: (value: number) => void;
+    setQcIntegritySchedulePolicy: (value: Record<string, {
+        import?: Partial<Record<'playability' | 'trim' | 'imohash' | 'xxhash', boolean>>;
+        nightly?: Partial<Record<'playability' | 'trim' | 'imohash' | 'xxhash', boolean>>;
+    }>) => void;
     setQcIntegrityDiscordDigestEnabled: (value: boolean) => void;
     setQcIntegrityDecodeWindowSec: (value: number) => void;
     setQcIntegrityDecodeTimeoutMs: (value: number) => void;
@@ -307,6 +311,13 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityBreakerMaxPercent(Math.max(0.1, Number(initialSettings.qcIntegrityBreakerMaxPercent) || 10));
     setters.setQcIntegrityPauseWhenSessions(Math.max(0, Number(initialSettings.qcIntegrityPauseWhenSessions ?? 0) || 0));
     setters.setQcIntegrityNightlyHour(Math.max(0, Math.min(23, Number(initialSettings.qcIntegrityNightlyHour ?? 2) || 2)));
+    setters.setQcIntegritySchedulePolicy(
+        initialSettings.qcIntegritySchedulePolicy
+        && typeof initialSettings.qcIntegritySchedulePolicy === 'object'
+        && !Array.isArray(initialSettings.qcIntegritySchedulePolicy)
+            ? initialSettings.qcIntegritySchedulePolicy
+            : {},
+    );
     setters.setQcIntegrityDiscordDigestEnabled(!!initialSettings.qcIntegrityDiscordDigestEnabled);
     setters.setQcIntegrityDecodeWindowSec(Math.max(1, Number(initialSettings.qcIntegrityDecodeWindowSec) || 10));
     setters.setQcIntegrityDecodeTimeoutMs(Math.max(1000, Number(initialSettings.qcIntegrityDecodeTimeoutMs) || 90000));

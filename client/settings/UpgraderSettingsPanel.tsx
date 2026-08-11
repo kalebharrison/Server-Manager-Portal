@@ -6,6 +6,10 @@ import {
     HUNT_PRESET_LABELS,
     type QcPresetId,
 } from './qcPresets';
+import {
+    IntegritySchedulePolicyCard,
+    type IntegritySchedulePolicy,
+} from './IntegritySchedulePolicyCard';
 
 const PRESET_IDS: QcPresetId[] = ['relaxed', 'balanced', 'aggressive', 'custom'];
 
@@ -57,6 +61,7 @@ type Props = {
     integrityBreakerMaxPercent: number;
     integrityPauseWhenSessions: number;
     integrityNightlyHour: number;
+    integritySchedulePolicy: IntegritySchedulePolicy;
     integrityDecodeWindowSec: number;
     integrityDecodeTimeoutMs: number;
     integrityDecodeRetries: number;
@@ -105,6 +110,7 @@ type Props = {
     onIntegrityBreakerMaxPercentChange: (value: number) => void;
     onIntegrityPauseWhenSessionsChange: (value: number) => void;
     onIntegrityNightlyHourChange: (value: number) => void;
+    onIntegritySchedulePolicyChange: (value: IntegritySchedulePolicy) => void;
     onIntegrityDecodeWindowSecChange: (value: number) => void;
     onIntegrityDecodeTimeoutMsChange: (value: number) => void;
     onIntegrityDecodeRetriesChange: (value: number) => void;
@@ -157,6 +163,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     integrityBreakerMaxPercent,
     integrityPauseWhenSessions,
     integrityNightlyHour,
+    integritySchedulePolicy,
     integrityDecodeWindowSec,
     integrityDecodeTimeoutMs,
     integrityDecodeRetries,
@@ -205,6 +212,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onIntegrityBreakerMaxPercentChange,
     onIntegrityPauseWhenSessionsChange,
     onIntegrityNightlyHourChange,
+    onIntegritySchedulePolicyChange,
     onIntegrityDecodeWindowSecChange,
     onIntegrityDecodeTimeoutMsChange,
     onIntegrityDecodeRetriesChange,
@@ -610,6 +618,14 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                 />
                             </label>
                         </div>
+
+                        <IntegritySchedulePolicyCard
+                            enabled={enabled}
+                            integrityEnabled={integrityEnabled}
+                            integrityXxhashEnabled={integrityXxhashEnabled}
+                            policy={integritySchedulePolicy || {}}
+                            onChange={onIntegritySchedulePolicyChange}
+                        />
 
                         <div className="rounded-xl border border-border/60 bg-white/[0.02] p-5 space-y-4">
                             <h4 className="text-sm font-bold uppercase tracking-wide text-muted">Options</h4>

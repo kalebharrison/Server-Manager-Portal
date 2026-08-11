@@ -128,6 +128,10 @@ type SettingsSavePayloadInput = {
     qcIntegrityBreakerMaxPercent: number;
     qcIntegrityPauseWhenSessions: number;
     qcIntegrityNightlyHour: number;
+    qcIntegritySchedulePolicy: Record<string, {
+        import?: Partial<Record<'playability' | 'trim' | 'imohash' | 'xxhash', boolean>>;
+        nightly?: Partial<Record<'playability' | 'trim' | 'imohash' | 'xxhash', boolean>>;
+    }>;
     qcIntegrityDiscordDigestEnabled: boolean;
     qcIntegrityDecodeWindowSec: number;
     qcIntegrityDecodeTimeoutMs: number;

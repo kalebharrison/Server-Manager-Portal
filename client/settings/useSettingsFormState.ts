@@ -141,6 +141,7 @@ export const useSettingsFormState = () => {
         qcIntegrityBreakerMaxPercent: values.qcIntegrityBreakerMaxPercent,
         qcIntegrityPauseWhenSessions: values.qcIntegrityPauseWhenSessions,
         qcIntegrityNightlyHour: values.qcIntegrityNightlyHour,
+        qcIntegritySchedulePolicy: values.qcIntegritySchedulePolicy,
         qcIntegrityDiscordDigestEnabled: values.qcIntegrityDiscordDigestEnabled,
         qcIntegrityDecodeWindowSec: values.qcIntegrityDecodeWindowSec,
         qcIntegrityDecodeTimeoutMs: values.qcIntegrityDecodeTimeoutMs,
