@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlaskConical, Loader2, RefreshCw, ShieldAlert } from 'lucide-react';
+import { FlaskConical, Loader2, RefreshCw, ShieldAlert, Square } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { SettingHint } from '../settings/SettingHint';
@@ -163,6 +163,7 @@ type IntegrityStatus = {
         passed?: number;
         findingCount?: number;
         wouldRemux?: number;
+        cancelled?: boolean;
         libraryKey?: string | null;
         findings?: IntegrityFinding[];
     } | null;
@@ -308,6 +309,7 @@ const librariesFromCoverage = (coverage: IntegrityCoverage | null): LibraryCover
 export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = false }) => {
     const [scanning, setScanning] = useState(false);
     const [forceRecheck, setForceRecheck] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
     const [progress, setProgress] = useState<IntegrityProgress | null>(null);
     const [replacingKey, setReplacingKey] = useState<string | null>(null);
     const [snoozingKey, setSnoozingKey] = useState<string | null>(null);
@@ -347,10 +349,12 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             const last = status.lastScan;
             const wouldRemux = last.wouldRemux ?? status.trimPreview?.summary?.wouldRemux ?? 0;
             onToast?.(
-                last.mode === 'trim'
-                    ? `Trim preview: ${wouldRemux} would remux · ${last.scanned || 0} probed · ${last.skipped || 0} skipped.`
-                    : `${labelForMode(last.mode)} done: ${last.findingCount || 0} findings · ${last.scanned || 0} probed · ${last.skippedPlaying || 0} playing skip.`,
-                'success',
+                last.cancelled
+                    ? `${labelForMode(last.mode)} cancelled: ${last.scanned || 0} probed before stop.`
+                    : last.mode === 'trim'
+                        ? `Trim preview: ${wouldRemux} would remux · ${last.scanned || 0} probed · ${last.skipped || 0} skipped.`
+                        : `${labelForMode(last.mode)} done: ${last.findingCount || 0} findings · ${last.scanned || 0} probed · ${last.skippedPlaying || 0} playing skip.`,
+                last.cancelled ? 'info' : 'success',
             );
             setResult({
                 ran: true,
@@ -368,6 +372,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         }
         wasScanningRef.current = nowScanning;
         setScanning(nowScanning);
+        if (!nowScanning) setCancelling(false);
         setProgress(status.progress || null);
         setCoverage(status.coverage || null);
         setBreaker(status.breaker || null);
@@ -494,6 +499,22 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             }
         }
     }, [forceRecheck, loadStatus, onToast, revealProgress, startPolling, stopPolling]);
+
+    const cancelScan = useCallback(async () => {
+        if (!scanning || cancelling) return;
+        setCancelling(true);
+        try {
+            await apiFetch('/api/upgrader/qc/integrity/scan/cancel', {
+                method: 'POST',
+                body: JSON.stringify({}),
+            });
+            onToast?.('Stopping scan after the current file…', 'info');
+            startPolling();
+        } catch (error: any) {
+            setCancelling(false);
+            onToast?.(error?.message || 'Failed to cancel scan', 'error');
+        }
+    }, [cancelling, onToast, scanning, startPolling]);
 
     const clearBreaker = async () => {
         setClearingBreaker(true);
@@ -677,7 +698,9 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                         <div className="min-w-0 flex-1 space-y-1">
                             {scanning && (
                                 <div className="text-sm font-bold text-text">
-                                    Running {labelForMode(progress?.mode)}
+                                    {cancelling || progress?.currentTitle === 'Cancelling…'
+                                        ? 'Cancelling'
+                                        : `Running ${labelForMode(progress?.mode)}`}
                                     {progress?.libraryLabel ? ` · ${progress.libraryLabel}` : ''}
                                 </div>
                             )}
@@ -709,6 +732,18 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                 </div>
                             ))}
                         </div>
+                        {scanning && (
+                            <button
+                                type="button"
+                                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border/70 bg-background/40 text-[11px] font-bold text-text hover:border-red-400/50 hover:text-red-200 disabled:opacity-50"
+                                disabled={cancelling}
+                                onClick={() => void cancelScan()}
+                                title="Stop after the current file finishes"
+                            >
+                                <Square className="w-3 h-3 fill-current" />
+                                {cancelling ? 'Stopping…' : 'Stop'}
+                            </button>
+                        )}
                     </div>
                 </div>
             )}

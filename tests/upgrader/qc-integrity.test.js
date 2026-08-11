@@ -1936,3 +1936,79 @@ test('baselineImport refreshes Plex path after successful pipeline', async () =>
     assert.ok(plexCalls.some((url) => url.includes('/library/sections/3/refresh?path=')));
     assert.ok(plexCalls.some((url) => decodeURIComponent(url).includes('/movies/Plex Refresh (2024)')));
 });
+
+test('cancelScanIntegrity stops a running full scan', async () => {
+    let prefs = {};
+    let cache = { entries: {} };
+    let started = 0;
+    let finished = 0;
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            generatedAt: '2026-08-11T00:00:00.000Z',
+            items: Array.from({ length: 8 }, (_, i) => ({
+                ratingKey: `radarr:r1:${i + 1}`,
+                title: `Film ${i + 1}`,
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: i + 1,
+                movieFileId: i + 1,
+                filePath: `/movies/Film${i + 1}.mkv`,
+                libraryKey: 'radarr:r1:movies',
+                libraryName: 'Movies',
+            })),
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        imohashImpl: async (filePath) => {
+            started += 1;
+            await new Promise((resolve) => setTimeout(resolve, 40));
+            finished += 1;
+            return { ok: true, imohash: `imo:${filePath}` };
+        },
+        statImpl: async () => ({ ok: true, size: 10, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const cfg = {
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityConcurrency: 1,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    };
+
+    const startedScan = integrity.beginScanIntegrity(cfg, {
+        dryRun: true,
+        force: true,
+        full: true,
+        mode: 'imohash',
+    });
+    assert.equal(startedScan.started, true);
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const cancel = integrity.cancelScanIntegrity();
+    assert.equal(cancel.cancelled, true);
+
+    for (let i = 0; i < 50; i += 1) {
+        if (!integrity.scanning) break;
+        await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+    assert.equal(integrity.scanning, false);
+    assert.equal(prefs.integrityLastScan?.cancelled, true);
+    assert.ok(finished < 8, `expected partial finish, got ${finished}`);
+    assert.ok(started >= 1);
+});
