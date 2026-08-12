@@ -19,6 +19,21 @@ import {
     parseRuntimeToSec,
 } from '../../lib/upgrader/qc-integrity-runtime.js';
 
+
+/** Identity maps so unit tests can use /movies|/tv|/music without a real /media jail. */
+const TEST_PATH_MAPS = [
+    { from: '/movies', to: '/movies' },
+    { from: '/tv', to: '/tv' },
+    { from: '/music', to: '/music' },
+    { from: '/anime', to: '/anime' },
+    { from: '/media', to: '/media' },
+];
+
+const withTestMaps = (config = {}) => ({
+    ...config,
+    qcIntegrityPathMaps: config.qcIntegrityPathMaps || TEST_PATH_MAPS,
+});
+
 test('mapArrPath prefers longest Arr prefix', () => {
     const mapped = mapArrPath('/movies/4k/Film.mkv', [
         { from: '/movies', to: '/media/movies' },
@@ -63,11 +78,14 @@ test('assertSafeMediaPath rejects paths outside configured map roots', async () 
     assert.equal(result.reason, 'unsafe_path');
 });
 
-test('assertSafeMediaPath allows absolute paths when no maps configured', async () => {
+test('assertSafeMediaPath confines to /media when no maps configured', async () => {
     const identityRealpath = async (target) => target;
-    const result = await assertSafeMediaPath('/movies/Film.mkv', [], { realpathImpl: identityRealpath });
-    assert.equal(result.ok, true);
-    assert.equal(result.path, '/movies/Film.mkv');
+    const outside = await assertSafeMediaPath('/movies/Film.mkv', [], { realpathImpl: identityRealpath });
+    assert.equal(outside.ok, false);
+    assert.equal(outside.reason, 'unsafe_path');
+    const inside = await assertSafeMediaPath('/media/movies/Film.mkv', [], { realpathImpl: identityRealpath });
+    assert.equal(inside.ok, true);
+    assert.equal(inside.path, '/media/movies/Film.mkv');
 });
 
 test('validateCandidate rejects unsafe mapped paths before stat', async () => {
@@ -327,7 +345,7 @@ test('scanIntegrity dry-run does not delete Arr files', async () => {
         },
     });
 
-    const result = await integrity.scanIntegrity({
+    const result = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcIntegrityRequireAudio: true,
@@ -340,7 +358,7 @@ test('scanIntegrity dry-run does not delete Arr files', async () => {
             apiKey: 'x',
             enabled: true,
         }],
-    }, { dryRun: true, replaceFindings: false, force: true, mode: 'playability' });
+    }), { dryRun: true, replaceFindings: false, force: true, mode: 'playability' });
 
     assert.equal(result.ran, true);
     assert.equal(result.findingCount, 1);
@@ -426,7 +444,7 @@ test('scanIntegrity and getStatus prune findings for replaced Arr file ids', asy
             { key: 'radarr:r1:1:file:99', reason: 'missing_file', title: 'Current' },
         ],
     };
-    const scan = await integrity.scanIntegrity({
+    const scan = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcIntegrityMaxPerCycle: 10,
@@ -438,7 +456,7 @@ test('scanIntegrity and getStatus prune findings for replaced Arr file ids', asy
             apiKey: 'x',
             enabled: true,
         }],
-    }, { dryRun: true, force: true, mode: 'playability' });
+    }), { dryRun: true, force: true, mode: 'playability' });
 
     assert.equal(scan.ran, true);
     assert.equal(scan.findingCount, 0);
@@ -497,7 +515,7 @@ test('scanIntegrity skips missing_file when Arr file id is already gone', async 
         },
     });
 
-    const scan = await integrity.scanIntegrity({
+    const scan = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcIntegrityMaxPerCycle: 10,
@@ -509,7 +527,7 @@ test('scanIntegrity skips missing_file when Arr file id is already gone', async 
             apiKey: 'x',
             enabled: true,
         }],
-    }, { dryRun: true, force: true, mode: 'imohash' });
+    }), { dryRun: true, force: true, mode: 'imohash' });
 
     assert.equal(scan.ran, true);
     assert.equal(scan.findingCount, 0);
@@ -568,14 +586,14 @@ test('imohash mismatch does not blocklist', async () => {
         },
     });
 
-    const result = await integrity.scanIntegrity({
+    const result = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcIntegrityMaxPerCycle: 10,
         arrInstances: [{
             id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
         }],
-    }, { dryRun: true, force: true, mode: 'imohash' });
+    }), { dryRun: true, force: true, mode: 'imohash' });
 
     assert.equal(result.ran, true);
     assert.equal(result.findingCount, 1);
@@ -763,14 +781,14 @@ test('plex playing paths are skipped', async () => {
         imohashImpl: async () => ({ ok: true, imohash: 'imo:x' }),
     });
 
-    const result = await integrity.scanIntegrity({
+    const result = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcIntegrityMaxPerCycle: 10,
         arrInstances: [{
             id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
         }],
-    }, { dryRun: true, force: true, mode: 'imohash' });
+    }), { dryRun: true, force: true, mode: 'imohash' });
 
     assert.equal(result.ran, true);
     assert.equal(result.skippedPlaying >= 1, true);
@@ -821,14 +839,14 @@ test('full imohash pass ignores maxPerCycle batch cap', async () => {
         },
     });
 
-    const result = await integrity.scanIntegrity({
+    const result = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcIntegrityMaxPerCycle: 2,
         arrInstances: [{
             id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
         }],
-    }, { dryRun: true, force: true, mode: 'baseline', full: true });
+    }), { dryRun: true, force: true, mode: 'baseline', full: true });
 
     assert.equal(result.ran, true);
     assert.equal(result.full, true);
@@ -1378,7 +1396,7 @@ test('scanIntegrity libraryKey only probes that library and keeps other cache', 
         },
     });
 
-    const result = await integrity.scanIntegrity({
+    const result = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcIntegrityPathMaps: [
@@ -1388,7 +1406,7 @@ test('scanIntegrity libraryKey only probes that library and keeps other cache', 
         arrInstances: [{
             id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
         }],
-    }, {
+    }), {
         dryRun: true,
         force: true,
         full: true,
@@ -1657,7 +1675,7 @@ test('trim dry-run scan writes a keep/drop preview, not findings', async () => {
         },
     });
 
-    const result = await integrity.scanIntegrity({
+    const result = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcTrimEnabled: true,
@@ -1666,7 +1684,7 @@ test('trim dry-run scan writes a keep/drop preview, not findings', async () => {
         arrInstances: [{
             id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
         }],
-    }, { dryRun: true, force: true, full: true, mode: 'trim' });
+    }), { dryRun: true, force: true, full: true, mode: 'trim' });
 
     assert.equal(result.ran, true);
     assert.equal(result.findingCount, 0);
@@ -1720,7 +1738,7 @@ test('trim scan alerts and skips remux when original language is unknown', async
         },
     });
 
-    const result = await integrity.scanIntegrity({
+    const result = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcTrimEnabled: true,
@@ -1729,7 +1747,7 @@ test('trim scan alerts and skips remux when original language is unknown', async
         arrInstances: [{
             id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
         }],
-    }, { dryRun: true, force: true, full: true, mode: 'trim' });
+    }), { dryRun: true, force: true, full: true, mode: 'trim' });
 
     assert.equal(result.ran, true);
     assert.equal(result.wouldRemux, 0);
@@ -1841,7 +1859,7 @@ test('trim scan ignores audio tracks', async () => {
         execImpl: async (bin) => ({ ok: true, code: 0, timedOut: false, stdout: `${bin} ok`, stderr: '' }),
     });
 
-    const result = await integrity.scanIntegrity({
+    const result = await integrity.scanIntegrity(withTestMaps({
         upgraderEnabled: true,
         qcIntegrityEnabled: true,
         qcTrimEnabled: true,
@@ -1851,7 +1869,7 @@ test('trim scan ignores audio tracks', async () => {
         arrInstances: [{
             id: 'l1', type: 'lidarr', name: 'Lidarr', url: 'http://lidarr.local', apiKey: 'x', enabled: true,
         }],
-    }, { dryRun: true, force: true, full: true, mode: 'trim' });
+    }), { dryRun: true, force: true, full: true, mode: 'trim' });
 
     assert.equal(result.ran, true);
     assert.equal(result.findingCount, 0);

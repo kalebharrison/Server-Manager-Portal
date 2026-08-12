@@ -178,6 +178,21 @@ test('resolveTrimConfig only rewrites with auto-fix and dry-run off', () => {
         qcTrimEnabled: true,
         qcTrimDryRun: true,
     }, {}, { forceRewrite: true }).dryRun, false);
+    assert.equal(resolveTrimConfig({
+        qcTrimEnabled: true,
+        qcIntegrityAutomationEnabled: true,
+        qcTrimDryRun: false,
+    }, {}, { forceDryRun: true }).dryRun, true);
+    assert.equal(resolveTrimConfig({
+        qcTrimEnabled: true,
+        qcTrimAllowRemux: false,
+        qcIntegrityAutomationEnabled: true,
+        qcTrimDryRun: false,
+    }).dryRun, true);
+    assert.equal(resolveTrimConfig({
+        qcTrimEnabled: true,
+        qcTrimAllowRemux: true,
+    }).dryRun, false);
 });
 
 test('isCorruptMatroskaProbe catches EBML damage and repeated duplicates', async () => {

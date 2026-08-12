@@ -36,6 +36,7 @@ type IntegrityProgress = {
     wouldRemux?: number;
     currentTitle?: string | null;
     mode?: string | null;
+    audit?: boolean;
     libraryKey?: string | null;
     libraryLabel?: string | null;
 };
@@ -71,9 +72,20 @@ type IntegrityBreaker = {
 };
 
 type IntegritySettings = {
+    enabled?: boolean;
+    automationEnabled?: boolean;
     xxhashEnabled?: boolean;
     trimEnabled?: boolean;
     includeMusic?: boolean;
+    concurrency?: number;
+    playabilityConcurrency?: number;
+    trimConcurrency?: number;
+    nightlyHour?: number;
+    maxPerCycle?: number;
+    breakerMaxFindings?: number;
+    breakerMaxPercent?: number;
+    pauseWhenSessions?: number | null;
+    snoozeDefaultHours?: number;
 };
 
 type IntegrityScanMode = 'baseline' | 'imohash' | 'playability' | 'xxhash' | 'trim';
@@ -98,7 +110,9 @@ type TrimPreviewItem = {
 type TrimPreview = {
     at?: string;
     libraryKey?: string | null;
+    libraryLabel?: string | null;
     dryRun?: boolean;
+    audit?: boolean;
     summary?: {
         scanned?: number;
         skipped?: number;
@@ -153,6 +167,8 @@ type IntegrityStatus = {
     findings?: IntegrityFinding[];
     activeRechecks?: ActiveRecheck[];
     trimPreview?: TrimPreview | null;
+    trimAudit?: TrimPreview | null;
+    snoozes?: Array<{ key: string; until: string }>;
     settings?: IntegritySettings | null;
     lastScan?: {
         at?: string;
@@ -262,6 +278,11 @@ const labelForMode = (mode?: string | null) => {
     return MODE_LABELS[mode as IntegrityScanMode] || mode;
 };
 
+/** Trim runs with `audit: true` are dry-run-forced probes, not the normal Media trim pass. */
+const progressModeLabel = (mode?: string | null, audit?: boolean) => (
+    mode === 'trim' && audit ? 'Trim audit' : labelForMode(mode)
+);
+
 const formatPair = (done?: number, total?: number) => {
     const d = Number(done || 0);
     const t = Number(total || 0);
@@ -319,9 +340,11 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const [coverage, setCoverage] = useState<IntegrityCoverage | null>(null);
     const [breaker, setBreaker] = useState<IntegrityBreaker | null>(null);
     const [xxhashEnabled, setXxhashEnabled] = useState(false);
+    const [snoozeHours, setSnoozeHours] = useState(24);
     const [findings, setFindings] = useState<IntegrityFinding[]>([]);
     const [activeRechecks, setActiveRechecks] = useState<ActiveRecheck[]>([]);
     const [trimPreview, setTrimPreview] = useState<TrimPreview | null>(null);
+    const [snoozes, setSnoozes] = useState<Array<{ key: string; until: string }>>([]);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const wasScanningRef = useRef(false);
     const pendingRecheckRef = useRef<ActiveRecheck | null>(null);
@@ -377,6 +400,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         setCoverage(status.coverage || null);
         setBreaker(status.breaker || null);
         setXxhashEnabled(!!status.settings?.xxhashEnabled);
+        setSnoozeHours(Math.max(1, Number(status.settings?.snoozeDefaultHours) || 24));
         const serverRechecks = Array.isArray(status.activeRechecks) ? status.activeRechecks : [];
         const pending = pendingRecheckRef.current;
         // Keep optimistic remux row until the server advertises it (or the HTTP finishes).
@@ -388,7 +412,9 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         if (Array.isArray(status.findings)) {
             setFindings(status.findings);
         }
-        if (status.trimPreview) setTrimPreview(status.trimPreview);
+        if (status.trimAudit) setTrimPreview(status.trimAudit);
+        else if (status.trimPreview) setTrimPreview(status.trimPreview);
+        if (Array.isArray(status.snoozes)) setSnoozes(status.snoozes);
         if (!nowScanning && status.lastScan) {
             setResult((current) => current?.ran ? current : {
                 ran: true,
@@ -432,14 +458,18 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     const runScan = useCallback(async (
         mode: IntegrityScanMode = 'baseline',
         scope?: { libraryKey?: string; libraryLabel?: string },
+        opts?: { audit?: boolean },
     ) => {
-        const force = forceRecheck;
+        const audit = !!opts?.audit;
+        // Audit is a forced dry-run probe — always rescans regardless of the Force recheck checkbox.
+        const force = audit ? true : forceRecheck;
         setScanning(true);
         setProgress({
             scanned: 0,
             target: 0,
             currentTitle: 'Starting…',
             mode,
+            audit,
             libraryKey: scope?.libraryKey || null,
             libraryLabel: scope?.libraryLabel || null,
         });
@@ -447,6 +477,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         revealProgress();
         const scopeLabel = scope?.libraryLabel ? ` · ${scope.libraryLabel}` : '';
         const forceLabel = force ? ' (force)' : '';
+        const modeLabel = progressModeLabel(mode, audit);
         try {
             const payload = await apiFetch('/api/upgrader/qc/integrity/scan', {
                 method: 'POST',
@@ -455,6 +486,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     dryRun: true,
                     force,
                     full: true,
+                    audit: audit || undefined,
                     libraryKey: scope?.libraryKey || undefined,
                     libraryLabel: scope?.libraryLabel || undefined,
                 }),
@@ -463,12 +495,13 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             if (payload.scanning || payload.started || payload.reason === 'Scan already in progress') {
                 onToast?.(
                     payload.started
-                        ? `${labelForMode(mode)}${scopeLabel}${forceLabel} started — watch the progress bar below.`
+                        ? `${modeLabel}${scopeLabel}${forceLabel} started — watch the progress bar below.`
                         : 'A scan is already running — watching progress.',
                     'info',
                 );
                 setProgress(payload.progress || {
                     mode,
+                    audit,
                     currentTitle: 'Running…',
                     libraryKey: scope?.libraryKey || null,
                     libraryLabel: scope?.libraryLabel || null,
@@ -485,7 +518,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 onToast?.(payload.reason || 'Integrity scan did not run.', 'error');
             } else {
                 onToast?.(
-                    `${labelForMode(mode)}${scopeLabel}${forceLabel}: ${payload.findingCount || 0} findings · ${payload.scanned || 0} probed · ${payload.skippedPlaying || 0} playing skip.`,
+                    `${modeLabel}${scopeLabel}${forceLabel}: ${payload.findingCount || 0} findings · ${payload.scanned || 0} probed · ${payload.skippedPlaying || 0} playing skip.`,
                     'success',
                 );
             }
@@ -631,24 +664,63 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
         }
     };
 
+    const downloadTrimAudit = async (format: 'json' | 'csv') => {
+        const params = new URLSearchParams();
+        if (format === 'csv') params.set('format', 'csv');
+        if (trimPreview?.libraryKey) params.set('libraryKey', trimPreview.libraryKey);
+        const query = params.toString();
+        try {
+            const response = await fetch(portalUrl(`/api/upgrader/qc/integrity/trim-audit${query ? `?${query}` : ''}`), {
+                credentials: 'same-origin',
+            });
+            if (!response.ok) throw new Error(`Download failed (${response.status})`);
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = `trim-audit.${format}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(objectUrl);
+        } catch (error: any) {
+            onToast?.(error?.message || 'Trim audit download failed', 'error');
+        }
+    };
+
     const snoozeOne = async (finding: IntegrityFinding) => {
         setSnoozingKey(finding.key);
+        const hours = Math.max(1, Number(snoozeHours) || 24);
         try {
             await apiFetch('/api/upgrader/qc/integrity/snooze', {
                 method: 'POST',
-                body: JSON.stringify({ key: finding.key, hours: 24 }),
+                body: JSON.stringify({ key: finding.key, hours }),
             });
-            onToast?.(`Snoozed ${finding.title} for 24h`, 'success');
+            onToast?.(`Snoozed ${finding.title} for ${hours}h`, 'success');
             setFindings((current) => current.filter((entry) => entry.key !== finding.key));
             setResult((current) => current ? {
                 ...current,
                 findings: (current.findings || []).filter((entry) => entry.key !== finding.key),
                 findingCount: Math.max(0, Number(current.findingCount || 1) - 1),
             } : current);
+            await loadStatus();
         } catch (error: any) {
             onToast?.(error?.message || 'Snooze failed', 'error');
         } finally {
             setSnoozingKey(null);
+        }
+    };
+
+    const clearSnooze = async (key: string) => {
+        try {
+            await apiFetch('/api/upgrader/qc/integrity/snooze/clear', {
+                method: 'POST',
+                body: JSON.stringify({ key }),
+            });
+            setSnoozes((current) => current.filter((row) => row.key !== key));
+            onToast?.('Integrity snooze cleared', 'success');
+        } catch (error: any) {
+            onToast?.(error?.message || 'Clear snooze failed', 'error');
         }
     };
 
@@ -685,6 +757,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
     );
     const libraries = librariesFromCoverage(coverage);
     const busy = scanning || activeRechecks.length > 0;
+    const auditAllActive = scanning && !progress?.libraryKey && progress?.mode === 'trim' && !!progress?.audit;
 
     return (
         <div className="space-y-4">
@@ -700,7 +773,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                 <div className="text-sm font-bold text-text">
                                     {cancelling || progress?.currentTitle === 'Cancelling…'
                                         ? 'Cancelling'
-                                        : `Running ${labelForMode(progress?.mode)}`}
+                                        : `Running ${progressModeLabel(progress?.mode, progress?.audit)}`}
                                     {progress?.libraryLabel ? ` · ${progress.libraryLabel}` : ''}
                                 </div>
                             )}
@@ -784,8 +857,9 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                 Force recheck
                                 <SettingHint>
                                     Ignores cached playback / trim / baseline stamps so the next library or
-                                    all-libraries button probes every file again. Already-clean MKVs still
-                                    will not remux; they are re-evaluated. Fingerprint modes always rehash.
+                                    all-libraries button probes every file again. It does not change whether
+                                    a trim finding remuxes — that still follows Settings' remux tier. Audit
+                                    runs never remux, even with Force recheck on. Fingerprint modes always rehash.
                                 </SettingHint>
                             </span>
                             <span className="block text-[11px] text-muted mt-0.5 leading-snug">
@@ -863,6 +937,23 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                                 </button>
                                             );
                                         })}
+                                        {lib.mediaType !== 'album' && (
+                                            <button
+                                                type="button"
+                                                className="px-2 py-1 rounded-md border border-border/60 text-[10px] font-bold text-text hover:border-plex/40 disabled:opacity-50 inline-flex items-center gap-1"
+                                                disabled={scanning}
+                                                title={`Trim audit — ${lib.label}. Force-rescans against keep-rules, dry-run only, never remuxes.`}
+                                                onClick={() => void runScan('trim', {
+                                                    libraryKey: lib.key,
+                                                    libraryLabel: lib.label,
+                                                }, { audit: true })}
+                                            >
+                                                {activeHere && progress?.mode === 'trim' && progress?.audit
+                                                    ? <Loader2 className="w-3 h-3 animate-spin text-plex" />
+                                                    : null}
+                                                Audit
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -893,6 +984,22 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                 </button>
                             );
                         })}
+                        <button
+                            type="button"
+                            className="text-left rounded-xl border border-border/60 bg-background/30 px-3 py-3 hover:border-plex/40 disabled:opacity-50"
+                            disabled={scanning}
+                            onClick={() => void runScan('trim', undefined, { audit: true })}
+                        >
+                            <div className="flex items-center gap-2">
+                                {auditAllActive
+                                    ? <Loader2 className="w-3.5 h-3.5 animate-spin text-plex shrink-0" />
+                                    : <FlaskConical className="w-3.5 h-3.5 text-plex shrink-0" />}
+                                <span className="text-sm font-bold text-text">Trim audit</span>
+                            </div>
+                            <p className="text-[11px] text-muted mt-1.5 leading-snug">
+                                Force-rescans every video library against current keep-rules. Always dry-run — never remuxes, even if Settings allows remux.
+                            </p>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -942,14 +1049,37 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
 
             {trimPreview && (
                 <section className={`${QC_SECTION} space-y-3`}>
-                    <div>
-                        <h3 className="text-sm font-bold text-text">Trim preview</h3>
-                        <p className="text-[11px] text-muted mt-1">
-                            {trimPreview.dryRun === false
-                                ? 'Last remux pass (Auto-fix + dry-run off).'
-                                : 'Dry-run report — nothing was rewritten until you hit Remux on a row.'}
-                            {trimPreview.at ? ` · ${new Date(trimPreview.at).toLocaleString()}` : ''}
-                        </p>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h3 className="text-sm font-bold text-text">
+                                Trim preview
+                                {trimPreview.libraryLabel ? ` · ${trimPreview.libraryLabel}` : ''}
+                            </h3>
+                            <p className="text-[11px] text-muted mt-1">
+                                {trimPreview.dryRun === false
+                                    ? 'Last remux pass — files were rewritten (Settings allow remux is on).'
+                                    : trimPreview.audit
+                                        ? 'Audit report — dry-run forced regardless of Settings; nothing was rewritten.'
+                                        : 'Dry-run preview — whether these remux later depends on Settings; nothing here was rewritten by this pass.'}
+                                {trimPreview.at ? ` · ${new Date(trimPreview.at).toLocaleString()}` : ''}
+                            </p>
+                        </div>
+                        <div className="shrink-0 flex gap-1.5">
+                            <button
+                                type="button"
+                                className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40"
+                                onClick={() => void downloadTrimAudit('csv')}
+                            >
+                                Download CSV
+                            </button>
+                            <button
+                                type="button"
+                                className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40"
+                                onClick={() => void downloadTrimAudit('json')}
+                            >
+                                Download JSON
+                            </button>
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {[
@@ -1059,7 +1189,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                 </div>
                 {!result && !scanning && displayFindings.length === 0 && (
                     <p className="text-xs text-muted">
-                        Run a check above. Nothing changes until you click Replace on a finding.
+                        Run a check above. Trim findings can remux on Recheck; other findings need Replace to change anything.
                     </p>
                 )}
                 {scanning && displayFindings.length === 0 && (
@@ -1119,7 +1249,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                                     disabled={snoozingKey === finding.key || scanning || recheckingKey === finding.key}
                                     onClick={() => void snoozeOne(finding)}
                                 >
-                                    {snoozingKey === finding.key ? 'Snoozing…' : 'Snooze 24h'}
+                                    {snoozingKey === finding.key ? 'Snoozing…' : `Snooze ${snoozeHours}h`}
                                 </button>
                             </div>
                         </div>
@@ -1127,6 +1257,27 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
                     );
                 })}
             </section>
+
+            {snoozes.length > 0 && (
+                <section className="rounded-xl border border-border bg-panel/40 p-4 space-y-2">
+                    <h3 className="text-sm font-bold text-text">Snoozed integrity findings</h3>
+                    {snoozes.map((row) => (
+                        <div key={row.key} className="flex items-center justify-between gap-3 text-xs">
+                            <div className="min-w-0">
+                                <div className="font-mono break-all text-muted">{row.key}</div>
+                                <div className="text-muted">Until {new Date(row.until).toLocaleString()}</div>
+                            </div>
+                            <button
+                                type="button"
+                                className="shrink-0 px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40"
+                                onClick={() => void clearSnooze(row.key)}
+                            >
+                                Clear
+                            </button>
+                        </div>
+                    ))}
+                </section>
+            )}
         </div>
     );
 };

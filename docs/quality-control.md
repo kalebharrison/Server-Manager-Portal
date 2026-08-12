@@ -82,14 +82,14 @@ The Integrity tab **Inspect a file** search shows the saved cache JSON for one t
 | Mode | Label in UI | What it does |
 |---|---|---|
 | `playability` | Playback check | Decodes short samples at start, middle, and end via ffmpeg (retries + longer timeout) |
-| `trim` | Media trim | Probes MKV tracks vs keep-rules (eng+ara+**one** native). Native is TMDb/TVDB `originalLanguage` from Arr/NFO IDs — movies TMDb→IMDb id, shows TVDB→TMDb→IMDb id. IMDb spoken-language lists are not used. If no original language is found, remux is skipped and the file is alerted. **Dry-run** writes a keep/drop preview. Remuxes only when auto-fix is on and dry-run is off. |
+| `trim` | Media trim | Probes MKV tracks vs keep-rules (eng+ara+**one** native). Native is TMDb/TVDB `originalLanguage` from Arr/NFO IDs — movies TMDb→IMDb id, shows TVDB→TMDb→IMDb id. IMDb spoken-language lists are not used. If no original language is found, remux is skipped and the file is alerted. **Dry-run** / **Trim audit** write a keep/drop preview and never remux. Live remuxes only when auto-fix is on and Settings dry-run is off (or a manual Recheck forces rewrite). |
 | `imohash` | Quick fingerprint | Fast spot-check (file size + small slices); catches silent swaps |
 | `xxhash` | Full-file hash | Hashes the entire file; slowest — enable **Full-file hash (xxhash)** in Settings first |
 | `baseline` | Run all checks | Playback + quick fingerprint together; adds full-file hash when xxhash is enabled |
 
-Manual scans on the Integrity tab are admin tools (dry-run by default). Click **Trim** on a library for a would-remux report (track names, not just IDs). **Enable integrity automation** allows nightly escalate replace and import hard-fail replace — leave off until you trust dry-run results.
+Manual scans on the Integrity tab are admin tools (replace is dry-run by default). Click **Trim** on a library for a would-remux report (track names, not just IDs). Use **Trim audit** (or per-library **Audit**) to force-rescan keep-rules with remux permanently disabled, then download CSV/JSON. **Enable integrity automation** allows nightly escalate replace and import hard-fail replace — leave off until you trust dry-run results.
 
-Integrity skips files currently playing on Plex. A **circuit breaker** pauses scans when too many findings appear in one cycle.
+Integrity skips files currently playing on Plex. A **circuit breaker** pauses **live replace** when findings hit **50** or **10%** of the cycle (configurable).
 
 ### Coverage
 

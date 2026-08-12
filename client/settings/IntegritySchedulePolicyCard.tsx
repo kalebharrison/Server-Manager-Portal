@@ -126,6 +126,7 @@ export const IntegritySchedulePolicyCard: React.FC<Props> = ({
                 <p className="text-[11px] text-muted mt-1 max-w-3xl leading-snug">
                     Per-library toggles for time-gated Integrity. New/24h covers Arr webhooks and the recent-import catch-up.
                     Nightly covers the scheduled library passes. Manual Integrity buttons always run. Missing cells default to on.
+                    The Trim column is the keep-rule check running, not a remux — remux still depends on Settings' remux tier.
                 </p>
             </div>
             {loading && libraries.length === 0 && (
