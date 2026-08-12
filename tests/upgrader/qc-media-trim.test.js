@@ -196,7 +196,13 @@ test('resolveTrimConfig only rewrites with auto-fix and dry-run off', () => {
 });
 
 test('isCorruptMatroskaProbe catches EBML damage and repeated duplicates', async () => {
-    const { isCorruptMatroskaProbe, preflightMkvContainer, probeMkvInfo } = await import('../../lib/upgrader/qc-media-trim.js');
+    const {
+        isCorruptMatroskaProbe,
+        preflightMkvContainer,
+        probeMkvInfo,
+        mkvmergeCommandOk,
+        buildMkvmergeArgs,
+    } = await import('../../lib/upgrader/qc-media-trim.js');
     assert.equal(isCorruptMatroskaProbe(''), false);
     assert.equal(isCorruptMatroskaProbe('[matroska] Duplicate element\n'), false);
     assert.equal(isCorruptMatroskaProbe('[matroska] Duplicate element\nDuplicate element\n'), true);
@@ -205,15 +211,15 @@ test('isCorruptMatroskaProbe catches EBML damage and repeated duplicates', async
         true,
     );
 
-    const corrupt = await preflightMkvContainer('/x.mkv', {
+    const noted = await preflightMkvContainer('/x.mkv', {
         execImpl: async () => ({
             ok: true,
             stdout: '{}',
             stderr: 'invalid as first byte of an EBML number\nDuplicate element\nDuplicate element\n',
         }),
     });
-    assert.equal(corrupt.ok, false);
-    assert.equal(corrupt.reason, 'trim_container_corrupt');
+    assert.equal(noted.ok, true);
+    assert.equal(noted.ebmlDamage, true);
 
     const probed = await probeMkvInfo('/x.mkv', {
         execImpl: async (bin) => {
@@ -224,11 +230,126 @@ test('isCorruptMatroskaProbe catches EBML damage and repeated duplicates', async
                     stderr: 'Element at 0x45 ending at 0x34e05 exceeds containing master element ending at 0x13f1',
                 };
             }
-            throw new Error('mkvmerge should not run');
+            if (bin === 'mkvmerge') {
+                return {
+                    ok: true,
+                    stdout: JSON.stringify({
+                        container: { properties: {} },
+                        tracks: [
+                            { id: 0, type: 'video', properties: {} },
+                            { id: 1, type: 'audio', properties: { language: 'eng', audio_channels: 6 } },
+                        ],
+                    }),
+                    stderr: '',
+                };
+            }
+            throw new Error(`unexpected bin ${bin}`);
         },
     });
-    assert.equal(probed.ok, false);
-    assert.equal(probed.reason, 'trim_container_corrupt');
+    assert.equal(probed.ok, true);
+    assert.equal(probed.ebmlDamage, true);
+
+    assert.equal(mkvmergeCommandOk({ ok: true, code: 0 }), true);
+    assert.equal(mkvmergeCommandOk({ ok: false, code: 1 }), true);
+    assert.equal(mkvmergeCommandOk({ ok: false, code: 2 }), false);
+    assert.equal(mkvmergeCommandOk({ ok: false, timedOut: true, code: null }), false);
+
+    const repairArgs = buildMkvmergeArgs('/in.mkv', '/out.mkv', {
+        alreadyClean: false,
+        forceContainerRepair: true,
+        needsAudioChange: false,
+        needsSubChange: false,
+        needsMetadataChange: false,
+    });
+    assert.deepEqual(repairArgs, ['-o', '/out.mkv', '/in.mkv']);
+});
+
+test('trimMkvFile remuxes EBML-damaged track-clean files and guards duration', async () => {
+    const fs = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const { trimMkvFile, portalTrimTmpPathFor } = await import('../../lib/upgrader/qc-media-trim.js');
+
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'portal-ebml-repair-'));
+    const file = path.join(dir, 'Show.mkv');
+    await fs.writeFile(file, Buffer.alloc(2000));
+
+    const mkvInfo = JSON.stringify({
+        container: { properties: {} },
+        tracks: [
+            { id: 0, type: 'video', properties: {} },
+            { id: 1, type: 'audio', properties: { language: 'eng', audio_channels: 6 } },
+        ],
+    });
+
+    let remuxed = false;
+    const execImpl = async (bin, args = []) => {
+        if (bin === 'ffprobe') {
+            if (args.includes('format=duration')) {
+                return { ok: true, stdout: '1800.0\n', stderr: '' };
+            }
+            return {
+                ok: true,
+                stdout: '{}',
+                stderr: 'invalid as first byte of an EBML number',
+            };
+        }
+        if (bin === 'mkvmerge' && args.includes('-J')) {
+            return { ok: true, stdout: mkvInfo, stderr: '' };
+        }
+        if (bin === 'mkvmerge') {
+            remuxed = true;
+            const outIdx = args.indexOf('-o');
+            await fs.writeFile(args[outIdx + 1], Buffer.alloc(1800));
+            return { ok: false, code: 1, stdout: '', stderr: 'Warning: resyncing' };
+        }
+        return { ok: true, stdout: '', stderr: '' };
+    };
+
+    const result = await trimMkvFile(file, {
+        dryRun: false,
+        expectedRuntimeSec: 1800,
+        execImpl,
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.changed, true);
+    assert.equal(result.ebmlDamage, true);
+    assert.equal(result.mkvmergeWarnings, true);
+    assert.equal(remuxed, true);
+    assert.equal((await fs.stat(file)).size, 1800);
+    await assert.rejects(() => fs.stat(portalTrimTmpPathFor(file)));
+
+    const badDuration = await trimMkvFile(file, {
+        dryRun: false,
+        expectedRuntimeSec: 3600,
+        execImpl: async (bin, args = []) => {
+            if (bin === 'ffprobe') {
+                if (args.includes('format=duration')) {
+                    return { ok: true, stdout: '900.0\n', stderr: '' };
+                }
+                return {
+                    ok: true,
+                    stdout: '{}',
+                    stderr: 'invalid as first byte of an EBML number',
+                };
+            }
+            if (bin === 'mkvmerge' && args.includes('-J')) {
+                return { ok: true, stdout: mkvInfo, stderr: '' };
+            }
+            if (bin === 'mkvmerge') {
+                const outIdx = args.indexOf('-o');
+                await fs.writeFile(args[outIdx + 1], Buffer.alloc(1800));
+                return { ok: true, code: 0, stdout: '', stderr: '' };
+            }
+            return { ok: true, stdout: '', stderr: '' };
+        },
+    });
+    assert.equal(badDuration.ok, false);
+    assert.equal(badDuration.reason, 'trim_duration_guard');
+    // Original kept when duration guard rejects.
+    assert.equal((await fs.stat(file)).size, 1800);
+
+    await fs.rm(dir, { recursive: true, force: true });
 });
 
 test('cleanupPortalTrimTmps removes only portal-trim tmp siblings', async () => {
