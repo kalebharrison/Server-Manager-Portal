@@ -125,6 +125,7 @@ type SettingsHydrationSetters = {
     setQcTrimStripLowerChannels: (value: boolean) => void;
     setQcTrimDeleteMetadataTitle: (value: boolean) => void;
     setQcIntegrityPathMaps: (value: Array<{ from: string; to: string }>) => void;
+    setQcIntegrityMediaRoots: (value: string[]) => void;
     setQcIntegrityMaxPerCycle: (value: number) => void;
     setQcIntegrityConcurrency: (value: number) => void;
     setQcIntegrityPlayabilityConcurrency: (value: number) => void;
