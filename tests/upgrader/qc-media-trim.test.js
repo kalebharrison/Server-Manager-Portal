@@ -38,8 +38,8 @@ test('normalizeLanguageCode maps TMDB ja and IETF en-US', () => {
     assert.equal(normalizeLanguageCode('und'), null);
 });
 
-test('parseTrimLanguages defaults to eng+ara', () => {
-    assert.deepEqual(parseTrimLanguages(''), ['eng', 'ara']);
+test('parseTrimLanguages defaults to eng', () => {
+    assert.deepEqual(parseTrimLanguages(''), ['eng']);
     assert.deepEqual(parseTrimLanguages('eng,ara'), ['eng', 'ara']);
 });
 

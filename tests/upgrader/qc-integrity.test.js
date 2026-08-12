@@ -78,14 +78,30 @@ test('assertSafeMediaPath rejects paths outside configured map roots', async () 
     assert.equal(result.reason, 'unsafe_path');
 });
 
-test('assertSafeMediaPath confines to /media when no maps configured', async () => {
+test('assertSafeMediaPath uses denylist when no maps configured', async () => {
     const identityRealpath = async (target) => target;
-    const outside = await assertSafeMediaPath('/movies/Film.mkv', [], { realpathImpl: identityRealpath });
-    assert.equal(outside.ok, false);
-    assert.equal(outside.reason, 'unsafe_path');
-    const inside = await assertSafeMediaPath('/media/movies/Film.mkv', [], { realpathImpl: identityRealpath });
-    assert.equal(inside.ok, true);
-    assert.equal(inside.path, '/media/movies/Film.mkv');
+    const media = await assertSafeMediaPath('/movies/Film.mkv', [], { realpathImpl: identityRealpath });
+    assert.equal(media.ok, true);
+    assert.equal(media.path, '/movies/Film.mkv');
+    const underMedia = await assertSafeMediaPath('/media/movies/Film.mkv', [], { realpathImpl: identityRealpath });
+    assert.equal(underMedia.ok, true);
+    const systemPath = await assertSafeMediaPath('/etc/passwd', [], { realpathImpl: identityRealpath });
+    assert.equal(systemPath.ok, false);
+    assert.equal(systemPath.reason, 'unsafe_path');
+});
+
+test('assertSafeMediaPath honors explicit media roots without path maps', async () => {
+    const identityRealpath = async (target) => target;
+    const allowed = await assertSafeMediaPath('/data/movies/Film.mkv', [], {
+        realpathImpl: identityRealpath,
+        config: { qcIntegrityMediaRoots: ['/data'] },
+    });
+    assert.equal(allowed.ok, true);
+    const denied = await assertSafeMediaPath('/movies/Film.mkv', [], {
+        realpathImpl: identityRealpath,
+        config: { qcIntegrityMediaRoots: ['/data'] },
+    });
+    assert.equal(denied.ok, false);
 });
 
 test('validateCandidate rejects unsafe mapped paths before stat', async () => {

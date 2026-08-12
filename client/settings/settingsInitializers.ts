@@ -284,7 +284,7 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcIntegrityXxhashEnabled(!!initialSettings.qcIntegrityXxhashEnabled);
     setters.setQcTrimEnabled(!!initialSettings.qcTrimEnabled);
     setters.setQcTrimDryRun(initialSettings.qcTrimDryRun !== false);
-    setters.setQcTrimLanguages(String(initialSettings.qcTrimLanguages || 'eng,ara'));
+    setters.setQcTrimLanguages(String(initialSettings.qcTrimLanguages || 'eng'));
     setters.setQcTrimKeepNativeAudio(initialSettings.qcTrimKeepNativeAudio !== false);
     setters.setQcTrimStripCommentary(initialSettings.qcTrimStripCommentary !== false);
     setters.setQcTrimStripLowerChannels(initialSettings.qcTrimStripLowerChannels !== false);
@@ -298,6 +298,14 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
                 }))
                 .filter((entry: { from: string; to: string }) => entry.from && entry.to)
             : [],
+    );
+    setters.setQcIntegrityMediaRoots(
+        Array.isArray(initialSettings.qcIntegrityMediaRoots)
+            ? initialSettings.qcIntegrityMediaRoots.map((entry: string) => String(entry || '').trim()).filter(Boolean)
+            : String(initialSettings.qcIntegrityMediaRoots || '')
+                .split(/[\n,]+/)
+                .map((entry: string) => entry.trim())
+                .filter(Boolean),
     );
     setters.setQcIntegrityMaxPerCycle((() => {
         const raw = Number(initialSettings.qcIntegrityMaxPerCycle);

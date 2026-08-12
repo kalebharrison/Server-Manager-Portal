@@ -133,6 +133,7 @@ export const useSettingsFormState = () => {
         qcTrimStripLowerChannels: values.qcTrimStripLowerChannels,
         qcTrimDeleteMetadataTitle: values.qcTrimDeleteMetadataTitle,
         qcIntegrityPathMaps: values.qcIntegrityPathMaps,
+        qcIntegrityMediaRoots: values.qcIntegrityMediaRoots,
         qcIntegrityMaxPerCycle: values.qcIntegrityMaxPerCycle,
         qcIntegrityConcurrency: values.qcIntegrityConcurrency,
         qcIntegrityPlayabilityConcurrency: values.qcIntegrityPlayabilityConcurrency,

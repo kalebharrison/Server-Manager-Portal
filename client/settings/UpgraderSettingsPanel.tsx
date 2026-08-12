@@ -53,6 +53,7 @@ type Props = {
     qcTrimStripLowerChannels: boolean;
     qcTrimDeleteMetadataTitle: boolean;
     integrityPathMaps: Array<{ from: string; to: string }>;
+    integrityMediaRoots: string[];
     integrityMaxPerCycle: number;
     integrityConcurrency: number;
     integrityPlayabilityConcurrency: number;
@@ -102,6 +103,7 @@ type Props = {
     onQcTrimStripLowerChannelsChange: (value: boolean) => void;
     onQcTrimDeleteMetadataTitleChange: (value: boolean) => void;
     onIntegrityPathMapsChange: (value: Array<{ from: string; to: string }>) => void;
+    onIntegrityMediaRootsChange: (value: string[]) => void;
     onIntegrityMaxPerCycleChange: (value: number) => void;
     onIntegrityConcurrencyChange: (value: number) => void;
     onIntegrityPlayabilityConcurrencyChange: (value: number) => void;
@@ -155,6 +157,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcTrimStripLowerChannels,
     qcTrimDeleteMetadataTitle,
     integrityPathMaps,
+    integrityMediaRoots,
     integrityMaxPerCycle: _integrityMaxPerCycle,
     integrityConcurrency,
     integrityPlayabilityConcurrency,
@@ -204,6 +207,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onQcTrimStripLowerChannelsChange,
     onQcTrimDeleteMetadataTitleChange,
     onIntegrityPathMapsChange,
+    onIntegrityMediaRootsChange,
     onIntegrityMaxPerCycleChange: _onIntegrityMaxPerCycleChange,
     onIntegrityConcurrencyChange,
     onIntegrityPlayabilityConcurrencyChange,
@@ -653,6 +657,28 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                         onIntegrityPathMapsChange(maps);
                                     }}
                                 />
+                                <span className="mt-1 block text-xs font-normal text-muted">
+                                    Arr path → container path. Required when Arr paths differ from portal mounts.
+                                </span>
+                            </label>
+                            <label className="text-sm font-semibold block">
+                                Media roots (optional)
+                                <textarea
+                                    className="mt-2 w-full min-h-[70px] p-2.5 rounded-lg border border-border bg-background text-text text-sm font-mono"
+                                    disabled={!enabled || !integrityEnabled}
+                                    value={(integrityMediaRoots || []).join('\n')}
+                                    placeholder={'/data\n/mnt/media'}
+                                    onChange={(event) => {
+                                        const roots = event.target.value
+                                            .split(/[\n,]+/)
+                                            .map((line) => line.trim())
+                                            .filter(Boolean);
+                                        onIntegrityMediaRootsChange(roots);
+                                    }}
+                                />
+                                <span className="mt-1 block text-xs font-normal text-muted">
+                                    Strict allowlist when path maps are empty. Leave blank to allow any non-system absolute path (identity mounts).
+                                </span>
                             </label>
                             <label className="flex items-center justify-between gap-4">
                                 <span className="font-semibold">Require audio</span>
@@ -733,8 +759,11 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     disabled={!enabled || !integrityEnabled || !qcTrimEnabled}
                                     value={qcTrimLanguages}
                                     onChange={(event) => onQcTrimLanguagesChange(event.target.value)}
-                                    placeholder="eng,ara"
+                                    placeholder="eng"
                                 />
+                                <span className="mt-1 block text-xs font-normal text-muted">
+                                    Comma-separated ISO codes to keep (e.g. eng or eng,ara,jpn). Native audio is separate.
+                                </span>
                             </label>
                             <label className="flex items-center justify-between gap-4">
                                 <span className="font-semibold">Keep native audio</span>

@@ -120,6 +120,7 @@ type SettingsSavePayloadInput = {
     qcTrimStripLowerChannels: boolean;
     qcTrimDeleteMetadataTitle: boolean;
     qcIntegrityPathMaps: Array<{ from: string; to: string }>;
+    qcIntegrityMediaRoots: string[];
     qcIntegrityMaxPerCycle: number;
     qcIntegrityConcurrency: number;
     qcIntegrityPlayabilityConcurrency: number;

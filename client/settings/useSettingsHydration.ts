@@ -143,6 +143,7 @@ export const useSettingsHydration = ({
             setQcTrimStripLowerChannels: set('qcTrimStripLowerChannels'),
             setQcTrimDeleteMetadataTitle: set('qcTrimDeleteMetadataTitle'),
             setQcIntegrityPathMaps: set('qcIntegrityPathMaps'),
+            setQcIntegrityMediaRoots: set('qcIntegrityMediaRoots'),
             setQcIntegrityMaxPerCycle: set('qcIntegrityMaxPerCycle'),
             setQcIntegrityConcurrency: set('qcIntegrityConcurrency'),
             setQcIntegrityPlayabilityConcurrency: set('qcIntegrityPlayabilityConcurrency'),

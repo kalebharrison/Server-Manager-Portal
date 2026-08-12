@@ -65,6 +65,11 @@ Integrity validates files Arr already knows about. It requires:
 
 See [Deployment — integrity mounts](./deployment.md#optional-quality-control-integrity-media-mounts). Remux/trim writes must run as the same `PUID`/`PGID` as Arr/downloaders — see [Permissions](./deployment.md#permissions-puid--pgid).
 
+**Path safety (portable):**
+- Prefer **Arr → container path maps** when Arr paths differ from portal mounts.
+- Optional **Media roots** allowlist (Settings) when you want a strict root list without remapping.
+- With neither maps nor media roots, Integrity uses a **system-path denylist** so identity mounts (`/movies`, `/data`, …) work on any host — `/etc`, `/proc`, etc. stay blocked.
+
 ### Two pipelines
 
 **Import / upgrade (Arr webhooks)**  
