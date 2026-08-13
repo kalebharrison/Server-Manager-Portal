@@ -189,6 +189,8 @@ type IntegrityStatus = {
 type Props = {
     onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
     integrityEnabled?: boolean;
+    /** True while parent status has not loaded yet — do not treat as disabled. */
+    integrityStatusLoading?: boolean;
 };
 
 /** API mode → plain-language label shown in the UI. */
@@ -327,7 +329,11 @@ const librariesFromCoverage = (coverage: IntegrityCoverage | null): LibraryCover
     return out;
 };
 
-export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = false }) => {
+export const QcIntegrityPanel: React.FC<Props> = ({
+    onToast,
+    integrityEnabled = false,
+    integrityStatusLoading = false,
+}) => {
     const [scanning, setScanning] = useState(false);
     const [forceRecheck, setForceRecheck] = useState(false);
     const [cancelling, setCancelling] = useState(false);
@@ -723,6 +729,14 @@ export const QcIntegrityPanel: React.FC<Props> = ({ onToast, integrityEnabled = 
             onToast?.(error?.message || 'Clear snooze failed', 'error');
         }
     };
+
+    if (integrityStatusLoading) {
+        return (
+            <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted">
+                Loading Integrity status…
+            </div>
+        );
+    }
 
     if (!integrityEnabled) {
         return (

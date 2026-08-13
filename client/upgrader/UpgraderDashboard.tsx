@@ -510,6 +510,7 @@ export const UpgraderDashboard: React.FC = () => {
                                         <QcIntegrityPanel
                                             onToast={addToast}
                                             integrityEnabled={!!status?.integrityEnabled}
+                                            integrityStatusLoading={loading || status === null}
                                         />
                                     </Suspense>
                                 )}
