@@ -168,7 +168,7 @@ type IntegrityStatus = {
     activeRechecks?: ActiveRecheck[];
     trimPreview?: TrimPreview | null;
     trimAudit?: TrimPreview | null;
-    snoozes?: Array<{ key: string; until: string }>;
+    snoozes?: Array<{ key: string; until: string; title?: string | null }>;
     settings?: IntegritySettings | null;
     lastScan?: {
         at?: string;
@@ -350,7 +350,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({
     const [findings, setFindings] = useState<IntegrityFinding[]>([]);
     const [activeRechecks, setActiveRechecks] = useState<ActiveRecheck[]>([]);
     const [trimPreview, setTrimPreview] = useState<TrimPreview | null>(null);
-    const [snoozes, setSnoozes] = useState<Array<{ key: string; until: string }>>([]);
+    const [snoozes, setSnoozes] = useState<Array<{ key: string; until: string; title?: string | null }>>([]);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const wasScanningRef = useRef(false);
     const pendingRecheckRef = useRef<ActiveRecheck | null>(null);
@@ -700,7 +700,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({
         try {
             await apiFetch('/api/upgrader/qc/integrity/snooze', {
                 method: 'POST',
-                body: JSON.stringify({ key: finding.key, hours }),
+                body: JSON.stringify({ key: finding.key, hours, title: finding.title || null }),
             });
             onToast?.(`Snoozed ${finding.title} for ${hours}h`, 'success');
             setFindings((current) => current.filter((entry) => entry.key !== finding.key));
@@ -1278,7 +1278,10 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                     {snoozes.map((row) => (
                         <div key={row.key} className="flex items-center justify-between gap-3 text-xs">
                             <div className="min-w-0">
-                                <div className="font-mono break-all text-muted">{row.key}</div>
+                                <div className="font-bold text-text truncate">{row.title || row.key}</div>
+                                {row.title ? (
+                                    <div className="font-mono break-all text-[10px] text-muted/70">{row.key}</div>
+                                ) : null}
                                 <div className="text-muted">Until {new Date(row.until).toLocaleString()}</div>
                             </div>
                             <button
