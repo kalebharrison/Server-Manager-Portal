@@ -6,7 +6,7 @@ import { DiscoverSeries } from './DiscoverSeries';
 import { DiscoverCategoryPage } from './DiscoverCategoryPage';
 import { MediaDetailsPage } from './MediaDetailsPage';
 import { PersonDetailsPage } from './PersonDetailsPage';
-import { Film, Tv, Compass, ClipboardList, AlertTriangle, ChevronDown, Users } from 'lucide-react';
+import { Film, Tv, Compass, ClipboardList, AlertTriangle, ChevronDown, Users, Inbox } from 'lucide-react';
 import { DiscoverCommunityPage } from './DiscoverCommunityPage';
 import { apiFetch } from '../shared/api';
 import { portalUrl, stripBasePath } from '../shared/basePath';
@@ -15,6 +15,7 @@ import { resolveMediaAvailabilityState } from './discoverAvailability';
 import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
 import { MyRequestsPage } from './MyRequestsPage';
 import { MyIssuesPage } from './MyIssuesPage';
+import { AdminRequestQueue } from '../requests/AdminRequestQueue';
 import { useMyRequestCount } from './useMyRequestCount';
 import { useMyIssueCount } from './useMyIssueCount';
 import { useDiscoveryMe } from './useDiscoveryMe';
@@ -51,6 +52,7 @@ const DiscoveryDashboardInner: React.FC<{
     const { pendingCount: myPendingCount, refresh: refreshMyRequestCount } = useMyRequestCount(true);
     const { openCount: myOpenIssueCount, refresh: refreshMyIssueCount } = useMyIssueCount(true);
     const { profile: discoveryMe } = useDiscoveryMe(true);
+    const [adminPendingCount, setAdminPendingCount] = useState(0);
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
     const providerLabel = String(mediaServerType || 'plex').toLowerCase() === 'jellyfin'
         ? 'Jellyfin'
@@ -285,7 +287,32 @@ const DiscoveryDashboardInner: React.FC<{
         );
     }
 
-    const showTabs = ['home', 'movies', 'series', 'community', 'requests', 'issues'].includes(subRoute);
+    useEffect(() => {
+        if (!isAdmin) {
+            setAdminPendingCount(0);
+            return undefined;
+        }
+        let cancelled = false;
+        const load = () => {
+            apiFetch('/api/portal-request/admin/requests?filter=pending&take=1', { forceRefresh: true, cacheTtlMs: 0 })
+                .then((data: any) => {
+                    if (cancelled) return;
+                    const total = Number(data?.pageInfo?.results);
+                    setAdminPendingCount(Number.isFinite(total) ? total : (Array.isArray(data?.results) ? data.results.length : 0));
+                })
+                .catch(() => {
+                    if (!cancelled) setAdminPendingCount(0);
+                });
+        };
+        load();
+        const timer = window.setInterval(load, 60_000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [isAdmin, path]);
+
+    const showTabs = ['home', 'movies', 'series', 'community', 'requests', 'queue', 'issues'].includes(subRoute);
 
     if (subRoute === 'watchlist') {
         // Plex watchlist integration is disabled — send people back to Discover.
@@ -303,6 +330,9 @@ const DiscoveryDashboardInner: React.FC<{
         { id: 'series', path: '/discovery/series', label: t('nav.series'), icon: Tv, count: 0, countColor: '' },
         { id: 'community', path: '/discovery/community', label: t('nav.community'), icon: Users, count: 0, countColor: '' },
         { id: 'requests', path: '/discovery/requests', label: t('nav.myRequests'), icon: ClipboardList, count: myPendingCount, countColor: 'bg-plex/25 text-plex' },
+        ...(isAdmin
+            ? [{ id: 'queue', path: '/discovery/queue', label: t('nav.requestQueue'), icon: Inbox, count: adminPendingCount, countColor: 'bg-plex/25 text-plex' }]
+            : []),
         ...(canSeeIssuesTab
             ? [{ id: 'issues', path: '/discovery/issues', label: t('nav.myIssues'), icon: AlertTriangle, count: myOpenIssueCount, countColor: 'bg-amber-500/25 text-amber-300' }]
             : []),
@@ -427,6 +457,9 @@ const DiscoveryDashboardInner: React.FC<{
                                 pushToast={pushToast}
                                 onCountsChange={refreshMyRequestCount}
                             />
+                        )}
+                        {subRoute === 'queue' && isAdmin && (
+                            <AdminRequestQueue />
                         )}
                         {subRoute === 'issues' && (
                             <MyIssuesPage

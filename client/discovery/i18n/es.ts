@@ -68,6 +68,7 @@ export const es: DeepPartial<EnCatalog> = {
         series: 'Series',
         community: 'Comunidad',
         myRequests: 'Mis solicitudes',
+        requestQueue: 'Cola de solicitudes',
         myIssues: 'Mis reportes',
     },
     hero: {

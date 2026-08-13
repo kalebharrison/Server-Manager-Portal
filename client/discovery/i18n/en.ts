@@ -66,6 +66,7 @@ export const en = {
         series: 'Series',
         community: 'Community',
         myRequests: 'My Requests',
+        requestQueue: 'Request Queue',
         myIssues: 'My Issues',
     },
     hero: {
