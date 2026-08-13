@@ -1892,6 +1892,71 @@ test('trim scan ignores audio tracks', async () => {
     assert.equal(result.wouldRemux || 0, 0);
 });
 
+test('baselineImport stamps trim_not_mkv for non-MKV video', async () => {
+    let prefs = {};
+    let cache = { entries: {} };
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:mp4' }),
+        xxhashImpl: async () => ({ ok: true, xxhash: 'xx:mp4' }),
+        statImpl: async () => ({ ok: true, size: 200, mtimeMs: 5 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin, args = []) => {
+            if (String(bin) === 'ffprobe' || args.includes('-show_streams')) {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '600' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: `${bin} ok`, stderr: '' };
+        },
+    });
+
+    const result = await integrity.baselineImport({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcTrimEnabled: true,
+        qcTrimDryRun: true,
+        qcIntegrityPathMaps: [{ from: '/media', to: '/media' }],
+        arrInstances: [{
+            id: 'sonarr-default', type: 'sonarr', name: 'Sonarr', url: 'http://sonarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, {
+        arrType: 'sonarr',
+        arrInstanceId: 'sonarr-default',
+        entityId: 2,
+        episodeFileId: 65406,
+        episodeId: 100,
+        mediaType: 'show',
+        mediaKind: 'video',
+        title: 'Frisky Dingo',
+        filePath: '/media/current/tv.shows/Frisky.Dingo/Season01/Frisky.Dingo-S01E01-x265.AAC.mp4',
+        ratingKey: 'sonarr:sonarr-default:2',
+        key: 'sonarr:sonarr-default:2:file:65406',
+    });
+
+    assert.equal(result.ran, true);
+    assert.equal(result.ok, true);
+    const entry = cache.entries['sonarr:sonarr-default:2:file:65406'];
+    assert.ok(entry?.trimAt, 'non-MKV import should stamp trimAt');
+    assert.equal(entry.trimReason, 'trim_not_mkv');
+    assert.equal(entry.trimProfile, 'not-mkv');
+    assert.equal(entry.trimOk, true);
+    assert.ok(entry.imohash);
+});
+
 test('baselineImport refreshes Plex path after successful pipeline', async () => {
     let prefs = {};
     let cache = { entries: {} };

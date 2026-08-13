@@ -85,6 +85,24 @@ test('missingImportChecks lists every incomplete import step', () => {
         qcIntegrityAutomationEnabled: true,
         qcTrimDryRun: false,
     }, { filePath: '/movies/A.mkv', mediaKind: 'video' }), ['trim']);
+    assert.deepEqual(missingImportChecks({
+        ok: true,
+        playabilityAt: '2026-01-01T00:00:00.000Z',
+        imohash: 'imo:1',
+    }, {
+        qcTrimEnabled: true,
+        qcTrimDryRun: true,
+    }, { filePath: '/tv/Show.S01E01.mp4', mediaKind: 'video' }), ['trim']);
+    assert.deepEqual(missingImportChecks({
+        ok: true,
+        playabilityAt: '2026-01-01T00:00:00.000Z',
+        imohash: 'imo:1',
+        trimAt: '2026-01-01T00:00:00.000Z',
+        trimProfile: 'not-mkv',
+    }, {
+        qcTrimEnabled: true,
+        qcTrimDryRun: true,
+    }, { filePath: '/tv/Show.S01E01.mp4', mediaKind: 'video' }), []);
     assert.equal(importBaselineSatisfied({
         ok: false,
         playabilityAt: '2026-01-01T00:00:00.000Z',
