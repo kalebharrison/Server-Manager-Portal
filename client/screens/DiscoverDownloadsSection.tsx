@@ -10,7 +10,7 @@ import { groupOnTheWayDownloads } from '../../lib/media-stack/on-the-way-group.j
 import { mapQueueRecords } from './media-stack/mediaStackUtils';
 import { PosterImage } from './DiscoverContent';
 
-const QUEUE_CACHE_KEY = 'discover-on-the-way-v1';
+const QUEUE_CACHE_KEY = 'discover-on-the-way-v2';
 const QUEUE_POLL_MS = 15_000;
 
 const queueRecords = (queue: any) => (
