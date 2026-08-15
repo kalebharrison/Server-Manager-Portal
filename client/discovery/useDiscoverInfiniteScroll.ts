@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { UpgraderGridSize } from '../shared/portalLayout';
 import { mergeDiscoverResults } from './discoverItemUtils';
-import { filterDiscoverBrowseItems } from './discoverAvailability';
+import { filterDiscoverBrowseItems, type DiscoverBrowseMode } from './discoverAvailability';
 import { DISCOVER_LOAD_MORE_TARGET } from './discoverPaginationUtils';
 
 export type DiscoverPagePayload = {
@@ -14,6 +14,7 @@ type BrowseFilterOptions = {
     hideAvailable?: boolean;
     hideRequested?: boolean;
     animeOnly?: boolean;
+    mode?: DiscoverBrowseMode | null;
 };
 
 type Options = {

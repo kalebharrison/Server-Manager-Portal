@@ -64,11 +64,13 @@ export const es: DeepPartial<EnCatalog> = {
     },
     nav: {
         discover: 'Discover',
+        requestHome: 'Solicitar',
         movies: 'Películas',
         series: 'Series',
         community: 'Comunidad',
         myRequests: 'Mis solicitudes',
         requestQueue: 'Cola de solicitudes',
+        approve: 'Aprobar',
         myIssues: 'Mis reportes',
     },
     hero: {

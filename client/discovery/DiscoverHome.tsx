@@ -5,8 +5,9 @@ import { DiscoverPosterCard } from '../screens';
 import { Carousel } from './Carousel';
 import { enrichDiscoveryItems, normalizeRawDiscoveryItem } from './discoverItemUtils';
 import { portalRequestToDiscoveryRowItem } from './myRequestUtils';
-import { filterHiddenAvailableItems, useDiscoveryPreferences } from './useDiscoveryPreferences';
+import { filterDiscoverBrowseItems, useDiscoveryPreferences } from './useDiscoveryPreferences';
 import { enrichDiscoverItemsWithAvailability } from './discoverAvailabilityEnrich';
+import type { DiscoverBrowseMode } from './discoverAvailability';
 import { WatchlistPanel } from './WatchlistPanel';
 import { DiscoverHomeSkeleton } from '../shared/skeletons';
 import { discoveryTheme } from './discoveryThemeClasses';
@@ -206,7 +207,17 @@ export const DiscoverHome: React.FC<{
     providerLabel?: string;
     showPosterQualityBadges?: boolean;
     mediaServerType?: string;
-}> = ({ onSelect, formatItem, navigate, pushToast, providerLabel = 'Plex', showPosterQualityBadges = false, mediaServerType = 'plex' }) => {
+    browseMode?: DiscoverBrowseMode;
+}> = ({
+    onSelect,
+    formatItem,
+    navigate,
+    pushToast,
+    providerLabel = 'Plex',
+    showPosterQualityBadges = false,
+    mediaServerType = 'plex',
+    browseMode = 'discover',
+}) => {
     const { t, locale } = useDiscoverI18n();
     const { preferences } = useDiscoveryPreferences();
     const { showLibraryQueue, toggleLibraryQueue } = useLibraryQueueToggle();
@@ -240,14 +251,19 @@ export const DiscoverHome: React.FC<{
 
             const pageResults = (page: any) => (Array.isArray(page?.results) ? page.results : []);
 
+            const filterCatalog = (items: any[]) => filterDiscoverBrowseItems(items, {
+                mode: browseMode,
+                hideAvailable: browseMode ? false : hideAvailable,
+            });
+
             const paintFromHome = (home: any) => {
                 if (gen !== loadGenRef.current || !home) return;
                 setRows((prev) => ({
                     ...prev,
-                    trending: filterHiddenAvailableItems(pageResults(home?.trending), hideAvailable),
-                    upcomingMovies: filterHiddenAvailableItems(pageResults(home?.upcomingMovies), hideAvailable),
-                    popularSeries: filterHiddenAvailableItems(pageResults(home?.popularSeries), hideAvailable),
-                    upcomingSeries: filterHiddenAvailableItems(pageResults(home?.upcomingSeries), hideAvailable),
+                    trending: filterCatalog(pageResults(home?.trending)),
+                    upcomingMovies: filterCatalog(pageResults(home?.upcomingMovies)),
+                    popularSeries: filterCatalog(pageResults(home?.popularSeries)),
+                    upcomingSeries: filterCatalog(pageResults(home?.upcomingSeries)),
                 }));
                 if (!hasPaintedRef.current) {
                     hasPaintedRef.current = true;
@@ -327,7 +343,7 @@ export const DiscoverHome: React.FC<{
         } finally {
             if (gen === loadGenRef.current) setLoading(false);
         }
-    }, [preferences.hideAvailableMedia, preferences.discoverRegion, preferences.discoverLanguage, preferences.showRecentlyAdded, preferences.showWatchlist, locale]);
+    }, [browseMode, preferences.hideAvailableMedia, preferences.discoverRegion, preferences.discoverLanguage, preferences.showRecentlyAdded, preferences.showWatchlist, locale]);
 
     useEffect(() => {
         loadData();
@@ -345,13 +361,15 @@ export const DiscoverHome: React.FC<{
     }
 
     const isJellyfinPortal = String(mediaServerType || '').toLowerCase() === 'jellyfin';
+    const browseBase = browseMode === 'request' ? '/request' : '/discovery';
 
     return (
         <div className={`flex flex-col gap-6 w-full max-w-full overflow-hidden pb-8 px-1${enterAnim ? ' discover-content-enter' : ''}`}>
-            {!isJellyfinPortal && (
+            {!isJellyfinPortal && browseMode === 'discover' && (
                 <DiscoverDownloadsSection layout="rail" />
             )}
 
+            {(browseMode === 'request' || browseMode === 'discover') && (
             <DiscoverHomeRow
                 title={t('home.yourRequests')}
                 items={rows.recentRequests}
@@ -360,14 +378,14 @@ export const DiscoverHome: React.FC<{
                 formatItem={formatItem}
                 onSelect={onSelect}
                 animateEnter={enterAnim}
-                onViewAll={() => navigate('/discovery/requests')}
+                onViewAll={() => navigate('/request/requests')}
                 showPosterQualityBadges={showPosterQualityBadges}
                 empty={requestsReady ? (
                     <EmptyRail
                         title={t('home.noRequestsTitle')}
                         body={t('home.noRequestsBody')}
                         actionLabel={t('home.browseMovies')}
-                        onAction={() => navigate('/discovery/movies')}
+                        onAction={() => navigate(`${browseBase}/movies`)}
                         icon={<ClipboardList className="w-5 h-5" />}
                     />
                 ) : (
@@ -376,8 +394,9 @@ export const DiscoverHome: React.FC<{
                     </div>
                 )}
             />
+            )}
 
-            {showLibraryQueue ? (
+            {browseMode === 'discover' && showLibraryQueue ? (
                 <section className={discoveryTheme.personalPanel}>
                     <div className="px-1 flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -426,7 +445,7 @@ export const DiscoverHome: React.FC<{
                         ) : null}
                     </div>
                 </section>
-            ) : (
+            ) : browseMode === 'discover' ? (
                 <section className="rounded-xl border border-border/60 bg-white/[0.02] px-3 py-2.5 flex items-center justify-between gap-3">
                     <div className="min-w-0 flex items-baseline gap-2 sm:gap-3">
                         <p className={discoveryTheme.personalEyebrow}>{t('home.forYou')}</p>
@@ -444,7 +463,7 @@ export const DiscoverHome: React.FC<{
                         <ChevronDown className="w-3.5 h-3.5" />
                     </button>
                 </section>
-            )}
+            ) : null}
 
             <section className={discoveryTheme.browseSection}>
                 <div className="px-3 flex items-end justify-between gap-3 flex-wrap">
@@ -456,7 +475,7 @@ export const DiscoverHome: React.FC<{
                         <DiscoverGridSizeSelect value={gridSize} onChange={setGridSize} />
                         <button
                             type="button"
-                            onClick={() => navigate('/discovery/movies')}
+                            onClick={() => navigate(`${browseBase}/movies`)}
                             className="text-xs font-bold text-plex hover:underline inline-flex items-center gap-1"
                         >
                             <Film className="w-3.5 h-3.5" /> {t('home.allMovies')}
@@ -464,7 +483,7 @@ export const DiscoverHome: React.FC<{
                     </div>
                 </div>
 
-                {preferences.showRecentlyAdded !== false && (
+                {browseMode === 'discover' && preferences.showRecentlyAdded !== false && (
                     <DiscoverHomeRow
                         title={t('home.recentlyAdded')}
                         items={rows.recentlyAdded}
@@ -510,7 +529,7 @@ export const DiscoverHome: React.FC<{
                     formatItem={formatItem}
                     onSelect={onSelect}
                     animateEnter={enterAnim}
-                    onViewAll={() => navigate('/discovery/series')}
+                    onViewAll={() => navigate(`${browseBase}/series`)}
                     quickRequest={quickRequest}
                     notify={notify}
                     showPosterQualityBadges={showPosterQualityBadges}

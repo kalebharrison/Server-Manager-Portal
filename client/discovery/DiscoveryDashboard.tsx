@@ -6,12 +6,12 @@ import { DiscoverSeries } from './DiscoverSeries';
 import { DiscoverCategoryPage } from './DiscoverCategoryPage';
 import { MediaDetailsPage } from './MediaDetailsPage';
 import { PersonDetailsPage } from './PersonDetailsPage';
-import { Film, Tv, Compass, ClipboardList, AlertTriangle, ChevronDown, Users, Inbox } from 'lucide-react';
+import { Film, Tv, Compass, ClipboardList, AlertTriangle, ChevronDown, Users, Inbox, Sparkles } from 'lucide-react';
 import { DiscoverCommunityPage } from './DiscoverCommunityPage';
 import { apiFetch } from '../shared/api';
 import { portalUrl, stripBasePath } from '../shared/basePath';
 import { normalizeRawDiscoveryItem } from './discoverItemUtils';
-import { resolveMediaAvailabilityState } from './discoverAvailability';
+import { resolveMediaAvailabilityState, type DiscoverBrowseMode } from './discoverAvailability';
 import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
 import { MyRequestsPage } from './MyRequestsPage';
 import { MyIssuesPage } from './MyIssuesPage';
@@ -33,11 +33,20 @@ const DiscoveryDashboardInner: React.FC<{
     currentUserId?: string | null;
     showPosterQualityBadges?: boolean;
     serverName?: string;
-}> = ({ pushToast, mediaServerType = 'plex', isAdmin = false, currentUserId = null, showPosterQualityBadges = false, serverName }) => {
+    mode?: DiscoverBrowseMode;
+}> = ({
+    pushToast,
+    mediaServerType = 'plex',
+    isAdmin = false,
+    currentUserId = null,
+    showPosterQualityBadges = false,
+    serverName,
+    mode = 'discover',
+}) => {
     const { t, locale } = useDiscoverI18n();
     const [path, setPath] = useState(() => {
         if (typeof window !== 'undefined') return window.location.pathname;
-        return '/discovery';
+        return mode === 'request' ? '/request' : '/discovery';
     });
 
     const [query, setQuery] = useState('');
@@ -218,11 +227,60 @@ const DiscoveryDashboardInner: React.FC<{
 
     const openMedia = useCallback((item: any) => {
         stashDiscoverDetailSeed(item);
+        // Shared detail URLs live under /discovery so deep links don't fork.
         navigate(`/discovery/${item.type}/${item.id}`);
     }, [navigate]);
 
+    useEffect(() => {
+        if (!isAdmin) {
+            setAdminPendingCount(0);
+            return undefined;
+        }
+        let cancelled = false;
+        const load = () => {
+            apiFetch('/api/portal-request/admin/requests?filter=pending&take=1', { forceRefresh: true, cacheTtlMs: 0 })
+                .then((data: any) => {
+                    if (cancelled) return;
+                    const total = Number(data?.pageInfo?.results);
+                    setAdminPendingCount(Number.isFinite(total) ? total : (Array.isArray(data?.results) ? data.results.length : 0));
+                })
+                .catch(() => {
+                    if (!cancelled) setAdminPendingCount(0);
+                });
+        };
+        load();
+        const timer = window.setInterval(load, 60_000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [isAdmin, path]);
+
+    // Legacy bookmark: admin queue lived under Discover.
+    useEffect(() => {
+        const parts = stripBasePath(path).split('/').filter(Boolean);
+        if (parts[0] === 'discovery' && parts[1] === 'queue') {
+            navigate('/request/queue');
+        }
+        if (parts[0] === 'discovery' && (parts[1] === 'requests' || parts[1] === 'watchlist')) {
+            if (parts[1] === 'requests') navigate('/request/requests');
+            else navigate(mode === 'request' ? '/request' : '/discovery');
+        }
+    }, [path, navigate, mode]);
+
     const routeParts = stripBasePath(path).split('/').filter(Boolean);
+    const rootSegment = routeParts[0] === 'request' || routeParts[0] === 'requests'
+        ? 'request'
+        : 'discovery';
+    const browseMode: DiscoverBrowseMode = mode === 'request' || rootSegment === 'request'
+        ? 'request'
+        : 'discover';
+    const basePath = browseMode === 'request' ? '/request' : '/discovery';
     const subRoute = routeParts[1] || 'home';
+
+    if (rootSegment === 'discovery' && (subRoute === 'queue' || subRoute === 'requests' || subRoute === 'watchlist')) {
+        return null;
+    }
 
     if (routeParts.length >= 4 && routeParts[1] === 'movies' && routeParts[2] === 'studio') {
         const id = parseInt(routeParts[3], 10);
@@ -231,7 +289,7 @@ const DiscoveryDashboardInner: React.FC<{
                 <DiscoverCategoryPage
                     kind="studio"
                     id={id}
-                    onBack={() => navigate('/discovery')}
+                    onBack={() => navigate(basePath)}
                     onSelect={openMedia}
                     formatItem={formatItem}
                     pushToast={pushToast}
@@ -248,7 +306,7 @@ const DiscoveryDashboardInner: React.FC<{
                 <DiscoverCategoryPage
                     kind="network"
                     id={id}
-                    onBack={() => navigate('/discovery')}
+                    onBack={() => navigate(basePath)}
                     onSelect={openMedia}
                     formatItem={formatItem}
                     pushToast={pushToast}
@@ -277,7 +335,7 @@ const DiscoveryDashboardInner: React.FC<{
             <MediaDetailsPage
                 mediaType={type}
                 mediaId={id}
-                onBack={() => navigate('/discovery')}
+                onBack={() => window.history.back()}
                 formatItem={formatItem}
                 pushToast={pushToast}
                 mediaServerType={mediaServerType}
@@ -287,36 +345,9 @@ const DiscoveryDashboardInner: React.FC<{
         );
     }
 
-    useEffect(() => {
-        if (!isAdmin) {
-            setAdminPendingCount(0);
-            return undefined;
-        }
-        let cancelled = false;
-        const load = () => {
-            apiFetch('/api/portal-request/admin/requests?filter=pending&take=1', { forceRefresh: true, cacheTtlMs: 0 })
-                .then((data: any) => {
-                    if (cancelled) return;
-                    const total = Number(data?.pageInfo?.results);
-                    setAdminPendingCount(Number.isFinite(total) ? total : (Array.isArray(data?.results) ? data.results.length : 0));
-                })
-                .catch(() => {
-                    if (!cancelled) setAdminPendingCount(0);
-                });
-        };
-        load();
-        const timer = window.setInterval(load, 60_000);
-        return () => {
-            cancelled = true;
-            window.clearInterval(timer);
-        };
-    }, [isAdmin, path]);
-
     const showTabs = ['home', 'movies', 'series', 'community', 'requests', 'queue', 'issues'].includes(subRoute);
 
     if (subRoute === 'watchlist') {
-        // Plex watchlist integration is disabled — send people back to Discover.
-        navigate('/discovery');
         return null;
     }
 
@@ -324,19 +355,25 @@ const DiscoveryDashboardInner: React.FC<{
         discoveryMe?.permissions?.createIssues || discoveryMe?.permissions?.viewIssues
     );
 
-    const tabs = [
-        { id: 'home', path: '/discovery', label: t('nav.discover'), icon: Compass, count: 0, countColor: '' },
-        { id: 'movies', path: '/discovery/movies', label: t('nav.movies'), icon: Film, count: 0, countColor: '' },
-        { id: 'series', path: '/discovery/series', label: t('nav.series'), icon: Tv, count: 0, countColor: '' },
-        { id: 'community', path: '/discovery/community', label: t('nav.community'), icon: Users, count: 0, countColor: '' },
-        { id: 'requests', path: '/discovery/requests', label: t('nav.myRequests'), icon: ClipboardList, count: myPendingCount, countColor: 'bg-plex/25 text-plex' },
-        ...(isAdmin
-            ? [{ id: 'queue', path: '/discovery/queue', label: t('nav.requestQueue'), icon: Inbox, count: adminPendingCount, countColor: 'bg-plex/25 text-plex' }]
-            : []),
-        ...(canSeeIssuesTab
-            ? [{ id: 'issues', path: '/discovery/issues', label: t('nav.myIssues'), icon: AlertTriangle, count: myOpenIssueCount, countColor: 'bg-amber-500/25 text-amber-300' }]
-            : []),
-    ];
+    const tabs = browseMode === 'request'
+        ? [
+            { id: 'home', path: '/request', label: t('nav.requestHome'), icon: Sparkles, count: 0, countColor: '' },
+            { id: 'movies', path: '/request/movies', label: t('nav.movies'), icon: Film, count: 0, countColor: '' },
+            { id: 'series', path: '/request/series', label: t('nav.series'), icon: Tv, count: 0, countColor: '' },
+            { id: 'requests', path: '/request/requests', label: t('nav.myRequests'), icon: ClipboardList, count: myPendingCount, countColor: 'bg-plex/25 text-plex' },
+            ...(isAdmin
+                ? [{ id: 'queue', path: '/request/queue', label: t('nav.approve'), icon: Inbox, count: adminPendingCount, countColor: 'bg-plex/25 text-plex' }]
+                : []),
+        ]
+        : [
+            { id: 'home', path: '/discovery', label: t('nav.discover'), icon: Compass, count: 0, countColor: '' },
+            { id: 'movies', path: '/discovery/movies', label: t('nav.movies'), icon: Film, count: 0, countColor: '' },
+            { id: 'series', path: '/discovery/series', label: t('nav.series'), icon: Tv, count: 0, countColor: '' },
+            { id: 'community', path: '/discovery/community', label: t('nav.community'), icon: Users, count: 0, countColor: '' },
+            ...(canSeeIssuesTab
+                ? [{ id: 'issues', path: '/discovery/issues', label: t('nav.myIssues'), icon: AlertTriangle, count: myOpenIssueCount, countColor: 'bg-amber-500/25 text-amber-300' }]
+                : []),
+        ];
 
     const activeTab = tabs.find(t => t.id === subRoute) || tabs[0];
     const ActiveIcon = activeTab.icon;
@@ -424,6 +461,7 @@ const DiscoveryDashboardInner: React.FC<{
                         providerLabel={providerLabel}
                         showPosterQualityBadges={showPosterQualityBadges}
                         mediaServerType={mediaServerType}
+                        browseMode={browseMode}
                     />
                         )}
                         {subRoute === 'movies' && (
@@ -433,6 +471,7 @@ const DiscoveryDashboardInner: React.FC<{
                                 navigate={navigate}
                                 pushToast={pushToast}
                                 showPosterQualityBadges={showPosterQualityBadges}
+                                browseMode={browseMode}
                             />
                         )}
                         {subRoute === 'series' && (
@@ -442,26 +481,27 @@ const DiscoveryDashboardInner: React.FC<{
                                 navigate={navigate}
                                 pushToast={pushToast}
                                 showPosterQualityBadges={showPosterQualityBadges}
+                                browseMode={browseMode}
                             />
                         )}
-                        {subRoute === 'community' && (
+                        {subRoute === 'community' && browseMode === 'discover' && (
                             <DiscoverCommunityPage
                                 mediaServerType={mediaServerType}
                                 serverName={serverName}
                                 showPosterQualityBadges={showPosterQualityBadges}
                             />
                         )}
-                        {subRoute === 'requests' && (
+                        {subRoute === 'requests' && browseMode === 'request' && (
                             <MyRequestsPage
                                 navigate={navigate}
                                 pushToast={pushToast}
                                 onCountsChange={refreshMyRequestCount}
                             />
                         )}
-                        {subRoute === 'queue' && isAdmin && (
+                        {subRoute === 'queue' && browseMode === 'request' && isAdmin && (
                             <AdminRequestQueue />
                         )}
-                        {subRoute === 'issues' && (
+                        {subRoute === 'issues' && browseMode === 'discover' && (
                             <MyIssuesPage
                                 navigate={navigate}
                                 pushToast={pushToast}
@@ -483,6 +523,7 @@ export const DiscoveryDashboard: React.FC<{
     currentUserId?: string | null;
     showPosterQualityBadges?: boolean;
     serverName?: string;
+    mode?: DiscoverBrowseMode;
 }> = ({ pushToast: pushToastProp, ...props }) => {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const pushToast = useCallback((msg: string, type: 'success' | 'error') => {

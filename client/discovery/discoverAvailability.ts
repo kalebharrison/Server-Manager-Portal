@@ -503,6 +503,24 @@ export const isLibraryOwnedAvailabilityKind = (kind: MediaAvailabilityKind) => (
     kind === 'available' || kind === 'upToDate' || kind === 'partial'
 );
 
+export type DiscoverBrowseMode = 'discover' | 'request';
+
+/** Discover inventory: in library or already in the request pipeline. */
+export const isDiscoverInventoryKind = (kind: MediaAvailabilityKind) => (
+    kind !== 'none' && kind !== 'blacklisted'
+);
+
+/** Request inventory: not in library and not already requested. */
+export const isRequestInventoryKind = (kind: MediaAvailabilityKind) => kind === 'none';
+
+export const matchesDiscoverBrowseMode = (item: any, mode?: DiscoverBrowseMode | null) => {
+    if (!mode) return true;
+    const { kind } = resolveMediaAvailabilityState(item);
+    if (mode === 'discover') return isDiscoverInventoryKind(kind);
+    if (mode === 'request') return isRequestInventoryKind(kind);
+    return true;
+};
+
 /** Whether an item should be hidden when "hide available" is enabled. */
 export const shouldHideAvailableItem = (item: any): boolean => {
     const { kind } = resolveMediaAvailabilityState(item);
@@ -549,10 +567,16 @@ export const filterDiscoverBrowseItems = (
         hideAvailable?: boolean;
         hideRequested?: boolean;
         animeOnly?: boolean;
+        mode?: DiscoverBrowseMode | null;
     },
 ) => {
-    let filtered = filterHiddenAvailableItems(items, !!options.hideAvailable);
-    filtered = filterHiddenRequestedItems(filtered, !!options.hideRequested);
+    let filtered = Array.isArray(items) ? items : [];
+    if (options.mode === 'discover' || options.mode === 'request') {
+        filtered = filtered.filter((item) => matchesDiscoverBrowseMode(item, options.mode));
+    } else {
+        filtered = filterHiddenAvailableItems(filtered, !!options.hideAvailable);
+        filtered = filterHiddenRequestedItems(filtered, !!options.hideRequested);
+    }
     if (options.animeOnly) {
         filtered = filtered.filter((item) => isAnimeBrowseItem(item));
     }

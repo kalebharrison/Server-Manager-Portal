@@ -62,11 +62,13 @@ export const en = {
     },
     nav: {
         discover: 'Discover',
+        requestHome: 'Request',
         movies: 'Movies',
         series: 'Series',
         community: 'Community',
         myRequests: 'My Requests',
         requestQueue: 'Request Queue',
+        approve: 'Approve',
         myIssues: 'My Issues',
     },
     hero: {

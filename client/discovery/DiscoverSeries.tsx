@@ -24,6 +24,7 @@ import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { useDiscoverNotify } from './useDiscoverNotify';
 import { discoveryTheme } from './discoveryThemeClasses';
 import { useDiscoverI18n } from './i18n';
+import type { DiscoverBrowseMode } from './discoverAvailability';
 
 export const DiscoverSeries: React.FC<{
     onSelect: (item: any) => void;
@@ -31,7 +32,8 @@ export const DiscoverSeries: React.FC<{
     navigate: (path: string) => void;
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     showPosterQualityBadges?: boolean;
-}> = ({ onSelect, formatItem, navigate, pushToast, showPosterQualityBadges = false }) => {
+    browseMode?: DiscoverBrowseMode;
+}> = ({ onSelect, formatItem, navigate, pushToast, showPosterQualityBadges = false, browseMode = 'discover' }) => {
     const { t, locale } = useDiscoverI18n();
     const { preferences } = useDiscoveryPreferences();
     const { hideExisting, setHideExisting } = useHideExistingToggle();
@@ -61,16 +63,16 @@ export const DiscoverSeries: React.FC<{
     }, [readFiltersFromUrl]);
 
     const resetKey = useMemo(
-        () => `${JSON.stringify(filters)}:${preferences.hideAvailableMedia}:${preferences.discoverLanguage}:${hideExisting}:${animeOnly}:${gridSize}:${locale}`,
-        [filters, preferences.hideAvailableMedia, preferences.discoverLanguage, hideExisting, animeOnly, gridSize, locale],
+        () => `${JSON.stringify(filters)}:${preferences.hideAvailableMedia}:${preferences.discoverLanguage}:${hideExisting}:${animeOnly}:${gridSize}:${locale}:${browseMode}`,
+        [filters, preferences.hideAvailableMedia, preferences.discoverLanguage, hideExisting, animeOnly, gridSize, locale, browseMode],
     );
 
     const browseFilterOptions = useMemo(() => ({
-        // Hide library titles (available/partial); keep requested visible with badges.
-        hideAvailable: preferences.hideAvailableMedia || hideExisting,
+        mode: browseMode,
+        hideAvailable: browseMode ? false : (preferences.hideAvailableMedia || hideExisting),
         hideRequested: false,
         animeOnly,
-    }), [preferences.hideAvailableMedia, hideExisting, animeOnly]);
+    }), [browseMode, preferences.hideAvailableMedia, hideExisting, animeOnly]);
 
     const fetchPage = useCallback(async (page: number) => fetchDiscoverPageWithAdvance(
         (nextPage) => buildDiscoverSeriesApiUrl(nextPage, filters, { anime: animeOnly }),

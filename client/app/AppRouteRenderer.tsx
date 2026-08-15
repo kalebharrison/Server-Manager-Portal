@@ -66,17 +66,13 @@ export const AppRouteRenderer: React.FC<AppRouteRendererProps> = ({
         window.history.replaceState({}, '', portalUrl('/discovery'));
         return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} serverName={sessionInfo?.serverName} />;
     }
-    if (currentRoute === 'discover') return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} serverName={sessionInfo?.serverName} />;
+    if (currentRoute === 'discover') return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} serverName={sessionInfo?.serverName} mode="discover" />;
     if (currentRoute === 'settings' && isAdmin) return <SettingsDashboard />;
     if (currentRoute === 'preferences') return <UserPreferencesDashboard account={sessionInfo?.account} activeTheme={activeTheme} setActiveTheme={setActiveTheme} refreshSession={checkSession} readOnly={isImpersonating} />;
     if (currentRoute === 'mediastack') return <MediaStackDashboard cacheMinutes={effectivePublicConfig?.cacheRefreshMinutes} />;
     if (currentRoute === 'analytics') return <AnalyticsDashboard isAdmin={isAdmin} sessionInfo={sessionInfo} />;
     if (currentRoute === 'request') {
-        const path = stripBasePath(window.location.pathname);
-        if (path === '/request' || path === '/requests') {
-            window.history.replaceState({}, '', portalUrl('/discovery'));
-        }
-        return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} serverName={sessionInfo?.serverName} />;
+        return <DiscoveryDashboard onItemClick={() => {}} mediaServerType={sessionInfo?.mediaServerType} isAdmin={isAdmin} currentUserId={sessionInfo?.session?.id || sessionInfo?.account?.id || null} showPosterQualityBadges={effectivePublicConfig?.showPosterQualityBadges !== false} serverName={sessionInfo?.serverName} mode="request" />;
     }
     if (currentRoute === 'upgrader' && isAdmin) return <UpgraderDashboard />;
     if (currentRoute === 'issues') return <IssuesDashboard isAdmin={isAdmin} />;

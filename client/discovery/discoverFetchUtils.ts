@@ -1,7 +1,7 @@
 import { apiFetch } from '../shared/api';
 import type { FilterState } from './FilterDrawer';
 import { appendDiscoverQuery, hasAdvancedDiscoverFilters } from './discoverUrlUtils';
-import { filterDiscoverBrowseItems } from './discoverAvailability';
+import { filterDiscoverBrowseItems, type DiscoverBrowseMode } from './discoverAvailability';
 import { dedupeDiscoverResults } from './discoverItemUtils';
 import type { DiscoverPagePayload } from './useDiscoverInfiniteScroll';
 
@@ -10,6 +10,7 @@ type DiscoverBrowseFilterOptions = {
     hideRequested?: boolean;
     /** When on, keep Japanese animation (anime). */
     animeOnly?: boolean;
+    mode?: DiscoverBrowseMode | null;
     /**
      * Trust mediaInfo already attached by the discovery proxy (disk cache + warm catalog).
      * Client must not round-trip /availability-batch — that caused badge pop-in after paint.
@@ -211,7 +212,8 @@ export async function fetchDiscoverPageWithAdvance(
     page: number,
     options: DiscoverBrowseFilterOptions = {},
 ): Promise<DiscoverPagePayload & { lastFetchedPage: number }> {
-    const needsAdvance = !!options.hideAvailable || !!options.hideRequested || !!options.animeOnly;
+    const needsAdvance = !!options.hideAvailable || !!options.hideRequested || !!options.animeOnly
+        || options.mode === 'discover' || options.mode === 'request';
     if (!needsAdvance) {
         const payload = await fetchDiscoverPage(buildUrl(page), options);
         return { ...payload, lastFetchedPage: page };

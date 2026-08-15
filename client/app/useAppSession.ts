@@ -71,13 +71,15 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
                 : preferredLanding === 'discover'
                     ? 'discover'
                     : preferredLanding === 'request'
-                        ? 'discover'
+                        ? 'request'
                         : preferredLanding;
             const landingPath = preferredLanding === 'portal'
                 ? '/portal'
-                : preferredLanding === 'discover' || preferredLanding === 'request'
+                : preferredLanding === 'discover'
                     ? '/discovery'
-                    : `/${preferredLanding}`;
+                    : preferredLanding === 'request'
+                        ? '/request'
+                        : `/${preferredLanding}`;
             if (path === '/status') updateRoute('status');
             else if (path === '/dashboard') {
                 // Orphaned post-Discover-merge route — send bookmarks to Discover.
@@ -93,10 +95,11 @@ export const useAppSession = (publicConfig: any, updateRoute: (route: AppRoute) 
             }
             else if (path === '/mediastack') updateRoute('mediastack');
             else if (path === '/maintenance') updateRoute(data.session.isAdmin ? 'settings' : 'user');
-            else if (path === '/request' || path === '/requests') {
-                // Discover is the request UI — don't keep a duplicate route alive.
-                window.history.replaceState({}, '', portalUrl('/discovery'));
-                updateRoute('discover');
+            else if (path === '/request' || path === '/requests' || path.startsWith('/request/')) {
+                if (path === '/requests') {
+                    window.history.replaceState({}, '', portalUrl('/request'));
+                }
+                updateRoute('request');
             }
             else if (path === '/upgrader' && data.session.isAdmin && !data.impersonation?.active && data.navFeatures?.upgrader) updateRoute('upgrader');
             else if (path === '/issues') updateRoute('issues');
@@ -194,8 +197,8 @@ export const useAppRouting = () => {
             window.history.pushState({}, '', portalUrl('/settings#logs'));
             return;
         }
-        // Legacy aliases — Discover owns request UI + the old library dashboard.
-        const normalized: AppRoute = (route === 'dashboard' || route === 'request') ? 'discover' : route;
+        // Legacy alias — old library dashboard redirects to Discover.
+        const normalized: AppRoute = route === 'dashboard' ? 'discover' : route;
         updateRoute(normalized);
         if (normalized !== 'loading' && normalized !== 'invite') {
             let path = '/';
@@ -204,6 +207,7 @@ export const useAppRouting = () => {
             if (normalized === 'user') path = '/portal';
             if (normalized === 'status') path = '/status';
             if (normalized === 'discover') path = '/discovery';
+            if (normalized === 'request') path = '/request';
             if (normalized === 'settings') path = '/settings#branding';
             if (normalized === 'preferences') path = '/preferences';
             if (normalized === 'analytics') path = '/analytics';
