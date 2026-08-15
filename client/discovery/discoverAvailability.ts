@@ -513,14 +513,6 @@ export const isDiscoverInventoryKind = (kind: MediaAvailabilityKind) => (
 /** Request inventory: not in library and not already requested. */
 export const isRequestInventoryKind = (kind: MediaAvailabilityKind) => kind === 'none';
 
-export const matchesDiscoverBrowseMode = (item: any, mode?: DiscoverBrowseMode | null) => {
-    if (!mode) return true;
-    const { kind } = resolveMediaAvailabilityState(item);
-    if (mode === 'discover') return isDiscoverInventoryKind(kind);
-    if (mode === 'request') return isRequestInventoryKind(kind);
-    return true;
-};
-
 /** Whether an item should be hidden when "hide available" is enabled. */
 export const shouldHideAvailableItem = (item: any): boolean => {
     const { kind } = resolveMediaAvailabilityState(item);
@@ -539,18 +531,44 @@ export const isMediaAvailableInLibrary = (item: any = {}) => {
     return false;
 };
 
+/** Whether an item should be hidden when "hide requested" is enabled on browse pages. */
+export const shouldHideRequestedItem = (item: any): boolean => {
+    const { kind } = resolveMediaAvailabilityState(item);
+    return kind === 'requested' || kind === 'pending' || kind === 'processing';
+};
+
+export const matchesDiscoverBrowseMode = (item: any, mode?: DiscoverBrowseMode | null) => {
+    if (!mode) return true;
+    const { kind } = resolveMediaAvailabilityState(item);
+    if (mode === 'discover') return isDiscoverInventoryKind(kind);
+
+    if (mode === 'request') {
+        // Strict requestable-only inventory. Unstamped library titles can look like
+        // "none" — also drop Arr/request/notify stamps that mean "already handled".
+        if (!isRequestInventoryKind(kind)) return false;
+        if (isLibraryOwnedAvailabilityKind(kind) || shouldHideAvailableItem(item) || isMediaAvailableInLibrary(item)) {
+            return false;
+        }
+        if (shouldHideRequestedItem(item)) return false;
+        if (item?.radarrLibraryStatus?.hasFile === true) return false;
+        if (item?.radarrLibraryStatus?.matched === true) return false;
+        if (item?.sonarrLibraryStatus?.matched === true) return false;
+        if (item?.canNotify === true || item?.notifying === true) return false;
+        if (item?.mediaInfo?.requestAttribution || item?.requestAttribution) return false;
+        const stamped = Number(item?.mediaInfo?.status ?? item?.media?.status);
+        if (Number.isFinite(stamped) && stamped > 0 && stamped !== MEDIA_STATUS.UNKNOWN) return false;
+        return true;
+    }
+
+    return true;
+};
+
 export const filterHiddenAvailableItems = <T extends { mediaInfo?: { status?: number }; media?: { status?: number } }>(
     items: T[],
     hideAvailable: boolean,
 ): T[] => {
     if (!hideAvailable || !Array.isArray(items)) return items;
     return items.filter((item) => !shouldHideAvailableItem(item));
-};
-
-/** Whether an item should be hidden when "hide requested" is enabled on browse pages. */
-export const shouldHideRequestedItem = (item: any): boolean => {
-    const { kind } = resolveMediaAvailabilityState(item);
-    return kind === 'requested' || kind === 'pending' || kind === 'processing';
 };
 
 export const filterHiddenRequestedItems = <T extends { mediaInfo?: { status?: number }; media?: { status?: number } }>(

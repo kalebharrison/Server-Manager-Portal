@@ -2,6 +2,7 @@ import { apiFetch } from '../shared/api';
 import type { FilterState } from './FilterDrawer';
 import { appendDiscoverQuery, hasAdvancedDiscoverFilters } from './discoverUrlUtils';
 import { filterDiscoverBrowseItems, type DiscoverBrowseMode } from './discoverAvailability';
+import { enrichDiscoverItemsWithAvailability } from './discoverAvailabilityEnrich';
 import { dedupeDiscoverResults } from './discoverItemUtils';
 import type { DiscoverPagePayload } from './useDiscoverInfiniteScroll';
 
@@ -124,7 +125,13 @@ export async function fetchDiscoverPage(
     options: DiscoverBrowseFilterOptions = {},
 ): Promise<DiscoverPagePayload> {
     const res = await apiFetch(url);
-    const filtered = filterDiscoverBrowseItems(res?.results || [], options);
+    let results = Array.isArray(res?.results) ? res.results : [];
+    // Mode inventory filters need live Arr stamps — cold catalog peeks leave library
+    // titles looking requestable (`kind: none`). Enrich before filtering.
+    if (options.mode === 'request' || options.mode === 'discover') {
+        results = await enrichDiscoverItemsWithAvailability(results);
+    }
+    const filtered = filterDiscoverBrowseItems(results, options);
     return {
         results: dedupeDiscoverResults(filtered),
         totalPages: Math.max(1, Number(res?.totalPages) || 1),

@@ -251,19 +251,32 @@ export const DiscoverHome: React.FC<{
 
             const pageResults = (page: any) => (Array.isArray(page?.results) ? page.results : []);
 
-            const filterCatalog = (items: any[]) => filterDiscoverBrowseItems(items, {
-                mode: browseMode,
-                hideAvailable: browseMode ? false : hideAvailable,
-            });
+            const prepareCatalog = async (items: any[]) => {
+                let next = Array.isArray(items) ? items : [];
+                if (browseMode === 'request' || browseMode === 'discover') {
+                    next = await enrichDiscoverItemsWithAvailability(next);
+                }
+                return filterDiscoverBrowseItems(next, {
+                    mode: browseMode,
+                    hideAvailable: browseMode ? false : hideAvailable,
+                });
+            };
 
-            const paintFromHome = (home: any) => {
+            const paintFromHome = async (home: any) => {
                 if (gen !== loadGenRef.current || !home) return;
+                const [trending, upcomingMovies, popularSeries, upcomingSeries] = await Promise.all([
+                    prepareCatalog(pageResults(home?.trending)),
+                    prepareCatalog(pageResults(home?.upcomingMovies)),
+                    prepareCatalog(pageResults(home?.popularSeries)),
+                    prepareCatalog(pageResults(home?.upcomingSeries)),
+                ]);
+                if (gen !== loadGenRef.current) return;
                 setRows((prev) => ({
                     ...prev,
-                    trending: filterCatalog(pageResults(home?.trending)),
-                    upcomingMovies: filterCatalog(pageResults(home?.upcomingMovies)),
-                    popularSeries: filterCatalog(pageResults(home?.popularSeries)),
-                    upcomingSeries: filterCatalog(pageResults(home?.upcomingSeries)),
+                    trending,
+                    upcomingMovies,
+                    popularSeries,
+                    upcomingSeries,
                 }));
                 if (!hasPaintedRef.current) {
                     hasPaintedRef.current = true;
@@ -322,14 +335,14 @@ export const DiscoverHome: React.FC<{
             // Shared rails from server prewarm cache (one round-trip).
             const home = await apiFetch('/api/discovery/home').catch(() => null);
             if (gen !== loadGenRef.current) return;
-            paintFromHome(home);
+            await paintFromHome(home);
 
             // Soft-revalidate only when the snapshot is older than the 5m refresh window.
             const generatedAt = Number(home?.generatedAt || 0);
             if (generatedAt > 0 && Date.now() - generatedAt >= CACHE_STALE_MS) {
-                void apiFetch('/api/discovery/home').then((fresh) => {
+                void apiFetch('/api/discovery/home').then(async (fresh) => {
                     if (gen !== loadGenRef.current || !fresh) return;
-                    paintFromHome(fresh);
+                    await paintFromHome(fresh);
                 }).catch(() => {});
             }
 
@@ -369,7 +382,7 @@ export const DiscoverHome: React.FC<{
                 <DiscoverDownloadsSection layout="rail" />
             )}
 
-            {(browseMode === 'request' || browseMode === 'discover') && (
+            {(browseMode === 'discover') && (
             <DiscoverHomeRow
                 title={t('home.yourRequests')}
                 items={rows.recentRequests}
