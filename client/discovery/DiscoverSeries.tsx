@@ -9,7 +9,8 @@ import { DiscoverMediaRail } from './DiscoverMediaRail';
 import { enrichDiscoverItemsWithAvailability } from './discoverAvailabilityEnrich';
 import type { DiscoverBrowseMode } from './discoverAvailability';
 import { enrichDiscoveryItems } from './discoverItemUtils';
-import { libraryRecentToDiscoveryItem } from './discoverRailUtils';
+import { backfillFilteredDiscoverResults } from './discoverFetchUtils';
+import { claimExclusiveRailItems, libraryRecentToDiscoveryItem } from './discoverRailUtils';
 import { discoveryTheme } from './discoveryThemeClasses';
 import { useAnimeToggle } from './useAnimeToggle';
 import { useDiscoverGridSize } from './useDiscoverGridSize';
@@ -100,12 +101,44 @@ export const DiscoverSeries: React.FC<{
             const upcomingSource = upcomingRes?.results?.length
                 ? upcomingRes
                 : home?.upcomingSeries;
-            const [trending, upcoming, popular] = await Promise.all([
+            const [trendingRawPrep, upcomingPrep, popularPrep] = await Promise.all([
                 prepareCatalog(trendingRaw),
                 prepareCatalog(pageResults(upcomingSource)),
                 prepareCatalog(pageResults(popularRes)),
             ]);
             if (gen !== loadGenRef.current) return;
+
+            let trending = trendingRawPrep;
+            let upcoming = upcomingPrep;
+            let popular = popularPrep;
+            if (browseMode === 'request') {
+                [trending, upcoming, popular] = await Promise.all([
+                    backfillFilteredDiscoverResults(
+                        trending,
+                        [(page) => `/api/discovery/trending?page=${page}`],
+                        prepareCatalog,
+                        { minItems: 20, maxPages: 5 },
+                    ),
+                    backfillFilteredDiscoverResults(
+                        upcoming,
+                        [(page) => `/api/discovery/proxy/discover/tv/upcoming?page=${page}`],
+                        prepareCatalog,
+                        { minItems: 20, maxPages: 4 },
+                    ),
+                    backfillFilteredDiscoverResults(
+                        popular,
+                        [(page) => `/api/discovery/proxy/discover/tv?page=${page}&sortBy=popularity.desc`],
+                        prepareCatalog,
+                        { minItems: 20, maxPages: 5 },
+                    ),
+                ]);
+                if (gen !== loadGenRef.current) return;
+            }
+
+            [trending, upcoming, popular] = claimExclusiveRailItems(
+                [{ items: trending }, { items: upcoming }, { items: popular }],
+                { maxPerRail: 24 },
+            );
 
             let recentlyAdded: any[] = [];
             let recentlyUpgraded: any[] = [];

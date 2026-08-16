@@ -4,6 +4,7 @@ import { appendDiscoverQuery, hasAdvancedDiscoverFilters } from './discoverUrlUt
 import { filterDiscoverBrowseItems, type DiscoverBrowseMode } from './discoverAvailability';
 import { enrichDiscoverItemsWithAvailability } from './discoverAvailabilityEnrich';
 import { dedupeDiscoverResults } from './discoverItemUtils';
+import { discoveryItemKey } from './discoverRailUtils';
 import type { DiscoverPagePayload } from './useDiscoverInfiniteScroll';
 
 type DiscoverBrowseFilterOptions = {
@@ -208,6 +209,49 @@ export async function fetchDiscoverHomeRowResults(
     }
 
     return merged.slice(0, maxItems);
+}
+
+/**
+ * After requestable filtering thins a rail, pull later pages from one or more
+ * endpoints until we have enough posters (or run out of pages).
+ */
+export async function backfillFilteredDiscoverResults(
+    seed: any[],
+    sources: Array<(page: number) => string>,
+    prepareBatch: (raw: any[]) => Promise<any[]>,
+    options: { minItems?: number; maxPages?: number; startPage?: number } = {},
+): Promise<any[]> {
+    const minItems = Math.max(1, Number(options.minItems) || 18);
+    const maxPages = Math.max(1, Number(options.maxPages) || 5);
+    const startPage = Math.max(2, Number(options.startPage) || 2);
+    const seen = new Set<string>();
+    const merged: any[] = [];
+    for (const item of Array.isArray(seed) ? seed : []) {
+        const key = discoveryItemKey(item);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        merged.push(item);
+    }
+    if (merged.length >= minItems || !sources.length) return merged;
+
+    for (let page = startPage; page <= maxPages && merged.length < minItems; page += 1) {
+        const pages = await Promise.all(
+            sources.map((buildUrl) => apiFetch(buildUrl(page)).catch(() => null)),
+        );
+        const raw = pages.flatMap((payload) => (
+            Array.isArray(payload?.results) ? payload.results : []
+        ));
+        if (!raw.length) continue;
+        const prepared = await prepareBatch(raw);
+        for (const item of prepared) {
+            const key = discoveryItemKey(item);
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            merged.push(item);
+            if (merged.length >= minItems) break;
+        }
+    }
+    return merged;
 }
 
 /**

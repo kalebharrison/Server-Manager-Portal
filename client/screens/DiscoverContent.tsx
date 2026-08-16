@@ -1,8 +1,11 @@
 import React from 'react';
 
+import { Carousel } from '../discovery/Carousel';
+import { discoveryTheme } from '../discovery/discoveryThemeClasses';
+import { useDiscoverGridSize } from '../discovery/useDiscoverGridSize';
 import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
+import { discoverRowCardWidthClass } from '../shared/portalLayout';
 import { ScrollReveal } from '../shared/ui';
-import { discoverPosterGridClass } from '../shared/portalLayout';
 
 export const PosterImage = React.memo<{
     src: string;
@@ -136,30 +139,30 @@ export const DISCOVER_LIMIT_OPTIONS = [
 ];
 
 export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; limit: number; showQualityBadges?: boolean; useScrollRevealAnimations?: boolean; preloadPosters?: boolean }> = ({ title, items, limit, showQualityBadges = true, useScrollRevealAnimations, preloadPosters = false }) => {
-    const initialCount = Math.min(20, limit);
-    const [visibleCount, setVisibleCount] = React.useState(initialCount);
-    React.useEffect(() => setVisibleCount(initialCount), [initialCount]);
+    const [gridSize] = useDiscoverGridSize();
+    const posterCardClass = discoverRowCardWidthClass(gridSize);
     if (!items?.length) return null;
-    const availableCount = Math.min(limit, items.length);
+    const shown = items.slice(0, Math.max(1, limit));
     return (
-        <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col discover-deferred-section">
-            <h3 className="text-plex text-sm uppercase tracking-[2px] mb-6 font-bold border-b border-white/10 pb-2">{title}</h3>
-            <div className={discoverPosterGridClass}>
-                {items.slice(0, visibleCount).map((item, i) => (
-                    <DiscoverPosterCard
-                        key={item.ratingKey || `${item.title}-${i}`}
-                        item={item}
-                        overlay={discoverViewsOverlay(item.views)}
-                        showQualityBadges={showQualityBadges}
-                        priority={preloadPosters && i < 8}
-                    />
-                ))}
+        <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col gap-2 relative discover-deferred-section">
+            <div className="flex items-center gap-3 min-w-0 px-2">
+                <h3 className={`${discoveryTheme.sectionTitle} truncate`}>{title}</h3>
             </div>
-            {visibleCount < availableCount && (
-                <button type="button" className="self-center rounded-lg border border-border px-4 py-2 text-sm font-semibold text-muted hover:border-plex/50 hover:text-text" onClick={() => setVisibleCount((count) => Math.min(count + 10, availableCount))}>
-                    Show more
-                </button>
-            )}
+            <Carousel>
+                {shown.map((item, i) => (
+                    <div
+                        key={item.ratingKey || `${item.title}-${i}`}
+                        className={`${posterCardClass} flex-shrink-0 relative group poster-rail-item`}
+                    >
+                        <DiscoverPosterCard
+                            item={item}
+                            overlay={discoverViewsOverlay(item.views)}
+                            showQualityBadges={showQualityBadges}
+                            priority={preloadPosters && i < 8}
+                        />
+                    </div>
+                ))}
+            </Carousel>
         </ScrollReveal>
     );
 };

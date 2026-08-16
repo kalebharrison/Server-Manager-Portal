@@ -9,16 +9,16 @@ export const DiscoverCommunityView: React.FC<{
     serverName?: string;
     isJellyfinPortal: boolean;
 }> = ({ trendingStats, recentLimit, showQualityBadges, serverName, isJellyfinPortal }) => (
-    <div className="flex w-full flex-col gap-10">
+    <div className="flex w-full flex-col gap-6 px-1 pb-8">
         {isJellyfinPortal ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted">
                 Community trending is available when this portal is connected to Plex analytics.
             </div>
         ) : trendingStats ? (
-            <section className="flex w-full flex-col gap-10">
-                <div className="text-center">
-                    <h2 className="text-2xl font-extrabold text-white md:text-3xl">Community activity on {serverName || 'this server'}</h2>
-                    <p className="mt-2 text-sm text-muted">What the community has been watching recently.</p>
+            <section className="flex w-full flex-col gap-6">
+                <div className="px-2">
+                    <h2 className="text-xl font-extrabold text-white md:text-2xl">Community activity on {serverName || 'this server'}</h2>
+                    <p className="mt-1 text-sm text-muted">What the community has been watching recently.</p>
                 </div>
                 <TrendingDiscoverSection title="Trending This Week" items={trendingStats.trending7Days} limit={recentLimit} showQualityBadges={showQualityBadges} preloadPosters />
                 <TrendingDiscoverSection title="Most Watched Movies This Month" items={trendingStats.movies30Days} limit={recentLimit} showQualityBadges={showQualityBadges} />

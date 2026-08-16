@@ -74,10 +74,10 @@ export const fr: DeepPartial<EnCatalog> = {
         myIssues: 'Mes signalements',
     },
     hero: {
-        title: 'Discover & Request',
-        subtitle: 'Cherchez dans le catalogue, ou choisissez un raccourci ci-dessous.',
+        title: 'Recherche',
+        subtitle: 'Trouvez films, séries et personnes dans le catalogue.',
         searchPlaceholder: 'Films, séries, personnes…',
-        searchAria: 'Rechercher dans Discover',
+        searchAria: 'Rechercher dans le catalogue',
         chipTrending: 'Tendances',
         chipMovies: 'Films',
         chipSeries: 'Séries',

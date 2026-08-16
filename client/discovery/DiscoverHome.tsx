@@ -18,7 +18,8 @@ import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
 import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { useDiscoverNotify } from './useDiscoverNotify';
 import { DiscoverDownloadsSection } from '../screens/DiscoverDownloadsSection';
-import { mergeDiscoveryRails } from './discoverRailUtils';
+import { backfillFilteredDiscoverResults } from './discoverFetchUtils';
+import { claimExclusiveRailItems, mergeDiscoveryRails } from './discoverRailUtils';
 
 const REQUESTS_CACHE_KEY = 'discover-my-requests-v1';
 
@@ -253,7 +254,7 @@ export const DiscoverHome: React.FC<{
 
             const paintFromHome = async (home: any) => {
                 if (gen !== loadGenRef.current || !home) return;
-                const [trending, upcoming, popular] = await Promise.all([
+                let [trending, upcoming, popular] = await Promise.all([
                     prepareCatalog(pageResults(home?.trending)),
                     prepareCatalog(mergeDiscoveryRails(home?.upcomingMovies, home?.upcomingSeries)),
                     prepareCatalog(mergeDiscoveryRails(
@@ -262,6 +263,44 @@ export const DiscoverHome: React.FC<{
                     )),
                 ]);
                 if (gen !== loadGenRef.current) return;
+
+                // Request mode hides library titles — pull later pages so rails stay dense.
+                if (browseMode === 'request') {
+                    [trending, upcoming, popular] = await Promise.all([
+                        backfillFilteredDiscoverResults(
+                            trending,
+                            [(page) => `/api/discovery/trending?page=${page}`],
+                            prepareCatalog,
+                            { minItems: 20, maxPages: 5 },
+                        ),
+                        backfillFilteredDiscoverResults(
+                            upcoming,
+                            [
+                                (page) => `/api/discovery/proxy/discover/movies/upcoming?page=${page}`,
+                                (page) => `/api/discovery/proxy/discover/tv/upcoming?page=${page}`,
+                            ],
+                            prepareCatalog,
+                            { minItems: 20, maxPages: 4 },
+                        ),
+                        backfillFilteredDiscoverResults(
+                            popular,
+                            [
+                                (page) => `/api/discovery/proxy/discover/movies?page=${page}&sortBy=popularity.desc`,
+                                (page) => `/api/discovery/proxy/discover/tv?page=${page}&sortBy=popularity.desc`,
+                            ],
+                            prepareCatalog,
+                            { minItems: 20, maxPages: 5 },
+                        ),
+                    ]);
+                    if (gen !== loadGenRef.current) return;
+                }
+
+                // Trending wins ties; later rails skip titles already shown. Mixed home rails zip movies/TV.
+                [trending, upcoming, popular] = claimExclusiveRailItems(
+                    [{ items: trending }, { items: upcoming }, { items: popular }],
+                    { interleave: true, maxPerRail: 24 },
+                );
+
                 setRows((prev) => ({
                     ...prev,
                     trending,

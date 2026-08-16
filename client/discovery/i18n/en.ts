@@ -1,4 +1,4 @@
-/** English (source) catalog for Discover & Request UI chrome. */
+/** English (source) catalog for Discover / Request UI chrome. */
 export const en = {
     status: {
         available: 'Available',
@@ -72,10 +72,10 @@ export const en = {
         myIssues: 'My Issues',
     },
     hero: {
-        title: 'Discover & Request',
-        subtitle: 'Search the catalog, or jump in with a quick pick below.',
+        title: 'Search',
+        subtitle: 'Find movies, shows, and people across the catalog.',
         searchPlaceholder: 'Search movies, TV, people…',
-        searchAria: 'Search Discover',
+        searchAria: 'Search the catalog',
         chipTrending: 'Trending',
         chipMovies: 'Movies',
         chipSeries: 'Series',
@@ -106,7 +106,10 @@ export const en = {
         whatsPopular: 'What’s popular',
         allMovies: 'All movies',
         recentlyAdded: 'Recently Added',
+        recentlyUpgraded: 'Recently Upgraded',
         trending: 'Trending',
+        upcoming: 'Upcoming',
+        popular: 'Popular',
         popularMovies: 'Popular Movies',
         movieGenres: 'Movie Genres',
         upcomingMovies: 'Upcoming Movies',
