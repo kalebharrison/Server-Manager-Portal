@@ -3,18 +3,20 @@ import test from 'node:test';
 
 import {
     historyRecordIsUpgrade,
+    historyRecordIsUpgradeDelete,
     listRecentUpgradedDiscoverItems,
 } from '../../lib/discovery/discover-recent-upgrades.js';
 
-test('historyRecordIsUpgrade accepts Arr True strings and reasons', () => {
+test('historyRecordIsUpgrade accepts Arr True strings and delete reasons', () => {
     assert.equal(historyRecordIsUpgrade({ data: { isUpgrade: 'True' } }), true);
     assert.equal(historyRecordIsUpgrade({ data: { isUpgrade: 'False' } }), false);
-    assert.equal(historyRecordIsUpgrade({ eventType: 'upgrade' }), true);
-    assert.equal(historyRecordIsUpgrade({ data: { reason: 'Upgrade' } }), true);
+    assert.equal(historyRecordIsUpgrade({ eventType: 'movieFileDeleted', data: { reason: 'Upgrade' } }), true);
+    assert.equal(historyRecordIsUpgradeDelete({ eventType: 'movieFileDeleted', data: { reason: 'Upgrade' } }), true);
+    assert.equal(historyRecordIsUpgradeDelete({ eventType: 'downloadFolderImported', data: { reason: 'Upgrade' } }), false);
     assert.equal(historyRecordIsUpgrade({ eventType: 'downloadFolderImported', data: {} }), false);
 });
 
-test('listRecentUpgradedDiscoverItems returns upgrades and hydrates tmdb from movie id', async () => {
+test('listRecentUpgradedDiscoverItems uses file-deleted Upgrade reason when isUpgrade is missing', async () => {
     const originalFetch = global.fetch;
     global.fetch = async (url) => {
         const href = String(url);
@@ -24,23 +26,35 @@ test('listRecentUpgradedDiscoverItems returns upgrades and hydrates tmdb from mo
                 status: 200,
                 headers: { get: () => 'application/json' },
                 json: async () => ({
-                    records: [{
-                        eventType: 'downloadFolderImported',
-                        date: new Date().toISOString(),
-                        movieId: 77,
-                        data: { isUpgrade: 'True', importedPath: '/movies/Dune.mkv' },
-                    }],
+                    records: [
+                        {
+                            eventType: 'downloadFolderImported',
+                            date: new Date().toISOString(),
+                            movieId: 1088,
+                            data: {
+                                // Modern Radarr often omits isUpgrade on the import row.
+                                droppedPath: '/downloads/Dune.mkv',
+                                importedPath: '/movies/Dune.mkv',
+                            },
+                        },
+                        {
+                            eventType: 'movieFileDeleted',
+                            date: new Date(Date.now() - 1000).toISOString(),
+                            movieId: 1088,
+                            data: { reason: 'Upgrade', size: '57048425720' },
+                        },
+                    ],
                 }),
                 text: async () => '',
             };
         }
-        if (href.includes('/api/v3/movie/77')) {
+        if (href.includes('/api/v3/movie/1088')) {
             return {
                 ok: true,
                 status: 200,
                 headers: { get: () => 'application/json' },
                 json: async () => ({
-                    id: 77,
+                    id: 1088,
                     title: 'Dune',
                     year: 2021,
                     tmdbId: 438631,
