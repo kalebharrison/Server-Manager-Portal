@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowUpCircle, CircleHelp, DownloadCloud, Film, Music, Sparkles, Tv } from 'lucide-react';
 
 import { apiFetch } from '../shared/api';
-import { discoverPosterGridClass } from '../shared/portalLayout';
+import { discoverPosterGridClass, discoverRowCardWidthClass, type UpgraderGridSize } from '../shared/portalLayout';
 import { ScrollReveal } from '../shared/ui';
 import { useVisibleInterval } from '../shared/useVisibleInterval';
 import { discoveryTheme } from '../discovery/discoveryThemeClasses';
+import { Carousel } from '../discovery/Carousel';
 import { groupOnTheWayDownloads } from '../../lib/media-stack/on-the-way-group.js';
 import { mapQueueRecords } from './media-stack/mediaStackUtils';
 import { PosterImage } from './DiscoverContent';
@@ -101,18 +102,24 @@ const DownloadPosterCard: React.FC<{ item: any; className?: string }> = ({ item,
 
 type Props = {
     useScrollRevealAnimations?: boolean;
-    /** `rail` = compact wrapping grid on Discover Home; `grid` = full poster grid. */
+    /** `rail` = horizontal carousel matching other Discover rails; `grid` = full poster grid. */
     layout?: 'grid' | 'rail';
+    /** Poster width class for rail layout (from useDiscoverGridSize). */
+    posterCardClass?: string;
+    gridSize?: UpgraderGridSize;
 };
 
 export const DiscoverDownloadsSection: React.FC<Props> = ({
     useScrollRevealAnimations,
     layout = 'grid',
+    posterCardClass,
+    gridSize = 'large',
 }) => {
     const seeded = readCachedDownloads();
     const [downloads, setDownloads] = useState<any[]>(() => seeded || []);
     const [loaded, setLoaded] = useState(() => seeded != null);
     const isRail = layout === 'rail';
+    const cardClass = posterCardClass || discoverRowCardWidthClass(gridSize);
 
     const loadDownloads = useCallback(async () => {
         try {
@@ -163,14 +170,13 @@ export const DiscoverDownloadsSection: React.FC<Props> = ({
         return (
             <div className="flex flex-col gap-2 relative">
                 {title}
-                <div
-                    className="grid gap-2 px-2"
-                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(5.5rem, 1fr))' }}
-                >
+                <Carousel>
                     {visibleDownloads.map((item) => (
-                        <DownloadPosterCard key={item.id} item={item} />
+                        <div key={item.id} className={`${cardClass} shrink-0`}>
+                            <DownloadPosterCard item={item} />
+                        </div>
                     ))}
-                </div>
+                </Carousel>
             </div>
         );
     }

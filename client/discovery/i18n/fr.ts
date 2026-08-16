@@ -97,6 +97,7 @@ export const fr: DeepPartial<EnCatalog> = {
         hideLibraryQueue: 'Masquer la file',
         showLibraryQueue: 'Afficher la file',
         yourRequests: 'Vos demandes',
+        recentlyRequested: 'Récemment demandés',
         noRequestsTitle: 'Aucune demande',
         noRequestsBody: 'Trouvez un titre et envoyez-le dans la file.',
         browseMovies: 'Parcourir les films',

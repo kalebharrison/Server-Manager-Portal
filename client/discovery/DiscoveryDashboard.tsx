@@ -49,6 +49,15 @@ const DiscoveryDashboardInner: React.FC<{
         return mode === 'request' ? '/request' : '/discovery';
     });
 
+    // Sidebar setRoute pushStates without popstate — remount key helps, but also
+    // sync path whenever mode or the address bar changes from outside navigate().
+    useEffect(() => {
+        const next = typeof window !== 'undefined'
+            ? window.location.pathname
+            : (mode === 'request' ? '/request' : '/discovery');
+        setPath(next);
+    }, [mode]);
+
     const [query, setQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -272,9 +281,8 @@ const DiscoveryDashboardInner: React.FC<{
     const rootSegment = routeParts[0] === 'request' || routeParts[0] === 'requests'
         ? 'request'
         : 'discovery';
-    const browseMode: DiscoverBrowseMode = mode === 'request' || rootSegment === 'request'
-        ? 'request'
-        : 'discover';
+    // Prefer the app route mode prop so sidebar switches aren't stuck on a stale path.
+    const browseMode: DiscoverBrowseMode = mode === 'request' ? 'request' : 'discover';
     const basePath = browseMode === 'request' ? '/request' : '/discovery';
     const subRoute = routeParts[1] || 'home';
 
@@ -472,6 +480,7 @@ const DiscoveryDashboardInner: React.FC<{
                                 pushToast={pushToast}
                                 showPosterQualityBadges={showPosterQualityBadges}
                                 browseMode={browseMode}
+                                mediaServerType={mediaServerType}
                             />
                         )}
                         {subRoute === 'series' && (
@@ -482,6 +491,7 @@ const DiscoveryDashboardInner: React.FC<{
                                 pushToast={pushToast}
                                 showPosterQualityBadges={showPosterQualityBadges}
                                 browseMode={browseMode}
+                                mediaServerType={mediaServerType}
                             />
                         )}
                         {subRoute === 'community' && browseMode === 'discover' && (

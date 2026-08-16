@@ -97,6 +97,7 @@ export const es: DeepPartial<EnCatalog> = {
         hideLibraryQueue: 'Ocultar cola',
         showLibraryQueue: 'Mostrar cola',
         yourRequests: 'Tus solicitudes',
+        recentlyRequested: 'Solicitados recientemente',
         noRequestsTitle: 'Aún no hay solicitudes',
         noRequestsBody: 'Encuentra algo bueno y envíalo a la cola.',
         browseMovies: 'Explorar películas',

@@ -95,6 +95,7 @@ export const en = {
         hideLibraryQueue: 'Hide library queue',
         showLibraryQueue: 'Show library queue',
         yourRequests: 'Your Requests',
+        recentlyRequested: 'Recently requested',
         noRequestsTitle: 'No requests yet',
         noRequestsBody: 'Find something good and send it to the queue.',
         browseMovies: 'Browse movies',

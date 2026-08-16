@@ -97,6 +97,7 @@ export const de: DeepPartial<EnCatalog> = {
         hideLibraryQueue: 'Warteschlange ausblenden',
         showLibraryQueue: 'Warteschlange einblenden',
         yourRequests: 'Deine Anfragen',
+        recentlyRequested: 'Kürzlich angefragt',
         noRequestsTitle: 'Noch keine Anfragen',
         noRequestsBody: 'Finde etwas Gutes und sende es in die Warteschlange.',
         browseMovies: 'Filme durchsuchen',

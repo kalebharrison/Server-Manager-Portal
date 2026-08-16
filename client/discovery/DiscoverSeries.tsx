@@ -1,30 +1,32 @@
-import React, { useCallback, useMemo, useRef } from 'react';
-import { Filter, Tv } from 'lucide-react';
-import { FilterDrawer, FilterState } from './FilterDrawer';
-import { DiscoverGridSizeSelect } from './DiscoverGridSizeSelect';
-import { DiscoverPosterGrid } from './DiscoverPosterGrid';
-import { useDiscoverGridSize } from './useDiscoverGridSize';
-import {
-    buildSeriesFilterPath,
-    countActiveFilters,
-    defaultSeriesFilters,
-    parseFiltersFromSearch,
-} from './discoverUrlUtils';
-import { useDiscoveryPreferences } from './useDiscoveryPreferences';
-import { findNetwork, TV_GENRES } from './discoverConstants';
-import { useDiscoverInfiniteScroll } from './useDiscoverInfiniteScroll';
-import { DiscoverInfiniteScrollFooter } from './DiscoverInfiniteScrollFooter';
-import { discoverSkeletonCountForGrid } from './discoverPaginationUtils';
-import { buildDiscoverSeriesApiUrl, fetchDiscoverPageWithAdvance } from './discoverFetchUtils';
-import { DiscoverHideExistingToggle } from './DiscoverHideExistingToggle';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Tv } from 'lucide-react';
+import { apiFetch } from '../shared/api';
+import { DiscoverHomeRowSkeleton } from '../shared/skeletons';
+import { discoverRowCardWidthClass } from '../shared/portalLayout';
 import { DiscoverAnimeToggle } from './DiscoverAnimeToggle';
-import { useHideExistingToggle } from './useHideExistingToggle';
-import { useAnimeToggle } from './useAnimeToggle';
-import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
-import { useDiscoverNotify } from './useDiscoverNotify';
-import { discoveryTheme } from './discoveryThemeClasses';
-import { useDiscoverI18n } from './i18n';
+import { DiscoverGridSizeSelect } from './DiscoverGridSizeSelect';
+import { DiscoverMediaRail } from './DiscoverMediaRail';
+import { enrichDiscoverItemsWithAvailability } from './discoverAvailabilityEnrich';
 import type { DiscoverBrowseMode } from './discoverAvailability';
+import { enrichDiscoveryItems } from './discoverItemUtils';
+import { libraryRecentToDiscoveryItem } from './discoverRailUtils';
+import { discoveryTheme } from './discoveryThemeClasses';
+import { useAnimeToggle } from './useAnimeToggle';
+import { useDiscoverGridSize } from './useDiscoverGridSize';
+import { useDiscoverI18n } from './i18n';
+import { useDiscoverNotify } from './useDiscoverNotify';
+import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
+import { filterDiscoverBrowseItems } from './useDiscoveryPreferences';
+
+const pageResults = (page: any) => (Array.isArray(page?.results) ? page.results : []);
+
+const isTvItem = (item: any) => {
+    const raw = item?.mediaType ?? item?.type;
+    if (raw === 'movie' || raw === 1 || raw === '1') return false;
+    if (raw === 'tv' || raw === 2 || raw === '2' || raw === 'show') return true;
+    if (item?.releaseDate && !item?.firstAirDate) return false;
+    return true;
+};
 
 export const DiscoverSeries: React.FC<{
     onSelect: (item: any) => void;
@@ -33,169 +35,199 @@ export const DiscoverSeries: React.FC<{
     pushToast?: (msg: string, type: 'success' | 'error') => void;
     showPosterQualityBadges?: boolean;
     browseMode?: DiscoverBrowseMode;
-}> = ({ onSelect, formatItem, navigate, pushToast, showPosterQualityBadges = false, browseMode = 'discover' }) => {
+    mediaServerType?: string;
+}> = ({
+    onSelect,
+    formatItem,
+    navigate: _navigate,
+    pushToast,
+    showPosterQualityBadges = false,
+    browseMode = 'discover',
+    mediaServerType = 'plex',
+}) => {
     const { t, locale } = useDiscoverI18n();
-    const { preferences } = useDiscoveryPreferences();
-    const { hideExisting, setHideExisting } = useHideExistingToggle();
     const { animeOnly, setAnimeOnly } = useAnimeToggle();
     const quickRequest = useDiscoverQuickRequest(pushToast);
     const notify = useDiscoverNotify(pushToast);
     const [gridSize, setGridSize] = useDiscoverGridSize();
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [showFilters, setShowFilters] = React.useState(false);
-
-    const [filters, setFilters] = React.useState<FilterState>(() =>
-        parseFiltersFromSearch(typeof window !== 'undefined' ? window.location.search : '', defaultSeriesFilters()),
-    );
-
-    const readFiltersFromUrl = useCallback(() => {
-        setFilters(parseFiltersFromSearch(window.location.search, defaultSeriesFilters()));
-    }, []);
-
-    React.useEffect(() => {
-        readFiltersFromUrl();
-        window.addEventListener('popstate', readFiltersFromUrl);
-        window.addEventListener('portal-discovery-navigate', readFiltersFromUrl);
-        return () => {
-            window.removeEventListener('popstate', readFiltersFromUrl);
-            window.removeEventListener('portal-discovery-navigate', readFiltersFromUrl);
-        };
-    }, [readFiltersFromUrl]);
-
-    const resetKey = useMemo(
-        () => `${JSON.stringify(filters)}:${preferences.hideAvailableMedia}:${preferences.discoverLanguage}:${hideExisting}:${animeOnly}:${gridSize}:${locale}:${browseMode}`,
-        [filters, preferences.hideAvailableMedia, preferences.discoverLanguage, hideExisting, animeOnly, gridSize, locale, browseMode],
-    );
-
-    const browseFilterOptions = useMemo(() => ({
-        mode: browseMode,
-        hideAvailable: browseMode ? false : (preferences.hideAvailableMedia || hideExisting),
-        hideRequested: false,
-        animeOnly,
-    }), [browseMode, preferences.hideAvailableMedia, hideExisting, animeOnly]);
-
-    const fetchPage = useCallback(async (page: number) => fetchDiscoverPageWithAdvance(
-        (nextPage) => buildDiscoverSeriesApiUrl(nextPage, filters, { anime: animeOnly }),
-        page,
-        browseFilterOptions,
-    ), [filters, browseFilterOptions, animeOnly]);
-
-    const {
-        results,
-        loading,
-        loadingMore,
-        hasMore,
-        sentinelRef,
-    } = useDiscoverInfiniteScroll({
-        resetKey,
-        gridSize,
-        containerRef,
-        fetchPage,
-        filterOptions: browseFilterOptions,
+    const posterCardClass = discoverRowCardWidthClass(gridSize);
+    const loadGenRef = useRef(0);
+    const [loading, setLoading] = useState(true);
+    const [enterAnim, setEnterAnim] = useState(true);
+    const [rows, setRows] = useState({
+        trending: [] as any[],
+        upcoming: [] as any[],
+        popular: [] as any[],
+        recentlyAdded: [] as any[],
+        recentlyUpgraded: [] as any[],
     });
 
-    const applyFilters = (newFilters: FilterState) => {
-        setFilters(newFilters);
-        navigate(buildSeriesFilterPath(newFilters));
-    };
+    const prepareCatalog = useCallback(async (items: any[]) => {
+        let next = Array.isArray(items) ? items.filter(isTvItem) : [];
+        if (browseMode === 'request' || browseMode === 'discover') {
+            next = await enrichDiscoverItemsWithAvailability(next);
+        }
+        return filterDiscoverBrowseItems(next, {
+            mode: browseMode,
+            animeOnly,
+            hideAvailable: false,
+        });
+    }, [animeOnly, browseMode]);
 
-    const networkLabel = filters.network
-        ? (filters.networkName || findNetwork(Number(filters.network))?.name || null)
-        : null;
-    const genreLabel = filters.genre
-        ? filters.genre
-            .split(',')
-            .map((id) => TV_GENRES.find((genre) => String(genre.id) === id.trim())?.name)
-            .filter(Boolean)
-            .join(', ')
-        : null;
-    const keywordLabel = filters.keywordName || null;
-    const activeFilterCount = countActiveFilters(filters, 'tv');
-    const filterSummary = [
-        networkLabel ? `Network: ${networkLabel}` : null,
-        genreLabel ? `Genre: ${genreLabel}` : null,
-        keywordLabel ? `Keyword: ${keywordLabel}` : null,
-        filters.excludeKeywordName ? `Excluding: ${filters.excludeKeywordName}` : null,
-        filters.status ? 'Status filtered' : null,
-        filters.language ? `Language: ${filters.language.toUpperCase()}` : null,
-        filters.watchProviders ? 'Streaming filtered' : null,
-    ].filter(Boolean).join(' · ');
-    const skeletonCount = discoverSkeletonCountForGrid(
-        gridSize,
-        containerRef.current?.clientWidth || (typeof window !== 'undefined' ? window.innerWidth : 1200),
-    );
+    const loadData = useCallback(async () => {
+        const gen = ++loadGenRef.current;
+        setLoading(true);
+        try {
+            const server = String(mediaServerType || 'plex').toLowerCase();
+            const dashboardPath = server === 'jellyfin'
+                ? '/api/jellyfin/dashboard'
+                : '/api/plex/dashboard';
 
-    const emptyMessage = activeFilterCount > 0 || hideExisting || animeOnly
-        ? t('browse.emptySeriesFiltered')
-        : t('browse.emptySeries');
-    const emptyHint = hideExisting
-        ? t('browse.emptyHintHideExisting')
-        : animeOnly
-            ? t('browse.emptyHintAnime')
-            : t('browse.emptyHint');
+            const [home, popularRes, upcomingRes, dashboard, upgrades] = await Promise.all([
+                apiFetch('/api/discovery/home').catch(() => null),
+                apiFetch('/api/discovery/proxy/discover/tv?page=1&sortBy=popularity.desc').catch(() => null),
+                apiFetch('/api/discovery/proxy/discover/tv/upcoming').catch(() => null),
+                browseMode === 'discover'
+                    ? apiFetch(dashboardPath).catch(() => null)
+                    : Promise.resolve(null),
+                browseMode === 'discover'
+                    ? apiFetch('/api/discovery/recent-upgrades?mediaType=tv&take=40').catch(() => null)
+                    : Promise.resolve(null),
+            ]);
+            if (gen !== loadGenRef.current) return;
+
+            const trendingRaw = pageResults(home?.trending).filter(isTvItem);
+            const upcomingSource = upcomingRes?.results?.length
+                ? upcomingRes
+                : home?.upcomingSeries;
+            const [trending, upcoming, popular] = await Promise.all([
+                prepareCatalog(trendingRaw),
+                prepareCatalog(pageResults(upcomingSource)),
+                prepareCatalog(pageResults(popularRes)),
+            ]);
+            if (gen !== loadGenRef.current) return;
+
+            let recentlyAdded: any[] = [];
+            let recentlyUpgraded: any[] = [];
+            if (browseMode === 'discover') {
+                const mappedRecent = (Array.isArray(dashboard?.recentShows) ? dashboard.recentShows : [])
+                    .map((item: any) => libraryRecentToDiscoveryItem(item, 'tv'));
+                const upgradeRaw = pageResults(upgrades);
+                const [addedPrepared, upgradedEnriched] = await Promise.all([
+                    prepareCatalog(mappedRecent),
+                    enrichDiscoveryItems(upgradeRaw).then((items) => prepareCatalog(items)),
+                ]);
+                if (gen !== loadGenRef.current) return;
+                recentlyAdded = addedPrepared;
+                recentlyUpgraded = upgradedEnriched;
+            }
+
+            setRows({
+                trending,
+                upcoming,
+                popular,
+                recentlyAdded,
+                recentlyUpgraded,
+            });
+            setEnterAnim(true);
+            window.setTimeout(() => setEnterAnim(false), 700);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            if (gen === loadGenRef.current) setLoading(false);
+        }
+    }, [browseMode, locale, mediaServerType, prepareCatalog]);
+
+    useEffect(() => {
+        loadData();
+        return () => {
+            loadGenRef.current += 1;
+        };
+    }, [loadData]);
 
     return (
-        <div className="w-full flex flex-col md:flex-row gap-8 px-4 sm:px-8 mt-4 relative">
-            <div className="flex-1 flex flex-col gap-6" ref={containerRef}>
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <div>
-                        <h2 className={`${discoveryTheme.heading} flex items-center gap-2`}>
-                            <Tv className="w-6 h-6 text-plex" /> {t('browse.seriesHeading')}
-                        </h2>
-                        {filterSummary && (
-                            <p className="text-sm text-muted mt-1 line-clamp-2">{filterSummary}</p>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap justify-end">
-                        <DiscoverGridSizeSelect value={gridSize} onChange={setGridSize} />
-                        <DiscoverAnimeToggle checked={animeOnly} onChange={setAnimeOnly} />
-                        <DiscoverHideExistingToggle checked={hideExisting} onChange={setHideExisting} />
-                        <button
-                            type="button"
-                            onClick={() => setShowFilters(true)}
-                            className={`relative ${discoveryTheme.toolbarBtn}`}
-                        >
-                            <Filter className="w-4 h-4" /> {t('browse.filters')}
-                            {activeFilterCount > 0 && (
-                                <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-plex text-black text-xs font-black flex items-center justify-center">
-                                    {activeFilterCount}
-                                </span>
-                            )}
-                        </button>
-                    </div>
+        <div className="w-full flex flex-col gap-6 px-4 sm:px-8 mt-4 relative pb-8">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+                <h2 className={`${discoveryTheme.heading} flex items-center gap-2`}>
+                    <Tv className="w-6 h-6 text-plex" /> {t('browse.seriesHeading')}
+                </h2>
+                <div className="flex items-center gap-3 flex-wrap justify-end">
+                    <DiscoverGridSizeSelect value={gridSize} onChange={setGridSize} />
+                    <DiscoverAnimeToggle checked={animeOnly} onChange={setAnimeOnly} />
                 </div>
-
-                <DiscoverPosterGrid
-                    items={results}
-                    gridSize={gridSize}
-                    formatItem={formatItem}
-                    onSelect={onSelect}
-                    loading={loading}
-                    skeletonCount={skeletonCount}
-                    emptyMessage={emptyMessage}
-                    emptyHint={emptyHint}
-                    quickRequest={quickRequest}
-                    notify={notify}
-                    variant="dense"
-                    showPosterQualityBadges={showPosterQualityBadges}
-                />
-
-                <DiscoverInfiniteScrollFooter
-                    sentinelRef={sentinelRef}
-                    loadingMore={loadingMore}
-                    hasMore={hasMore}
-                    loading={loading}
-                />
             </div>
 
-            <FilterDrawer
-                isOpen={showFilters}
-                onClose={() => setShowFilters(false)}
-                type="tv"
-                filters={filters}
-                onApply={applyFilters}
-                onClear={() => applyFilters(defaultSeriesFilters())}
-            />
+            {loading ? (
+                <div className="flex flex-col gap-6" aria-busy="true">
+                    <DiscoverHomeRowSkeleton />
+                    <DiscoverHomeRowSkeleton />
+                    <DiscoverHomeRowSkeleton />
+                    {browseMode === 'discover' && (
+                        <>
+                            <DiscoverHomeRowSkeleton />
+                            <DiscoverHomeRowSkeleton />
+                        </>
+                    )}
+                </div>
+            ) : (
+                <div className={`flex flex-col gap-6 w-full max-w-full overflow-hidden${enterAnim ? ' discover-content-enter' : ''}`}>
+                    <DiscoverMediaRail
+                        title={t('home.trending')}
+                        items={rows.trending}
+                        posterCardClass={posterCardClass}
+                        formatItem={formatItem}
+                        onSelect={onSelect}
+                        animateEnter={enterAnim}
+                        quickRequest={quickRequest}
+                        notify={notify}
+                        showPosterQualityBadges={showPosterQualityBadges}
+                    />
+                    <DiscoverMediaRail
+                        title={t('home.upcomingSeries')}
+                        items={rows.upcoming}
+                        posterCardClass={posterCardClass}
+                        formatItem={formatItem}
+                        onSelect={onSelect}
+                        animateEnter={enterAnim}
+                        quickRequest={quickRequest}
+                        notify={notify}
+                        showPosterQualityBadges={showPosterQualityBadges}
+                    />
+                    <DiscoverMediaRail
+                        title={t('home.popularSeries')}
+                        items={rows.popular}
+                        posterCardClass={posterCardClass}
+                        formatItem={formatItem}
+                        onSelect={onSelect}
+                        animateEnter={enterAnim}
+                        quickRequest={quickRequest}
+                        notify={notify}
+                        showPosterQualityBadges={showPosterQualityBadges}
+                    />
+                    {browseMode === 'discover' && (
+                        <>
+                            <DiscoverMediaRail
+                                title={t('home.recentlyAdded')}
+                                items={rows.recentlyAdded}
+                                posterCardClass={posterCardClass}
+                                formatItem={formatItem}
+                                onSelect={onSelect}
+                                animateEnter={enterAnim}
+                                showPosterQualityBadges={showPosterQualityBadges}
+                            />
+                            <DiscoverMediaRail
+                                title="Recently upgraded"
+                                items={rows.recentlyUpgraded}
+                                posterCardClass={posterCardClass}
+                                formatItem={formatItem}
+                                onSelect={onSelect}
+                                animateEnter={enterAnim}
+                                showPosterQualityBadges={showPosterQualityBadges}
+                            />
+                        </>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
