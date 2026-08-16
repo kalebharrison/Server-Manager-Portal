@@ -19,6 +19,24 @@ export const resolveHomeImage = (thumbUrl: string | null | undefined, fallback =
     return portalUrl(`/api/plex/image?path=${encodeURIComponent(thumbUrl)}&width=256&height=256`);
 };
 
+export const resolveHomePosterImage = (
+    item: { thumbUrl?: string | null; thumb?: string | null } | null | undefined,
+    width = 300,
+    height = 450,
+) => {
+    const thumbUrl = item?.thumbUrl || null;
+    if (thumbUrl) {
+        if (thumbUrl.startsWith('http://') || thumbUrl.startsWith('https://') || thumbUrl.startsWith('/api/')) {
+            return resolvePortalAssetUrl(thumbUrl);
+        }
+        return portalUrl(`/api/plex/image?path=${encodeURIComponent(thumbUrl)}&width=${width}&height=${height}`);
+    }
+    if (item?.thumb) {
+        return portalUrl(`/api/plex/image?path=${encodeURIComponent(item.thumb)}&width=${width}&height=${height}`);
+    }
+    return '';
+};
+
 export const buildJellyfinHomeAnalytics = (data: any) => {
     const topMovies = Array.isArray(data?.topMovies) ? data.topMovies : [];
     const topShows = Array.isArray(data?.topShows) ? data.topShows : [];

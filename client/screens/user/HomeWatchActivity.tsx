@@ -1,7 +1,8 @@
 import React, { Suspense, lazy, memo, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, Clock, PlaySquare } from 'lucide-react';
 
-import { resolvePortalAssetUrl } from '../../shared/basePath';
+import { prefetchImages } from '../../shared/prefetchImages';
+import { resolveHomePosterImage } from './userDashboardUtils';
 
 const ReportIssueModal = lazy(() => import('../ReportIssueModal').then(module => ({ default: module.ReportIssueModal })));
 
@@ -12,6 +13,8 @@ type Props = {
     recentHistoryRows?: number;
     topWatchedRows?: number;
 };
+
+const posterSrcForItem = (item: any, width = 300, height = 450) => resolveHomePosterImage(item, width, height);
 
 const PageControls: React.FC<{
     page: number;
@@ -64,6 +67,17 @@ export const HomeWatchActivity = memo<Props>(({ analytics, analyticsLoading, can
         [topItems, topPage, topPageSize],
     );
 
+    useEffect(() => {
+        const nextRecent = recentItems.slice((recentPage + 1) * recentPageSize, (recentPage + 2) * recentPageSize);
+        const nextTop = topItems.slice((topPage + 1) * topPageSize, (topPage + 2) * topPageSize);
+        prefetchImages([
+            ...visibleRecentItems.map((item: any) => posterSrcForItem(item, 128, 128)),
+            ...visibleTopItems.map((item: any) => posterSrcForItem(item, 300, 450)),
+            ...nextRecent.map((item: any) => posterSrcForItem(item, 128, 128)),
+            ...nextTop.map((item: any) => posterSrcForItem(item, 300, 450)),
+        ], 36);
+    }, [visibleRecentItems, visibleTopItems, recentItems, topItems, recentPage, topPage, recentPageSize, topPageSize]);
+
     if (!canShowAnalytics) return null;
 
     return (
@@ -77,12 +91,14 @@ export const HomeWatchActivity = memo<Props>(({ analytics, analyticsLoading, can
                                 {recentItems.length > recentPageSize && <PageControls page={recentPage} pageCount={recentPageCount} onPageChange={setRecentPage} />}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch flex-1 min-h-0 content-start">
-                                {visibleRecentItems.map((item: any, index: number) => (
+                                {visibleRecentItems.map((item: any, index: number) => {
+                                    const posterSrc = posterSrcForItem(item, 128, 128);
+                                    return (
                                     <div key={item.historyKey || `${item.type}-${item.title}-${index}`} className="flex items-center self-stretch gap-3 p-2 bg-black/20 rounded-xl border border-white/5 hover:border-plex/50 hover:bg-black/40 hover:shadow-[0_0_15px_rgba(229,160,13,0.15)] transition-all group relative">
                                         <a href={item.plexUrl} target="_blank" rel="noreferrer" className="flex items-center flex-1 min-w-0 gap-3">
                                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-background flex-shrink-0 shadow-md">
-                                                {item.thumbUrl ? (
-                                                    <img src={resolvePortalAssetUrl(item.thumbUrl)} alt={item.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                                {posterSrc ? (
+                                                    <img src={posterSrc} alt={item.title} className="w-full h-full object-cover" loading={index < 6 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 4 ? 'high' : 'auto'} />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center"><PlaySquare className="w-5 h-5 text-muted/50" /></div>
                                                 )}
@@ -104,7 +120,8 @@ export const HomeWatchActivity = memo<Props>(({ analytics, analyticsLoading, can
                                             <AlertTriangle className="w-4 h-4" />
                                         </button>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
@@ -120,11 +137,13 @@ export const HomeWatchActivity = memo<Props>(({ analytics, analyticsLoading, can
                                 {topItems.length > topPageSize && <PageControls page={topPage} pageCount={topPageCount} onPageChange={setTopPage} />}
                             </div>
                             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5 md:gap-3.5 flex-1 min-h-0 content-start">
-                                {visibleTopItems.map((item: any) => (
+                                {visibleTopItems.map((item: any, index: number) => {
+                                    const posterSrc = posterSrcForItem(item, 300, 450);
+                                    return (
                                     <a key={item.key} href={item.plexUrl} target="_blank" rel="noreferrer" className="group flex flex-col gap-1.5">
                                         <div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-background border border-white/5 transition-[box-shadow,border-color] duration-300 group-hover:shadow-xl group-hover:border-plex/50">
-                                            {item.thumbUrl ? (
-                                                <img src={resolvePortalAssetUrl(item.thumbUrl)} alt={item.title} className="w-full h-full object-cover transition-[transform,opacity] duration-300 group-hover:scale-105 group-hover:opacity-80" loading="lazy" decoding="async" />
+                                            {posterSrc ? (
+                                                <img src={posterSrc} alt={item.title} className="w-full h-full object-cover transition-[transform,opacity] duration-300 group-hover:scale-105 group-hover:opacity-80" loading={index < 8 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 6 ? 'high' : 'auto'} />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center p-4 text-center bg-white/5"><span className="text-xs font-bold text-muted line-clamp-3">{item.title}</span></div>
                                             )}
@@ -134,7 +153,8 @@ export const HomeWatchActivity = memo<Props>(({ analytics, analyticsLoading, can
                                             <p className="text-[10px] sm:text-xs text-plex font-black mt-0.5 uppercase tracking-wider">{item.plays} plays</p>
                                         </div>
                                     </a>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>

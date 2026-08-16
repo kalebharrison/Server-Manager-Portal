@@ -20,6 +20,8 @@ import { useDiscoverNotify } from './useDiscoverNotify';
 import { DiscoverDownloadsSection } from '../screens/DiscoverDownloadsSection';
 import { backfillFilteredDiscoverResults } from './discoverFetchUtils';
 import { claimExclusiveRailItems, discoveryItemKey, mergeDiscoveryRails } from './discoverRailUtils';
+import { prefetchImages } from '../shared/prefetchImages';
+import { resolvePortalAssetUrl } from '../shared/basePath';
 
 const REQUESTS_CACHE_KEY = 'discover-my-requests-v1';
 
@@ -96,6 +98,15 @@ const DiscoverHomeRow: React.FC<{
     showPosterQualityBadges = false,
 }) => {
     const { t } = useDiscoverI18n();
+    useEffect(() => {
+        if (!items?.length) return;
+        const urls = items.slice(0, 16).map((rawItem) => {
+            const formatted = formatItem(rawItem);
+            const src = formatted?.thumbUrl || formatted?.posterUrl || formatted?.posterPath || formatted?.thumb;
+            return src ? resolvePortalAssetUrl(String(src)) : '';
+        });
+        prefetchImages(urls, 16);
+    }, [items, formatItem]);
     if (!items?.length) {
         if (!empty) return null;
         return (
@@ -182,6 +193,7 @@ const DiscoverHomeRow: React.FC<{
                                     tags: Array.isArray(formatted.qualityTags) ? formatted.qualityTags : [],
                                 }}
                                 overlay={overlay}
+                                priority={idx < 8}
                                 showQualityBadges={
                                     showPosterQualityBadges
                                     && (formatted.availability?.kind === 'available'
