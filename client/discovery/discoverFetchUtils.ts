@@ -127,9 +127,12 @@ export async function fetchDiscoverPage(
 ): Promise<DiscoverPagePayload> {
     const res = await apiFetch(url);
     let results = Array.isArray(res?.results) ? res.results : [];
-    // Mode inventory filters need live Arr stamps — cold catalog peeks leave library
-    // titles looking requestable (`kind: none`). Enrich before filtering.
-    if (options.mode === 'request' || options.mode === 'discover') {
+    // Proxy already stamps library/request state. Only live-enrich when callers
+    // explicitly opt out of trusting attached availability.
+    if (
+        (options.mode === 'request' || options.mode === 'discover')
+        && options.trustAttachedAvailability === false
+    ) {
         results = await enrichDiscoverItemsWithAvailability(results);
     }
     const filtered = filterDiscoverBrowseItems(results, options);

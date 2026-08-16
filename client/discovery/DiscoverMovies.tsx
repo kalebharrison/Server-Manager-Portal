@@ -65,7 +65,7 @@ export const DiscoverMovies: React.FC<{
 
     const prepareCatalog = useCallback(async (items: any[]) => {
         let next = Array.isArray(items) ? items.filter(isMovieItem) : [];
-        if (browseMode === 'request' || browseMode === 'discover') {
+        if (browseMode === 'request') {
             next = await enrichDiscoverItemsWithAvailability(next);
         }
         return filterDiscoverBrowseItems(next, {
@@ -74,6 +74,13 @@ export const DiscoverMovies: React.FC<{
             hideAvailable: false,
         });
     }, [animeOnly, browseMode]);
+
+    const prepareFromStamps = useCallback((items: any[]) => (
+        filterDiscoverBrowseItems(
+            (Array.isArray(items) ? items : []).filter(isMovieItem),
+            { mode: browseMode, animeOnly, hideAvailable: false },
+        )
+    ), [animeOnly, browseMode]);
 
     const loadData = useCallback(async () => {
         const gen = ++loadGenRef.current;
@@ -101,40 +108,10 @@ export const DiscoverMovies: React.FC<{
             const upcomingSource = upcomingRes?.results?.length
                 ? upcomingRes
                 : home?.upcomingMovies;
-            const [trendingRawPrep, upcomingPrep, popularPrep] = await Promise.all([
-                prepareCatalog(trendingRaw),
-                prepareCatalog(pageResults(upcomingSource)),
-                prepareCatalog(pageResults(popularRes)),
-            ]);
-            if (gen !== loadGenRef.current) return;
 
-            let trending = trendingRawPrep;
-            let upcoming = upcomingPrep;
-            let popular = popularPrep;
-            if (browseMode === 'request') {
-                [trending, upcoming, popular] = await Promise.all([
-                    backfillFilteredDiscoverResults(
-                        trending,
-                        [(page) => `/api/discovery/trending?page=${page}`],
-                        prepareCatalog,
-                        { minItems: 20, maxPages: 5 },
-                    ),
-                    backfillFilteredDiscoverResults(
-                        upcoming,
-                        [(page) => `/api/discovery/proxy/discover/movies/upcoming?page=${page}`],
-                        prepareCatalog,
-                        { minItems: 20, maxPages: 4 },
-                    ),
-                    backfillFilteredDiscoverResults(
-                        popular,
-                        [(page) => `/api/discovery/proxy/discover/movies?page=${page}&sortBy=popularity.desc`],
-                        prepareCatalog,
-                        { minItems: 20, maxPages: 5 },
-                    ),
-                ]);
-                if (gen !== loadGenRef.current) return;
-            }
-
+            let trending = prepareFromStamps(trendingRaw);
+            let upcoming = prepareFromStamps(pageResults(upcomingSource));
+            let popular = prepareFromStamps(pageResults(popularRes));
             [trending, upcoming, popular] = claimExclusiveRailItems(
                 [{ items: trending }, { items: upcoming }, { items: popular }],
                 { maxPerRail: 24 },
@@ -163,13 +140,58 @@ export const DiscoverMovies: React.FC<{
                 recentlyUpgraded,
             });
             setEnterAnim(true);
+            setLoading(false);
             window.setTimeout(() => setEnterAnim(false), 700);
+
+            if (browseMode !== 'request') return;
+            void (async () => {
+                try {
+                    let [nextTrending, nextUpcoming, nextPopular] = await Promise.all([
+                        prepareCatalog(trendingRaw),
+                        prepareCatalog(pageResults(upcomingSource)),
+                        prepareCatalog(pageResults(popularRes)),
+                    ]);
+                    if (gen !== loadGenRef.current) return;
+                    [nextTrending, nextUpcoming, nextPopular] = await Promise.all([
+                        backfillFilteredDiscoverResults(
+                            nextTrending,
+                            [(page) => `/api/discovery/trending?page=${page}`],
+                            prepareCatalog,
+                            { minItems: 20, maxPages: 5 },
+                        ),
+                        backfillFilteredDiscoverResults(
+                            nextUpcoming,
+                            [(page) => `/api/discovery/proxy/discover/movies/upcoming?page=${page}`],
+                            prepareCatalog,
+                            { minItems: 20, maxPages: 4 },
+                        ),
+                        backfillFilteredDiscoverResults(
+                            nextPopular,
+                            [(page) => `/api/discovery/proxy/discover/movies?page=${page}&sortBy=popularity.desc`],
+                            prepareCatalog,
+                            { minItems: 20, maxPages: 5 },
+                        ),
+                    ]);
+                    if (gen !== loadGenRef.current) return;
+                    [nextTrending, nextUpcoming, nextPopular] = claimExclusiveRailItems(
+                        [{ items: nextTrending }, { items: nextUpcoming }, { items: nextPopular }],
+                        { maxPerRail: 24 },
+                    );
+                    setRows((prev) => ({
+                        ...prev,
+                        trending: nextTrending,
+                        upcoming: nextUpcoming,
+                        popular: nextPopular,
+                    }));
+                } catch {
+                    // Background refine is best-effort.
+                }
+            })();
         } catch (e) {
             console.error(e);
-        } finally {
             if (gen === loadGenRef.current) setLoading(false);
         }
-    }, [browseMode, locale, mediaServerType, prepareCatalog]);
+    }, [browseMode, locale, mediaServerType, prepareCatalog, prepareFromStamps]);
 
     useEffect(() => {
         loadData();

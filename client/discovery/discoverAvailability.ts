@@ -1,5 +1,5 @@
 import { normalizeRawDiscoveryItem } from './discoverItemUtils';
-import { isAnimeBrowseItem } from './discoverForeignUtils';
+import { isAdultBrowseItem, isAnimeBrowseItem } from './discoverForeignUtils';
 import {
     buildSeasonStatusFromDetails,
     hasActiveDownloads,
@@ -589,6 +589,7 @@ export const filterDiscoverBrowseItems = (
     },
 ) => {
     let filtered = Array.isArray(items) ? items : [];
+    filtered = filtered.filter((item) => !isAdultBrowseItem(item));
     if (options.mode === 'discover' || options.mode === 'request') {
         filtered = filtered.filter((item) => matchesDiscoverBrowseMode(item, options.mode));
     } else {

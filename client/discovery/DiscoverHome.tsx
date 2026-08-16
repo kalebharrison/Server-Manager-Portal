@@ -247,55 +247,30 @@ export const DiscoverHome: React.FC<{
 
             const pageResults = (page: any) => (Array.isArray(page?.results) ? page.results : []);
 
+            // Home rails already carry warm Arr/disk stamps — filter sync so posters paint immediately.
+            const prepareFromStamps = (items: any[]) => (
+                filterDiscoverBrowseItems(Array.isArray(items) ? items : [], { mode: browseMode })
+            );
+
             const prepareCatalog = async (items: any[]) => {
-                const next = await enrichDiscoverItemsWithAvailability(Array.isArray(items) ? items : []);
-                return filterDiscoverBrowseItems(next, { mode: browseMode });
+                // Request mode: live-enrich only unstamped titles (batch is warm-catalog now).
+                if (browseMode === 'request') {
+                    const next = await enrichDiscoverItemsWithAvailability(Array.isArray(items) ? items : []);
+                    return filterDiscoverBrowseItems(next, { mode: browseMode });
+                }
+                return prepareFromStamps(items);
             };
 
             const paintFromHome = async (home: any) => {
                 if (gen !== loadGenRef.current || !home) return;
-                let [trending, upcoming, popular] = await Promise.all([
-                    prepareCatalog(pageResults(home?.trending)),
-                    prepareCatalog(mergeDiscoveryRails(home?.upcomingMovies, home?.upcomingSeries)),
-                    prepareCatalog(mergeDiscoveryRails(
-                        home?.popularMovies,
-                        home?.popularSeries || home?.popularTv,
-                    )),
-                ]);
-                if (gen !== loadGenRef.current) return;
 
-                // Request mode hides library titles — pull later pages so rails stay dense.
-                if (browseMode === 'request') {
-                    [trending, upcoming, popular] = await Promise.all([
-                        backfillFilteredDiscoverResults(
-                            trending,
-                            [(page) => `/api/discovery/trending?page=${page}`],
-                            prepareCatalog,
-                            { minItems: 20, maxPages: 5 },
-                        ),
-                        backfillFilteredDiscoverResults(
-                            upcoming,
-                            [
-                                (page) => `/api/discovery/proxy/discover/movies/upcoming?page=${page}`,
-                                (page) => `/api/discovery/proxy/discover/tv/upcoming?page=${page}`,
-                            ],
-                            prepareCatalog,
-                            { minItems: 20, maxPages: 4 },
-                        ),
-                        backfillFilteredDiscoverResults(
-                            popular,
-                            [
-                                (page) => `/api/discovery/proxy/discover/movies?page=${page}&sortBy=popularity.desc`,
-                                (page) => `/api/discovery/proxy/discover/tv?page=${page}&sortBy=popularity.desc`,
-                            ],
-                            prepareCatalog,
-                            { minItems: 20, maxPages: 5 },
-                        ),
-                    ]);
-                    if (gen !== loadGenRef.current) return;
-                }
+                let trending = prepareFromStamps(pageResults(home?.trending));
+                let upcoming = prepareFromStamps(mergeDiscoveryRails(home?.upcomingMovies, home?.upcomingSeries));
+                let popular = prepareFromStamps(mergeDiscoveryRails(
+                    home?.popularMovies,
+                    home?.popularSeries || home?.popularTv,
+                ));
 
-                // Trending wins ties; later rails skip titles already shown. Mixed home rails zip movies/TV.
                 [trending, upcoming, popular] = claimExclusiveRailItems(
                     [{ items: trending }, { items: upcoming }, { items: popular }],
                     { interleave: true, maxPerRail: 24 },
@@ -312,6 +287,64 @@ export const DiscoverHome: React.FC<{
                     setLoading(false);
                     window.setTimeout(() => setEnterAnim(false), 700);
                 }
+
+                // Request: refine stamps + backfill dense rails without blocking first paint.
+                if (browseMode !== 'request') return;
+                void (async () => {
+                    try {
+                        let [nextTrending, nextUpcoming, nextPopular] = await Promise.all([
+                            prepareCatalog(pageResults(home?.trending)),
+                            prepareCatalog(mergeDiscoveryRails(home?.upcomingMovies, home?.upcomingSeries)),
+                            prepareCatalog(mergeDiscoveryRails(
+                                home?.popularMovies,
+                                home?.popularSeries || home?.popularTv,
+                            )),
+                        ]);
+                        if (gen !== loadGenRef.current) return;
+
+                        [nextTrending, nextUpcoming, nextPopular] = await Promise.all([
+                            backfillFilteredDiscoverResults(
+                                nextTrending,
+                                [(page) => `/api/discovery/trending?page=${page}`],
+                                prepareCatalog,
+                                { minItems: 20, maxPages: 5 },
+                            ),
+                            backfillFilteredDiscoverResults(
+                                nextUpcoming,
+                                [
+                                    (page) => `/api/discovery/proxy/discover/movies/upcoming?page=${page}`,
+                                    (page) => `/api/discovery/proxy/discover/tv/upcoming?page=${page}`,
+                                ],
+                                prepareCatalog,
+                                { minItems: 20, maxPages: 4 },
+                            ),
+                            backfillFilteredDiscoverResults(
+                                nextPopular,
+                                [
+                                    (page) => `/api/discovery/proxy/discover/movies?page=${page}&sortBy=popularity.desc`,
+                                    (page) => `/api/discovery/proxy/discover/tv?page=${page}&sortBy=popularity.desc`,
+                                ],
+                                prepareCatalog,
+                                { minItems: 20, maxPages: 5 },
+                            ),
+                        ]);
+                        if (gen !== loadGenRef.current) return;
+
+                        [nextTrending, nextUpcoming, nextPopular] = claimExclusiveRailItems(
+                            [{ items: nextTrending }, { items: nextUpcoming }, { items: nextPopular }],
+                            { interleave: true, maxPerRail: 24 },
+                        );
+
+                        setRows((prev) => ({
+                            ...prev,
+                            trending: nextTrending,
+                            upcoming: nextUpcoming,
+                            popular: nextPopular,
+                        }));
+                    } catch {
+                        // Background refine is best-effort.
+                    }
+                })();
             };
 
             // Side rails stay live (per-user) and never gate the skeleton.
