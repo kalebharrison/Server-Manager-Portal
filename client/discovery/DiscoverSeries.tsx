@@ -94,10 +94,14 @@ export const DiscoverSeries: React.FC<{
             const animeQs = animeOnly ? '&anime=1' : '';
             const [home, popularRes, upcomingRes, trendingAnimeRes, dashboard, upgrades] = await Promise.all([
                 animeOnly ? Promise.resolve(null) : apiFetch('/api/discovery/home').catch(() => null),
-                apiFetch(`/api/discovery/proxy/discover/tv?page=1&sortBy=popularity.desc${animeQs}`).catch(() => null),
+                apiFetch(
+                    animeOnly
+                        ? `/api/discovery/proxy/discover/tv?page=2&sortBy=popularity.desc${animeQs}`
+                        : '/api/discovery/proxy/discover/tv?page=1&sortBy=popularity.desc',
+                ).catch(() => null),
                 apiFetch(`/api/discovery/proxy/discover/tv/upcoming?page=1${animeQs}`).catch(() => null),
                 animeOnly
-                    ? apiFetch('/api/discovery/trending?page=1&anime=1').catch(() => null)
+                    ? apiFetch(`/api/discovery/proxy/discover/tv?page=1&sortBy=popularity.desc${animeQs}`).catch(() => null)
                     : Promise.resolve(null),
                 browseMode === 'discover' && !animeOnly
                     ? apiFetch(dashboardPath).catch(() => null)
@@ -161,7 +165,9 @@ export const DiscoverSeries: React.FC<{
                     [nextTrending, nextUpcoming, nextPopular] = await Promise.all([
                         backfillFilteredDiscoverResults(
                             nextTrending,
-                            [(page) => `/api/discovery/trending?page=${page}${animeOnly ? '&anime=1' : ''}`],
+                            animeOnly
+                                ? [(page) => `/api/discovery/proxy/discover/tv?page=${page}&sortBy=popularity.desc&anime=1`]
+                                : [(page) => `/api/discovery/trending?page=${page}`],
                             prepareCatalog,
                             { minItems: 20, maxPages: 5 },
                         ),
