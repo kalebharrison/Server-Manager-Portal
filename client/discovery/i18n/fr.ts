@@ -67,6 +67,7 @@ export const fr: DeepPartial<EnCatalog> = {
         requestHome: 'Demander',
         movies: 'Films',
         series: 'Séries',
+        anime: 'Anime',
         community: 'Communauté',
         myRequests: 'Mes demandes',
         requestQueue: 'File des demandes',

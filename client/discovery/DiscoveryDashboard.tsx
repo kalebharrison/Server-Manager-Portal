@@ -8,6 +8,7 @@ import { MediaDetailsPage } from './MediaDetailsPage';
 import { PersonDetailsPage } from './PersonDetailsPage';
 import { Film, Tv, Compass, ClipboardList, AlertTriangle, ChevronDown, Users, Inbox, Sparkles } from 'lucide-react';
 import { DiscoverCommunityPage } from './DiscoverCommunityPage';
+import { DiscoverAnime } from './DiscoverAnime';
 import { apiFetch } from '../shared/api';
 import { portalUrl, stripBasePath } from '../shared/basePath';
 import { normalizeRawDiscoveryItem } from './discoverItemUtils';
@@ -353,7 +354,7 @@ const DiscoveryDashboardInner: React.FC<{
         );
     }
 
-    const showTabs = ['home', 'movies', 'series', 'community', 'requests', 'queue', 'issues'].includes(subRoute);
+    const showTabs = ['home', 'movies', 'series', 'anime', 'community', 'requests', 'queue', 'issues'].includes(subRoute);
 
     if (subRoute === 'watchlist') {
         return null;
@@ -368,6 +369,7 @@ const DiscoveryDashboardInner: React.FC<{
             { id: 'home', path: '/request', label: t('nav.requestHome'), icon: Sparkles, count: 0, countColor: '' },
             { id: 'movies', path: '/request/movies', label: t('nav.movies'), icon: Film, count: 0, countColor: '' },
             { id: 'series', path: '/request/series', label: t('nav.series'), icon: Tv, count: 0, countColor: '' },
+            { id: 'anime', path: '/request/anime', label: t('nav.anime'), icon: Sparkles, count: 0, countColor: '' },
             { id: 'requests', path: '/request/requests', label: t('nav.myRequests'), icon: ClipboardList, count: myPendingCount, countColor: 'bg-plex/25 text-plex' },
             ...(isAdmin
                 ? [{ id: 'queue', path: '/request/queue', label: t('nav.approve'), icon: Inbox, count: adminPendingCount, countColor: 'bg-plex/25 text-plex' }]
@@ -377,6 +379,7 @@ const DiscoveryDashboardInner: React.FC<{
             { id: 'home', path: '/discovery', label: t('nav.discover'), icon: Compass, count: 0, countColor: '' },
             { id: 'movies', path: '/discovery/movies', label: t('nav.movies'), icon: Film, count: 0, countColor: '' },
             { id: 'series', path: '/discovery/series', label: t('nav.series'), icon: Tv, count: 0, countColor: '' },
+            { id: 'anime', path: '/discovery/anime', label: t('nav.anime'), icon: Sparkles, count: 0, countColor: '' },
             { id: 'community', path: '/discovery/community', label: t('nav.community'), icon: Users, count: 0, countColor: '' },
             ...(canSeeIssuesTab
                 ? [{ id: 'issues', path: '/discovery/issues', label: t('nav.myIssues'), icon: AlertTriangle, count: myOpenIssueCount, countColor: 'bg-amber-500/25 text-amber-300' }]
@@ -492,6 +495,16 @@ const DiscoveryDashboardInner: React.FC<{
                                 showPosterQualityBadges={showPosterQualityBadges}
                                 browseMode={browseMode}
                                 mediaServerType={mediaServerType}
+                            />
+                        )}
+                        {subRoute === 'anime' && (
+                            <DiscoverAnime
+                                onSelect={openMedia}
+                                formatItem={formatItem}
+                                navigate={navigate}
+                                pushToast={pushToast}
+                                showPosterQualityBadges={showPosterQualityBadges}
+                                browseMode={browseMode}
                             />
                         )}
                         {subRoute === 'community' && browseMode === 'discover' && (

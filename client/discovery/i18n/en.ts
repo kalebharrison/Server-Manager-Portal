@@ -65,6 +65,7 @@ export const en = {
         requestHome: 'Request',
         movies: 'Movies',
         series: 'Series',
+        anime: 'Anime',
         community: 'Community',
         myRequests: 'My Requests',
         requestQueue: 'Request Queue',

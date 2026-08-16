@@ -3,7 +3,6 @@ import { Tv } from 'lucide-react';
 import { apiFetch } from '../shared/api';
 import { DiscoverHomeRowSkeleton } from '../shared/skeletons';
 import { discoverRowCardWidthClass } from '../shared/portalLayout';
-import { DiscoverAnimeToggle } from './DiscoverAnimeToggle';
 import { DiscoverGridSizeSelect } from './DiscoverGridSizeSelect';
 import { DiscoverMediaRail } from './DiscoverMediaRail';
 import { enrichDiscoverItemsWithAvailability } from './discoverAvailabilityEnrich';
@@ -12,7 +11,6 @@ import { enrichDiscoveryItems } from './discoverItemUtils';
 import { backfillFilteredDiscoverResults } from './discoverFetchUtils';
 import { claimExclusiveRailItems, libraryRecentToDiscoveryItem } from './discoverRailUtils';
 import { discoveryTheme } from './discoveryThemeClasses';
-import { useAnimeToggle } from './useAnimeToggle';
 import { useDiscoverGridSize } from './useDiscoverGridSize';
 import { useDiscoverI18n } from './i18n';
 import { useDiscoverNotify } from './useDiscoverNotify';
@@ -47,7 +45,6 @@ export const DiscoverSeries: React.FC<{
     mediaServerType = 'plex',
 }) => {
     const { t, locale } = useDiscoverI18n();
-    const { animeOnly, setAnimeOnly } = useAnimeToggle();
     const quickRequest = useDiscoverQuickRequest(pushToast);
     const notify = useDiscoverNotify(pushToast);
     const [gridSize, setGridSize] = useDiscoverGridSize();
@@ -70,17 +67,17 @@ export const DiscoverSeries: React.FC<{
         }
         return filterDiscoverBrowseItems(next, {
             mode: browseMode,
-            animeOnly,
+            animeOnly: false,
             hideAvailable: false,
         });
-    }, [animeOnly, browseMode]);
+    }, [browseMode]);
 
     const prepareFromStamps = useCallback((items: any[]) => (
         filterDiscoverBrowseItems(
             (Array.isArray(items) ? items : []).filter(isTvItem),
-            { mode: browseMode, animeOnly, hideAvailable: false },
+            { mode: browseMode, animeOnly: false, hideAvailable: false },
         )
-    ), [animeOnly, browseMode]);
+    ), [browseMode]);
 
     const loadData = useCallback(async () => {
         const gen = ++loadGenRef.current;
@@ -91,30 +88,20 @@ export const DiscoverSeries: React.FC<{
                 ? '/api/jellyfin/dashboard'
                 : '/api/plex/dashboard';
 
-            const animeQs = animeOnly ? '&anime=1' : '';
-            const [home, popularRes, upcomingRes, trendingAnimeRes, dashboard, upgrades] = await Promise.all([
-                animeOnly ? Promise.resolve(null) : apiFetch('/api/discovery/home').catch(() => null),
-                apiFetch(
-                    animeOnly
-                        ? `/api/discovery/proxy/discover/tv?page=2&sortBy=popularity.desc${animeQs}`
-                        : '/api/discovery/proxy/discover/tv?page=1&sortBy=popularity.desc',
-                ).catch(() => null),
-                apiFetch(`/api/discovery/proxy/discover/tv/upcoming?page=1${animeQs}`).catch(() => null),
-                animeOnly
-                    ? apiFetch(`/api/discovery/proxy/discover/tv?page=1&sortBy=popularity.desc${animeQs}`).catch(() => null)
-                    : Promise.resolve(null),
-                browseMode === 'discover' && !animeOnly
+            const [home, popularRes, upcomingRes, dashboard, upgrades] = await Promise.all([
+                apiFetch('/api/discovery/home').catch(() => null),
+                apiFetch('/api/discovery/proxy/discover/tv?page=1&sortBy=popularity.desc').catch(() => null),
+                apiFetch('/api/discovery/proxy/discover/tv/upcoming?page=1').catch(() => null),
+                browseMode === 'discover'
                     ? apiFetch(dashboardPath).catch(() => null)
                     : Promise.resolve(null),
-                browseMode === 'discover' && !animeOnly
+                browseMode === 'discover'
                     ? apiFetch('/api/discovery/recent-upgrades?mediaType=tv&take=40').catch(() => null)
                     : Promise.resolve(null),
             ]);
             if (gen !== loadGenRef.current) return;
 
-            const trendingRaw = animeOnly
-                ? pageResults(trendingAnimeRes).filter(isTvItem)
-                : pageResults(home?.trending).filter(isTvItem);
+            const trendingRaw = pageResults(home?.trending).filter(isTvItem);
             const upcomingSource = upcomingRes?.results?.length
                 ? upcomingRes
                 : home?.upcomingSeries;
@@ -165,21 +152,19 @@ export const DiscoverSeries: React.FC<{
                     [nextTrending, nextUpcoming, nextPopular] = await Promise.all([
                         backfillFilteredDiscoverResults(
                             nextTrending,
-                            animeOnly
-                                ? [(page) => `/api/discovery/proxy/discover/tv?page=${page}&sortBy=popularity.desc&anime=1`]
-                                : [(page) => `/api/discovery/trending?page=${page}`],
+                            [(page) => `/api/discovery/trending?page=${page}`],
                             prepareCatalog,
                             { minItems: 20, maxPages: 5 },
                         ),
                         backfillFilteredDiscoverResults(
                             nextUpcoming,
-                            [(page) => `/api/discovery/proxy/discover/tv/upcoming?page=${page}${animeOnly ? '&anime=1' : ''}`],
+                            [(page) => `/api/discovery/proxy/discover/tv/upcoming?page=${page}`],
                             prepareCatalog,
                             { minItems: 20, maxPages: 4 },
                         ),
                         backfillFilteredDiscoverResults(
                             nextPopular,
-                            [(page) => `/api/discovery/proxy/discover/tv?page=${page}&sortBy=popularity.desc${animeOnly ? '&anime=1' : ''}`],
+                            [(page) => `/api/discovery/proxy/discover/tv?page=${page}&sortBy=popularity.desc`],
                             prepareCatalog,
                             { minItems: 20, maxPages: 5 },
                         ),
@@ -203,7 +188,7 @@ export const DiscoverSeries: React.FC<{
             console.error(e);
             if (gen === loadGenRef.current) setLoading(false);
         }
-    }, [animeOnly, browseMode, locale, mediaServerType, prepareCatalog, prepareFromStamps]);
+    }, [browseMode, locale, mediaServerType, prepareCatalog, prepareFromStamps]);
 
     useEffect(() => {
         loadData();
@@ -220,7 +205,6 @@ export const DiscoverSeries: React.FC<{
                 </h2>
                 <div className="flex items-center gap-3 flex-wrap justify-end">
                     <DiscoverGridSizeSelect value={gridSize} onChange={setGridSize} />
-                    <DiscoverAnimeToggle checked={animeOnly} onChange={setAnimeOnly} />
                 </div>
             </div>
 
