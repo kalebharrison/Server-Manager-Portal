@@ -51,11 +51,9 @@ export const isAnimeItem = (item: any): boolean => {
     return isAnimation;
 };
 
-/** Anime toolbar: Japanese animation with an adult-title + popularity safety net. */
+/** Anime toolbar: Japanese animation (adult titles still excluded). */
 export const isAnimeBrowseItem = (item: any): boolean => {
     if (!isAnimeItem(item)) return false;
     if (isAdultBrowseItem(item)) return false;
-    const votes = Number(item?.voteCount ?? item?.vote_count ?? 0);
-    if (Number.isFinite(votes) && votes > 0 && votes < 100) return false;
     return true;
 };

@@ -91,20 +91,26 @@ export const DiscoverMovies: React.FC<{
                 ? '/api/jellyfin/dashboard'
                 : '/api/plex/dashboard';
 
-            const [home, popularRes, upcomingRes, dashboard, upgrades] = await Promise.all([
-                apiFetch('/api/discovery/home').catch(() => null),
-                apiFetch('/api/discovery/proxy/discover/movies?page=1&sortBy=popularity.desc').catch(() => null),
-                apiFetch('/api/discovery/proxy/discover/movies/upcoming').catch(() => null),
-                browseMode === 'discover'
+            const animeQs = animeOnly ? '&anime=1' : '';
+            const [home, popularRes, upcomingRes, trendingAnimeRes, dashboard, upgrades] = await Promise.all([
+                animeOnly ? Promise.resolve(null) : apiFetch('/api/discovery/home').catch(() => null),
+                apiFetch(`/api/discovery/proxy/discover/movies?page=1&sortBy=popularity.desc${animeQs}`).catch(() => null),
+                apiFetch(`/api/discovery/proxy/discover/movies/upcoming?page=1${animeQs}`).catch(() => null),
+                animeOnly
+                    ? apiFetch('/api/discovery/trending?page=1&anime=1').catch(() => null)
+                    : Promise.resolve(null),
+                browseMode === 'discover' && !animeOnly
                     ? apiFetch(dashboardPath).catch(() => null)
                     : Promise.resolve(null),
-                browseMode === 'discover'
+                browseMode === 'discover' && !animeOnly
                     ? apiFetch('/api/discovery/recent-upgrades?mediaType=movie&take=40').catch(() => null)
                     : Promise.resolve(null),
             ]);
             if (gen !== loadGenRef.current) return;
 
-            const trendingRaw = pageResults(home?.trending).filter(isMovieItem);
+            const trendingRaw = animeOnly
+                ? pageResults(trendingAnimeRes).filter(isMovieItem)
+                : pageResults(home?.trending).filter(isMovieItem);
             const upcomingSource = upcomingRes?.results?.length
                 ? upcomingRes
                 : home?.upcomingMovies;
@@ -155,19 +161,19 @@ export const DiscoverMovies: React.FC<{
                     [nextTrending, nextUpcoming, nextPopular] = await Promise.all([
                         backfillFilteredDiscoverResults(
                             nextTrending,
-                            [(page) => `/api/discovery/trending?page=${page}`],
+                            [(page) => `/api/discovery/trending?page=${page}${animeOnly ? '&anime=1' : ''}`],
                             prepareCatalog,
                             { minItems: 20, maxPages: 5 },
                         ),
                         backfillFilteredDiscoverResults(
                             nextUpcoming,
-                            [(page) => `/api/discovery/proxy/discover/movies/upcoming?page=${page}`],
+                            [(page) => `/api/discovery/proxy/discover/movies/upcoming?page=${page}${animeOnly ? '&anime=1' : ''}`],
                             prepareCatalog,
                             { minItems: 20, maxPages: 4 },
                         ),
                         backfillFilteredDiscoverResults(
                             nextPopular,
-                            [(page) => `/api/discovery/proxy/discover/movies?page=${page}&sortBy=popularity.desc`],
+                            [(page) => `/api/discovery/proxy/discover/movies?page=${page}&sortBy=popularity.desc${animeOnly ? '&anime=1' : ''}`],
                             prepareCatalog,
                             { minItems: 20, maxPages: 5 },
                         ),
@@ -191,7 +197,7 @@ export const DiscoverMovies: React.FC<{
             console.error(e);
             if (gen === loadGenRef.current) setLoading(false);
         }
-    }, [browseMode, locale, mediaServerType, prepareCatalog, prepareFromStamps]);
+    }, [animeOnly, browseMode, locale, mediaServerType, prepareCatalog, prepareFromStamps]);
 
     useEffect(() => {
         loadData();

@@ -19,7 +19,7 @@ import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { useDiscoverNotify } from './useDiscoverNotify';
 import { DiscoverDownloadsSection } from '../screens/DiscoverDownloadsSection';
 import { backfillFilteredDiscoverResults } from './discoverFetchUtils';
-import { claimExclusiveRailItems, mergeDiscoveryRails } from './discoverRailUtils';
+import { claimExclusiveRailItems, discoveryItemKey, mergeDiscoveryRails } from './discoverRailUtils';
 
 const REQUESTS_CACHE_KEY = 'discover-my-requests-v1';
 
@@ -126,15 +126,17 @@ const DiscoverHomeRow: React.FC<{
                 {items.map((rawItem, idx) => {
                     if (!rawItem) return null;
                     const formatted = formatItem(rawItem);
+                    const requesting = !!quickRequest?.isRequesting(formatted);
+                    const requestedLocal = !!quickRequest?.isRequested(formatted);
                     const showRequest = !!quickRequest
-                        && (quickRequest.canQuickRequest(formatted)
-                            || quickRequest.isRequesting(formatted)
-                            || quickRequest.isRequested(formatted));
+                        && (quickRequest.canQuickRequest(formatted) || requesting);
                     const showNotify = !!notify
                         && (notify.canNotify(rawItem)
                             || notify.isNotifying(rawItem)
-                            || notify.isBusy(rawItem));
-                    const showRequestedBadge = !!quickRequest?.isRequested(formatted)
+                            || notify.isBusy(rawItem))
+                        && !showRequest;
+                    const showRequestedBadge = requestedLocal
+                        && !showNotify
                         && (!formatted.availability || formatted.availability.kind === 'none');
                     const overlay = (
                         <>
@@ -367,6 +369,15 @@ export const DiscoverHome: React.FC<{
                             ? reqRes.results.map(portalRequestToDiscoveryRowItem)
                             : [];
 
+                        // Your Requests wins — drop the same titles from Other Requests.
+                        const mineKeys = new Set(
+                            myRequests.map((item: any) => discoveryItemKey(item)).filter(Boolean),
+                        );
+                        const otherRequests = recentlyRequested.filter((item: any) => {
+                            const key = discoveryItemKey(item);
+                            return key && !mineKeys.has(key);
+                        });
+
                         if (reqRes) {
                             writeCachedRequestItems(myRequests);
                             setRequestsReady(true);
@@ -376,7 +387,7 @@ export const DiscoverHome: React.FC<{
 
                         setRows((prev) => ({
                             ...prev,
-                            recentlyRequested,
+                            recentlyRequested: otherRequests,
                             ...(reqRes ? { myRequests } : {}),
                         }));
                     } catch {
@@ -448,20 +459,6 @@ export const DiscoverHome: React.FC<{
 
             {isDiscover && (
                 <DiscoverHomeRow
-                    title={t('home.recentlyRequested') || 'Recently requested'}
-                    items={rows.recentlyRequested}
-                    posterCardClass={posterCardClass}
-                    viewAllLabel={t('common.viewAll')}
-                    formatItem={formatItem}
-                    onSelect={onSelect}
-                    animateEnter={enterAnim}
-                    notify={notify}
-                    showPosterQualityBadges={showPosterQualityBadges}
-                />
-            )}
-
-            {isDiscover && (
-                <DiscoverHomeRow
                     title={t('home.yourRequests')}
                     items={rows.myRequests}
                     posterCardClass={posterCardClass}
@@ -470,6 +467,7 @@ export const DiscoverHome: React.FC<{
                     onSelect={onSelect}
                     animateEnter={enterAnim}
                     onViewAll={() => navigate('/request/requests')}
+                    notify={notify}
                     showPosterQualityBadges={showPosterQualityBadges}
                     empty={requestsReady ? (
                         <EmptyRail
@@ -484,6 +482,20 @@ export const DiscoverHome: React.FC<{
                             Loading your requests…
                         </div>
                     )}
+                />
+            )}
+
+            {isDiscover && (
+                <DiscoverHomeRow
+                    title={t('home.otherRequests') || t('home.recentlyRequested') || 'Other Requests'}
+                    items={rows.recentlyRequested}
+                    posterCardClass={posterCardClass}
+                    viewAllLabel={t('common.viewAll')}
+                    formatItem={formatItem}
+                    onSelect={onSelect}
+                    animateEnter={enterAnim}
+                    notify={notify}
+                    showPosterQualityBadges={showPosterQualityBadges}
                 />
             )}
 

@@ -67,15 +67,17 @@ export const DiscoverMediaRail: React.FC<{
                 {items.map((rawItem, idx) => {
                     if (!rawItem) return null;
                     const formatted = formatItem(rawItem);
+                    const requesting = !!quickRequest?.isRequesting(formatted);
+                    const requestedLocal = !!quickRequest?.isRequested(formatted);
                     const showRequest = !!quickRequest
-                        && (quickRequest.canQuickRequest(formatted)
-                            || quickRequest.isRequesting(formatted)
-                            || quickRequest.isRequested(formatted));
+                        && (quickRequest.canQuickRequest(formatted) || requesting);
                     const showNotify = !!notify
                         && (notify.canNotify(rawItem)
                             || notify.isNotifying(rawItem)
-                            || notify.isBusy(rawItem));
-                    const showRequestedBadge = !!quickRequest?.isRequested(formatted)
+                            || notify.isBusy(rawItem))
+                        && !showRequest;
+                    const showRequestedBadge = requestedLocal
+                        && !showNotify
                         && (!formatted.availability || formatted.availability.kind === 'none');
                     const overlay = (
                         <>

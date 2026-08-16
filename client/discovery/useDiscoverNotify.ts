@@ -40,6 +40,11 @@ export function useDiscoverNotify(pushToast?: PushToast) {
         if (!mediaType || !mediaId) return false;
         if (isNotifying(item) || isBusy(item)) return false;
         if (item?.canNotify === true) return true;
+        // One-click notify for titles already requested / downloading / partial.
+        const status = Number(item?.mediaInfo?.status ?? item?.media?.status);
+        if (status === 2 || status === 3 || status === 4) return true;
+        const requests = Array.isArray(item?.mediaInfo?.requests) ? item.mediaInfo.requests : [];
+        if (requests.length > 0 && status !== 5) return true;
         return false;
     }, [isBusy, isNotifying]);
 

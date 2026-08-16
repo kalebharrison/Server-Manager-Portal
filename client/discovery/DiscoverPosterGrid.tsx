@@ -110,16 +110,18 @@ export const DiscoverPosterGrid: React.FC<Props> = ({
                     );
                 }
 
+                const requesting = !!quickRequest?.isRequesting(formatted);
+                const requestedLocal = !!quickRequest?.isRequested(formatted);
                 const showRequest = !!quickRequest
-                    && (quickRequest.canQuickRequest(formatted)
-                        || quickRequest.isRequesting(formatted)
-                        || quickRequest.isRequested(formatted));
+                    && (quickRequest.canQuickRequest(formatted) || requesting);
                 const showNotify = !!notify
                     && (notify.canNotify(rawItem)
                         || notify.isNotifying(rawItem)
-                        || notify.isBusy(rawItem));
+                        || notify.isBusy(rawItem))
+                    && !showRequest;
                 const availability = formatted.availability;
-                const showRequestedBadge = !!quickRequest?.isRequested(formatted)
+                const showRequestedBadge = requestedLocal
+                    && !showNotify
                     && (!availability || availability.kind === 'none');
                 const overlay = (
                     <>
