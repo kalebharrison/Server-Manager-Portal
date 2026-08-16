@@ -107,3 +107,38 @@ export const claimExclusiveRailItems = (
         return next;
     });
 };
+
+/**
+ * Split library recent vs Arr upgrades into exclusive rails.
+ * Plex "recentlyAdded" includes remux/upgrades; those belong only on the upgrade rail.
+ */
+export const partitionNetNewAndUpgrades = (
+    recentItems: any[] = [],
+    upgradeItems: any[] = [],
+    options: { maxPerRail?: number } = {},
+) => {
+    const maxPerRail = Math.max(1, Number(options.maxPerRail) || 24);
+    const upgradeKeys = new Set<string>();
+    const recentlyUpgraded: any[] = [];
+    for (const item of upgradeItems || []) {
+        if (!item) continue;
+        const key = discoveryItemKey(item);
+        if (!key || upgradeKeys.has(key)) continue;
+        upgradeKeys.add(key);
+        recentlyUpgraded.push({ ...item, acquisitionKind: 'upgrade' });
+        if (recentlyUpgraded.length >= maxPerRail) break;
+    }
+
+    const recentlyAdded: any[] = [];
+    const seenNew = new Set<string>();
+    for (const item of recentItems || []) {
+        if (!item) continue;
+        const key = discoveryItemKey(item);
+        if (!key || upgradeKeys.has(key) || seenNew.has(key)) continue;
+        seenNew.add(key);
+        recentlyAdded.push({ ...item, acquisitionKind: 'new' });
+        if (recentlyAdded.length >= maxPerRail) break;
+    }
+
+    return { recentlyAdded, recentlyUpgraded };
+};

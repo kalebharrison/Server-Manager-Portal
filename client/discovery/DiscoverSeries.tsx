@@ -9,7 +9,7 @@ import { enrichDiscoverItemsWithAvailability } from './discoverAvailabilityEnric
 import type { DiscoverBrowseMode } from './discoverAvailability';
 import { enrichDiscoveryItems } from './discoverItemUtils';
 import { backfillFilteredDiscoverResults } from './discoverFetchUtils';
-import { claimExclusiveRailItems, libraryRecentToDiscoveryItem } from './discoverRailUtils';
+import { claimExclusiveRailItems, libraryRecentToDiscoveryItem, partitionNetNewAndUpgrades } from './discoverRailUtils';
 import { discoveryTheme } from './discoveryThemeClasses';
 import { useDiscoverGridSize } from './useDiscoverGridSize';
 import { useDiscoverI18n } from './i18n';
@@ -93,10 +93,10 @@ export const DiscoverSeries: React.FC<{
                 apiFetch('/api/discovery/proxy/discover/tv?page=1&sortBy=popularity.desc').catch(() => null),
                 apiFetch('/api/discovery/proxy/discover/tv/upcoming?page=1').catch(() => null),
                 browseMode === 'discover'
-                    ? apiFetch(dashboardPath).catch(() => null)
+                    ? apiFetch(dashboardPath, { forceRefresh: true, cacheTtlMs: 0 }).catch(() => null)
                     : Promise.resolve(null),
                 browseMode === 'discover'
-                    ? apiFetch('/api/discovery/recent-upgrades?mediaType=tv&take=40').catch(() => null)
+                    ? apiFetch('/api/discovery/recent-upgrades?mediaType=tv&take=40', { forceRefresh: true, cacheTtlMs: 0 }).catch(() => null)
                     : Promise.resolve(null),
             ]);
             if (gen !== loadGenRef.current) return;
@@ -125,8 +125,11 @@ export const DiscoverSeries: React.FC<{
                     enrichDiscoveryItems(upgradeRaw).then((items) => prepareCatalog(items)),
                 ]);
                 if (gen !== loadGenRef.current) return;
-                recentlyAdded = addedPrepared;
-                recentlyUpgraded = upgradedEnriched;
+                ({ recentlyAdded, recentlyUpgraded } = partitionNetNewAndUpgrades(
+                    addedPrepared,
+                    upgradedEnriched,
+                    { maxPerRail: 24 },
+                ));
             }
 
             setRows({
@@ -267,7 +270,7 @@ export const DiscoverSeries: React.FC<{
                                 showPosterQualityBadges={showPosterQualityBadges}
                             />
                             <DiscoverMediaRail
-                                title="Recently upgraded"
+                                title={t('home.recentlyUpgraded')}
                                 items={rows.recentlyUpgraded}
                                 posterCardClass={posterCardClass}
                                 formatItem={formatItem}

@@ -107,7 +107,7 @@ export const en = {
         browse: 'Browse',
         whatsPopular: 'What’s popular',
         allMovies: 'All movies',
-        recentlyAdded: 'Recently Added',
+        recentlyAdded: 'Net New',
         recentlyUpgraded: 'Recently Upgraded',
         trending: 'Trending',
         upcoming: 'Upcoming',
