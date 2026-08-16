@@ -367,15 +367,19 @@ export const DiscoverHome: React.FC<{
                         const recentlyRequested = Array.isArray(recentRes?.results) ? recentRes.results : [];
                         const myRequests = Array.isArray(reqRes?.results)
                             ? reqRes.results.map(portalRequestToDiscoveryRowItem)
-                            : [];
+                            : (Array.isArray(seededRequests) ? seededRequests : []);
 
                         // Your Requests wins — drop the same titles from Other Requests.
+                        // Also re-filter against any already-painted myRequests (cached seed).
                         const mineKeys = new Set(
-                            myRequests.map((item: any) => discoveryItemKey(item)).filter(Boolean),
+                            [
+                                ...myRequests,
+                                ...(Array.isArray(seededRequests) ? seededRequests : []),
+                            ].map((item: any) => discoveryItemKey(item)).filter(Boolean),
                         );
                         const otherRequests = recentlyRequested.filter((item: any) => {
                             const key = discoveryItemKey(item);
-                            return key && !mineKeys.has(key);
+                            return Boolean(key) && !mineKeys.has(key);
                         });
 
                         if (reqRes) {
@@ -447,6 +451,15 @@ export const DiscoverHome: React.FC<{
     const isJellyfinPortal = String(mediaServerType || '').toLowerCase() === 'jellyfin';
     const browseBase = browseMode === 'request' ? '/request' : '/discovery';
 
+    // Render-time dedupe so Your Requests always wins even if fetch/cache shapes differ.
+    const myRequestKeys = new Set(
+        (rows.myRequests || []).map((item) => discoveryItemKey(item)).filter(Boolean),
+    );
+    const otherRequestItems = (rows.recentlyRequested || []).filter((item) => {
+        const key = discoveryItemKey(item);
+        return Boolean(key) && !myRequestKeys.has(key);
+    });
+
     return (
         <div className={`flex flex-col gap-6 w-full max-w-full overflow-hidden pb-8 px-1${enterAnim ? ' discover-content-enter' : ''}`}>
             {isDiscover && !isJellyfinPortal && (
@@ -488,7 +501,7 @@ export const DiscoverHome: React.FC<{
             {isDiscover && (
                 <DiscoverHomeRow
                     title={t('home.otherRequests') || t('home.recentlyRequested') || 'Other Requests'}
-                    items={rows.recentlyRequested}
+                    items={otherRequestItems}
                     posterCardClass={posterCardClass}
                     viewAllLabel={t('common.viewAll')}
                     formatItem={formatItem}

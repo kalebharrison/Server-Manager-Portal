@@ -33,10 +33,20 @@ export const libraryRecentToDiscoveryItem = (item: any = {}, mediaType = 'movie'
 
 export const discoveryItemKey = (item: any) => {
     if (!item) return '';
-    const mediaType = item.mediaType === 'tv' || item.type === 'tv' || item.type === 'show' ? 'tv' : 'movie';
-    const tmdbId = Number(item.tmdbId ?? item.id);
+    const mediaType = item.mediaType === 'tv' || item.type === 'tv' || item.type === 'show'
+        || item.media?.mediaType === 'tv' || item.media?.type === 'tv'
+        ? 'tv'
+        : 'movie';
+    const tmdbId = Number(
+        item.tmdbId
+        ?? item.media?.tmdbId
+        ?? item.mediaId
+        ?? item.id,
+    );
     if (Number.isFinite(tmdbId) && tmdbId > 0) return `${mediaType}:${tmdbId}`;
-    const title = String(item.title || item.name || '').trim().toLowerCase();
+    const title = String(item.title || item.name || item.media?.title || item.media?.name || '')
+        .trim()
+        .toLowerCase();
     return title ? `${mediaType}:${title}` : '';
 };
 

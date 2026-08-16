@@ -1,30 +1,41 @@
 import type { PortalRequestItem } from '../requests/types';
 
 /** Convert a portal request DTO into a discovery-row compatible item. */
-export const portalRequestToDiscoveryRowItem = (item: PortalRequestItem) => ({
-    type: item.type,
-    status: item.status,
-    id: item.id,
-    isDownloading: !!item.isDownloading,
-    media: {
-        tmdbId: item.tmdbId,
+export const portalRequestToDiscoveryRowItem = (item: PortalRequestItem) => {
+    const tmdbId = Number(item.tmdbId);
+    const mediaType = item.type === 'tv' ? 'tv' : 'movie';
+    return {
+        type: mediaType,
+        mediaType,
+        status: item.status,
+        // Prefer TMDB id for rail keys / poster identity (not the portal request id).
+        id: Number.isFinite(tmdbId) && tmdbId > 0 ? tmdbId : item.id,
+        tmdbId: Number.isFinite(tmdbId) && tmdbId > 0 ? tmdbId : null,
         title: item.title,
         name: item.title,
         posterPath: item.posterPath || null,
-        mediaType: item.type,
-        status: item.mediaStatus,
-    },
-    mediaInfo: {
-        status: item.mediaStatus,
-        requests: [{
-            id: item.id,
-            status: item.status,
-            is4k: !!item.is4k,
-            seasons: Array.isArray(item.seasons) ? item.seasons : [],
-        }],
-        ...(item.isDownloading ? { downloadStatus: [{ status: 'downloading' }] } : {}),
-    },
-});
+        isDownloading: !!item.isDownloading,
+        media: {
+            tmdbId: Number.isFinite(tmdbId) && tmdbId > 0 ? tmdbId : null,
+            title: item.title,
+            name: item.title,
+            posterPath: item.posterPath || null,
+            mediaType,
+            status: item.mediaStatus,
+        },
+        mediaInfo: {
+            status: item.mediaStatus,
+            requests: [{
+                id: item.id,
+                status: item.status,
+                is4k: !!item.is4k,
+                seasons: Array.isArray(item.seasons) ? item.seasons : [],
+            }],
+            ...(item.isDownloading ? { downloadStatus: [{ status: 'downloading' }] } : {}),
+        },
+        requestId: item.id,
+    };
+};
 
 export const memberRequestStatusClass = (label: string) => {
     if (label === 'Available') return 'bg-green-500/15 text-green-400 border-green-500/25';
