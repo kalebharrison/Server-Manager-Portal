@@ -225,6 +225,28 @@ export const DiscoverMovies: React.FC<{
                 </div>
             ) : (
                 <div className={`flex flex-col gap-6 w-full max-w-full overflow-hidden${enterAnim ? ' discover-content-enter' : ''}`}>
+                    {browseMode === 'discover' && (
+                        <>
+                            <DiscoverMediaRail
+                                title={t('home.recentlyAdded')}
+                                items={rows.recentlyAdded}
+                                posterCardClass={posterCardClass}
+                                formatItem={formatItem}
+                                onSelect={onSelect}
+                                animateEnter={enterAnim}
+                                showPosterQualityBadges={showPosterQualityBadges}
+                            />
+                            <DiscoverMediaRail
+                                title={t('home.recentlyUpgraded')}
+                                items={rows.recentlyUpgraded}
+                                posterCardClass={posterCardClass}
+                                formatItem={formatItem}
+                                onSelect={onSelect}
+                                animateEnter={enterAnim}
+                                showPosterQualityBadges={showPosterQualityBadges}
+                            />
+                        </>
+                    )}
                     <DiscoverMediaRail
                         title={t('home.trending')}
                         items={rows.trending}
@@ -258,28 +280,6 @@ export const DiscoverMovies: React.FC<{
                         notify={notify}
                         showPosterQualityBadges={showPosterQualityBadges}
                     />
-                    {browseMode === 'discover' && (
-                        <>
-                            <DiscoverMediaRail
-                                title={t('home.recentlyAdded')}
-                                items={rows.recentlyAdded}
-                                posterCardClass={posterCardClass}
-                                formatItem={formatItem}
-                                onSelect={onSelect}
-                                animateEnter={enterAnim}
-                                showPosterQualityBadges={showPosterQualityBadges}
-                            />
-                            <DiscoverMediaRail
-                                title={t('home.recentlyUpgraded')}
-                                items={rows.recentlyUpgraded}
-                                posterCardClass={posterCardClass}
-                                formatItem={formatItem}
-                                onSelect={onSelect}
-                                animateEnter={enterAnim}
-                                showPosterQualityBadges={showPosterQualityBadges}
-                            />
-                        </>
-                    )}
                 </div>
             )}
         </div>

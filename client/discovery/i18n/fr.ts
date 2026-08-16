@@ -109,7 +109,7 @@ export const fr: DeepPartial<EnCatalog> = {
         browse: 'Parcourir',
         whatsPopular: 'Populaire en ce moment',
         allMovies: 'Tous les films',
-        recentlyAdded: 'Nouveautés',
+        recentlyAdded: 'Ajouts récents',
         recentlyUpgraded: 'Mises à niveau récentes',
         trending: 'Tendances',
         popularMovies: 'Films populaires',
