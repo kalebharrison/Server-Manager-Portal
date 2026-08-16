@@ -1,15 +1,34 @@
-const DEFAULT_NAV_ORDER = ['home', 'users', 'discover', 'issues', 'status', 'analytics', 'mediastack', 'request', 'upgrader', 'settings', 'logout'];
+const DEFAULT_NAV_ORDER = ['home', 'users', 'discover', 'request', 'issues', 'status', 'analytics', 'mediastack', 'upgrader', 'settings', 'logout'];
 
 export const ALWAYS_VISIBLE_NAV_KEYS = new Set(['home', 'settings', 'logout', 'preferences']);
 
+/** Keep Request Content immediately under Discover. */
+export const placeRequestAfterDiscover = (order: string[]) => {
+    const next = Array.isArray(order) ? [...order] : [];
+    const requestIdx = next.indexOf('request');
+    if (requestIdx >= 0) next.splice(requestIdx, 1);
+    const discoverIdx = next.indexOf('discover');
+    if (discoverIdx >= 0) {
+        next.splice(discoverIdx + 1, 0, 'request');
+    } else if (!next.includes('request')) {
+        next.splice(Math.min(1, next.length), 0, 'request');
+    }
+    return next;
+};
+
 /** Normalize nav order and drop retired entries such as `maintenance` and `scanner`. */
 export const normalizeSettingsNavOrder = (order: string[]) => {
-    const base = Array.isArray(order)
+    let base = Array.isArray(order)
         ? order.filter((key) => Boolean(key) && key !== 'maintenance' && key !== 'scanner')
         : [...DEFAULT_NAV_ORDER];
+    base = placeRequestAfterDiscover(base);
     if (!base.includes('issues')) {
+        const requestIndex = base.indexOf('request');
         const discoverIndex = base.indexOf('discover');
-        base.splice(discoverIndex >= 0 ? discoverIndex + 1 : 1, 0, 'issues');
+        const insertAt = requestIndex >= 0
+            ? requestIndex + 1
+            : (discoverIndex >= 0 ? discoverIndex + 1 : 1);
+        base.splice(insertAt, 0, 'issues');
     }
     if (!base.includes('users')) {
         const homeIndex = base.indexOf('home');

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { logoUrl, portalUrl, resolvePortalAssetUrl } from '../../shared/basePath';
 import { updateFavicon } from '../../shared/favicon';
-import { ALWAYS_VISIBLE_NAV_KEYS, normalizeNavHiddenKeys } from '../../settings/settingsNavOrder';
+import { ALWAYS_VISIBLE_NAV_KEYS, normalizeNavHiddenKeys, placeRequestAfterDiscover } from '../../settings/settingsNavOrder';
 import { buildNavItemsConfig } from './navigationConfig';
 import type { NavigationProps } from './types';
 
@@ -47,16 +47,21 @@ export const useNavigation = ({
     const navItemsConfig = useMemo(() => buildNavItemsConfig(onLogout), [onLogout]);
 
     const normalizedNavOrder = useMemo(() => {
-        const order = Array.isArray(navOrder) ? navOrder.filter((key) => key !== 'maintenance') : [];
+        let order = Array.isArray(navOrder) ? navOrder.filter((key) => key !== 'maintenance') : [];
         // Members and admins both need Preferences (Discord ID, profile, etc.).
         if (!order.includes('preferences')) {
             const logoutIndex = order.indexOf('logout');
             if (logoutIndex >= 0) order.splice(logoutIndex, 0, 'preferences');
             else order.push('preferences');
         }
+        order = placeRequestAfterDiscover(order);
         if (!order.includes('issues')) {
+            const requestIndex = order.indexOf('request');
             const discoverIndex = order.indexOf('discover');
-            order.splice(discoverIndex >= 0 ? discoverIndex + 1 : 1, 0, 'issues');
+            const insertAt = requestIndex >= 0
+                ? requestIndex + 1
+                : (discoverIndex >= 0 ? discoverIndex + 1 : 1);
+            order.splice(insertAt, 0, 'issues');
         }
         const hidden = new Set(normalizeNavHiddenKeys(navHiddenKeys));
         return order.filter((key) => {
