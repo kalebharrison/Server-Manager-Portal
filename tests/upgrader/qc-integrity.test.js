@@ -16,6 +16,7 @@ import { computeImohash } from '../../lib/upgrader/qc-integrity-hash.js';
 import {
     durationMatchesExpected,
     extractExpectedRuntimeSec,
+    parseAudioRuntimeToSec,
     parseRuntimeToSec,
 } from '../../lib/upgrader/qc-integrity-runtime.js';
 
@@ -192,6 +193,34 @@ test('extractExpectedRuntimeSec prefers catalog runtime over MediaInfo', () => {
         file: { mediaInfo: { runTime: '00:42:10' } },
         mediaKind: 'video',
     }), null);
+});
+
+test('extractExpectedRuntimeSec uses per-track audio duration, not album length', () => {
+    assert.equal(parseAudioRuntimeToSec(233000), 233);
+    assert.equal(parseAudioRuntimeToSec(210), 210);
+    assert.equal(extractExpectedRuntimeSec({
+        file: { mediaInfo: { audioDuration: 233000 } },
+        record: { duration: 2451794 },
+        track: { mediaInfo: { audioDuration: 233000 } },
+        mediaKind: 'audio',
+    }), 233);
+    assert.equal(extractExpectedRuntimeSec({
+        record: { duration: 2451794 },
+        mediaKind: 'audio',
+    }), null);
+    assert.equal(extractExpectedRuntimeSec({
+        track: { duration: 210 },
+        record: { duration: 2451 },
+        mediaKind: 'audio',
+    }), 210);
+});
+
+test('durationMatchesExpected skips album-length vs track for audio', () => {
+    const leaked = durationMatchesExpected(233, 2451.794, { mediaKind: 'audio' });
+    assert.equal(leaked.ok, true);
+    assert.equal(leaked.skipped, true);
+    assert.equal(durationMatchesExpected(233, 240, { mediaKind: 'audio' }).ok, true);
+    assert.equal(durationMatchesExpected(14400, 240, { mediaKind: 'audio' }).ok, false);
 });
 
 test('collectIntegrityCandidates includes lidarr track files when enabled', () => {
