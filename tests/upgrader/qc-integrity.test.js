@@ -266,6 +266,17 @@ test('durationMatchesExpected flags large video deltas', () => {
     assert.equal(durationMatchesExpected(null, 3600).ok, true); // skipped
 });
 
+test('durationMatchesExpected is lenient for TV episode catalog runtimes', () => {
+    // Top Gear / variable-length shows: ~50 min file vs 60 min TVDB slot
+    assert.equal(durationMatchesExpected(3000, 3600, { mediaType: 'show' }).ok, true);
+    // Extended Preacher pilot vs 45 min catalog
+    assert.equal(durationMatchesExpected(3886, 2700, { mediaType: 'show' }).ok, true);
+    // Still catch stuck/corrupt 4h encode of a 45m episode
+    assert.equal(durationMatchesExpected(14400, 2700, { mediaType: 'show' }).ok, false);
+    // Movies stay stricter
+    assert.equal(durationMatchesExpected(3000, 3600, { mediaType: 'movie' }).ok, false);
+});
+
 test('extractExpectedRuntimeSec prefers catalog runtime over MediaInfo', () => {
     assert.equal(extractExpectedRuntimeSec({
         file: { mediaInfo: { runTime: '00:42:10' } },
