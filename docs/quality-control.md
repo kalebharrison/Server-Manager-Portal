@@ -94,6 +94,8 @@ The Integrity tab **Inspect a file** search shows the saved cache JSON for one t
 
 Manual scans on the Integrity tab are admin tools (replace is dry-run by default). Click **Trim** on a library for a would-remux report (track names, not just IDs). Use **Trim audit** (or per-library **Audit**) to force-rescan keep-rules with remux permanently disabled, then download CSV/JSON. **Enable integrity automation** allows nightly escalate replace and import hard-fail replace — leave off until you trust dry-run results.
 
+Findings are kept **per check family**: a fingerprint (imohash) pass does not clear playback (`duration_mismatch` / decode) rows, and vice versa. Only a recheck or scan of the same check (or a full baseline / import) drops that finding. The findings list holds up to **2000** rows.
+
 Integrity skips files currently playing on Plex. A **circuit breaker** pauses **live replace** when findings hit **50** or **10%** of the cycle (configurable).
 
 ### Coverage

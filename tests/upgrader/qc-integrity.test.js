@@ -8,6 +8,8 @@ import {
     collectIntegrityCandidates,
     createQcIntegrity,
     mapArrPath,
+    integrityFindingCheck,
+    passedModeClearsFinding,
     reconcileIntegrityFindings,
     scheduleDecodeWindows,
     probeMediaFile,
@@ -153,6 +155,93 @@ test('reconcileIntegrityFindings drops replaced Arr file ids and passed keys', (
     });
     assert.deepEqual(findings.map((entry) => entry.key), ['radarr:r1:1:file:20']);
     assert.equal(findings[0].title, 'Current miss again');
+});
+
+test('reconcileIntegrityFindings keeps playability findings when imohash passes', () => {
+    assert.equal(integrityFindingCheck({ reason: 'duration_mismatch' }), 'playability');
+    assert.equal(integrityFindingCheck({ reason: 'imohash_mismatch' }), 'imohash');
+    assert.equal(passedModeClearsFinding('imohash', { reason: 'duration_mismatch' }), false);
+    assert.equal(passedModeClearsFinding('imohash', { reason: 'imohash_mismatch' }), true);
+    assert.equal(passedModeClearsFinding('baseline', { reason: 'duration_mismatch' }), true);
+
+    const findings = reconcileIntegrityFindings([
+        { key: 'sonarr:s1:1:file:1', reason: 'duration_mismatch', mode: 'playability', title: 'Top Gear' },
+        { key: 'sonarr:s1:2:file:2', reason: 'imohash_mismatch', mode: 'imohash', title: 'Hash fail' },
+        { key: 'sonarr:s1:3:file:3', reason: 'decode_mid', mode: 'playability', title: 'Decode fail' },
+    ], {
+        passedKeys: ['sonarr:s1:1:file:1', 'sonarr:s1:2:file:2', 'sonarr:s1:3:file:3'],
+        passedMode: 'imohash',
+    });
+    assert.deepEqual(
+        findings.map((entry) => entry.key).sort(),
+        ['sonarr:s1:1:file:1', 'sonarr:s1:3:file:3'],
+    );
+});
+
+test('scanIntegrity imohash pass does not wipe prior playability findings', async () => {
+    let prefs = {
+        integrityFindings: [{
+            key: 'radarr:r1:1:file:7',
+            reason: 'duration_mismatch',
+            mode: 'playability',
+            title: 'Bad Movie',
+            arrType: 'radarr',
+            arrInstanceId: 'r1',
+            filePath: '/movies/Bad.mkv',
+        }],
+    };
+    let cache = {
+        entries: {
+            'radarr:r1:1:file:7': {
+                key: 'radarr:r1:1:file:7',
+                path: '/movies/Bad.mkv',
+                size: 100,
+                mtimeMs: 1,
+                imohash: 'imo:same',
+                playabilityAt: null,
+                playabilityOk: false,
+                ok: true,
+            },
+        },
+    };
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({
+            generatedAt: '2026-08-18T00:00:00.000Z',
+            items: [{
+                ratingKey: 'radarr:r1:1',
+                title: 'Bad Movie',
+                monitored: true,
+                hasFile: true,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 1,
+                movieFileId: 7,
+                filePath: '/movies/Bad.mkv',
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:same' }),
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async (bin) => ({ ok: true, code: 0, timedOut: false, stdout: `${bin} ok`, stderr: '' }),
+    });
+
+    const result = await integrity.scanIntegrity({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityPathMaps: TEST_PATH_MAPS,
+    }, { mode: 'imohash', full: true, dryRun: true });
+
+    assert.equal(result.ran, true);
+    assert.equal(result.findingCount, 0);
+    assert.equal((prefs.integrityFindings || []).length, 1);
+    assert.equal(prefs.integrityFindings[0].reason, 'duration_mismatch');
 });
 
 test('scheduleDecodeWindows uses start mid end for long files', () => {
