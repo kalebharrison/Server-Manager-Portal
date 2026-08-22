@@ -3,28 +3,21 @@ import { FlaskConical, Loader2, RefreshCw, ShieldAlert, Square } from 'lucide-re
 import { apiFetch } from '../shared/api';
 import { portalUrl } from '../shared/basePath';
 import { SettingHint } from '../settings/SettingHint';
-import { QC_KPI, QC_SECTION } from './qcUi';
+import { QC_KPI, QC_SECTION, QC_TAB_BAR, qcTabButtonClass } from './qcUi';
 import { QcIntegrityLookup } from './QcIntegrityLookup';
-
-type IntegrityFinding = {
-    key: string;
-    title: string;
-    reason?: string | null;
-    detail?: string | null;
-    mode?: string | null;
-    filePath?: string | null;
-    localPath?: string | null;
-    arrType?: string | null;
-    arrInstanceName?: string | null;
-    seasonNumber?: number | null;
-    episodeNumber?: number | null;
-    movieFileId?: number | null;
-    episodeFileId?: number | null;
-    episodeId?: number | null;
-    entityId?: number | null;
-    arrInstanceId?: string | null;
-    ratingKey?: string | null;
-};
+import {
+    FINDING_CATEGORY_META,
+    filterIntegrityFindings,
+    findingCategoryBorderClass,
+    formatDurationMismatchDetail,
+    groupIntegrityFindings,
+    integrityFindingCategory,
+    integrityFindingReasonLabel,
+    summarizeIntegrityFindings,
+    type IntegrityFinding,
+    type IntegrityFindingCategory,
+    type IntegrityMediaFilter,
+} from './qcIntegrityFindings';
 
 type IntegrityProgress = {
     target?: number;
@@ -348,6 +341,10 @@ export const QcIntegrityPanel: React.FC<Props> = ({
     const [xxhashEnabled, setXxhashEnabled] = useState(false);
     const [snoozeHours, setSnoozeHours] = useState(24);
     const [findings, setFindings] = useState<IntegrityFinding[]>([]);
+    const [findingCategoryFilter, setFindingCategoryFilter] = useState<IntegrityFindingCategory | 'all'>('all');
+    const [findingMediaFilter, setFindingMediaFilter] = useState<IntegrityMediaFilter>('all');
+    const [findingQuery, setFindingQuery] = useState('');
+    const [collapsedFindingGroups, setCollapsedFindingGroups] = useState<Record<string, boolean>>({});
     const [activeRechecks, setActiveRechecks] = useState<ActiveRecheck[]>([]);
     const [trimPreview, setTrimPreview] = useState<TrimPreview | null>(null);
     const [snoozes, setSnoozes] = useState<Array<{ key: string; until: string; title?: string | null }>>([]);
@@ -761,6 +758,99 @@ export const QcIntegrityPanel: React.FC<Props> = ({
     }
 
     const displayFindings = findings.length ? findings : (result?.findings || []);
+    const findingSummary = summarizeIntegrityFindings(displayFindings);
+    const filteredFindings = filterIntegrityFindings(displayFindings, {
+        category: findingCategoryFilter,
+        media: findingMediaFilter,
+        query: findingQuery,
+    });
+    const groupedFindings = groupIntegrityFindings(filteredFindings);
+    const showGroupedFindings = findingCategoryFilter === 'all' && !findingQuery.trim();
+    const toggleFindingGroup = (category: IntegrityFindingCategory) => {
+        setCollapsedFindingGroups((current) => ({
+            ...current,
+            [category]: !current[category],
+        }));
+    };
+    const isFindingGroupCollapsed = (category: IntegrityFindingCategory, count: number) => {
+        if (Object.prototype.hasOwnProperty.call(collapsedFindingGroups, category)) {
+            return !!collapsedFindingGroups[category];
+        }
+        const threshold = FINDING_CATEGORY_META[category].defaultCollapsedAbove;
+        return typeof threshold === 'number' && count > threshold;
+    };
+    const renderFindingRow = (finding: IntegrityFinding, category: IntegrityFindingCategory) => {
+        const remuxing = activeRechecks.some((job) => job.key === finding.key)
+            || recheckingKey === finding.key;
+        const reasonLabel = integrityFindingReasonLabel(finding.reason);
+        const detailText = finding.reason === 'duration_mismatch'
+            ? (formatDurationMismatchDetail(finding.detail) || finding.detail)
+            : finding.detail;
+        return (
+            <div
+                key={finding.key}
+                className={`rounded-lg border px-3 py-2 ${findingCategoryBorderClass(category)}`}
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <div className="text-xs font-semibold text-text truncate">{finding.title}</div>
+                        {remuxing && (
+                            <div className="text-[11px] font-semibold text-plex mt-0.5">
+                                Remuxing now — pinned progress bar at top
+                            </div>
+                        )}
+                        <div className="text-[11px] text-muted mt-0.5">
+                            {[
+                                reasonLabel,
+                                finding.seasonNumber != null && finding.episodeNumber != null
+                                    ? `S${finding.seasonNumber}E${finding.episodeNumber}`
+                                    : null,
+                                finding.arrInstanceName,
+                            ].filter(Boolean).join(' · ')}
+                        </div>
+                        <div className="text-[10px] text-muted mt-1 font-mono break-all">
+                            {finding.localPath || finding.filePath}
+                        </div>
+                        {detailText && (
+                            <div className={`text-[10px] mt-1 ${
+                                category === 'broken' ? 'text-red-200/80' : 'text-muted'
+                            }`}
+                            >
+                                {detailText}
+                            </div>
+                        )}
+                    </div>
+                    <div className="shrink-0 flex flex-col gap-1.5">
+                        <button
+                            type="button"
+                            className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
+                            disabled={remuxing}
+                            title={scanning ? 'Waits until the current remux/scan pass finishes' : 'Re-run this check (trim findings remux for real)'}
+                            onClick={() => void recheckOne(finding)}
+                        >
+                            {remuxing ? 'Remuxing…' : 'Recheck'}
+                        </button>
+                        <button
+                            type="button"
+                            className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
+                            disabled={replacingKey === finding.key || scanning || recheckingKey === finding.key}
+                            onClick={() => void replaceOne(finding)}
+                        >
+                            {replacingKey === finding.key ? 'Replacing…' : 'Replace'}
+                        </button>
+                        <button
+                            type="button"
+                            className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
+                            disabled={snoozingKey === finding.key || scanning || recheckingKey === finding.key}
+                            onClick={() => void snoozeOne(finding)}
+                        >
+                            {snoozingKey === finding.key ? 'Snoozing…' : `Snooze ${snoozeHours}h`}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
     const visibleActions = SCAN_ACTIONS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
     const visibleStatus = CHECK_STATUS.filter((entry) => !entry.xxhashOnly || xxhashEnabled);
     const actionsForLibrary = (lib: LibraryCoverage) => (
@@ -1190,10 +1280,15 @@ export const QcIntegrityPanel: React.FC<Props> = ({
 
             <section className={`${QC_SECTION} space-y-3`}>
                 <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-sm font-bold text-text">Findings</h3>
+                    <div>
+                        <h3 className="text-sm font-bold text-text">Findings</h3>
+                        <p className="text-[11px] text-muted mt-1 max-w-3xl">
+                            Grouped by severity. Broken files are the ones worth Replace; runtime drift is usually catalog noise.
+                        </p>
+                    </div>
                     <button
                         type="button"
-                        className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-text disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-text disabled:opacity-50 shrink-0"
                         disabled={scanning}
                         onClick={() => void loadStatus()}
                     >
@@ -1201,6 +1296,75 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                         Refresh
                     </button>
                 </div>
+
+                {displayFindings.length > 0 && (
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
+                            {([
+                                ['all', 'All', findingSummary.total],
+                                ...(['broken', 'runtime', 'trim', 'hash', 'path'] as IntegrityFindingCategory[]).map((category) => [
+                                    category,
+                                    FINDING_CATEGORY_META[category].shortLabel,
+                                    findingSummary[category],
+                                ] as const),
+                            ]).map(([key, label, count]) => {
+                                const active = findingCategoryFilter === key;
+                                return (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                                            active
+                                                ? 'border-plex/50 bg-plex/15'
+                                                : 'border-border/60 bg-background/20 hover:border-plex/30'
+                                        }`}
+                                        onClick={() => setFindingCategoryFilter(key as IntegrityFindingCategory | 'all')}
+                                    >
+                                        <div className="text-[10px] uppercase tracking-wide text-muted">{label}</div>
+                                        <div className="mt-0.5 text-lg font-bold text-text tabular-nums">{count}</div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <div className={`${QC_TAB_BAR} shrink-0`}>
+                                {([
+                                    ['all', 'All media'],
+                                    ['movie', 'Movies'],
+                                    ['show', 'TV'],
+                                    ['album', 'Music'],
+                                ] as const).map(([key, label]) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        className={qcTabButtonClass(findingMediaFilter === key)}
+                                        onClick={() => setFindingMediaFilter(key)}
+                                    >
+                                        {label}
+                                        {key !== 'all' && findingSummary.byMedia[key] > 0
+                                            ? ` (${findingSummary.byMedia[key]})`
+                                            : ''}
+                                    </button>
+                                ))}
+                            </div>
+                            <input
+                                type="search"
+                                value={findingQuery}
+                                onChange={(event) => setFindingQuery(event.target.value)}
+                                placeholder="Search title, path, reason…"
+                                className="w-full sm:max-w-xs rounded-lg border border-border/60 bg-background/30 px-3 py-2 text-xs text-text placeholder:text-muted"
+                            />
+                        </div>
+
+                        {findingCategoryFilter !== 'all' && (
+                            <p className="text-[11px] text-muted">
+                                {FINDING_CATEGORY_META[findingCategoryFilter].blurb}
+                            </p>
+                        )}
+                    </div>
+                )}
+
                 {!result && !scanning && displayFindings.length === 0 && (
                     <p className="text-xs text-muted">
                         Run a check above. Trim findings can remux on Recheck; other findings need Replace to change anything.
@@ -1212,64 +1376,49 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                 {result?.ran && !scanning && displayFindings.length === 0 && (
                     <p className="text-xs text-emerald-300">No integrity findings in this pass.</p>
                 )}
-                {displayFindings.map((finding) => {
-                    const remuxing = activeRechecks.some((job) => job.key === finding.key)
-                        || recheckingKey === finding.key;
+                {displayFindings.length > 0 && filteredFindings.length === 0 && (
+                    <p className="text-xs text-muted">No findings match the current filters.</p>
+                )}
+
+                {showGroupedFindings ? groupedFindings.map(({ category, items }) => {
+                    const collapsed = isFindingGroupCollapsed(category, items.length);
                     return (
-                    <div key={finding.key} className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                                <div className="text-xs font-semibold text-text truncate">{finding.title}</div>
-                                {remuxing && (
-                                    <div className="text-[11px] font-semibold text-plex mt-0.5">Remuxing now — pinned progress bar at top</div>
-                                )}
-                                <div className="text-[11px] text-muted mt-0.5">
-                                    {[
-                                        finding.reason,
-                                        finding.seasonNumber != null && finding.episodeNumber != null
-                                            ? `S${finding.seasonNumber}E${finding.episodeNumber}`
-                                            : null,
-                                        finding.arrInstanceName,
-                                    ].filter(Boolean).join(' · ')}
+                        <div key={category} className="space-y-2">
+                            <button
+                                type="button"
+                                className="w-full flex items-center justify-between gap-2 text-left"
+                                onClick={() => toggleFindingGroup(category)}
+                            >
+                                <div>
+                                    <div className="text-xs font-bold uppercase tracking-wide text-text">
+                                        {FINDING_CATEGORY_META[category].label}
+                                        <span className="text-muted font-semibold normal-case tracking-normal">
+                                            {' '}· {items.length}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-muted mt-0.5">
+                                        {FINDING_CATEGORY_META[category].blurb}
+                                    </p>
                                 </div>
-                                <div className="text-[10px] text-muted mt-1 font-mono break-all">
-                                    {finding.localPath || finding.filePath}
+                                <span className="text-[11px] font-bold text-muted shrink-0">
+                                    {collapsed ? 'Show' : 'Hide'}
+                                </span>
+                            </button>
+                            {!collapsed && (
+                                <div className="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
+                                    {items.map((finding) => renderFindingRow(finding, category))}
                                 </div>
-                                {finding.detail && (
-                                    <div className="text-[10px] text-red-200/80 mt-1">{finding.detail}</div>
-                                )}
-                            </div>
-                            <div className="shrink-0 flex flex-col gap-1.5">
-                                <button
-                                    type="button"
-                                    className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
-                                    disabled={remuxing}
-                                    title={scanning ? 'Waits until the current remux/scan pass finishes' : 'Re-run this check (trim findings remux for real)'}
-                                    onClick={() => void recheckOne(finding)}
-                                >
-                                    {remuxing ? 'Remuxing…' : 'Recheck'}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
-                                    disabled={replacingKey === finding.key || scanning || recheckingKey === finding.key}
-                                    onClick={() => void replaceOne(finding)}
-                                >
-                                    {replacingKey === finding.key ? 'Replacing…' : 'Replace'}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"
-                                    disabled={snoozingKey === finding.key || scanning || recheckingKey === finding.key}
-                                    onClick={() => void snoozeOne(finding)}
-                                >
-                                    {snoozingKey === finding.key ? 'Snoozing…' : `Snooze ${snoozeHours}h`}
-                                </button>
-                            </div>
+                            )}
                         </div>
-                    </div>
                     );
-                })}
+                }) : (
+                    <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
+                        {filteredFindings.map((finding) => renderFindingRow(
+                            finding,
+                            integrityFindingCategory(finding),
+                        ))}
+                    </div>
+                )}
             </section>
 
             {snoozes.length > 0 && (
