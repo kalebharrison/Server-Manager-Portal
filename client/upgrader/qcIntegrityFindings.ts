@@ -5,6 +5,10 @@ export type IntegrityFinding = {
     detail?: string | null;
     mode?: string | null;
     mediaType?: string | null;
+    durationSec?: number | null;
+    expectedRuntimeSec?: number | null;
+    qualityName?: string | null;
+    sourceTitle?: string | null;
     filePath?: string | null;
     localPath?: string | null;
     arrType?: string | null;
@@ -131,7 +135,18 @@ export const integrityFindingReasonLabel = (reason?: string | null) => {
     return labels[key] || reason || 'Unknown';
 };
 
-export const formatDurationMismatchDetail = (detail?: string | null) => {
+export const formatDurationMismatchDetail = (detail?: string | null, finding?: {
+    durationSec?: number | null;
+    expectedRuntimeSec?: number | null;
+}) => {
+    const measured = Number(finding?.durationSec);
+    const expected = Number(finding?.expectedRuntimeSec);
+    if (Number.isFinite(measured) && measured > 0 && Number.isFinite(expected) && expected > 0) {
+        const deltaMin = Math.round((Math.abs(measured - expected) / 60) * 10) / 10;
+        const measuredMin = Math.round((measured / 60) * 10) / 10;
+        const expectedMin = Math.round((expected / 60) * 10) / 10;
+        return `File ${measuredMin} min · catalog ${expectedMin} min · ${deltaMin} min apart`;
+    }
     const raw = String(detail || '');
     const match = raw.match(/delta=([0-9.]+).*tol=([0-9.]+)/i);
     if (!match) return raw || null;

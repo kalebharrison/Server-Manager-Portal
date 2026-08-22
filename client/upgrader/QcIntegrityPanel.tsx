@@ -332,6 +332,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({
     const [cancelling, setCancelling] = useState(false);
     const [progress, setProgress] = useState<IntegrityProgress | null>(null);
     const [replacingKey, setReplacingKey] = useState<string | null>(null);
+    const [acceptingRuntimeKey, setAcceptingRuntimeKey] = useState<string | null>(null);
     const [snoozingKey, setSnoozingKey] = useState<string | null>(null);
     const [recheckingKey, setRecheckingKey] = useState<string | null>(null);
     const [clearingBreaker, setClearingBreaker] = useState(false);
@@ -667,6 +668,35 @@ export const QcIntegrityPanel: React.FC<Props> = ({
         }
     };
 
+    const acceptRuntimeOne = async (finding: IntegrityFinding) => {
+        setAcceptingRuntimeKey(finding.key);
+        try {
+            const payload = await apiFetch('/api/upgrader/qc/integrity/accept-runtime', {
+                method: 'POST',
+                body: JSON.stringify({ key: finding.key, finding }),
+            }) as { cleared?: boolean; durationSec?: number; expectedRuntimeSec?: number };
+            const measuredMin = payload.durationSec
+                ? Math.round((Number(payload.durationSec) / 60) * 10) / 10
+                : null;
+            onToast?.(
+                measuredMin != null
+                    ? `Accepted ${finding.title} at ${measuredMin} min — future scans use that baseline.`
+                    : `Accepted runtime for ${finding.title}`,
+                'success',
+            );
+            setFindings((current) => current.filter((entry) => entry.key !== finding.key));
+            setResult((current) => current ? {
+                ...current,
+                findings: (current.findings || []).filter((entry) => entry.key !== finding.key),
+                findingCount: Math.max(0, Number(current.findingCount || 1) - 1),
+            } : current);
+        } catch (error: any) {
+            onToast?.(error?.message || 'Accept runtime failed', 'error');
+        } finally {
+            setAcceptingRuntimeKey(null);
+        }
+    };
+
     const downloadTrimAudit = async (format: 'json' | 'csv') => {
         const params = new URLSearchParams();
         if (format === 'csv') params.set('format', 'csv');
@@ -784,8 +814,9 @@ export const QcIntegrityPanel: React.FC<Props> = ({
             || recheckingKey === finding.key;
         const reasonLabel = integrityFindingReasonLabel(finding.reason);
         const detailText = finding.reason === 'duration_mismatch'
-            ? (formatDurationMismatchDetail(finding.detail) || finding.detail)
+            ? (formatDurationMismatchDetail(finding.detail, finding) || finding.detail)
             : finding.detail;
+        const showAcceptRuntime = finding.reason === 'duration_mismatch';
         return (
             <div
                 key={finding.key}
@@ -821,6 +852,17 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                         )}
                     </div>
                     <div className="shrink-0 flex flex-col gap-1.5">
+                        {showAcceptRuntime && (
+                            <button
+                                type="button"
+                                className="px-2.5 py-1 rounded-md border border-plex/40 bg-plex/10 text-[11px] font-bold text-plex hover:bg-plex/20 disabled:opacity-50"
+                                disabled={acceptingRuntimeKey === finding.key || scanning || remuxing}
+                                title="Store the probed file length as the baseline and clear this drift finding"
+                                onClick={() => void acceptRuntimeOne(finding)}
+                            >
+                                {acceptingRuntimeKey === finding.key ? 'Saving…' : 'Accept runtime'}
+                            </button>
+                        )}
                         <button
                             type="button"
                             className="px-2.5 py-1 rounded-md border border-border text-[11px] font-bold hover:border-plex/40 disabled:opacity-50"

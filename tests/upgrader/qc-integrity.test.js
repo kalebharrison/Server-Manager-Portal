@@ -18,8 +18,10 @@ import { computeImohash } from '../../lib/upgrader/qc-integrity-hash.js';
 import {
     durationMatchesExpected,
     extractExpectedRuntimeSec,
+    isLikelyAlternateMovieCut,
     parseAudioRuntimeToSec,
     parseRuntimeToSec,
+    resolveMovieExpectedRuntimeSec,
 } from '../../lib/upgrader/qc-integrity-runtime.js';
 
 
@@ -273,8 +275,42 @@ test('durationMatchesExpected is lenient for TV episode catalog runtimes', () =>
     assert.equal(durationMatchesExpected(3886, 2700, { mediaType: 'show' }).ok, true);
     // Still catch stuck/corrupt 4h encode of a 45m episode
     assert.equal(durationMatchesExpected(14400, 2700, { mediaType: 'show' }).ok, false);
-    // Movies stay stricter
-    assert.equal(durationMatchesExpected(3000, 3600, { mediaType: 'movie' }).ok, false);
+    // Movies allow ~15 min / 15% metadata drift
+    assert.equal(durationMatchesExpected(3000, 3600, { mediaType: 'movie' }).ok, true);
+    assert.equal(durationMatchesExpected(2500, 3600, { mediaType: 'movie' }).ok, false);
+});
+
+test('durationMatchesExpected allows longer alternate movie cuts up to corruption ceiling', () => {
+    const theatrical = 178 * 60;
+    const extended = theatrical + (56 * 60);
+    assert.equal(durationMatchesExpected(extended, theatrical, {
+        mediaType: 'movie',
+        alternateCut: true,
+    }).ok, true);
+    assert.equal(durationMatchesExpected(14400, 7200, {
+        mediaType: 'movie',
+        alternateCut: true,
+    }).ok, false);
+});
+
+test('isLikelyAlternateMovieCut detects edition hints in paths', () => {
+    assert.equal(isLikelyAlternateMovieCut({
+        filePath: '/movies/LOTR/LOTR Extended Edition.mkv',
+    }), true);
+    assert.equal(isLikelyAlternateMovieCut({
+        filePath: '/movies/Heat/Heat (1995).mkv',
+    }), false);
+});
+
+test('resolveMovieExpectedRuntimeSec uses max of catalog and prior probe', () => {
+    assert.equal(resolveMovieExpectedRuntimeSec({
+        catalogSec: 7200,
+        priorDurationSec: 9000,
+    }), 9000);
+    assert.equal(resolveMovieExpectedRuntimeSec({
+        catalogSec: 7200,
+        priorExpectedRuntimeSec: 8400,
+    }), 8400);
 });
 
 test('extractExpectedRuntimeSec prefers catalog runtime over MediaInfo', () => {
@@ -1166,6 +1202,57 @@ test('recheckFinding clears a playability finding when decode passes', async () 
     assert.ok(cache.entries['radarr:r1:1:file:7']?.playabilityAt);
     assert.equal(audits.at(-1)?.action, 'qc_integrity_recheck');
     assert.equal(audits.at(-1)?.cleared, true);
+});
+
+test('acceptRuntimeFinding stores probed length and clears duration_mismatch', async () => {
+    let prefs = {
+        integrityFindings: [{
+            key: 'radarr:r1:1:file:7',
+            ratingKey: 'radarr:r1:1',
+            title: 'Extended Movie',
+            arrType: 'radarr',
+            arrInstanceId: 'r1',
+            entityId: 1,
+            movieFileId: 7,
+            filePath: '/movies/Extended.mkv',
+            mediaType: 'movie',
+            mediaKind: 'video',
+            reason: 'duration_mismatch',
+            mode: 'playability',
+            durationSec: 9000,
+            expectedRuntimeSec: 7140,
+            ok: false,
+        }],
+    };
+    let cache = { entries: {} };
+    const audits = [];
+    const integrity = createQcIntegrity({
+        request: async () => ({}),
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async (entry) => { audits.push(entry); },
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        execImpl: async () => ({ ok: true, code: 0, timedOut: false, stdout: '', stderr: '' }),
+    });
+
+    const result = await integrity.acceptRuntimeFinding({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+    }, { key: 'radarr:r1:1:file:7' });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.cleared, true);
+    assert.equal(result.durationSec, 9000);
+    assert.equal(result.expectedRuntimeSec, 9000);
+    assert.equal(prefs.integrityFindings.length, 0);
+    assert.equal(cache.entries['radarr:r1:1:file:7']?.expectedRuntimeSec, 9000);
+    assert.ok(cache.entries['radarr:r1:1:file:7']?.runtimeAcceptedAt);
+    assert.equal(audits.at(-1)?.action, 'qc_integrity_accept_runtime');
 });
 
 test('recheckFinding keeps and refreshes finding when still failing', async () => {
