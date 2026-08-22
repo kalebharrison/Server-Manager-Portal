@@ -19,9 +19,11 @@ import {
     durationMatchesExpected,
     extractExpectedRuntimeSec,
     isLikelyAlternateMovieCut,
+    isSpecialEpisode,
     parseAudioRuntimeToSec,
     parseRuntimeToSec,
     resolveMovieExpectedRuntimeSec,
+    shouldIgnoreRuntimeFinding,
 } from '../../lib/upgrader/qc-integrity-runtime.js';
 
 
@@ -278,6 +280,58 @@ test('durationMatchesExpected is lenient for TV episode catalog runtimes', () =>
     // Movies allow ~15 min / 15% metadata drift
     assert.equal(durationMatchesExpected(3000, 3600, { mediaType: 'movie' }).ok, true);
     assert.equal(durationMatchesExpected(2500, 3600, { mediaType: 'movie' }).ok, false);
+});
+
+test('durationMatchesExpected skips TV specials (season 0)', () => {
+    const shortSpecial = durationMatchesExpected(90, 24 * 60, {
+        mediaType: 'show',
+        specialEpisode: true,
+    });
+    assert.equal(shortSpecial.ok, true);
+    assert.equal(shortSpecial.skipped, true);
+    assert.equal(shortSpecial.specialEpisode, true);
+    assert.equal(isSpecialEpisode({ seasonNumber: 0 }), true);
+    assert.equal(isSpecialEpisode({ filePath: '/tv/Letterkenny/Specials/Extra.mkv' }), true);
+    assert.equal(shouldIgnoreRuntimeFinding({
+        reason: 'duration_mismatch',
+        seasonNumber: 0,
+        title: 'Letterkenny',
+    }), true);
+    assert.equal(shouldIgnoreRuntimeFinding({
+        reason: 'duration_mismatch',
+        seasonNumber: 1,
+        title: 'Letterkenny',
+    }), false);
+});
+
+test('reconcileIntegrityFindings drops stored runtime drift for TV specials', () => {
+    const merged = reconcileIntegrityFindings([
+        {
+            key: 'sonarr:r1:1:file:1',
+            reason: 'duration_mismatch',
+            seasonNumber: 0,
+            title: 'Letterkenny',
+        },
+        {
+            key: 'sonarr:r1:1:file:2',
+            reason: 'duration_mismatch',
+            seasonNumber: 1,
+            title: 'Letterkenny',
+        },
+        { key: 'sonarr:r1:1:file:3', reason: 'decode_end', seasonNumber: 0, title: 'Broken special' },
+    ], {
+        incoming: [{
+            key: 'sonarr:r1:1:file:4',
+            reason: 'duration_mismatch',
+            seasonNumber: 0,
+            title: 'Scrubs',
+        }],
+    });
+    assert.equal(merged.length, 2);
+    assert.deepEqual(merged.map((row) => row.key).sort(), [
+        'sonarr:r1:1:file:2',
+        'sonarr:r1:1:file:3',
+    ]);
 });
 
 test('durationMatchesExpected allows longer alternate movie cuts up to corruption ceiling', () => {
