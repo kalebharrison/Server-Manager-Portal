@@ -34,22 +34,37 @@ export type IntegrityFindingCategory =
 
 export type IntegrityFindingCategoryFilter = IntegrityFindingCategory | 'all' | 'runtime';
 
+export type IntegrityFindingSeverity = 'critical' | 'high' | 'medium' | 'low';
+
+export type IntegrityFindingSeverityFilter = IntegrityFindingSeverity | 'all';
+
 export type IntegrityMediaFilter = 'all' | 'movie' | 'show' | 'album';
 
 export type IntegrityRuntimeDirection = 'short' | 'long' | null;
+
+export const FINDING_SEVERITY_META: Record<IntegrityFindingSeverity, {
+    label: string;
+    shortLabel: string;
+    rank: number;
+}> = {
+    critical: { label: 'Critical', shortLabel: 'Critical', rank: 0 },
+    high: { label: 'High', shortLabel: 'High', rank: 1 },
+    medium: { label: 'Medium', shortLabel: 'Medium', rank: 2 },
+    low: { label: 'Low', shortLabel: 'Low', rank: 3 },
+};
 
 export const FINDING_CATEGORY_META: Record<IntegrityFindingCategory, {
     label: string;
     shortLabel: string;
     blurb: string;
-    severity?: 'high' | 'medium' | 'low';
+    severity: IntegrityFindingSeverity;
     defaultCollapsedAbove?: number;
 }> = {
     broken: {
         label: "Won't play",
         shortLabel: 'Broken',
         blurb: 'Decode or stream probe failed — files are likely corrupt or truncated.',
-        severity: 'high',
+        severity: 'critical',
     },
     runtime_short: {
         label: 'Shorter than catalog',
@@ -67,7 +82,7 @@ export const FINDING_CATEGORY_META: Record<IntegrityFindingCategory, {
     trim: {
         label: 'Trim / remux',
         shortLabel: 'Trim',
-        blurb: 'Keep-rule remux skipped or pending — use Recheck to remux when policy allows.',
+        blurb: 'Keep-rule remux skipped or pending — use Recheck to remux when policy allows. Set native language when lookup fails.',
         severity: 'low',
     },
     hash: {
@@ -80,7 +95,7 @@ export const FINDING_CATEGORY_META: Record<IntegrityFindingCategory, {
         label: 'Path / index',
         shortLabel: 'Path',
         blurb: 'File missing on disk, path map issue, or stale Arr index entry.',
-        severity: 'medium',
+        severity: 'high',
     },
     other: {
         label: 'Other',
@@ -133,6 +148,10 @@ export const integrityFindingCategory = (finding: Partial<IntegrityFinding> = {}
     if (reason === 'missing_file' || reason === 'missing_path' || reason === 'unsafe_path') return 'path';
     return 'other';
 };
+
+export const integrityFindingSeverity = (
+    finding: Partial<IntegrityFinding> = {},
+): IntegrityFindingSeverity => FINDING_CATEGORY_META[integrityFindingCategory(finding)].severity;
 
 export const integrityFindingMediaType = (finding: Partial<IntegrityFinding> = {}): IntegrityMediaFilter => {
     const mt = String(finding.mediaType || '').toLowerCase();
@@ -210,6 +229,7 @@ export type IntegrityFindingSummary = Record<IntegrityFindingCategory, number> &
     total: number;
     runtime: number;
     byMedia: Record<Exclude<IntegrityMediaFilter, 'all'>, number>;
+    bySeverity: Record<IntegrityFindingSeverity, number>;
 };
 
 export const summarizeIntegrityFindings = (findings: IntegrityFinding[] = []): IntegrityFindingSummary => {
@@ -224,11 +244,13 @@ export const summarizeIntegrityFindings = (findings: IntegrityFinding[] = []): I
         other: 0,
         runtime: 0,
         byMedia: { movie: 0, show: 0, album: 0 },
+        bySeverity: { critical: 0, high: 0, medium: 0, low: 0 },
     };
     for (const finding of findings) {
         const category = integrityFindingCategory(finding);
         summary[category] += 1;
         if (category === 'runtime_short' || category === 'runtime_long') summary.runtime += 1;
+        summary.bySeverity[FINDING_CATEGORY_META[category].severity] += 1;
         const media = integrityFindingMediaType(finding);
         if (media !== 'all') summary.byMedia[media] += 1;
     }
@@ -249,16 +271,20 @@ export const filterIntegrityFindings = (
     {
         category = 'all',
         media = 'all',
+        severity = 'all',
         query = '',
     }: {
         category?: IntegrityFindingCategoryFilter;
         media?: IntegrityMediaFilter;
+        severity?: IntegrityFindingSeverityFilter;
         query?: string;
     } = {},
 ) => {
     const q = String(query || '').trim().toLowerCase();
     return findings.filter((finding) => {
-        if (!categoryMatchesFilter(integrityFindingCategory(finding), category)) return false;
+        const cat = integrityFindingCategory(finding);
+        if (!categoryMatchesFilter(cat, category)) return false;
+        if (severity !== 'all' && FINDING_CATEGORY_META[cat].severity !== severity) return false;
         if (media !== 'all' && integrityFindingMediaType(finding) !== media) return false;
         if (!q) return true;
         const haystack = [
@@ -273,13 +299,24 @@ export const filterIntegrityFindings = (
     });
 };
 
+export const sortIntegrityFindingsBySeverity = (findings: IntegrityFinding[] = []) => (
+    [...findings].sort((a, b) => {
+        const rankA = FINDING_SEVERITY_META[integrityFindingSeverity(a)].rank;
+        const rankB = FINDING_SEVERITY_META[integrityFindingSeverity(b)].rank;
+        if (rankA !== rankB) return rankA - rankB;
+        return String(a.title || '').localeCompare(String(b.title || ''));
+    })
+);
+
 export const groupIntegrityFindings = (
     findings: IntegrityFinding[] = [],
 ): Array<{ category: IntegrityFindingCategory; items: IntegrityFinding[] }> => (
     CATEGORY_ORDER
         .map((category) => ({
             category,
-            items: findings.filter((finding) => integrityFindingCategory(finding) === category),
+            items: sortIntegrityFindingsBySeverity(
+                findings.filter((finding) => integrityFindingCategory(finding) === category),
+            ),
         }))
         .filter((group) => group.items.length > 0)
 );
@@ -287,7 +324,7 @@ export const groupIntegrityFindings = (
 export const findingCategoryBorderClass = (category: IntegrityFindingCategory) => {
     switch (category) {
         case 'broken':
-            return 'border-red-500/30 bg-red-500/10';
+            return 'border-red-500/40 bg-red-500/15';
         case 'runtime_short':
             return 'border-amber-500/35 bg-amber-500/10';
         case 'runtime_long':
@@ -295,18 +332,31 @@ export const findingCategoryBorderClass = (category: IntegrityFindingCategory) =
         case 'trim':
             return 'border-sky-500/25 bg-sky-500/5';
         case 'hash':
-            return 'border-violet-500/25 bg-violet-500/5';
+            return 'border-violet-500/30 bg-violet-500/10';
         case 'path':
-            return 'border-orange-500/25 bg-orange-500/5';
+            return 'border-orange-500/30 bg-orange-500/10';
         default:
             return 'border-border/60 bg-white/[0.02]';
     }
 };
 
-export const findingSeverityLabel = (category: IntegrityFindingCategory) => {
-    const severity = FINDING_CATEGORY_META[category].severity;
-    if (severity === 'high') return 'High';
-    if (severity === 'medium') return 'Medium';
-    if (severity === 'low') return 'Low';
-    return null;
+export const findingSeverityLabel = (categoryOrFinding: IntegrityFindingCategory | Partial<IntegrityFinding>) => {
+    const severity = typeof categoryOrFinding === 'string'
+        ? FINDING_CATEGORY_META[categoryOrFinding].severity
+        : integrityFindingSeverity(categoryOrFinding);
+    return FINDING_SEVERITY_META[severity].label;
 };
+
+export const AUTO_REPLACE_CATEGORY_OPTIONS: Array<{
+    key: Exclude<IntegrityFindingCategory, 'other'>;
+    label: string;
+    severity: IntegrityFindingSeverity;
+    blurb: string;
+}> = [
+    { key: 'broken', label: "Won't play", severity: 'critical', blurb: 'Decode / probe failures' },
+    { key: 'hash', label: 'Fingerprint', severity: 'high', blurb: 'imohash / xxhash mismatches' },
+    { key: 'path', label: 'Path / index', severity: 'high', blurb: 'Missing file or path map issues' },
+    { key: 'runtime_short', label: 'Shorter than catalog', severity: 'medium', blurb: 'Possible truncation — off by default' },
+    { key: 'runtime_long', label: 'Longer than catalog', severity: 'low', blurb: 'Extended cuts / metadata drift' },
+    { key: 'trim', label: 'Trim / remux', severity: 'low', blurb: 'Not Arr Replace — leave off' },
+];

@@ -10,6 +10,7 @@ import {
     IntegritySchedulePolicyCard,
     type IntegritySchedulePolicy,
 } from './IntegritySchedulePolicyCard';
+import { AUTO_REPLACE_CATEGORY_OPTIONS } from '../upgrader/qcIntegrityFindings';
 
 const PRESET_IDS: QcPresetId[] = ['relaxed', 'balanced', 'aggressive', 'custom'];
 
@@ -20,6 +21,15 @@ type Prefs = {
     preferAtmos: boolean;
     preferRemux: boolean;
     preferSeasonPacks: boolean;
+};
+
+type IntegrityAutoReplaceByCategory = {
+    broken: boolean;
+    hash: boolean;
+    path: boolean;
+    runtime_short: boolean;
+    runtime_long: boolean;
+    trim: boolean;
 };
 
 type QcSettingsSection = 'qc-hunt' | 'qc-downloads' | 'qc-integrity';
@@ -41,6 +51,7 @@ type Props = {
     qcCleanupAggression: string;
     integrityEnabled: boolean;
     integrityAutomationEnabled: boolean;
+    integrityAutoReplaceByCategory: IntegrityAutoReplaceByCategory;
     integrityPlexRefreshAfterImport: boolean;
     integrityRequireAudio: boolean;
     integrityIncludeMusic: boolean;
@@ -91,6 +102,7 @@ type Props = {
     onQcCleanupAggressionChange: (value: string) => void;
     onIntegrityEnabledChange: (value: boolean) => void;
     onIntegrityAutomationEnabledChange: (value: boolean) => void;
+    onIntegrityAutoReplaceByCategoryChange: (value: IntegrityAutoReplaceByCategory) => void;
     onIntegrityPlexRefreshAfterImportChange: (value: boolean) => void;
     onIntegrityRequireAudioChange: (value: boolean) => void;
     onIntegrityIncludeMusicChange: (value: boolean) => void;
@@ -145,6 +157,14 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     qcCleanupAggression,
     integrityEnabled,
     integrityAutomationEnabled,
+    integrityAutoReplaceByCategory = {
+        broken: true,
+        hash: true,
+        path: false,
+        runtime_short: false,
+        runtime_long: false,
+        trim: false,
+    },
     integrityPlexRefreshAfterImport,
     integrityRequireAudio,
     integrityIncludeMusic,
@@ -195,6 +215,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
     onQcCleanupAggressionChange,
     onIntegrityEnabledChange,
     onIntegrityAutomationEnabledChange,
+    onIntegrityAutoReplaceByCategoryChange,
     onIntegrityPlexRefreshAfterImportChange,
     onIntegrityRequireAudioChange,
     onIntegrityIncludeMusicChange,
@@ -596,7 +617,7 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                             <label className="flex items-center justify-between gap-4">
                                 <span className="min-w-0">
                                     <span className="font-semibold">Auto-fix</span>
-                                    <p className="text-xs text-muted font-normal mt-0.5">Dry-run first on the QC dashboard.</p>
+                                    <p className="text-xs text-muted font-normal mt-0.5">Dry-run first on the QC dashboard. Category toggles below still apply.</p>
                                 </span>
                                 <input
                                     type="checkbox"
@@ -606,6 +627,53 @@ export const UpgraderSettingsPanel: React.FC<Props> = ({
                                     onChange={(event) => onIntegrityAutomationEnabledChange(event.target.checked)}
                                 />
                             </label>
+                            <div className={`rounded-lg border border-border/50 bg-background/20 p-3 space-y-2 ${
+                                !enabled || !integrityEnabled || !integrityAutomationEnabled ? 'opacity-60' : ''
+                            }`}
+                            >
+                                <div className="text-xs font-semibold text-text">Auto-replace by finding type</div>
+                                <p className="text-[11px] text-muted">
+                                    Medium (shorter-than-catalog) stays off unless you enable it. Trim remux is not Arr Replace — leave that off.
+                                </p>
+                                <div className="space-y-2 pt-1">
+                                    {AUTO_REPLACE_CATEGORY_OPTIONS.map((option) => {
+                                        const checked = !!(integrityAutoReplaceByCategory || {})[option.key];
+                                        return (
+                                            <label
+                                                key={option.key}
+                                                className="flex items-start justify-between gap-3"
+                                            >
+                                                <span className="min-w-0">
+                                                    <span className="text-sm font-semibold text-text">
+                                                        {option.label}
+                                                        <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-muted">
+                                                            {option.severity}
+                                                        </span>
+                                                    </span>
+                                                    <p className="text-[11px] text-muted font-normal mt-0.5">{option.blurb}</p>
+                                                </span>
+                                                <input
+                                                    type="checkbox"
+                                                    className="mt-1 h-4 w-4 accent-plex shrink-0"
+                                                    disabled={!enabled || !integrityEnabled || !integrityAutomationEnabled}
+                                                    checked={checked && integrityAutomationEnabled && integrityEnabled && enabled}
+                                                    onChange={(event) => onIntegrityAutoReplaceByCategoryChange({
+                                                        ...(integrityAutoReplaceByCategory || {
+                                                            broken: true,
+                                                            hash: true,
+                                                            path: false,
+                                                            runtime_short: false,
+                                                            runtime_long: false,
+                                                            trim: false,
+                                                        }),
+                                                        [option.key]: event.target.checked,
+                                                    })}
+                                                />
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                             <label className="flex items-center justify-between gap-4">
                                 <span className="min-w-0">
                                     <span className="font-semibold">Plex refresh after import</span>

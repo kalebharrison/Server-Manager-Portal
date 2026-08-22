@@ -131,6 +131,7 @@ export const useSettingsHydration = ({
             setQcCleanupAggression: set('qcCleanupAggression'),
             setQcIntegrityEnabled: set('qcIntegrityEnabled'),
             setQcIntegrityAutomationEnabled: set('qcIntegrityAutomationEnabled'),
+            setQcIntegrityAutoReplaceByCategory: set('qcIntegrityAutoReplaceByCategory'),
             setQcIntegrityPlexRefreshAfterImport: set('qcIntegrityPlexRefreshAfterImport'),
             setQcIntegrityRequireAudio: set('qcIntegrityRequireAudio'),
             setQcIntegrityIncludeMusic: set('qcIntegrityIncludeMusic'),

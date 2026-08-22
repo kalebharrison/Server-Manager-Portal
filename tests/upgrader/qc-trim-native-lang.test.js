@@ -128,3 +128,25 @@ test('unresolved native language does not guess anime folder', async () => {
     assert.equal(result.code, null);
     assert.equal(result.source, 'unresolved');
 });
+
+test('manual native override wins over TMDb and prior cache', async () => {
+    let called = false;
+    const result = await lookupTrimNativeLanguage({
+        tmdbApiKey: 'test-key',
+        qcTrimKeepNativeAudio: true,
+    }, {
+        title: 'Your Name.',
+        mediaType: 'movie',
+        tmdbId: 372058,
+    }, {
+        prior: { trimNativeLang: 'eng', trimNativeSource: 'tmdb' },
+        nativeOverride: { code: 'ja', setAt: '2026-01-01T00:00:00.000Z' },
+        fetchImpl: async () => {
+            called = true;
+            return { ok: true, json: async () => ({ original_language: 'en' }) };
+        },
+    });
+    assert.equal(result.code, 'jpn');
+    assert.equal(result.source, 'manual');
+    assert.equal(called, false);
+});

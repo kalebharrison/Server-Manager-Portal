@@ -1,6 +1,7 @@
 import { portalUrl } from '../shared/basePath';
 import type {
     IntegrityFindingCategoryFilter,
+    IntegrityFindingSeverityFilter,
     IntegrityMediaFilter,
 } from './qcIntegrityFindings';
 
@@ -32,6 +33,7 @@ export type UpgraderIntegrityUrlState = {
     view: IntegrityView;
     category: IntegrityFindingCategoryFilter;
     media: IntegrityMediaFilter;
+    severity: IntegrityFindingSeverityFilter;
     q: string;
 };
 
@@ -73,6 +75,14 @@ const VALID_INTEGRITY_CATEGORIES = new Set<IntegrityFindingCategoryFilter>([
     'other',
 ]);
 
+const VALID_INTEGRITY_SEVERITIES = new Set<IntegrityFindingSeverityFilter>([
+    'all',
+    'critical',
+    'high',
+    'medium',
+    'low',
+]);
+
 const VALID_INTEGRITY_MEDIA = new Set<IntegrityMediaFilter>([
     'all',
     'movie',
@@ -99,6 +109,7 @@ export const defaultIntegrityUrlState = (): UpgraderIntegrityUrlState => ({
     view: 'coverage',
     category: 'all',
     media: 'all',
+    severity: 'all',
     q: '',
 });
 
@@ -122,6 +133,13 @@ const normalizeIntegrityMedia = (raw: string | null): IntegrityMediaFilter => {
     return 'all';
 };
 
+const normalizeIntegritySeverity = (raw: string | null): IntegrityFindingSeverityFilter => {
+    if (raw && VALID_INTEGRITY_SEVERITIES.has(raw as IntegrityFindingSeverityFilter)) {
+        return raw as IntegrityFindingSeverityFilter;
+    }
+    return 'all';
+};
+
 export const parseUpgraderUrl = (search = ''): UpgraderUrlState => {
     const params = new URLSearchParams(search);
     const tab = normalizeTab(params.get('tab'));
@@ -137,6 +155,7 @@ export const parseUpgraderUrl = (search = ''): UpgraderUrlState => {
             view: normalizeIntegrityView(params.get('view')),
             category: normalizeIntegrityCategory(params.get('category')),
             media: normalizeIntegrityMedia(params.get('media')),
+            severity: normalizeIntegritySeverity(params.get('severity')),
             q: params.get('q') || '',
         },
     };
@@ -159,6 +178,7 @@ export const buildUpgraderSearch = (state: UpgraderUrlState): string => {
         if (i.view !== 'coverage') params.set('view', i.view);
         if (i.category !== 'all') params.set('category', i.category);
         if (i.media !== 'all') params.set('media', i.media);
+        if (i.severity !== 'all') params.set('severity', i.severity);
         if (i.q.trim()) params.set('q', i.q.trim());
     }
 

@@ -108,6 +108,14 @@ type SettingsSavePayloadInput = {
     qcCleanupAggression: string;
     qcIntegrityEnabled: boolean;
     qcIntegrityAutomationEnabled: boolean;
+    qcIntegrityAutoReplaceByCategory: {
+        broken: boolean;
+        hash: boolean;
+        path: boolean;
+        runtime_short: boolean;
+        runtime_long: boolean;
+        trim: boolean;
+    };
     qcIntegrityPlexRefreshAfterImport: boolean;
     qcIntegrityRequireAudio: boolean;
     qcIntegrityIncludeMusic: boolean;

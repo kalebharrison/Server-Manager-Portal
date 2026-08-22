@@ -7,6 +7,7 @@ import { QC_KPI, QC_SECTION, QC_TAB_BAR, qcTabButtonClass } from './qcUi';
 import { QcIntegrityLookup } from './QcIntegrityLookup';
 import {
     FINDING_CATEGORY_META,
+    FINDING_SEVERITY_META,
     filterIntegrityFindings,
     findingCategoryBorderClass,
     findingSeverityLabel,
@@ -14,10 +15,12 @@ import {
     groupIntegrityFindings,
     integrityFindingCategory,
     integrityFindingReasonLabel,
+    sortIntegrityFindingsBySeverity,
     summarizeIntegrityFindings,
     type IntegrityFinding,
     type IntegrityFindingCategory,
     type IntegrityFindingCategoryFilter,
+    type IntegrityFindingSeverityFilter,
 } from './qcIntegrityFindings';
 import type { IntegrityView, UpgraderIntegrityUrlState } from './upgraderUrlState';
 import { defaultIntegrityUrlState } from './upgraderUrlState';
@@ -346,6 +349,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({
     const activeView = url.view || 'coverage';
     const findingCategoryFilter = url.category || 'all';
     const findingMediaFilter = url.media || 'all';
+    const findingSeverityFilter = (url.severity || 'all') as IntegrityFindingSeverityFilter;
     const findingQuery = url.q || '';
     const setIntegrityUrl = (patch: Partial<UpgraderIntegrityUrlState>) => {
         onIntegrityUrlChange?.(patch);
@@ -356,6 +360,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({
     const [progress, setProgress] = useState<IntegrityProgress | null>(null);
     const [replacingKey, setReplacingKey] = useState<string | null>(null);
     const [acceptingRuntimeKey, setAcceptingRuntimeKey] = useState<string | null>(null);
+    const [settingNativeKey, setSettingNativeKey] = useState<string | null>(null);
+    const [nativeDraftByKey, setNativeDraftByKey] = useState<Record<string, string>>({});
     const [snoozingKey, setSnoozingKey] = useState<string | null>(null);
     const [recheckingKey, setRecheckingKey] = useState<string | null>(null);
     const [clearingBreaker, setClearingBreaker] = useState(false);
@@ -717,6 +723,40 @@ export const QcIntegrityPanel: React.FC<Props> = ({
         }
     };
 
+    const setNativeLanguageOne = async (finding: IntegrityFinding) => {
+        const draft = String(nativeDraftByKey[finding.key] || '').trim();
+        if (!draft) {
+            onToast?.('Enter a language code (e.g. jpn, kor, fra)', 'error');
+            return;
+        }
+        setSettingNativeKey(finding.key);
+        try {
+            await apiFetch('/api/upgrader/qc/integrity/native-language', {
+                method: 'POST',
+                body: JSON.stringify({ key: finding.key, code: draft, finding }),
+            });
+            onToast?.(
+                `Set native ${draft} for ${finding.title}. Recheck to remux with that language.`,
+                'success',
+            );
+            setFindings((current) => current.filter((entry) => entry.key !== finding.key));
+            setResult((current) => current ? {
+                ...current,
+                findings: (current.findings || []).filter((entry) => entry.key !== finding.key),
+                findingCount: Math.max(0, Number(current.findingCount || 1) - 1),
+            } : current);
+            setNativeDraftByKey((current) => {
+                const next = { ...current };
+                delete next[finding.key];
+                return next;
+            });
+        } catch (error: any) {
+            onToast?.(error?.message || 'Set native language failed', 'error');
+        } finally {
+            setSettingNativeKey(null);
+        }
+    };
+
     const downloadTrimAudit = async (format: 'json' | 'csv') => {
         const params = new URLSearchParams();
         if (format === 'csv') params.set('format', 'csv');
@@ -809,13 +849,15 @@ export const QcIntegrityPanel: React.FC<Props> = ({
 
     const displayFindings = findings.length ? findings : (result?.findings || []);
     const findingSummary = summarizeIntegrityFindings(displayFindings);
-    const filteredFindings = filterIntegrityFindings(displayFindings, {
+    const filteredFindings = sortIntegrityFindingsBySeverity(filterIntegrityFindings(displayFindings, {
         category: findingCategoryFilter,
         media: findingMediaFilter,
+        severity: findingSeverityFilter,
         query: findingQuery,
-    });
+    }));
     const groupedFindings = groupIntegrityFindings(filteredFindings);
     const showGroupedFindings = (findingCategoryFilter === 'all' || findingCategoryFilter === 'runtime')
+        && findingSeverityFilter === 'all'
         && !findingQuery.trim();
     const toggleFindingGroup = (category: IntegrityFindingCategory) => {
         setCollapsedFindingGroups((current) => ({
@@ -838,6 +880,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({
             ? (formatDurationMismatchDetail(finding.detail, finding) || finding.detail)
             : finding.detail;
         const showAcceptRuntime = finding.reason === 'duration_mismatch';
+        const showSetNative = finding.reason === 'trim_native_unknown';
         const severity = findingSeverityLabel(category);
         return (
             <div
@@ -850,11 +893,13 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                             <div className="text-xs font-semibold text-text truncate">{finding.title}</div>
                             {severity && (
                                 <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide ${
-                                    severity === 'High'
-                                        ? 'text-red-200'
-                                        : severity === 'Medium'
-                                            ? 'text-amber-200'
-                                            : 'text-muted'
+                                    severity === 'Critical'
+                                        ? 'text-red-300'
+                                        : severity === 'High'
+                                            ? 'text-orange-200'
+                                            : severity === 'Medium'
+                                                ? 'text-amber-200'
+                                                : 'text-muted'
                                 }`}
                                 >
                                     {severity}
@@ -886,6 +931,30 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                             }`}
                             >
                                 {detailText}
+                            </div>
+                        )}
+                        {showSetNative && (
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                <input
+                                    type="text"
+                                    value={nativeDraftByKey[finding.key] || ''}
+                                    onChange={(event) => setNativeDraftByKey((current) => ({
+                                        ...current,
+                                        [finding.key]: event.target.value,
+                                    }))}
+                                    placeholder="jpn / kor / fra…"
+                                    className="w-28 rounded-md border border-border/60 bg-background/40 px-2 py-1 text-[11px] text-text placeholder:text-muted"
+                                    disabled={settingNativeKey === finding.key || scanning || remuxing}
+                                />
+                                <button
+                                    type="button"
+                                    className="px-2.5 py-1 rounded-md border border-plex/40 bg-plex/10 text-[11px] font-bold text-plex hover:bg-plex/20 disabled:opacity-50"
+                                    disabled={settingNativeKey === finding.key || scanning || remuxing}
+                                    title="Store this as the native audio language for remux keep-rules"
+                                    onClick={() => void setNativeLanguageOne(finding)}
+                                >
+                                    {settingNativeKey === finding.key ? 'Saving…' : 'Set native'}
+                                </button>
                             </div>
                         )}
                     </div>
@@ -1404,7 +1473,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                     <div>
                         <h3 className="text-sm font-bold text-text">Findings</h3>
                         <p className="text-[11px] text-muted mt-1 max-w-3xl">
-                            Broken and shorter-than-catalog are the priority. Longer-than-catalog is usually an extended cut — Accept runtime when that length is correct.
+                            Sorted Critical → Low. Broken first; shorter-than-catalog is Medium; longer-than-catalog and trim are Low — Accept runtime or Set native when those are correct.
                         </p>
                     </div>
                     <button
@@ -1420,6 +1489,26 @@ export const QcIntegrityPanel: React.FC<Props> = ({
 
                 {displayFindings.length > 0 && (
                     <div className="space-y-3">
+                        <div className={`${QC_TAB_BAR} flex-wrap`}>
+                            {([
+                                ['all', 'All', findingSummary.total],
+                                ['critical', FINDING_SEVERITY_META.critical.label, findingSummary.bySeverity.critical],
+                                ['high', FINDING_SEVERITY_META.high.label, findingSummary.bySeverity.high],
+                                ['medium', FINDING_SEVERITY_META.medium.label, findingSummary.bySeverity.medium],
+                                ['low', FINDING_SEVERITY_META.low.label, findingSummary.bySeverity.low],
+                            ] as Array<[IntegrityFindingSeverityFilter, string, number]>).map(([key, label, count]) => (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    className={qcTabButtonClass(findingSeverityFilter === key)}
+                                    onClick={() => setIntegrityUrl({ severity: key })}
+                                >
+                                    {label}
+                                    {count > 0 ? ` (${count})` : ''}
+                                </button>
+                            ))}
+                        </div>
+
                         <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2">
                             {([
                                 ['all', 'All', findingSummary.total],

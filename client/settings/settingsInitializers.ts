@@ -279,6 +279,26 @@ export const hydrateSettingsFromConfig = (initialSettings: any, setters: Setting
     setters.setQcCleanupAutomationEnabled(!!initialSettings.qcCleanupAutomationEnabled);
     setters.setQcIntegrityEnabled(!!initialSettings.qcIntegrityEnabled);
     setters.setQcIntegrityAutomationEnabled(!!initialSettings.qcIntegrityAutomationEnabled);
+    setters.setQcIntegrityAutoReplaceByCategory(
+        initialSettings.qcIntegrityAutoReplaceByCategory
+            && typeof initialSettings.qcIntegrityAutoReplaceByCategory === 'object'
+            ? {
+                broken: initialSettings.qcIntegrityAutoReplaceByCategory.broken !== false,
+                hash: initialSettings.qcIntegrityAutoReplaceByCategory.hash !== false,
+                path: !!initialSettings.qcIntegrityAutoReplaceByCategory.path,
+                runtime_short: !!initialSettings.qcIntegrityAutoReplaceByCategory.runtime_short,
+                runtime_long: !!initialSettings.qcIntegrityAutoReplaceByCategory.runtime_long,
+                trim: !!initialSettings.qcIntegrityAutoReplaceByCategory.trim,
+            }
+            : {
+                broken: true,
+                hash: true,
+                path: false,
+                runtime_short: false,
+                runtime_long: false,
+                trim: false,
+            },
+    );
     setters.setQcIntegrityPlexRefreshAfterImport(initialSettings.qcIntegrityPlexRefreshAfterImport !== false);
     setters.setQcIntegrityRequireAudio(initialSettings.qcIntegrityRequireAudio !== false);
     setters.setQcIntegrityIncludeMusic(initialSettings.qcIntegrityIncludeMusic !== false);
