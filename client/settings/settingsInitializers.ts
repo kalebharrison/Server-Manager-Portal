@@ -113,6 +113,14 @@ type SettingsHydrationSetters = {
     setQcCleanupAggression: (value: string) => void;
     setQcIntegrityEnabled: (value: boolean) => void;
     setQcIntegrityAutomationEnabled: (value: boolean) => void;
+    setQcIntegrityAutoReplaceByCategory: (value: {
+        broken: boolean;
+        hash: boolean;
+        path: boolean;
+        runtime_short: boolean;
+        runtime_long: boolean;
+        trim: boolean;
+    }) => void;
     setQcIntegrityPlexRefreshAfterImport: (value: boolean) => void;
     setQcIntegrityRequireAudio: (value: boolean) => void;
     setQcIntegrityIncludeMusic: (value: boolean) => void;
