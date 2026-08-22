@@ -9,6 +9,7 @@ import {
     FINDING_CATEGORY_META,
     filterIntegrityFindings,
     findingCategoryBorderClass,
+    findingSeverityLabel,
     formatDurationMismatchDetail,
     groupIntegrityFindings,
     integrityFindingCategory,
@@ -16,8 +17,10 @@ import {
     summarizeIntegrityFindings,
     type IntegrityFinding,
     type IntegrityFindingCategory,
-    type IntegrityMediaFilter,
+    type IntegrityFindingCategoryFilter,
 } from './qcIntegrityFindings';
+import type { IntegrityView, UpgraderIntegrityUrlState } from './upgraderUrlState';
+import { defaultIntegrityUrlState } from './upgraderUrlState';
 
 type IntegrityProgress = {
     target?: number;
@@ -184,6 +187,8 @@ type Props = {
     integrityEnabled?: boolean;
     /** True while parent status has not loaded yet — do not treat as disabled. */
     integrityStatusLoading?: boolean;
+    integrityUrl?: UpgraderIntegrityUrlState;
+    onIntegrityUrlChange?: (patch: Partial<UpgraderIntegrityUrlState>) => void;
 };
 
 /** API mode → plain-language label shown in the UI. */
@@ -322,11 +327,29 @@ const librariesFromCoverage = (coverage: IntegrityCoverage | null): LibraryCover
     return out;
 };
 
+const INTEGRITY_VIEWS: Array<{ id: IntegrityView; label: string }> = [
+    { id: 'coverage', label: 'Coverage' },
+    { id: 'findings', label: 'Findings' },
+    { id: 'lookup', label: 'Lookup' },
+    { id: 'trim', label: 'Trim' },
+    { id: 'snoozed', label: 'Snoozed' },
+];
+
 export const QcIntegrityPanel: React.FC<Props> = ({
     onToast,
     integrityEnabled = false,
     integrityStatusLoading = false,
+    integrityUrl,
+    onIntegrityUrlChange,
 }) => {
+    const url = integrityUrl || defaultIntegrityUrlState();
+    const activeView = url.view || 'coverage';
+    const findingCategoryFilter = url.category || 'all';
+    const findingMediaFilter = url.media || 'all';
+    const findingQuery = url.q || '';
+    const setIntegrityUrl = (patch: Partial<UpgraderIntegrityUrlState>) => {
+        onIntegrityUrlChange?.(patch);
+    };
     const [scanning, setScanning] = useState(false);
     const [forceRecheck, setForceRecheck] = useState(false);
     const [cancelling, setCancelling] = useState(false);
@@ -342,9 +365,6 @@ export const QcIntegrityPanel: React.FC<Props> = ({
     const [xxhashEnabled, setXxhashEnabled] = useState(false);
     const [snoozeHours, setSnoozeHours] = useState(24);
     const [findings, setFindings] = useState<IntegrityFinding[]>([]);
-    const [findingCategoryFilter, setFindingCategoryFilter] = useState<IntegrityFindingCategory | 'all'>('all');
-    const [findingMediaFilter, setFindingMediaFilter] = useState<IntegrityMediaFilter>('all');
-    const [findingQuery, setFindingQuery] = useState('');
     const [collapsedFindingGroups, setCollapsedFindingGroups] = useState<Record<string, boolean>>({});
     const [activeRechecks, setActiveRechecks] = useState<ActiveRecheck[]>([]);
     const [trimPreview, setTrimPreview] = useState<TrimPreview | null>(null);
@@ -795,7 +815,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({
         query: findingQuery,
     });
     const groupedFindings = groupIntegrityFindings(filteredFindings);
-    const showGroupedFindings = findingCategoryFilter === 'all' && !findingQuery.trim();
+    const showGroupedFindings = (findingCategoryFilter === 'all' || findingCategoryFilter === 'runtime')
+        && !findingQuery.trim();
     const toggleFindingGroup = (category: IntegrityFindingCategory) => {
         setCollapsedFindingGroups((current) => ({
             ...current,
@@ -812,11 +833,12 @@ export const QcIntegrityPanel: React.FC<Props> = ({
     const renderFindingRow = (finding: IntegrityFinding, category: IntegrityFindingCategory) => {
         const remuxing = activeRechecks.some((job) => job.key === finding.key)
             || recheckingKey === finding.key;
-        const reasonLabel = integrityFindingReasonLabel(finding.reason);
+        const reasonLabel = integrityFindingReasonLabel(finding);
         const detailText = finding.reason === 'duration_mismatch'
             ? (formatDurationMismatchDetail(finding.detail, finding) || finding.detail)
             : finding.detail;
         const showAcceptRuntime = finding.reason === 'duration_mismatch';
+        const severity = findingSeverityLabel(category);
         return (
             <div
                 key={finding.key}
@@ -824,7 +846,21 @@ export const QcIntegrityPanel: React.FC<Props> = ({
             >
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                        <div className="text-xs font-semibold text-text truncate">{finding.title}</div>
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="text-xs font-semibold text-text truncate">{finding.title}</div>
+                            {severity && (
+                                <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide ${
+                                    severity === 'High'
+                                        ? 'text-red-200'
+                                        : severity === 'Medium'
+                                            ? 'text-amber-200'
+                                            : 'text-muted'
+                                }`}
+                                >
+                                    {severity}
+                                </span>
+                            )}
+                        </div>
                         {remuxing && (
                             <div className="text-[11px] font-semibold text-plex mt-0.5">
                                 Remuxing now — pinned progress bar at top
@@ -844,7 +880,9 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                         </div>
                         {detailText && (
                             <div className={`text-[10px] mt-1 ${
-                                category === 'broken' ? 'text-red-200/80' : 'text-muted'
+                                category === 'broken' || category === 'runtime_short'
+                                    ? 'text-red-200/80'
+                                    : 'text-muted'
                             }`}
                             >
                                 {detailText}
@@ -967,53 +1005,110 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                 </div>
             )}
 
-            <div className={`${QC_SECTION} space-y-4`}>
-                <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
-                        Library integrity
-                        <SettingHint>
-                            Import/upgrade webhooks validate new files (playback → optional trim → playback → fingerprint → optional full hash).
-                            Nightly automation trims dirty MKVs then fingerprints the library; fingerprint mismatches escalate to playback → trim → hash.
-                            Trim coverage is stored like playback/fingerprint (size + mtime + keep-rule profile) so already-clean files are skipped.
-                            Enable Force recheck to ignore those stamps for the next library scan.
-                            Trim dry-run writes a keep/drop preview (not findings). Remux only after you uncheck Dry-run only and turn on Auto-fix.
-                            Native audio is one production language from TMDb/TVDB/IMDb ids — missing native skips remux and alerts.
-                            Other buttons are dry-run until you Replace a finding. Files playing on Plex are skipped.
-                        </SettingHint>
-                    </h2>
-                    <p className="text-xs text-muted mt-1 max-w-2xl">
-                        Trim Recheck remuxes that file. Playback/fingerprint Recheck only re-validates; Replace searches a new release.
-                        Progress stays pinned at the top of this panel while a scan or remux runs.
-                    </p>
-                    {result?.setup && !result.setup.ready && (
-                        <p className="text-xs text-amber-200 mt-2">
-                            ffmpeg/ffprobe missing in this environment. Install them in the portal image before scanning.
+            <div className={`${QC_SECTION} space-y-3`}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                        <h2 className="text-sm font-bold uppercase tracking-wide text-muted inline-flex items-center flex-wrap gap-x-1">
+                            Library integrity
+                            <SettingHint>
+                                Import/upgrade webhooks validate new files (playback → optional trim → playback → fingerprint → optional full hash).
+                                Nightly automation trims dirty MKVs then fingerprints the library; fingerprint mismatches escalate to playback → trim → hash.
+                                Findings stay until you Recheck, Accept runtime, Replace, or Snooze — other check modes do not wipe them.
+                                Shorter-than-catalog runtime is medium priority; longer is usually edition/metadata drift.
+                            </SettingHint>
+                        </h2>
+                        <p className="text-xs text-muted mt-1 max-w-2xl">
+                            Coverage for scans, Findings for triage, Lookup for one-offs, Trim for remux previews.
                         </p>
-                    )}
-                    <label className="mt-3 flex items-start gap-2 max-w-2xl cursor-pointer select-none">
-                        <input
-                            type="checkbox"
-                            className="mt-0.5 rounded border-border/60 text-plex focus:ring-plex/40"
-                            checked={forceRecheck}
-                            disabled={scanning}
-                            onChange={(event) => setForceRecheck(event.target.checked)}
-                        />
-                        <span className="min-w-0">
-                            <span className="text-xs font-bold text-text inline-flex items-center gap-1">
-                                Force recheck
-                                <SettingHint>
-                                    Ignores cached playback / trim / baseline stamps so the next library or
-                                    all-libraries button probes every file again. It does not change whether
-                                    a trim finding remuxes — that still follows Settings' remux tier. Audit
-                                    runs never remux, even with Force recheck on. Fingerprint modes always rehash.
-                                </SettingHint>
-                            </span>
-                            <span className="block text-[11px] text-muted mt-0.5 leading-snug">
-                                Applies to the scan buttons below until you turn it off. Slow on large libraries.
-                            </span>
-                        </span>
-                    </label>
+                    </div>
+                    <div className={`${QC_TAB_BAR} shrink-0`}>
+                        {INTEGRITY_VIEWS.map((entry) => {
+                            const badge = entry.id === 'findings' && findingSummary.total > 0
+                                ? findingSummary.total
+                                : entry.id === 'snoozed' && snoozes.length > 0
+                                    ? snoozes.length
+                                    : null;
+                            return (
+                                <button
+                                    key={entry.id}
+                                    type="button"
+                                    className={qcTabButtonClass(activeView === entry.id)}
+                                    onClick={() => setIntegrityUrl({ view: entry.id })}
+                                >
+                                    {entry.label}
+                                    {badge != null ? ` (${badge})` : ''}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
+                {result?.setup && !result.setup.ready && (
+                    <p className="text-xs text-amber-200">
+                        ffmpeg/ffprobe missing in this environment. Install them in the portal image before scanning.
+                    </p>
+                )}
+            </div>
+
+            {breaker?.tripped && (
+                <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <div className="text-sm font-bold text-red-100">Breaker tripped</div>
+                        <p className="text-xs text-red-100/80 mt-1">
+                            {breaker.reason || 'mass_findings'}
+                            {breaker.trippedAt ? ` · ${new Date(breaker.trippedAt).toLocaleString()}` : ''}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        className="shrink-0 px-3 py-1.5 rounded-lg border border-red-300/40 text-xs font-bold text-red-100 hover:bg-red-500/20 disabled:opacity-50"
+                        disabled={clearingBreaker || scanning}
+                        onClick={() => void clearBreaker()}
+                    >
+                        {clearingBreaker ? 'Clearing…' : 'Clear breaker'}
+                    </button>
+                </div>
+            )}
+
+            {(result?.ran || scanning) && (activeView === 'coverage' || activeView === 'findings') && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {[
+                        ['Probed', scanning ? (progress?.scanned || 0) : (result?.scanned || 0)],
+                        ['Already checked', scanning ? (progress?.skipped || 0) : (result?.skipped || 0)],
+                        ['Playing skip', scanning ? (progress?.skippedPlaying || 0) : (result?.skippedPlaying || 0)],
+                        ['Passed', scanning ? (progress?.passed || 0) : (result?.passed || 0)],
+                        ['Findings', scanning ? (progress?.findingCount || 0) : (result?.findingCount || displayFindings.length || 0)],
+                    ].map(([label, value]) => (
+                        <div key={String(label)} className={QC_KPI}>
+                            <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
+                            <div className="mt-1 text-lg font-bold text-text">{value}</div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {activeView === 'coverage' && (
+            <div className={`${QC_SECTION} space-y-4`}>
+                <label className="flex items-start gap-2 max-w-2xl cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        className="mt-0.5 rounded border-border/60 text-plex focus:ring-plex/40"
+                        checked={forceRecheck}
+                        disabled={scanning}
+                        onChange={(event) => setForceRecheck(event.target.checked)}
+                    />
+                    <span className="min-w-0">
+                        <span className="text-xs font-bold text-text inline-flex items-center gap-1">
+                            Force recheck
+                            <SettingHint>
+                                Ignores cached playback / trim / baseline stamps so the next library or
+                                all-libraries button probes every file again. Fingerprint modes always rehash.
+                            </SettingHint>
+                        </span>
+                        <span className="block text-[11px] text-muted mt-0.5 leading-snug">
+                            Applies to the scan buttons below until you turn it off. Slow on large libraries.
+                        </span>
+                    </span>
+                </label>
 
                 <div>
                     <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Status by library</h3>
@@ -1149,51 +1244,18 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                     </div>
                 </div>
             </div>
-
-            {breaker?.tripped && (
-                <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <div className="text-sm font-bold text-red-100">Breaker tripped</div>
-                        <p className="text-xs text-red-100/80 mt-1">
-                            {breaker.reason || 'mass_findings'}
-                            {breaker.trippedAt ? ` · ${new Date(breaker.trippedAt).toLocaleString()}` : ''}
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        className="shrink-0 px-3 py-1.5 rounded-lg border border-red-300/40 text-xs font-bold text-red-100 hover:bg-red-500/20 disabled:opacity-50"
-                        disabled={clearingBreaker || scanning}
-                        onClick={() => void clearBreaker()}
-                    >
-                        {clearingBreaker ? 'Clearing…' : 'Clear breaker'}
-                    </button>
-                </div>
             )}
 
-            {(result?.ran || scanning) && (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    {[
-                        ['Probed', scanning ? (progress?.scanned || 0) : (result?.scanned || 0)],
-                        ['Already checked', scanning ? (progress?.skipped || 0) : (result?.skipped || 0)],
-                        ['Playing skip', scanning ? (progress?.skippedPlaying || 0) : (result?.skippedPlaying || 0)],
-                        ['Passed', scanning ? (progress?.passed || 0) : (result?.passed || 0)],
-                        ['Findings', scanning ? (progress?.findingCount || 0) : (result?.findingCount || displayFindings.length || 0)],
-                    ].map(([label, value]) => (
-                        <div key={String(label)} className={QC_KPI}>
-                            <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
-                            <div className="mt-1 text-lg font-bold text-text">{value}</div>
-                        </div>
-                    ))}
-                </div>
+            {activeView === 'lookup' && (
+                <QcIntegrityLookup
+                    onToast={onToast}
+                    xxhashEnabled={xxhashEnabled}
+                    disabled={scanning}
+                />
             )}
 
-            <QcIntegrityLookup
-                onToast={onToast}
-                xxhashEnabled={xxhashEnabled}
-                disabled={scanning}
-            />
-
-            {trimPreview && (
+            {activeView === 'trim' && (
+                trimPreview ? (
                 <section className={`${QC_SECTION} space-y-3`}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -1318,14 +1380,31 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                         })}
                     </div>
                 </section>
+                ) : (
+                    <section className={`${QC_SECTION} space-y-2`}>
+                        <h3 className="text-sm font-bold text-text">Trim preview</h3>
+                        <p className="text-xs text-muted">
+                            No trim preview yet. Run <span className="font-semibold text-text">Trim</span> or{' '}
+                            <span className="font-semibold text-text">Audit</span> from Coverage.
+                        </p>
+                        <button
+                            type="button"
+                            className="text-xs font-bold text-plex hover:underline"
+                            onClick={() => setIntegrityUrl({ view: 'coverage' })}
+                        >
+                            Open Coverage
+                        </button>
+                    </section>
+                )
             )}
 
+            {activeView === 'findings' && (
             <section className={`${QC_SECTION} space-y-3`}>
                 <div className="flex items-center justify-between gap-2">
                     <div>
                         <h3 className="text-sm font-bold text-text">Findings</h3>
                         <p className="text-[11px] text-muted mt-1 max-w-3xl">
-                            Grouped by severity. Broken files are the ones worth Replace; runtime drift is usually catalog noise.
+                            Broken and shorter-than-catalog are the priority. Longer-than-catalog is usually an extended cut — Accept runtime when that length is correct.
                         </p>
                     </div>
                     <button
@@ -1341,15 +1420,16 @@ export const QcIntegrityPanel: React.FC<Props> = ({
 
                 {displayFindings.length > 0 && (
                     <div className="space-y-3">
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2">
                             {([
                                 ['all', 'All', findingSummary.total],
-                                ...(['broken', 'runtime', 'trim', 'hash', 'path'] as IntegrityFindingCategory[]).map((category) => [
-                                    category,
-                                    FINDING_CATEGORY_META[category].shortLabel,
-                                    findingSummary[category],
-                                ] as const),
-                            ]).map(([key, label, count]) => {
+                                ['broken', 'Broken', findingSummary.broken],
+                                ['runtime_short', 'Shorter', findingSummary.runtime_short],
+                                ['runtime_long', 'Longer', findingSummary.runtime_long],
+                                ['trim', 'Trim', findingSummary.trim],
+                                ['hash', 'Hash', findingSummary.hash],
+                                ['path', 'Path', findingSummary.path],
+                            ] as Array<[IntegrityFindingCategoryFilter, string, number]>).map(([key, label, count]) => {
                                 const active = findingCategoryFilter === key;
                                 return (
                                     <button
@@ -1360,7 +1440,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                                                 ? 'border-plex/50 bg-plex/15'
                                                 : 'border-border/60 bg-background/20 hover:border-plex/30'
                                         }`}
-                                        onClick={() => setFindingCategoryFilter(key as IntegrityFindingCategory | 'all')}
+                                        onClick={() => setIntegrityUrl({ category: key })}
                                     >
                                         <div className="text-[10px] uppercase tracking-wide text-muted">{label}</div>
                                         <div className="mt-0.5 text-lg font-bold text-text tabular-nums">{count}</div>
@@ -1381,7 +1461,7 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                                         key={key}
                                         type="button"
                                         className={qcTabButtonClass(findingMediaFilter === key)}
-                                        onClick={() => setFindingMediaFilter(key)}
+                                        onClick={() => setIntegrityUrl({ media: key })}
                                     >
                                         {label}
                                         {key !== 'all' && findingSummary.byMedia[key] > 0
@@ -1393,13 +1473,13 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                             <input
                                 type="search"
                                 value={findingQuery}
-                                onChange={(event) => setFindingQuery(event.target.value)}
+                                onChange={(event) => setIntegrityUrl({ q: event.target.value })}
                                 placeholder="Search title, path, reason…"
                                 className="w-full sm:max-w-xs rounded-lg border border-border/60 bg-background/30 px-3 py-2 text-xs text-text placeholder:text-muted"
                             />
                         </div>
 
-                        {findingCategoryFilter !== 'all' && (
+                        {findingCategoryFilter !== 'all' && findingCategoryFilter !== 'runtime' && (
                             <p className="text-[11px] text-muted">
                                 {FINDING_CATEGORY_META[findingCategoryFilter].blurb}
                             </p>
@@ -1409,14 +1489,14 @@ export const QcIntegrityPanel: React.FC<Props> = ({
 
                 {!result && !scanning && displayFindings.length === 0 && (
                     <p className="text-xs text-muted">
-                        Run a check above. Trim findings can remux on Recheck; other findings need Replace to change anything.
+                        Run a check from Coverage. Trim findings can remux on Recheck; other findings need Replace or Accept runtime.
                     </p>
                 )}
                 {scanning && displayFindings.length === 0 && (
                     <p className="text-xs text-muted">Working through files now — findings will show when this pass finishes.</p>
                 )}
                 {result?.ran && !scanning && displayFindings.length === 0 && (
-                    <p className="text-xs text-emerald-300">No integrity findings in this pass.</p>
+                    <p className="text-xs text-emerald-300">No integrity findings right now.</p>
                 )}
                 {displayFindings.length > 0 && filteredFindings.length === 0 && (
                     <p className="text-xs text-muted">No findings match the current filters.</p>
@@ -1437,6 +1517,11 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                                         <span className="text-muted font-semibold normal-case tracking-normal">
                                             {' '}· {items.length}
                                         </span>
+                                        {findingSeverityLabel(category) ? (
+                                            <span className="text-muted font-semibold normal-case tracking-normal">
+                                                {' '}· {findingSeverityLabel(category)}
+                                            </span>
+                                        ) : null}
                                     </div>
                                     <p className="text-[11px] text-muted mt-0.5">
                                         {FINDING_CATEGORY_META[category].blurb}
@@ -1462,10 +1547,14 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                     </div>
                 )}
             </section>
+            )}
 
-            {snoozes.length > 0 && (
+            {activeView === 'snoozed' && (
                 <section className="rounded-xl border border-border bg-panel/40 p-4 space-y-2">
                     <h3 className="text-sm font-bold text-text">Snoozed integrity findings</h3>
+                    {snoozes.length === 0 && (
+                        <p className="text-xs text-muted">Nothing snoozed right now.</p>
+                    )}
                     {snoozes.map((row) => (
                         <div key={row.key} className="flex items-center justify-between gap-3 text-xs">
                             <div className="min-w-0">

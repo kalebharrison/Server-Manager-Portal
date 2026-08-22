@@ -28,7 +28,9 @@ import {
     readUpgraderUrl,
     replaceUpgraderUrl,
     type UpgraderProfilesUrlState,
+    type UpgraderIntegrityUrlState,
     type UpgraderTab,
+    defaultIntegrityUrlState,
 } from './upgraderUrlState';
 
 const lazyPanel = (loader: () => Promise<{ default: React.ComponentType<any> }>) => (
@@ -86,6 +88,9 @@ export const UpgraderDashboard: React.FC = () => {
     const [dryRunning, setDryRunning] = useState(false);
     const [activeTab, setActiveTab] = useState<UpgraderTab>(initialUrl.tab);
     const [profilesUrl, setProfilesUrl] = useState<UpgraderProfilesUrlState>(initialUrl.profiles);
+    const [integrityUrl, setIntegrityUrl] = useState<UpgraderIntegrityUrlState>(
+        initialUrl.integrity || defaultIntegrityUrlState(),
+    );
 
     const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
         setToasts((prev) => pushToast(prev, message, type === 'info' ? 'success' : type));
@@ -95,8 +100,9 @@ export const UpgraderDashboard: React.FC = () => {
         replaceUpgraderUrl({
             tab: activeTab,
             profiles: profilesUrl,
+            integrity: integrityUrl,
         });
-    }, [activeTab, profilesUrl]);
+    }, [activeTab, profilesUrl, integrityUrl]);
 
     useEffect(() => {
         syncUpgraderUrl();
@@ -107,6 +113,7 @@ export const UpgraderDashboard: React.FC = () => {
             const next = readUpgraderUrl();
             setActiveTab(next.tab);
             setProfilesUrl(next.profiles);
+            setIntegrityUrl(next.integrity || defaultIntegrityUrlState());
         };
         window.addEventListener('popstate', onPopState);
         return () => window.removeEventListener('popstate', onPopState);
@@ -118,6 +125,10 @@ export const UpgraderDashboard: React.FC = () => {
 
     const handleProfilesUrlChange = useCallback((patch: Partial<UpgraderProfilesUrlState>) => {
         setProfilesUrl((prev) => ({ ...prev, ...patch }));
+    }, []);
+
+    const handleIntegrityUrlChange = useCallback((patch: Partial<UpgraderIntegrityUrlState>) => {
+        setIntegrityUrl((prev) => ({ ...prev, ...patch }));
     }, []);
 
     const loadData = useCallback(async (silent = false) => {
@@ -511,6 +522,8 @@ export const UpgraderDashboard: React.FC = () => {
                                             onToast={addToast}
                                             integrityEnabled={!!status?.integrityEnabled}
                                             integrityStatusLoading={loading || status === null}
+                                            integrityUrl={integrityUrl}
+                                            onIntegrityUrlChange={handleIntegrityUrlChange}
                                         />
                                     </Suspense>
                                 )}
