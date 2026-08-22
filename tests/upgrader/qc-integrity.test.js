@@ -893,6 +893,49 @@ test('replaceCorrupt deletes moviefile then searches', async () => {
     assert.equal(marked, 1);
 });
 
+test('replaceCorrupt recovers movieFileId and entityId from key when omitted', async () => {
+    const requests = [];
+    const integrity = createQcIntegrity({
+        request: async (_instance, reqPath, options = {}) => {
+            requests.push({ path: reqPath, method: options.method || 'GET', body: options.body });
+            return { id: 1 };
+        },
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => ({
+            integrityFindings: [{
+                key: 'radarr:r1:42:file:77',
+                title: 'Jay and Silent Bob Strike Back',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                filePath: '/movies/Jay.mkv',
+                reason: 'decode_end',
+            }],
+        }),
+        savePrefs: async () => {},
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        actionsRemaining: () => 5,
+        markAction: () => {},
+    });
+
+    const result = await integrity.replaceCorrupt({
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, {
+        key: 'radarr:r1:42:file:77',
+        title: 'Jay and Silent Bob Strike Back',
+        arrType: 'radarr',
+        filePath: '/movies/Jay.mkv',
+        reason: 'decode_end',
+    });
+
+    assert.equal(result.success, true, result.reason);
+    assert.equal(requests[0].path, '/api/v3/moviefile/77');
+    assert.deepEqual(requests[1].body, { name: 'MoviesSearch', movieIds: [42] });
+});
+
 test('replaceCorrupt lidarr deletes trackfile and AlbumSearch', async () => {
     const requests = [];
     const integrity = createQcIntegrity({

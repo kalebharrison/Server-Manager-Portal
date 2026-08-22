@@ -73,7 +73,12 @@ export const apiFetch = async (url: string, options: ApiFetchOptions = {}) => {
             // Auth loss must not keep serving prior-user GETs from memory.
             if (response.status === 401 || response.status === 403) clearApiCache();
             const errorData = await response.json().catch(() => ({ error: 'An unknown API error occurred.' }));
-            throw new Error(errorData.error || `Request failed with status ${response.status}`);
+            throw new Error(
+                errorData.error
+                || errorData.reason
+                || errorData.message
+                || `Request failed with status ${response.status}`,
+            );
         }
         if (response.status === 204) return;
         const value = await response.json();
