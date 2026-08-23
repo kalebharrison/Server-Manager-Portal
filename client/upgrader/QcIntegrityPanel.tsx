@@ -442,15 +442,16 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                 : serverRechecks,
         );
         if (Array.isArray(status.findings)) {
-            setFindings(status.findings);
+            const liveFindings = status.findings;
+            setFindings(liveFindings);
             // Keep last-scan KPIs' Findings count on the live open list, not the
             // historical findingCount from when the scan finished.
             setResult((current) => (
                 current?.ran
                     ? {
                         ...current,
-                        findings: status.findings,
-                        findingCount: status.findings.length,
+                        findings: liveFindings,
+                        findingCount: liveFindings.length,
                     }
                     : current
             ));
