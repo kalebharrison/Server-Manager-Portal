@@ -2,9 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     RECENT_IMPORT_WINDOW_MS,
+    collectCoverageGapPayloads,
     collectRecentImportPayloads,
     historyRecordToIntegrityStub,
+    hasOrphanIntegrityCache,
     importBaselineSatisfied,
+    missingCoverageChecks,
     missingImportChecks,
     isSuccessfulImportHistoryEvent,
 } from '../../lib/upgrader/qc-integrity-recent-imports.js';
@@ -19,6 +22,52 @@ test('import history event filter keeps downloadFolderImported only', () => {
     assert.equal(isSuccessfulImportHistoryEvent('grabbed'), false);
     assert.equal(isSuccessfulImportHistoryEvent('downloadFailed'), false);
     assert.equal(isSuccessfulImportHistoryEvent('downloadIgnored'), false);
+});
+
+test('missingCoverageChecks and orphan cache detect file-id churn gaps', () => {
+    assert.deepEqual(missingCoverageChecks(null), ['playability', 'imohash']);
+    assert.deepEqual(missingCoverageChecks({
+        ok: true,
+        playabilityAt: '2026-01-01T00:00:00.000Z',
+    }), ['imohash']);
+    assert.deepEqual(missingCoverageChecks({
+        ok: true,
+        playabilityAt: '2026-01-01T00:00:00.000Z',
+        imohash: 'imo:1',
+    }), []);
+    assert.equal(hasOrphanIntegrityCache({
+        'radarr:r1:9:file:100': { playabilityAt: 'x', imohash: 'y' },
+    }, { key: 'radarr:r1:9:file:200', ratingKey: 'radarr:r1:9' }), true);
+    assert.equal(hasOrphanIntegrityCache({
+        'radarr:r1:9:file:200': { playabilityAt: 'x' },
+    }, { key: 'radarr:r1:9:file:200', ratingKey: 'radarr:r1:9' }), false);
+
+    const gaps = collectCoverageGapPayloads([
+        {
+            key: 'radarr:r1:9:file:200',
+            ratingKey: 'radarr:r1:9',
+            filePath: '/movies/New.mkv',
+            title: 'Upgraded',
+            mediaType: 'movie',
+        },
+        {
+            key: 'radarr:r1:8:file:50',
+            ratingKey: 'radarr:r1:8',
+            filePath: '/movies/PlayOnly.mkv',
+            title: 'Needs hash',
+            mediaType: 'movie',
+        },
+    ], {
+        'radarr:r1:9:file:100': { playabilityAt: 'x', imohash: 'y' },
+        'radarr:r1:8:file:50': { playabilityAt: 'x' },
+    }, { max: 10 });
+    assert.equal(gaps.length, 2);
+    assert.equal(gaps[0].title, 'Upgraded');
+    assert.equal(gaps[0].isUpgrade, true);
+    assert.equal(gaps[0].fromCoverageGap, true);
+    assert.deepEqual(gaps[0].coverageMissing, ['playability', 'imohash']);
+    assert.equal(gaps[1].title, 'Needs hash');
+    assert.deepEqual(gaps[1].coverageMissing, ['imohash']);
 });
 
 test('historyRecordToIntegrityStub maps Radarr importedPath + movieFileId', () => {
@@ -299,4 +348,162 @@ test('catchUpRecentImports fills only missing checks on a recent import', async 
     assert.equal(cache.entries['radarr:r1:2:file:20'].imohash, 'imo:keep');
     assert.equal(cache.entries['radarr:r1:2:file:20'].xxhash, 'xx:1');
     assert.equal(cache.entries['radarr:r1:2:file:20'].playabilityAt, '2026-08-09T13:05:00.000Z');
+});
+
+test('catchUpRecentImports fills index coverage gaps from Arr file-id churn', async () => {
+    let cache = {
+        entries: {
+            'radarr:r1:9:file:100': {
+                ok: true,
+                playabilityAt: '2026-08-09T10:00:00.000Z',
+                playabilityOk: true,
+                imohash: 'imo:old',
+                size: 50,
+                mtimeMs: 1,
+            },
+        },
+    };
+    let prefs = { integrityFindings: [] };
+    const now = Date.parse('2026-08-09T18:00:00.000Z');
+    const integrity = createQcIntegrity({
+        request: async () => ({ records: [] }),
+        loadIndex: async () => ({
+            items: [{
+                ratingKey: 'radarr:r1:9',
+                title: 'Turning Red',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 9,
+                mediaType: 'movie',
+                hasFile: true,
+                movieFileId: 200,
+                filePath: '/movies/Turning.Red.mkv',
+                libraryKey: 'radarr:r1:movies',
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 2 }),
+        realpathImpl: async (target) => target,
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:new' }),
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.catchUpRecentImports({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityPathMaps: [{ from: '/movies', to: '/movies' }],
+        arrInstances: [radarr],
+    }, { now });
+
+    assert.equal(result.ran, true);
+    assert.ok(result.gaps >= 1);
+    assert.equal(result.ranImport, 1);
+    assert.ok(cache.entries['radarr:r1:9:file:200']?.playabilityAt);
+    assert.equal(cache.entries['radarr:r1:9:file:200']?.imohash, 'imo:new');
+});
+
+test('catchUpRecentImports defers soft-timeout findings so other gaps can fill', async () => {
+    let cache = { entries: {} };
+    let prefs = {
+        integrityFindings: [{
+            key: 'radarr:r1:1:file:1',
+            softTimeout: true,
+            reason: 'decode_mid_timeout',
+            title: 'Crow',
+        }],
+    };
+    const now = Date.parse('2026-08-09T18:00:00.000Z');
+    let probed = [];
+    const integrity = createQcIntegrity({
+        request: async (_instance, reqPath) => {
+            if (String(reqPath).includes('/history')) {
+                return {
+                    records: [{
+                        eventType: 'downloadFolderImported',
+                        date: '2026-08-09T13:00:00Z',
+                        movieId: 1,
+                        movie: { id: 1, title: 'Crow' },
+                        movieFile: { id: 1, path: '/movies/Crow.mp4' },
+                    }],
+                };
+            }
+            return {};
+        },
+        loadIndex: async () => ({
+            items: [{
+                ratingKey: 'radarr:r1:2',
+                title: 'Gap Movie',
+                arrType: 'radarr',
+                arrInstanceId: 'r1',
+                entityId: 2,
+                mediaType: 'movie',
+                hasFile: true,
+                movieFileId: 2,
+                filePath: '/movies/Gap.mkv',
+            }],
+        }),
+        loadPrefs: async () => prefs,
+        savePrefs: async (next) => { prefs = next; },
+        appendAudit: async () => {},
+        loadCache: async () => cache,
+        saveCache: async (next) => { cache = next; },
+        statImpl: async () => ({ ok: true, size: 100, mtimeMs: 1 }),
+        realpathImpl: async (target) => target,
+        imohashImpl: async () => ({ ok: true, imohash: 'imo:gap' }),
+        execImpl: async (bin, args = []) => {
+            if (args.includes('-version')) {
+                return { ok: true, code: 0, timedOut: false, stdout: `${bin} version`, stderr: '' };
+            }
+            if (bin === 'ffprobe') {
+                probed.push(args[args.length - 1]);
+                return {
+                    ok: true,
+                    code: 0,
+                    timedOut: false,
+                    stdout: JSON.stringify({
+                        format: { duration: '120' },
+                        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+                    }),
+                    stderr: '',
+                };
+            }
+            return { ok: true, code: 0, timedOut: false, stdout: '', stderr: '' };
+        },
+    });
+
+    const result = await integrity.catchUpRecentImports({
+        upgraderEnabled: true,
+        qcIntegrityEnabled: true,
+        qcIntegrityPathMaps: [
+            { from: '/movies', to: '/movies' },
+        ],
+        arrInstances: [radarr],
+    }, { now });
+
+    assert.equal(result.ran, true);
+    assert.ok(result.skippedSoftTimeout >= 1);
+    assert.ok(cache.entries['radarr:r1:2:file:2']?.playabilityAt);
+    assert.equal(cache.entries['radarr:r1:1:file:1'], undefined);
+    assert.ok(probed.every((path) => !String(path).includes('Crow')));
 });
