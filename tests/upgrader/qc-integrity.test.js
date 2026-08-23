@@ -16,6 +16,8 @@ import {
 } from '../../lib/upgrader/qc-integrity.js';
 import { computeImohash } from '../../lib/upgrader/qc-integrity-hash.js';
 import {
+    adjustTvExpectedRuntimeSec,
+    countMergedEpisodesFromPath,
     durationMatchesExpected,
     extractExpectedRuntimeSec,
     isLikelyAlternateMovieCut,
@@ -332,6 +334,60 @@ test('reconcileIntegrityFindings drops stored runtime drift for TV specials', ()
         'sonarr:r1:1:file:2',
         'sonarr:r1:1:file:3',
     ]);
+});
+
+test('countMergedEpisodesFromPath detects multi-episode release names', () => {
+    assert.equal(countMergedEpisodesFromPath('/tv/Avatar/Avatar-S03E10-E11.mkv'), 2);
+    assert.equal(countMergedEpisodesFromPath('/tv/Seinfeld/Seinfeld-S04E03-E04.mkv'), 2);
+    assert.equal(countMergedEpisodesFromPath('/tv/Warehouse/Warehouse.13-S01E01.avi'), 1);
+    assert.equal(adjustTvExpectedRuntimeSec(24 * 60, '/tv/Avatar/Avatar-S03E10-E11.mkv'), 48 * 60);
+});
+
+test('durationMatchesExpected skips TV multi-episode packs and series-runtime placeholders', () => {
+    const avatarDouble = durationMatchesExpected(2796.8, 24 * 60, {
+        mediaType: 'show',
+        filePath: '/tv/Avatar/Avatar-S03E10-E11.mkv',
+    });
+    assert.equal(avatarDouble.ok, true);
+
+    const warehouseDouble = durationMatchesExpected(87.19 * 60, 44 * 60, {
+        mediaType: 'show',
+        filePath: '/tv/Warehouse.13/Warehouse.13-S01E01.avi',
+    });
+    assert.equal(warehouseDouble.ok, true);
+    assert.equal(warehouseDouble.multiEpisode, 2);
+
+    const adventureTime = durationMatchesExpected(46.3 * 60, 10 * 60, {
+        mediaType: 'show',
+        filePath: '/tv/Adventure.Time/Adventure.Time-S01E03.mkv',
+    });
+    assert.equal(adventureTime.ok, true);
+    assert.equal(adventureTime.skipped, true);
+
+    const tedLasso = durationMatchesExpected(69.5 * 60, 43 * 60, {
+        mediaType: 'show',
+        filePath: '/tv/Ted.Lasso/Ted.Lasso-S03E01.mkv',
+    });
+    assert.equal(tedLasso.ok, true);
+    assert.equal(tedLasso.longerEpisode, true);
+});
+
+test('shouldIgnoreRuntimeFinding drops stored TV runtime false positives', () => {
+    assert.equal(shouldIgnoreRuntimeFinding({
+        reason: 'duration_mismatch',
+        mediaType: 'show',
+        durationSec: 2796.8,
+        expectedRuntimeSec: 24 * 60,
+        filePath: '/tv/Avatar/Avatar-S03E10-E11.mkv',
+        seasonNumber: 3,
+    }), true);
+    assert.equal(shouldIgnoreRuntimeFinding({
+        reason: 'duration_mismatch',
+        mediaType: 'movie',
+        durationSec: 92 * 60,
+        expectedRuntimeSec: 145 * 60,
+        filePath: '/movies/Minority.Report.mkv',
+    }), false);
 });
 
 test('durationMatchesExpected allows longer alternate movie cuts up to corruption ceiling', () => {
