@@ -997,10 +997,58 @@ test('replaceCorrupt deletes moviefile then searches', async () => {
     });
 
     assert.equal(result.success, true);
-    assert.equal(requests[0].method, 'DELETE');
-    assert.equal(requests[0].path, '/api/v3/moviefile/7');
-    assert.equal(requests[1].body.name, 'MoviesSearch');
+    assert.equal(result.blocklisted, true);
+    const block = requests.find((entry) => String(entry.path).includes('/blocklist'));
+    assert.ok(block, 'expected blocklist before delete');
+    assert.equal(block.method, 'POST');
+    assert.equal(block.body.sourceTitle, 'Bad Movie');
+    const del = requests.find((entry) => entry.method === 'DELETE');
+    assert.equal(del.path, '/api/v3/moviefile/7');
+    const search = requests.find((entry) => entry.body?.name === 'MoviesSearch');
+    assert.equal(search.body.name, 'MoviesSearch');
     assert.equal(marked, 1);
+});
+
+test('replaceCorrupt blocklists Arr sceneName before delete+search', async () => {
+    const requests = [];
+    const integrity = createQcIntegrity({
+        request: async (_instance, reqPath, options = {}) => {
+            requests.push({ path: reqPath, method: options.method || 'GET', body: options.body });
+            if (String(reqPath).includes('/moviefile/7') && (options.method || 'GET') === 'GET') {
+                return { id: 7, sceneName: 'The.Crow.Wicked.Prayer.2005.1080p.UNCUT.BluRay.H264.DTS.HDMA5.1' };
+            }
+            return { id: 1 };
+        },
+        loadIndex: async () => ({ items: [] }),
+        loadPrefs: async () => ({}),
+        savePrefs: async () => {},
+        appendAudit: async () => {},
+        loadCache: async () => ({ entries: {} }),
+        saveCache: async () => {},
+        actionsRemaining: () => 5,
+        markAction: () => {},
+    });
+
+    const result = await integrity.replaceCorrupt({
+        arrInstances: [{
+            id: 'r1', type: 'radarr', name: 'Radarr', url: 'http://radarr.local', apiKey: 'x', enabled: true,
+        }],
+    }, {
+        title: 'The Crow: Wicked Prayer',
+        ratingKey: 'radarr:r1:2435',
+        arrType: 'radarr',
+        arrInstanceId: 'r1',
+        entityId: 2435,
+        movieFileId: 7,
+        filePath: '/movies/Crow.mp4',
+        reason: 'decode_mid_timeout',
+    });
+
+    assert.equal(result.success, true);
+    assert.equal(result.sourceTitle, 'The.Crow.Wicked.Prayer.2005.1080p.UNCUT.BluRay.H264.DTS.HDMA5.1');
+    const block = requests.find((entry) => String(entry.path).includes('/blocklist'));
+    assert.equal(block.body.sourceTitle, 'The.Crow.Wicked.Prayer.2005.1080p.UNCUT.BluRay.H264.DTS.HDMA5.1');
+    assert.deepEqual(block.body.movieIds, [2435]);
 });
 
 test('replaceCorrupt recovers movieFileId and entityId from key when omitted', async () => {
@@ -1042,8 +1090,10 @@ test('replaceCorrupt recovers movieFileId and entityId from key when omitted', a
     });
 
     assert.equal(result.success, true, result.reason);
-    assert.equal(requests[0].path, '/api/v3/moviefile/77');
-    assert.deepEqual(requests[1].body, { name: 'MoviesSearch', movieIds: [42] });
+    const del = requests.find((entry) => entry.method === 'DELETE');
+    assert.equal(del.path, '/api/v3/moviefile/77');
+    const search = requests.find((entry) => entry.body?.name === 'MoviesSearch');
+    assert.deepEqual(search.body, { name: 'MoviesSearch', movieIds: [42] });
 });
 
 test('replaceCorrupt lidarr deletes trackfile and AlbumSearch', async () => {
@@ -1078,8 +1128,10 @@ test('replaceCorrupt lidarr deletes trackfile and AlbumSearch', async () => {
     });
 
     assert.equal(result.success, true);
-    assert.equal(requests[0].path, '/api/v1/trackfile/99');
-    assert.equal(requests[1].body.name, 'AlbumSearch');
+    const del = requests.find((entry) => entry.method === 'DELETE');
+    assert.equal(del.path, '/api/v1/trackfile/99');
+    const search = requests.find((entry) => entry.body?.name === 'AlbumSearch');
+    assert.equal(search.body.name, 'AlbumSearch');
 });
 
 test('plex playing paths are skipped', async () => {
