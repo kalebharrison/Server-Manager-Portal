@@ -416,7 +416,9 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                 skipped: last.skipped,
                 skippedPlaying: last.skippedPlaying,
                 passed: last.passed,
-                findingCount: last.findingCount,
+                findingCount: Array.isArray(status.findings)
+                    ? status.findings.length
+                    : (last.findingCount || 0),
                 findings: status.findings || last.findings || [],
                 coverage: status.coverage,
                 breaker: status.breaker,
@@ -441,11 +443,25 @@ export const QcIntegrityPanel: React.FC<Props> = ({
         );
         if (Array.isArray(status.findings)) {
             setFindings(status.findings);
+            // Keep last-scan KPIs' Findings count on the live open list, not the
+            // historical findingCount from when the scan finished.
+            setResult((current) => (
+                current?.ran
+                    ? {
+                        ...current,
+                        findings: status.findings,
+                        findingCount: status.findings.length,
+                    }
+                    : current
+            ));
         }
         if (status.trimAudit) setTrimPreview(status.trimAudit);
         else if (status.trimPreview) setTrimPreview(status.trimPreview);
         if (Array.isArray(status.snoozes)) setSnoozes(status.snoozes);
         if (!nowScanning && status.lastScan) {
+            const liveFindings = Array.isArray(status.findings)
+                ? status.findings
+                : (status.lastScan?.findings || []);
             setResult((current) => current?.ran ? current : {
                 ran: true,
                 mode: status.lastScan?.mode,
@@ -453,8 +469,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                 skipped: status.lastScan?.skipped,
                 skippedPlaying: status.lastScan?.skippedPlaying,
                 passed: status.lastScan?.passed,
-                findingCount: status.lastScan?.findingCount,
-                findings: status.findings || status.lastScan?.findings || current?.findings || [],
+                findingCount: liveFindings.length,
+                findings: liveFindings,
                 coverage: status.coverage,
                 breaker: status.breaker,
                 setup: status.setup,
@@ -1145,7 +1161,8 @@ export const QcIntegrityPanel: React.FC<Props> = ({
                         ['Already checked', scanning ? (progress?.skipped || 0) : (result?.skipped || 0)],
                         ['Playing skip', scanning ? (progress?.skippedPlaying || 0) : (result?.skippedPlaying || 0)],
                         ['Passed', scanning ? (progress?.passed || 0) : (result?.passed || 0)],
-                        ['Findings', scanning ? (progress?.findingCount || 0) : (result?.findingCount || displayFindings.length || 0)],
+                        // Idle: open findings only (matches the list below). Scanning: this-pass count.
+                        ['Findings', scanning ? (progress?.findingCount || 0) : displayFindings.length],
                     ].map(([label, value]) => (
                         <div key={String(label)} className={QC_KPI}>
                             <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
