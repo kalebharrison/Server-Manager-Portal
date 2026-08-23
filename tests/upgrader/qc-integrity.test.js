@@ -899,6 +899,11 @@ test('import baseline playability fail requests blocklist', async () => {
     const integrity = createQcIntegrity({
         request: async (instance, reqPath, options = {}) => {
             requests.push({ path: reqPath, method: options.method || 'GET', body: options.body });
+            if (String(reqPath).includes('/history?') && String(reqPath).includes('downloadId=')) {
+                return {
+                    records: [{ id: 99, downloadId: 'dl-1', eventType: 'grabbed', sourceTitle: 'Bad.Release' }],
+                };
+            }
             return {};
         },
         loadIndex: async () => ({ items: [] }),
@@ -954,7 +959,7 @@ test('import baseline playability fail requests blocklist', async () => {
     assert.equal(result.ok, false);
     assert.equal(result.blocklisted, true);
     assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, undefined);
-    assert.ok(requests.some((entry) => String(entry.path).includes('failed') || String(entry.path).includes('blocklist')));
+    assert.ok(requests.some((entry) => String(entry.path).includes('/history/failed/')));
 });
 
 test('replaceCorrupt deletes moviefile then searches', async () => {
@@ -963,6 +968,11 @@ test('replaceCorrupt deletes moviefile then searches', async () => {
     const integrity = createQcIntegrity({
         request: async (instance, reqPath, options = {}) => {
             requests.push({ path: reqPath, method: options.method || 'GET', body: options.body });
+            if (String(reqPath).includes('/history?') && String(reqPath).includes('movieIds=')) {
+                return {
+                    records: [{ id: 44, eventType: 'grabbed', sourceTitle: 'Bad Movie', movieId: 1 }],
+                };
+            }
             return { id: 1 };
         },
         loadIndex: async () => ({ items: [] }),
@@ -998,11 +1008,10 @@ test('replaceCorrupt deletes moviefile then searches', async () => {
 
     assert.equal(result.success, true);
     assert.equal(result.blocklisted, true);
-    const block = requests.find((entry) => String(entry.path).includes('/blocklist'));
-    assert.ok(block, 'expected blocklist before delete');
-    assert.equal(block.method, 'POST');
-    assert.equal(block.body.sourceTitle, 'Bad Movie');
-    const del = requests.find((entry) => entry.method === 'DELETE');
+    const failed = requests.find((entry) => String(entry.path).includes('/history/failed/44'));
+    assert.ok(failed, 'expected history/failed before delete');
+    assert.equal(failed.method, 'POST');
+    const del = requests.find((entry) => entry.method === 'DELETE' && String(entry.path).includes('/moviefile/'));
     assert.equal(del.path, '/api/v3/moviefile/7');
     const search = requests.find((entry) => entry.body?.name === 'MoviesSearch');
     assert.equal(search.body.name, 'MoviesSearch');
@@ -1011,11 +1020,17 @@ test('replaceCorrupt deletes moviefile then searches', async () => {
 
 test('replaceCorrupt blocklists Arr sceneName before delete+search', async () => {
     const requests = [];
+    const scene = 'The.Crow.Wicked.Prayer.2005.1080p.UNCUT.BluRay.H264.DTS.HDMA5.1';
     const integrity = createQcIntegrity({
         request: async (_instance, reqPath, options = {}) => {
             requests.push({ path: reqPath, method: options.method || 'GET', body: options.body });
             if (String(reqPath).includes('/moviefile/7') && (options.method || 'GET') === 'GET') {
-                return { id: 7, sceneName: 'The.Crow.Wicked.Prayer.2005.1080p.UNCUT.BluRay.H264.DTS.HDMA5.1' };
+                return { id: 7, sceneName: scene };
+            }
+            if (String(reqPath).includes('/history?') && String(reqPath).includes('movieIds=2435')) {
+                return {
+                    records: [{ id: 24412, eventType: 'grabbed', sourceTitle: scene, movieId: 2435 }],
+                };
             }
             return { id: 1 };
         },
@@ -1045,10 +1060,11 @@ test('replaceCorrupt blocklists Arr sceneName before delete+search', async () =>
     });
 
     assert.equal(result.success, true);
-    assert.equal(result.sourceTitle, 'The.Crow.Wicked.Prayer.2005.1080p.UNCUT.BluRay.H264.DTS.HDMA5.1');
-    const block = requests.find((entry) => String(entry.path).includes('/blocklist'));
-    assert.equal(block.body.sourceTitle, 'The.Crow.Wicked.Prayer.2005.1080p.UNCUT.BluRay.H264.DTS.HDMA5.1');
-    assert.deepEqual(block.body.movieIds, [2435]);
+    assert.equal(result.sourceTitle, scene);
+    assert.equal(result.blocklisted, true);
+    const failed = requests.find((entry) => String(entry.path).includes('/history/failed/24412'));
+    assert.ok(failed, 'expected history/failed for sceneName');
+    assert.equal(failed.method, 'POST');
 });
 
 test('replaceCorrupt recovers movieFileId and entityId from key when omitted', async () => {
@@ -1710,7 +1726,11 @@ test('baselineImport hard decode fail blocklists on import', async () => {
     const integrity = createQcIntegrity({
         request: async (_instance, path, options = {}) => {
             requests.push({ path, method: options.method || 'GET' });
-            if (String(path).includes('/history')) return [];
+            if (String(path).includes('/history?') && String(path).includes('downloadId=')) {
+                return {
+                    records: [{ id: 77, downloadId: 'abc', eventType: 'grabbed', sourceTitle: 'Hard.Fail.mkv' }],
+                };
+            }
             return {};
         },
         loadIndex: async () => ({ items: [] }),
@@ -1764,8 +1784,9 @@ test('baselineImport hard decode fail blocklists on import', async () => {
 
     assert.equal(result.ok, false);
     assert.equal(result.result.shouldBlocklist, true);
+    assert.equal(result.blocklisted, true);
     assert.equal(cache.entries['radarr:r1:1:file:7']?.imohash, undefined);
-    assert.ok(requests.some((entry) => String(entry.path).includes('blocklist') || String(entry.path).includes('history')));
+    assert.ok(requests.some((entry) => String(entry.path).includes('/history/failed/77')));
 });
 
 test('scanIntegrity libraryKey only probes that library and keeps other cache', async () => {
