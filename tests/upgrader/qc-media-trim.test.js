@@ -32,6 +32,8 @@ const infoFrom = (tracks, title = '') => ({
 
 test('normalizeLanguageCode maps TMDB ja and IETF en-US', () => {
     assert.equal(normalizeLanguageCode('ja'), 'jpn');
+    assert.equal(normalizeLanguageCode('cn'), 'chi');
+    assert.equal(normalizeLanguageCode('zh'), 'chi');
     assert.equal(normalizeLanguageCode('en-US'), 'eng');
     assert.equal(normalizeLanguageCode('ara'), 'ara');
     assert.equal(normalizeLanguageCode('fra'), 'fre');

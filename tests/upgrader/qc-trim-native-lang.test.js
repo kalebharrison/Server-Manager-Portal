@@ -42,6 +42,42 @@ test('movies use TMDb original_language then IMDb find, never spoken list', asyn
     assert.equal(calls.length, 1);
 });
 
+test('movies map TMDb cn original_language to chi for trim', async () => {
+    const result = await lookupTrimNativeLanguage({
+        tmdbApiKey: 'test-key',
+        qcTrimKeepNativeAudio: true,
+    }, {
+        title: 'Ip Man 2',
+        mediaType: 'movie',
+        tmdbId: 37472,
+    }, {
+        fetchImpl: async (url) => {
+            if (String(url).includes('/movie/37472')) {
+                return { ok: true, json: async () => ({ original_language: 'cn' }) };
+            }
+            throw new Error(`unexpected ${url}`);
+        },
+    });
+    assert.equal(result.code, 'chi');
+    assert.equal(result.source, 'tmdb');
+});
+
+test('movies fall back to Arr originalLanguage when API lookup fails', async () => {
+    const result = await lookupTrimNativeLanguage({
+        tmdbApiKey: 'test-key',
+        qcTrimKeepNativeAudio: true,
+    }, {
+        title: 'Ip Man 2',
+        mediaType: 'movie',
+        tmdbId: 99999,
+        originalLanguage: 'chi',
+    }, {
+        fetchImpl: async () => ({ ok: false }),
+    });
+    assert.equal(result.code, 'chi');
+    assert.equal(result.source, 'arr');
+});
+
 test('movies fall back to IMDb id via TMDb find original_language', async () => {
     const result = await lookupTrimNativeLanguage({
         tmdbApiKey: 'test-key',
