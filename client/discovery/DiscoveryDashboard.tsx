@@ -9,6 +9,13 @@ import { PersonDetailsPage } from './PersonDetailsPage';
 import { Film, Tv, Compass, ClipboardList, AlertTriangle, ChevronDown, Users, Inbox, Sparkles } from 'lucide-react';
 import { DiscoverCommunityPage } from './DiscoverCommunityPage';
 import { DiscoverAnime } from './DiscoverAnime';
+import { DiscoverRailPage } from './DiscoverRailPage';
+import {
+    buildRailBrowsePath,
+    getRailBrowseConfig,
+    parseRailMediaFilter,
+    type DiscoverRailId,
+} from './discoverRailBrowse';
 import { apiFetch } from '../shared/api';
 import { portalUrl, stripBasePath } from '../shared/basePath';
 import { normalizeRawDiscoveryItem } from './discoverItemUtils';
@@ -325,6 +332,33 @@ const DiscoveryDashboardInner: React.FC<{
         }
     }
 
+    if (routeParts.length >= 3 && routeParts[1] === 'browse') {
+        const railConfig = getRailBrowseConfig(routeParts[2]);
+        if (railConfig) {
+            const railId = routeParts[2] as DiscoverRailId;
+            const params = typeof window !== 'undefined'
+                ? new URLSearchParams(window.location.search)
+                : new URLSearchParams();
+            const media = parseRailMediaFilter(params.get('media') || railConfig.defaultMedia);
+            return (
+                <DiscoverRailPage
+                    railId={railId}
+                    media={media}
+                    browseMode={browseMode}
+                    onBack={() => navigate(basePath)}
+                    onSelect={openMedia}
+                    formatItem={formatItem}
+                    pushToast={pushToast}
+                    showPosterQualityBadges={showPosterQualityBadges}
+                    mediaServerType={mediaServerType}
+                    onMediaChange={railConfig.supportsMediaPicker
+                        ? (next) => navigate(buildRailBrowsePath(basePath, railId, next))
+                        : undefined}
+                />
+            );
+        }
+    }
+
     if (routeParts.length >= 3 && routeParts[1] === 'person') {
         const id = parseInt(routeParts[2], 10);
         return (
@@ -509,6 +543,7 @@ const DiscoveryDashboardInner: React.FC<{
                         )}
                         {subRoute === 'community' && browseMode === 'discover' && (
                             <DiscoverCommunityPage
+                                navigate={navigate}
                                 mediaServerType={mediaServerType}
                                 serverName={serverName}
                                 showPosterQualityBadges={showPosterQualityBadges}

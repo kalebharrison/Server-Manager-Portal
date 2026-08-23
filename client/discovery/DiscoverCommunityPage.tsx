@@ -9,10 +9,12 @@ import { DISCOVER_DESKTOP_ITEM_LIMIT } from '../screens/DiscoverContent';
 type TrendingStats = { trending7Days: any[]; movies30Days: any[]; shows30Days: any[] };
 
 export const DiscoverCommunityPage: React.FC<{
+    navigate?: (path: string) => void;
     mediaServerType?: string;
     serverName?: string;
     showPosterQualityBadges?: boolean;
 }> = ({
+    navigate,
     mediaServerType = 'plex',
     serverName,
     showPosterQualityBadges = false,
@@ -61,6 +63,7 @@ export const DiscoverCommunityPage: React.FC<{
             showQualityBadges={showPosterQualityBadges}
             serverName={serverName}
             isJellyfinPortal={isJellyfinPortal}
+            navigate={navigate}
         />
     );
 };

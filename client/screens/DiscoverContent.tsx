@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { Carousel } from '../discovery/Carousel';
+import { DiscoverRailSectionHeader } from '../discovery/DiscoverRailSectionHeader';
 import { discoveryTheme } from '../discovery/discoveryThemeClasses';
 import { useDiscoverGridSize } from '../discovery/useDiscoverGridSize';
 import { portalUrl, resolvePortalAssetUrl } from '../shared/basePath';
@@ -122,7 +123,7 @@ export const DiscoverPosterCard = React.memo<{
     );
 });
 
-const discoverViewsOverlay = (views: number) => (
+export const discoverViewsOverlay = (views: number) => (
     <div className="absolute top-2 right-2 bg-black/90 text-plex text-xs font-bold px-2 py-1 rounded border border-plex/30 z-10 pointer-events-none">
         {views} Views
     </div>
@@ -138,16 +139,34 @@ export const DISCOVER_LIMIT_OPTIONS = [
     { value: '50', label: '50 Items' },
 ];
 
-export const TrendingDiscoverSection: React.FC<{ title: string; items: any[]; limit: number; showQualityBadges?: boolean; useScrollRevealAnimations?: boolean; preloadPosters?: boolean }> = ({ title, items, limit, showQualityBadges = true, useScrollRevealAnimations, preloadPosters = false }) => {
+export const TrendingDiscoverSection: React.FC<{
+    title: string;
+    items: any[];
+    limit: number;
+    showQualityBadges?: boolean;
+    useScrollRevealAnimations?: boolean;
+    preloadPosters?: boolean;
+    viewAllLabel?: string;
+    onBrowseRail?: () => void;
+}> = ({ title, items, limit, showQualityBadges = true, useScrollRevealAnimations, preloadPosters = false, viewAllLabel, onBrowseRail }) => {
     const [gridSize] = useDiscoverGridSize();
     const posterCardClass = discoverRowCardWidthClass(gridSize);
     if (!items?.length) return null;
     const shown = items.slice(0, Math.max(1, limit));
     return (
         <ScrollReveal enabled={!!useScrollRevealAnimations} className="flex flex-col gap-2 relative discover-deferred-section">
-            <div className="flex items-center gap-3 min-w-0 px-2">
-                <h3 className={`${discoveryTheme.sectionTitle} truncate`}>{title}</h3>
-            </div>
+            {onBrowseRail ? (
+                <DiscoverRailSectionHeader
+                    title={title}
+                    viewAllLabel={viewAllLabel}
+                    defaultMedia="all"
+                    onNavigate={() => onBrowseRail()}
+                />
+            ) : (
+                <div className="flex items-center gap-3 min-w-0 px-2">
+                    <h3 className={`${discoveryTheme.sectionTitle} truncate`}>{title}</h3>
+                </div>
+            )}
             <Carousel>
                 {shown.map((item, i) => (
                     <div

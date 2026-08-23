@@ -3,8 +3,10 @@ import { DiscoverPosterCard } from '../screens';
 import { Carousel } from './Carousel';
 import { DiscoverQuickRequestButton } from './DiscoverQuickRequestButton';
 import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
+import { DiscoverRailSectionHeader } from './DiscoverRailSectionHeader';
 import { discoveryTheme } from './discoveryThemeClasses';
 import { useDiscoverI18n } from './i18n';
+import type { RailMediaFilter } from './discoverRailBrowse';
 import type { useDiscoverNotify } from './useDiscoverNotify';
 import type { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 
@@ -17,6 +19,9 @@ export const DiscoverMediaRail: React.FC<{
     onSelect: (item: any) => void;
     viewAllLabel?: string;
     onViewAll?: () => void;
+    onBrowseRail?: (media: RailMediaFilter) => void;
+    showMediaPicker?: boolean;
+    browseDefaultMedia?: RailMediaFilter;
     empty?: React.ReactNode;
     animateEnter?: boolean;
     quickRequest?: ReturnType<typeof useDiscoverQuickRequest>;
@@ -30,6 +35,9 @@ export const DiscoverMediaRail: React.FC<{
     onSelect,
     viewAllLabel,
     onViewAll,
+    onBrowseRail,
+    showMediaPicker = false,
+    browseDefaultMedia = 'movie',
     empty,
     animateEnter = false,
     quickRequest,
@@ -37,32 +45,37 @@ export const DiscoverMediaRail: React.FC<{
     showPosterQualityBadges = false,
 }) => {
     const { t } = useDiscoverI18n();
+    const header = onBrowseRail ? (
+        <DiscoverRailSectionHeader
+            title={title}
+            viewAllLabel={viewAllLabel}
+            showMediaPicker={showMediaPicker}
+            defaultMedia={browseDefaultMedia}
+            onNavigate={onBrowseRail}
+        />
+    ) : (
+        <div className="flex items-center gap-3 min-w-0 px-2 pr-16">
+            <h2 className={`${discoveryTheme.sectionTitle} truncate`}>{title}</h2>
+            {onViewAll && viewAllLabel && (
+                <button type="button" onClick={onViewAll} className="shrink-0 text-xs font-bold text-plex hover:underline">
+                    {viewAllLabel}
+                </button>
+            )}
+        </div>
+    );
+
     if (!items?.length) {
         if (!empty) return null;
         return (
             <div className="flex flex-col gap-2 relative">
-                <div className="flex items-center gap-3 min-w-0 px-2 pr-16">
-                    <h2 className={`${discoveryTheme.sectionTitle} truncate`}>{title}</h2>
-                    {onViewAll && viewAllLabel && (
-                        <button type="button" onClick={onViewAll} className="shrink-0 text-xs font-bold text-plex hover:underline">
-                            {viewAllLabel}
-                        </button>
-                    )}
-                </div>
+                {header}
                 {empty}
             </div>
         );
     }
     return (
         <div className="flex flex-col gap-2 relative">
-            <div className="flex items-center gap-3 min-w-0 px-2 pr-16">
-                <h2 className={`${discoveryTheme.sectionTitle} truncate`}>{title}</h2>
-                {onViewAll && viewAllLabel && (
-                    <button type="button" onClick={onViewAll} className="shrink-0 text-xs font-bold text-plex hover:underline">
-                        {viewAllLabel}
-                    </button>
-                )}
-            </div>
+            {header}
             <Carousel>
                 {items.map((rawItem, idx) => {
                     if (!rawItem) return null;

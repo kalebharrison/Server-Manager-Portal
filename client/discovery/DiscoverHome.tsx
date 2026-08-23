@@ -15,6 +15,8 @@ import { discoverRowCardWidthClass } from '../shared/portalLayout';
 import { useDiscoverI18n } from './i18n';
 import { DiscoverQuickRequestButton } from './DiscoverQuickRequestButton';
 import { DiscoverStatusOverlay } from './DiscoverStatusOverlay';
+import { DiscoverRailSectionHeader } from './DiscoverRailSectionHeader';
+import { buildRailBrowsePath, type RailMediaFilter } from './discoverRailBrowse';
 import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { useDiscoverNotify } from './useDiscoverNotify';
 import { DiscoverDownloadsSection } from '../screens/DiscoverDownloadsSection';
@@ -78,6 +80,9 @@ const DiscoverHomeRow: React.FC<{
     formatItem: (item: any) => any;
     onSelect: (item: any) => void;
     onViewAll?: () => void;
+    onBrowseRail?: (media: RailMediaFilter) => void;
+    showMediaPicker?: boolean;
+    browseDefaultMedia?: RailMediaFilter;
     empty?: React.ReactNode;
     animateEnter?: boolean;
     quickRequest?: ReturnType<typeof useDiscoverQuickRequest>;
@@ -91,6 +96,9 @@ const DiscoverHomeRow: React.FC<{
     formatItem,
     onSelect,
     onViewAll,
+    onBrowseRail,
+    showMediaPicker = false,
+    browseDefaultMedia = 'movie',
     empty,
     animateEnter = false,
     quickRequest,
@@ -111,6 +119,39 @@ const DiscoverHomeRow: React.FC<{
         if (!empty) return null;
         return (
             <div className="flex flex-col gap-2 relative">
+                {onBrowseRail ? (
+                    <DiscoverRailSectionHeader
+                        title={title}
+                        viewAllLabel={viewAllLabel}
+                        showMediaPicker={showMediaPicker}
+                        defaultMedia={browseDefaultMedia}
+                        onNavigate={onBrowseRail}
+                    />
+                ) : (
+                    <div className="flex items-center gap-3 min-w-0 px-2 pr-16">
+                        <h2 className={`${discoveryTheme.sectionTitle} truncate`}>{title}</h2>
+                        {onViewAll && (
+                            <button type="button" onClick={onViewAll} className="shrink-0 text-xs font-bold text-plex hover:underline">
+                                {viewAllLabel}
+                            </button>
+                        )}
+                    </div>
+                )}
+                {empty}
+            </div>
+        );
+    }
+    return (
+        <div className="flex flex-col gap-2 relative">
+            {onBrowseRail ? (
+                <DiscoverRailSectionHeader
+                    title={title}
+                    viewAllLabel={viewAllLabel}
+                    showMediaPicker={showMediaPicker}
+                    defaultMedia={browseDefaultMedia}
+                    onNavigate={onBrowseRail}
+                />
+            ) : (
                 <div className="flex items-center gap-3 min-w-0 px-2 pr-16">
                     <h2 className={`${discoveryTheme.sectionTitle} truncate`}>{title}</h2>
                     {onViewAll && (
@@ -119,20 +160,7 @@ const DiscoverHomeRow: React.FC<{
                         </button>
                     )}
                 </div>
-                {empty}
-            </div>
-        );
-    }
-    return (
-        <div className="flex flex-col gap-2 relative">
-            <div className="flex items-center gap-3 min-w-0 px-2 pr-16">
-                <h2 className={`${discoveryTheme.sectionTitle} truncate`}>{title}</h2>
-                {onViewAll && (
-                    <button type="button" onClick={onViewAll} className="shrink-0 text-xs font-bold text-plex hover:underline">
-                        {viewAllLabel}
-                    </button>
-                )}
-            </div>
+            )}
             <Carousel>
                 {items.map((rawItem, idx) => {
                     if (!rawItem) return null;
@@ -521,6 +549,7 @@ export const DiscoverHome: React.FC<{
                     animateEnter={enterAnim}
                     notify={notify}
                     showPosterQualityBadges={showPosterQualityBadges}
+                    onBrowseRail={() => navigate(buildRailBrowsePath(browseBase, 'other-requests', 'all'))}
                 />
             )}
 
@@ -541,10 +570,13 @@ export const DiscoverHome: React.FC<{
                         quickRequest={quickRequest}
                         notify={notify}
                         showPosterQualityBadges={showPosterQualityBadges}
+                        showMediaPicker
+                        browseDefaultMedia="movie"
+                        onBrowseRail={(media) => navigate(buildRailBrowsePath(browseBase, 'trending', media))}
                     />
                 </div>
                 <DiscoverHomeRow
-                    title="Upcoming"
+                    title={t('home.upcoming')}
                     items={rows.upcoming}
                     posterCardClass={posterCardClass}
                     viewAllLabel={t('common.viewAll')}
@@ -554,9 +586,12 @@ export const DiscoverHome: React.FC<{
                     quickRequest={quickRequest}
                     notify={notify}
                     showPosterQualityBadges={showPosterQualityBadges}
+                    showMediaPicker
+                    browseDefaultMedia="movie"
+                    onBrowseRail={(media) => navigate(buildRailBrowsePath(browseBase, 'upcoming', media))}
                 />
                 <DiscoverHomeRow
-                    title="Popular"
+                    title={t('home.popular')}
                     items={rows.popular}
                     posterCardClass={posterCardClass}
                     viewAllLabel={t('common.viewAll')}
@@ -566,6 +601,9 @@ export const DiscoverHome: React.FC<{
                     quickRequest={quickRequest}
                     notify={notify}
                     showPosterQualityBadges={showPosterQualityBadges}
+                    showMediaPicker
+                    browseDefaultMedia="movie"
+                    onBrowseRail={(media) => navigate(buildRailBrowsePath(browseBase, 'popular', media))}
                 />
             </section>
         </div>

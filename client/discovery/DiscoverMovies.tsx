@@ -16,6 +16,7 @@ import { useDiscoverI18n } from './i18n';
 import { useDiscoverNotify } from './useDiscoverNotify';
 import { useDiscoverQuickRequest } from './useDiscoverQuickRequest';
 import { filterDiscoverBrowseItems } from './useDiscoveryPreferences';
+import { buildRailBrowsePath } from './discoverRailBrowse';
 
 const pageResults = (page: any) => (Array.isArray(page?.results) ? page.results : []);
 
@@ -38,7 +39,7 @@ export const DiscoverMovies: React.FC<{
 }> = ({
     onSelect,
     formatItem,
-    navigate: _navigate,
+    navigate,
     pushToast,
     showPosterQualityBadges = false,
     browseMode = 'discover',
@@ -200,6 +201,9 @@ export const DiscoverMovies: React.FC<{
         };
     }, [loadData]);
 
+    const browseBase = browseMode === 'request' ? '/request' : '/discovery';
+    const viewAllLabel = t('common.viewAll');
+
     return (
         <div className="w-full flex flex-col gap-6 px-4 sm:px-8 mt-4 relative pb-8">
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -235,6 +239,8 @@ export const DiscoverMovies: React.FC<{
                                 onSelect={onSelect}
                                 animateEnter={enterAnim}
                                 showPosterQualityBadges={showPosterQualityBadges}
+                                viewAllLabel={viewAllLabel}
+                                onBrowseRail={() => navigate(buildRailBrowsePath(browseBase, 'recently-added', 'movie'))}
                             />
                             <DiscoverMediaRail
                                 title={t('home.recentlyUpgraded')}
@@ -244,6 +250,8 @@ export const DiscoverMovies: React.FC<{
                                 onSelect={onSelect}
                                 animateEnter={enterAnim}
                                 showPosterQualityBadges={showPosterQualityBadges}
+                                viewAllLabel={viewAllLabel}
+                                onBrowseRail={() => navigate(buildRailBrowsePath(browseBase, 'recently-upgraded', 'movie'))}
                             />
                         </>
                     )}
@@ -257,6 +265,8 @@ export const DiscoverMovies: React.FC<{
                         quickRequest={quickRequest}
                         notify={notify}
                         showPosterQualityBadges={showPosterQualityBadges}
+                        viewAllLabel={viewAllLabel}
+                        onBrowseRail={() => navigate(buildRailBrowsePath(browseBase, 'trending', 'movie'))}
                     />
                     <DiscoverMediaRail
                         title={t('home.upcomingMovies')}
@@ -268,6 +278,8 @@ export const DiscoverMovies: React.FC<{
                         quickRequest={quickRequest}
                         notify={notify}
                         showPosterQualityBadges={showPosterQualityBadges}
+                        viewAllLabel={viewAllLabel}
+                        onBrowseRail={() => navigate(buildRailBrowsePath(browseBase, 'upcoming', 'movie'))}
                     />
                     <DiscoverMediaRail
                         title={t('home.popularMovies')}
@@ -279,6 +291,8 @@ export const DiscoverMovies: React.FC<{
                         quickRequest={quickRequest}
                         notify={notify}
                         showPosterQualityBadges={showPosterQualityBadges}
+                        viewAllLabel={viewAllLabel}
+                        onBrowseRail={() => navigate(buildRailBrowsePath(browseBase, 'popular', 'movie'))}
                     />
                 </div>
             )}
