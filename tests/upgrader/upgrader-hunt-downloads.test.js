@@ -175,3 +175,75 @@ test('runHunt skips grabs when library download cap is full', async () => {
     assert.equal(posts.length, 0);
     assert.ok((result.downloadCapped || 0) >= 1 || /download caps/i.test(result.reason || ''));
 });
+
+test('runHunt caps interactive Arr searches per cycle below the queued title count', async () => {
+    const releaseGets = [];
+    const hunt = createUpgraderHunt({
+        request: async (instance, path, options = {}) => {
+            if (path.includes('/queue')) return { records: [] };
+            if (path.startsWith('/api/v3/release?movieId=')) {
+                releaseGets.push(path);
+                return [{
+                    title: 'Same.Score.WEBDL',
+                    rejected: false,
+                    customFormatScore: 10,
+                    quality: { quality: { name: 'WEBDL-1080p', resolution: 1080 } },
+                }];
+            }
+            if (path.startsWith('/api/v3/release') && options.method === 'POST') {
+                throw new Error('should not grab');
+            }
+            return {};
+        },
+        loadIndex: async () => ({
+            items: Array.from({ length: 5 }, (_, index) => ({
+                ratingKey: `radarr:radarr-1:${index + 1}`,
+                title: `Movie ${index + 1}`,
+                mediaType: 'movie',
+                arrType: 'radarr',
+                arrInstanceId: 'radarr-1',
+                arrInstanceName: 'Movies',
+                libraryKey: 'radarr:radarr-1:movies',
+                libraryName: 'Movies',
+                entityId: index + 1,
+                hasFile: true,
+                avgCustomFormatScore: 10,
+                customFormatScore: 10,
+                scoreUnknown: false,
+                qualityName: 'WEBDL-1080p',
+                resolution: 1080,
+            })),
+        }),
+        loadPrefs: async () => ({}),
+        savePrefs: async () => {},
+        appendAudit: async () => {},
+    });
+
+    const result = await hunt.runHunt({
+        upgraderEnabled: true,
+        upgraderAutomationEnabled: true,
+        upgraderMaxDownloadsPerLibrary: 25,
+        upgraderMaxActionsPerHour: 25,
+        upgraderMaxSearchesPerLibrary: 5,
+        upgraderMaxSearchesPerCycle: 2,
+        upgraderMinScoreDelta: 50,
+        arrInstances: [{
+            id: 'radarr-1',
+            type: 'radarr',
+            name: 'Movies',
+            url: 'http://radarr.local',
+            apiKey: 'x',
+            enabled: true,
+            activeDirectory: '/media/movies',
+        }],
+    });
+
+    assert.equal(result.ran, true);
+    assert.equal(result.searched, 2);
+    assert.equal(result.maxSearchesPerCycle, 2);
+    assert.equal(releaseGets.length, 2);
+    assert.deepEqual(releaseGets, [
+        '/api/v3/release?movieId=1',
+        '/api/v3/release?movieId=2',
+    ]);
+});

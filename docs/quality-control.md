@@ -19,7 +19,7 @@ Backend code lives in [`lib/upgrader/`](../lib/upgrader/); the UI in [`client/up
 The hunt pipeline:
 
 1. **Index rebuild** — pulls movies, series, and albums (with files) from connected Arr instances, scores them against quality profiles, and caches the result (~every 4 hours, or on demand from the Overview tab).
-2. **Hunt** — ranks available releases and grabs upgrades that beat the current score by at least the configured minimum delta. Background hunt runs ~every 20 minutes when **Enable auto-hunt** is on; the **Hunt** tab also supports dry-run preview.
+2. **Hunt** — ranks available releases and grabs upgrades that beat the current score by at least the configured minimum delta. Background hunt runs ~every 20 minutes when **Enable auto-hunt** is on; the **Hunt** tab also supports dry-run preview. Each live candidate is an Arr **interactive search** (`GET /api/v3/release`) across every indexer — that is what balloons Radarr/Sonarr RAM. Live hunts default to **1 title per library** and **2 interactive searches per 20-minute cycle** so a pass cannot OOM the host. Grab rate (`upgraderMaxActionsPerHour`) is a separate cap.
 3. **Arrs** — import webhooks for Integrity, plus custom formats, quality profiles, TRaSH catalog, and CF repair helpers.
 
 Hunt targets (Settings → Quality Control → Hunt preferences):
