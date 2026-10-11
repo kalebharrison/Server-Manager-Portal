@@ -14,6 +14,10 @@ export type UpgraderStatus = {
     arrConfigured: boolean;
     automationEnabled: boolean;
     cleanupAutomationEnabled?: boolean;
+    huntOwnedBy?: 'showcard' | 'node' | string;
+    cleanupOwnedBy?: 'showcard' | 'node' | string;
+    settingsAutomationEnabled?: boolean;
+    settingsCleanupAutomationEnabled?: boolean;
     integrityEnabled?: boolean;
     integrityAutomationEnabled?: boolean;
     huntMissingEpisodes?: boolean;

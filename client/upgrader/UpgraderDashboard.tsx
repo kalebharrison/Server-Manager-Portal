@@ -392,9 +392,11 @@ export const UpgraderDashboard: React.FC = () => {
                                             label="Auto-hunt"
                                             value={status?.automationEnabled ? 'On' : 'Off'}
                                             valueClassName={status?.automationEnabled ? 'text-emerald-300' : 'text-amber-200'}
-                                            detail={huntIntensity
-                                                ? `${huntIntensity} · ${remainingActions} grabs left`
-                                                : `${remainingActions} grabs left this hour`}
+                                            detail={status?.huntOwnedBy === 'showcard'
+                                                ? 'Live on Showcard'
+                                                : (huntIntensity
+                                                    ? `${huntIntensity} · ${remainingActions} grabs left`
+                                                    : `${remainingActions} grabs left this hour`)}
                                             onClick={() => handleTabChange('hunt')}
                                         />
                                         <QcKpiTile
@@ -535,7 +537,9 @@ export const UpgraderDashboard: React.FC = () => {
                                                 label="Auto-hunt"
                                                 value={status?.automationEnabled ? 'On' : 'Off'}
                                                 valueClassName={status?.automationEnabled ? 'text-emerald-300' : 'text-amber-200'}
-                                                detail={huntIntensity || 'Enable in Settings'}
+                                                detail={status?.huntOwnedBy === 'showcard'
+                                                    ? 'Live on Showcard'
+                                                    : (huntIntensity || 'Enable in Settings')}
                                             />
                                             <QcKpiTile
                                                 label="Grabs this hour"
